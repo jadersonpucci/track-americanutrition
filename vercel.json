@@ -1,0 +1,14 @@
+{
+  "redirects": [
+    {
+      "source": "/:code",
+      "destination": "https://envia.com/pt-BR/tracking?label=:code",
+      "permanent": false
+    },
+    {
+      "source": "/",
+      "destination": "https://americanutrition.com",
+      "permanent": false
+    }
+  ]
+}
