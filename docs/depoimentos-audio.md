@@ -33,8 +33,11 @@ faz o n8n pular toda a cadeia de publicação.
   por voz de inteligência artificial**. O mesmo aviso vai na legenda do post.
 - A limpeza do texto só corrige digitação, acentuação, pontuação e termos médicos
   escritos errado. Reescrever, resumir ou acrescentar é proibido no prompt.
-- Depoimentos com termos regulatórios sinalizados (`reviews.ia_flags`) chegam ao
-  revisor com um alerta visível — a decisão continua sendo humana.
+- **Nenhum depoimento é filtrado por conteúdo.** Todo relato 5★ aprovado vai para o
+  Telegram. Termos regulatórios sinalizados (`reviews.ia_flags`) e o alerta gerado na
+  limpeza aparecem no card apenas como aviso; quem decide publicar é o revisor.
+  Os únicos cortes na consulta são técnicos: texto curto demais para virar áudio e
+  texto acima do que cabe numa chamada de TTS.
 
 ## Workflows n8n
 
@@ -73,3 +76,12 @@ faz o n8n pular toda a cadeia de publicação.
   não casa nenhuma linha. Verifique um campo real da linha, nunca o tamanho do array.
 - Reescrever um workflow inteiro pelo SDK perde as credenciais; prefira operações
   cirúrgicas (`setNodeParameter`).
+- O `queryReplacement` do nó Postgres separa os parâmetros **por vírgula**. Qualquer
+  texto livre com vírgula embaralha as colunas silenciosamente. Para texto de usuário,
+  monte o SQL com escape (`'` vira `''`) em vez de usar parâmetros posicionais.
+
+## Ritmo
+
+A busca roda a cada 8 horas e leva até 5 depoimentos por rodada. Na prática o volume é
+de cerca de uma review 5★ a cada três dias, então o limite nunca morde: o ritmo real é
+dado pela aprovação, não pela geração.
