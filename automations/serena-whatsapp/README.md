@@ -58,7 +58,7 @@ Sem parâmetros, o endpoint só mostra a config atual e as pausas ativas.
 
 ## Rollout sugerido
 
-1. Estado atual: `wpp_modo=teste`, lista de teste vazia. Nenhum cliente recebe a Serena ainda.
+1. Histórico: ficou em `wpp_modo=teste` (só o número do Jaderson) de 02/09 até 03/09/2026 00:15 BRT, quando passou para **`wpp_modo=producao`** (todos os clientes). Para voltar ao teste ou desligar: `...&chave=wpp_modo&valor=teste` ou `valor=off`.
 2. Colocar o próprio número na lista: `...&chave=wpp_teste_numeros&valor=55DDDNUMERO`.
 3. Mandar mensagens para o Samuel (texto, áudio, foto de comprovante) e acompanhar no
    Painel da Serena (`/webhook/painel-serena`).
