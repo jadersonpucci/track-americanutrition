@@ -362,3 +362,12 @@ Métrica "Carrinhos pela Serena" no modal.
 - `serena_respostas_prontas(id, atalho unique, titulo, texto, ativo, criado_por, criado_em, atualizado_em)`
 - `serena_etiquetas(contato_id, etiqueta, origem manual|auto, criado_por, criado_em)`
 - `serena_push_subs(endpoint pk, p256dh, auth, agente, ua, ativo, falhas, criado_em, atualizado_em)`
+
+## Modelo e cache (03/09/2026, 07:00 BRT)
+
+- `serena_config.modelo` = **`claude-sonnet-5`** (antes `claude-sonnet-4-5-20250929`). O Core manda `output_config.effort = medium` para os modelos da família 5 / 4.6+ (eles pensam por padrão; médio mantém a resposta rápida no chat).
+- A base de treinamento vai no primeiro bloco do system prompt com **cache de 1 hora** (`cache_control: {type: ephemeral, ttl: 1h}`), no Core e no pós-entrega. Antes era 5 min e, como as mensagens chegam espaçadas, quase toda resposta pagava o cache frio.
+- Medido com a base atual (v7.64): 143.905 tokens em cache no Sonnet 5; resposta em 8 a 11 s.
+- Custo aproximado por resposta (US$ 1 = R$ 5,50): cache quente ≈ R$ 0,19; gravação do cache (no máximo uma por hora de atividade) ≈ R$ 3,20. Com ~60 respostas/dia: ≈ R$ 55/dia, ≈ R$ 1.700/mês. Antes (Sonnet 4.5, cache de 5 min): ≈ R$ 210/dia.
+- Para voltar: `update serena_config set valor = 'claude-sonnet-4-5-20250929' where chave = 'modelo'` (ou `claude-haiku-4-5-20251001` para o mais barato, ≈ R$ 0,07 por resposta quente).
+- Alerta de falha da API (saldo, limite) no Telegram tópico 289 via `/webhook/serena-alerta` (dedupe 30 min) e reprocessamento automático a cada 10 min (`[Serena WhatsApp] Reprocessar sem resposta`, `wXN30aD4YloMV2NN`) quando a API volta.
