@@ -504,3 +504,5 @@ Três correções:
 3. **Trava de link repetido no Core** (código, não depende do modelo): se a resposta traz uma URL que já apareceu nas últimas 8 mensagens da Serena e o cliente não pediu o link de novo ("manda de novo", "não abriu"...), a linha do link é removida e entra "É só abrir o link que te mandei acima ☝️". URL duplicada na mesma resposta também cai. A conversa ganha a etiqueta `link-repetido` para acompanhar no Inbox.
 
 Testes: SQL do Coletar Buffer com trava ativa (segura), sem trava (junta as 2 mensagens), já processado (nada) e mensagem de 1 s (segura). Guarda de link testada com 4 cenários (repete sem pedir: remove; pede de novo: mantém; link novo: mantém; sem link: intacto).
+
+**Ajuste de velocidade (03/09, 19h).** Jaderson achou a voz nova lenta ("cansada"). O v3 aceita `speed`: padrão agora é **1,1** (v2 de reserva 1,08). O webhook aceita `velocidade` (0,7 a 1,2) e `tag` (direção do v3 no início do texto, ex. `[animada]`). Amostras enviadas: Fabi 1,1; Fabi 1,15 com `[animada]`; Bruna 1,05. Todas geradas pelo v3.

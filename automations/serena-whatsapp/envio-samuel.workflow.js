@@ -38,14 +38,17 @@ function paraFala(t) {
   s = s.replace(/\\s{2,}/g, ' ').trim();
   return s;
 }
-const audioTexto = paraFala(audioTextoRaw);
+let audioTexto = paraFala(audioTextoRaw);
 
 // Modelo principal eleven_v3 (mais natural e expressivo); reserva eleven_multilingual_v2 com ajustes mais soltos.
-// b.modelo = 'v2' forca o v2 ja na primeira tentativa (teste/comparacao).
+// b.modelo = 'v2' forca o v2 ja na primeira tentativa. b.estabilidade, b.velocidade e b.tag (direcao do v3, ex: '[animada]') sao opcionais.
 const modelo = String(b.modelo || 'v3').toLowerCase();
 const est = (b.estabilidade != null && b.estabilidade !== '') ? Number(b.estabilidade) : null;
-const corpoV3 = { text: audioTexto, model_id: 'eleven_v3', voice_settings: { stability: (est != null ? est : 0.5), similarity_boost: 0.8 } };
-const corpoV2 = { text: audioTexto, model_id: 'eleven_multilingual_v2', voice_settings: { stability: (est != null ? est : 0.38), similarity_boost: 0.8, style: 0.45, use_speaker_boost: true, speed: 1.03 } };
+const vel = (b.velocidade != null && b.velocidade !== '') ? Math.max(0.7, Math.min(1.2, Number(b.velocidade))) : null;
+const tag = String(b.tag || '').trim();
+const textoV3 = (tag ? tag + ' ' : '') + audioTexto;
+const corpoV3 = { text: textoV3, model_id: 'eleven_v3', voice_settings: { stability: (est != null ? est : 0.5), similarity_boost: 0.8, speed: (vel != null ? vel : 1.1) } };
+const corpoV2 = { text: audioTexto, model_id: 'eleven_multilingual_v2', voice_settings: { stability: (est != null ? est : 0.38), similarity_boost: 0.8, style: 0.45, use_speaker_boost: true, speed: (vel != null ? vel : 1.08) } };
 const corpoA = modelo === 'v2' ? corpoV2 : corpoV3;
 
 return [{ json: { number: number, text: text || audioTextoRaw, audio_texto: audioTexto, voz_id: vozId, delay: delay, tipo: audioTexto ? 'audio' : 'texto', modelo_a: corpoA.model_id, corpo_a: corpoA, corpo_b: corpoV2 } }];` } },
