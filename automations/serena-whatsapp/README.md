@@ -158,3 +158,142 @@ pagamento, e cupom de boas-vindas do popup (`popup_leads`).
 - `serena_wpp_pausas(telefone pk, ate, motivo, atualizado_em)`
 - `serena_wpp_bloqueados(telefone pk, motivo, criado_por, criado_em)`
 - `serena_memoria_runs(contato_id pk, processado_ate, fatos_extraidos, atualizado_em)`
+
+---
+
+# Bloco 2 (03/09/2026): handoff, alertas, fila, correções, áudio, pós-entrega, métricas
+
+## Workflows adicionados ou alterados
+
+| Workflow | ID | Função |
+|---|---|---|
+| `[Serena WhatsApp] UTIL v3 Handoff + Agentes + Correcoes` | `FRKUmJfZvORXfpST` | Cria `serena_correcoes`, `serena_agentes`, `serena_atribuicoes`, `serena_alertas` e semeia config nova (já executado) |
+| `[Serena WhatsApp] Watchdog -> Telegram` | `sYBUj3v8LGAtZYR8` | Alerta de falha a cada 5 min no tópico 289 do Telegram |
+| `[Serena WhatsApp] Envio Samuel (texto ou audio)` | `EhmndFruX6hOIRDN` | `POST /webhook/serena-samuel-enviar`: texto ou áudio (ElevenLabs) pelo Samuel |
+| `[Serena] Sync Base de Treinamento` | `D71uJKMi3u442bL0` | Ganhou cron de 1 min com ETag + hash: sincroniza na hora que o site muda |
+| `[Serena] Core` | `5Z5MdXAiatwnjc73` | Handoff pausa e abre fila; injeta carrinho abandonado, correções e notas; base primeiro para o cache do Claude |
+| `[Serena Tool] Escalar Humano` | `pENiiK4JvuowUEqn` | Card no Telegram com link "Assumir no Inbox" |
+| `[Serena WhatsApp] Entrada Samuel -> Serena Core -> Evolution` | `zeJ8nScEpt7TckFb` | Ack rápido (resposta em duas etapas) e resposta em áudio |
+| `[Transacional] Dispatcher Samuel v3` | `WXncUehLXyuIMoSm` | Pós-entrega: manda o modo de uso dos produtos depois do "pedido entregue" |
+| `[Serena] Painel API` | `YDUxkTRfg6uTucHB` | Ações novas: filas, agentes, atribuir, nota, corrigir, metricas |
+| `[Serena] Painel de Conversas` (Inbox) | `yX8m7r9Zff5L77Ec` | Identidade do atendente, filas, atribuição, notas, correção, métricas |
+
+## 1. Sincronização instantânea da base de treinamento
+
+O site `https://serena.americanutrition.com` está na Hostinger e devolve `ETag` e `Last-Modified`. O workflow de sync
+agora roda **a cada 1 minuto**: faz um `HEAD`, compara com `serena_config.base_etag` e só baixa a página quando o
+cabeçalho mudou. Depois de limpar o HTML calcula um hash do texto e só regrava `base_treinamento` (e `base_hash`)
+se o conteúdo realmente mudou. Quando muda, avisa no Telegram (tópico 289): "Base da Serena atualizada, versão X".
+
+Na prática a Serena passa a usar o treinamento novo em até 1 minuto depois de o site ser publicado, em todos os canais.
+Para forçar: `POST /webhook/serena-sync-base` com `{"force": true}`. O cron diário das 4h continua como rede de segurança.
+
+## 2. Alerta de falha no Telegram (watchdog)
+
+`[Serena WhatsApp] Watchdog -> Telegram`, a cada 5 min:
+
+- **Samuel desconectado**: `connectionState` da instância na Evolution diferente de `open` (repete a cada 30 min, e manda "reconectado" quando volta).
+- **Serena sem responder**: clientes cuja última mensagem é deles há mais de `wpp_alerta_min` (10 min) com a Serena ativa
+  (em modo teste só conta os números da lista de teste). Repete a cada 30 min.
+- **Clientes aguardando atendente**: conversas pausadas com mensagem pendente, ou handoff/atribuição aberta sem resposta
+  humana há mais de 30 min. Repete a cada 60 min.
+
+Dedupe em `serena_alertas`. Os alertas trazem link direto para o Inbox.
+
+## 3. Handoff inteligente + fila "aguardando humano"
+
+Quando a Serena usa `escalar_humano`:
+
+1. O Core passa `contato_id`, `canal`, `telefone` e `nome_cliente` para a ferramenta. O card no Telegram (tópico 94)
+   ganhou o link **"Assumir no Inbox da Serena"** (`serena-inbox?t=...&c=<contato_id>` abre a conversa direto).
+2. A Serena é pausada naquele contato: no WhatsApp via `serena_wpp_pausas` (motivo `handoff`, duração `wpp_pausa_handoff_min`,
+   720 min por padrão); no site/outros canais via `serena_conversas.ia_pausada`.
+3. Abre uma atribuição em `serena_atribuicoes` (status `aberto`, motivo `handoff`). Ela some da fila quando alguém clica
+   **"Resolvido: devolver para a Serena"** (ou reativa a Serena), que também limpa as pausas.
+
+No Inbox, o seletor "Todas as conversas" tem **Aguardando resposta**, **Fila: esperando atendente** e **Fila: esperando a Serena**,
+ordenadas por tempo de espera (⏱ na lista). O KPI "Fila humano" no topo mostra as atribuições abertas.
+
+## 4. Carrinho abandonado, correções e notas no cérebro
+
+`Carregar Contexto` do Core passou a trazer:
+
+- **Carrinho abandonado** dos últimos 7 dias, não convertido (por telefone ou email): itens, total, cupom, recusa de cartão,
+  boleto pendente e o `checkout_url` oficial. O prompt orienta a Serena a ajudar a concluir a compra (mandar o link, oferecer
+  PIX/boleto em caso de recusa) sem forçar a venda se o cliente veio por outro assunto.
+- **Correções** da equipe (`serena_correcoes`): as do próprio contato e as últimas 30 dias em geral (até 8), no formato
+  "Serena disse X -> correto é Y".
+- **Notas internas** (`serena_fatos` com `origem='manual'`) marcadas como "(nota da equipe)".
+
+Também mudou a ordem do system prompt: a base de treinamento vem primeiro (prefixo idêntico em todas as chamadas) e o
+contexto do cliente por último. Assim o cache de prompt do Claude passa a ser aproveitado de verdade (antes o cabeçalho
+variável vinha antes da base e invalidava o cache a cada conversa).
+
+## 5. Pós-entrega inteligente (modo de uso)
+
+No `[Transacional] Dispatcher Samuel v3`, depois que a mensagem `pedido_entregue` sai com sucesso, um segundo passo pega
+`produto_entregue` dos `template_params`, carrega a base de treinamento e pede ao Claude uma mensagem curta com o modo de uso
+de cada produto (dose, horário, com/sem alimento, dica), sem inventar o que não está na base. Envia pelo Samuel logo em seguida
+e grava em `serena_mensagens` com autor `pos_entrega:pedido_entregue`. Liga/desliga com `wpp_pos_entrega=on|off`.
+
+## 6. Resposta em duas etapas (ack rápido)
+
+Se a mensagem do cliente casa com `wpp_ack_regex` (pedido, rastreio, frete, CEP, entrega, prazo, boleto, PIX, cupom, reembolso, troca),
+é a primeira do lote e a Serena não falou nos últimos 10 min, o Samuel responde na hora com `wpp_ack_texto`
+("Só um instante, já estou verificando isso pra você 🙂") e a resposta completa vem depois. O ack fica gravado na conversa com autor `ack`.
+`wpp_ack_rapido=on|off`.
+
+## 7. Resposta em áudio
+
+Quando o cliente manda áudio e a resposta da Serena é curta (até 400 caracteres, sem link), a resposta sai como mensagem de voz:
+ElevenLabs `eleven_multilingual_v2` com a voz `wpp_voz_id` (padrão **Letícia**, `CcElPA8NBrawbunFs7rh`) e
+`sendWhatsAppAudio` da Evolution (PTT). Se a geração falhar, cai no texto normal. `wpp_audio_resposta=on|off`.
+Para trocar a voz: `...&chave=wpp_voz_id&valor=<voice_id do ElevenLabs>`.
+
+Tudo isso passa pelo workflow auxiliar `POST /webhook/serena-samuel-enviar`
+(`{number, text, delay}` ou `{number, audio_texto, voz_id, delay}` -> `{ok, tipo, message_id}`), que também serve para qualquer envio avulso.
+
+## 8. Inbox: atendentes, notas, correção, atribuição e métricas
+
+- **Identidade**: o chip "quem está atendendo?" no topo pede o nome (fica salvo no navegador) e ele vai como autor das mensagens,
+  notas e correções. Atendentes cadastrados em `serena_agentes` (Jaderson, Cris, Samuel); abrindo o Inbox com `&a=<token do agente>`
+  o nome é reconhecido automaticamente. Para cadastrar mais, inserir em `serena_agentes (nome, token)`.
+- **Atribuição**: seção "Atendimento" na ficha mostra o responsável, permite "Atribuir a..." e "Resolvido: devolver para a Serena".
+  Responder pelo Inbox atribui a conversa a quem respondeu. A lista mostra o nome do responsável em cada conversa.
+- **Notas internas**: textarea na ficha grava em `serena_fatos` (origem `manual`), com "x" para apagar. A Serena lê as notas como "nota da equipe".
+- **Correção**: link "corrigir" em cada bolha da Serena. Você escreve como ela deveria ter respondido; fica em `serena_correcoes`
+  (a Serena passa a seguir nas próximas respostas) e, se quiser, é enviado ao cliente como sua mensagem, sem pausar a Serena.
+- **Métricas** (botão no topo, 7/30/90 dias): conversas, autonomia (sem mensagem humana), mensagens por papel, handoffs, fila aberta,
+  tempo médio e mediano de resposta, links de pagamento enviados, transacionais, pós-entrega, correções, áudios, por dia, por canal,
+  por atendente e **vendas atribuídas**: pedidos pagos na Shopify de clientes atendidos pela Serena entre a primeira resposta e 72h
+  depois da última (com link para cada pedido).
+
+## Config nova (`serena_config`, via `/webhook/serena-wpp-config?t=TOKEN&chave=...&valor=...`)
+
+| Chave | Padrão | Efeito |
+|---|---|---|
+| `wpp_pausa_handoff_min` | `720` | Minutos de pausa no WhatsApp após um handoff |
+| `wpp_ack_rapido` / `wpp_ack_regex` / `wpp_ack_texto` | `on` / lista de assuntos / frase | Resposta em duas etapas |
+| `wpp_audio_resposta` / `wpp_voz_id` | `on` / Letícia | Resposta em áudio |
+| `wpp_pos_entrega` | `on` | Modo de uso após "pedido entregue" |
+| `wpp_alerta_min` | `10` | Minutos sem resposta da Serena que disparam alerta |
+| `base_hash` / `base_etag` | automático | Controle do sync da base |
+
+## Tabelas novas
+
+- `serena_correcoes(id, contato_id, mensagem_id, texto_serena, correcao, autor, criado_em)`
+- `serena_agentes(nome pk, token unique, ativo, criado_em)`
+- `serena_atribuicoes(contato_id pk, agente, status aberto|resolvido, motivo, atribuido_em, atualizado_em)`
+- `serena_alertas(chave pk, ultimo_em, detalhe)`
+
+## Testes feitos em 03/09
+
+- Sync: cron de 1 min rodando; primeira passada detectou o site (v7.64, 311k caracteres) e avisou no Telegram.
+- Handoff via site de teste: Core devolveu `handoff: true`, card no tópico 94 com link do Inbox, atribuição aberta, contato apareceu na fila humana com tempo de espera.
+- Envio auxiliar: áudio (Letícia) e texto entregues no número de teste.
+- Métricas de 7 dias com 8 vendas atribuídas encontradas na Shopify.
+- Ack rápido: mensagem simulada "qual o rastreio do meu último pedido?" no número de teste recebeu "Só um instante..." na hora
+  e a resposta completa da Serena (consulta do pedido pelo telefone) 10 s depois.
+- Pós-entrega: linha `pedido_entregue` de teste (ImunoFosfo + Creatina) gerou o "pedido entregue" e, em seguida, o modo de uso
+  tirado da base (dose, intervalo, com/sem alimento), ambos entregues no número de teste e gravados na conversa.
+- Contato de teste do handoff (canal site) foi apagado depois dos testes.
