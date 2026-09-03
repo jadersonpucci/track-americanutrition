@@ -371,3 +371,69 @@ Métrica "Carrinhos pela Serena" no modal.
 - Custo aproximado por resposta (US$ 1 = R$ 5,50): cache quente ≈ R$ 0,19; gravação do cache (no máximo uma por hora de atividade) ≈ R$ 3,20. Com ~60 respostas/dia: ≈ R$ 55/dia, ≈ R$ 1.700/mês. Antes (Sonnet 4.5, cache de 5 min): ≈ R$ 210/dia.
 - Para voltar: `update serena_config set valor = 'claude-sonnet-4-5-20250929' where chave = 'modelo'` (ou `claude-haiku-4-5-20251001` para o mais barato, ≈ R$ 0,07 por resposta quente).
 - Alerta de falha da API (saldo, limite) no Telegram tópico 289 via `/webhook/serena-alerta` (dedupe 30 min) e reprocessamento automático a cada 10 min (`[Serena WhatsApp] Reprocessar sem resposta`, `wXN30aD4YloMV2NN`) quando a API volta.
+
+---
+
+# Lote 2 (03/09/2026, tarde): reposição, Instagram/Messenger, resumo, sugestão, lacunas, auditoria, rastreio proativo, trocas, anti-spam
+
+Tudo ligado em produção, exceto Instagram/Messenger (`meta_ativo=off` até configurar o app da Meta). O item 4 da lista ("checkout pelo WhatsApp") já existia: a Serena gera link de pagamento, PIX e boleto pelas ações `gerar_checkout`, `gerar_pix` e `gerar_boleto` do Router.
+
+## 1. Reposição automática (`[Serena] Reposicao Automatica`, id nWHsrcGNkuBDgYA2, cron 1h)
+- Depois que o aviso "pedido entregue" sai pelo Samuel, o pedido entra em `serena_reposicao`. A Serena (mesmo modelo e cache da base) estima em quantos dias os produtos acabam pela dose recomendada (ex.: ImunoFosfo 90 caps a 3/dia = 30 dias; fallback sem IA: cápsulas/2 por dia). O aviso fica para `dura_dias - reposicao_dias_antes` (mínimo `reposicao_min_dias`, padrão 15).
+- No dia, dentro de `reposicao_hora_ini..reposicao_hora_fim` (BRT), o Core em modo proativo (`tipo_proativo=reposicao`) escreve a mensagem: pergunta como está o uso, avisa que está acabando e oferece mandar o link. Se o cliente responder "quero", a conversa normal gera o checkout.
+- Pula quem comprou de novo depois da entrega (`scheduled_messages` pedido_pago_confirmado), opt-out, bloqueados, quem já recebeu reposição em 30 dias; pausados tentam na próxima hora. Um agendamento por telefone por vez.
+- Primeira execução agendou 15 pedidos entregues nos últimos 3 dias. Ver no Inbox: Mais > Reposições agendadas. Kill switch: `reposicao_ativa=off`.
+
+## 6. Instagram Direct + Messenger (`[Serena Meta] Instagram + Messenger`, id ntmDA1FhQFZkvQNM)
+- `GET /webhook/serena-meta` responde ao desafio de verificação da Meta (`hub.verify_token` = `serena_config.meta_verify_token`, hoje `an-meta-5251646623f1`).
+- `POST /webhook/serena-meta` recebe `entry[].messaging[]` (mesmo formato para Instagram e Messenger), manda ao Core com `canal=instagram|messenger` e identidade `session_site = ig:<id>` ou `fb:<id>` (não existe telefone; a Serena pede e-mail ou número do pedido quando precisa), responde pela Graph API (`/v21.0/me/messages`) e marca `entregue`. Cron de 1 min entrega o que o atendente escreve no Inbox nesses canais.
+- Para ligar: criar app em developers.facebook.com, assinar os webhooks `messages` da Página e do Instagram apontando para a URL acima, gerar token de página de longa duração e gravar: `meta_page_token`, opcionalmente `meta_ig_token` (Instagram Login) e `meta_app_secret` (valida `X-Hub-Signature-256`), depois `meta_ativo=on`. Tudo via `/webhook/serena-wpp-config?t=an-wpp-7Qm3Vz9K&chave=...&valor=...`.
+- Testado: verificação responde o challenge com token certo e 403 com token errado; POST com `meta_ativo=off` é ignorado.
+
+## 8. Resumo automático ao cair na fila (`[Serena Tool] Escalar Humano`)
+- Em todo handoff (pedido do cliente, cliente irritado ou callback) o Escalar busca a conversa pela API do painel, o Haiku resume em 4 linhas (quem/o que quer, o que a Serena fez, o que falta, dados úteis) e grava em `serena_atribuicoes.resumo` (ação `resumo_salvar`).
+- Aparece no card do Telegram, no push, na lista do Inbox (linha 📝 sob a conversa da fila), acima do campo de resposta e na aba Equipe.
+
+## 9. Sugestão de resposta para o atendente (Core `modo=sugerir`)
+- Botão ✨ Sugerir no Inbox. Chama `POST /webhook/serena-core` com `{modo:'sugerir', t:TOKEN, contato_id, nome:agente, instrucao}`; o Core carrega o histórico completo, pode consultar pedidos/rastreio (sem `escalar_humano` nem `registrar_troca`), escreve a mensagem em primeira pessoa como o atendente e NÃO grava nem envia nada. Funciona mesmo com a Serena pausada. O texto vai para o campo; o atendente revisa e envia.
+- Se já houver texto no campo, ele vira instrução interna ("diga que vamos reenviar").
+
+## 12. Perguntas sem resposta (lacunas de treinamento)
+- O mesmo classificador Haiku do humor agora recebe também a resposta da Serena e devolve `sem_resposta` + `pergunta` (reescrita de forma genérica) + `tema`. Quando a Serena diz que não sabe, que vai verificar, ou ignora a pergunta, vira linha em `serena_lacunas` (uma por contato a cada 2h) e etiqueta `sem-resposta`.
+- Inbox: Mais > Perguntas sem resposta (filtro por dias, só abertas, temas; marcar resolvida depois de acrescentar na base em serena.americanutrition.com). Aba Equipe mostra as do contato. O boletim diário lista as de ontem. Config: `detectar_lacunas`.
+
+## 13. Auditoria de qualidade (`[Serena] Auditoria Diaria + Lacunas`, id 1oB1bJlRNnuIR97Z, 07:30 BRT)
+- Amostra de até `auditoria_amostra` (15) conversas de ontem com cliente + Serena. Um segundo Claude (mesmo modelo e base em cache, effort low) dá nota 1-10, `resolveu`, problemas tipados (fato_errado, invencao, nao_respondeu, tom, processo, formato), resumo e sugestão para a base. Grava em `serena_auditorias` (única por contato e dia).
+- Telegram (tópico 289): média, conversas com nota ≤ `auditoria_nota_alerta` (6) com link do Inbox, sugestões para a base e as lacunas do dia. Inbox: Mais > Auditoria da Serena. Primeira rodada manual (02/09): 3 conversas, média 7,7.
+
+## 15. Rastreio proativo (`[Serena] Rastreio Proativo`, id OtzYsPkyTEIfPG4P, cron 6h)
+- Pedidos com aviso "enviado" e sem aviso "entregue" (45 dias) são consultados no motor de rastreio (`/webhook/rastreio/buscar`). Sem movimentação há `rastreio_parado_dias` (3) e não entregue, entre 8h e 20h BRT: o Core proativo (`tipo_proativo=rastreio_parado`) avisa o cliente antes dele perguntar (com o link track.americanutrition.com), grava nota "rastreio parado" e etiqueta `rastreio-parado` no contato e a equipe recebe a lista no tópico 289. Máximo 2 avisos por código, 4 dias entre eles.
+- Entregues, cancelados, devolvidos e extraviados são fechados (`serena_rastreio_alertas.entregue=true`). Teste a seco (config off): 25 códigos, datas lidas corretamente, 24 já entregues. Inbox: Mais > Rastreios parados.
+
+## 16. Troca e devolução guiada (`[Serena Tool] Troca e Devolucao`, id VujldCtkPDLPLxzL)
+- Nova ação `registrar_troca` na ferramenta do Core. O cabeçalho instrui a Serena a coletar, uma pergunta por vez: pedido (busca pelo telefone se não souber), produto e quantidade, motivo detalhado e foto se houver dano (a descrição da imagem que a Entrada já gera). Com tudo em mãos chama `POST /webhook/serena-troca`, que grava `serena_trocas`, abre atribuição `troca`, etiqueta `troca` e avisa Telegram (tópico 94) + push; devolve o protocolo `#id`. Caso igual nas últimas 48h é reaproveitado.
+- Se o cliente já tem caso aberto, a Serena informa que está em análise e não abre outro. Inbox: Mais > Trocas e devoluções (status aberta / em_analise / aprovada / recusada / concluida, com resolução); a aba Equipe mostra os casos do contato. Recusada/concluída fecha a atribuição.
+
+## 17. Anti-spam (`Entrada Samuel`, node Pode Responder?)
+- Número sem histórico e sem pedido (`msgs_anteriores=0` e nenhum `scheduled_messages` com o telefone) cuja primeira mensagem tem cara de oferta (link, "tráfego pago", "parceria", "fornecedor", "renda extra"... ou texto > 600 caracteres) passa pelo Haiku. `spam=true` com confiança ≥ 0,8 (vendedor, golpe, bot, divulgação): entra em `serena_wpp_bloqueados` com motivo `antispam` e o texto em `detalhe`, a Serena não responde e a equipe é avisada no tópico 289. Cliente de verdade (dúvida de produto, pedido, saúde) passa mesmo com link.
+- Reversível: Inbox > Mais > Números bloqueados > desbloquear (ou `?desbloquear=55...` no endpoint de config). Config: `antispam`.
+
+## Painel API: ações novas
+`resumo_salvar`, `lacunas` (dias, so_abertas), `lacuna_resolver` (id, resolver), `auditorias` (dias), `trocas` (dias, so_abertas), `troca_status` (id, status, resolucao), `bloqueados`, `desbloquear` (telefone), `reposicoes`, `rastreios`. `conversas` devolve `resumo`; `ficha360` devolve `atribuicao.resumo`, `trocas` e `lacunas`; `metricas` ganhou lacunas, auditoria (média e ruins), trocas, spam, reposições e rastreios.
+
+Bug antigo corrigido: `atribuir` com `resolver=true` falhava no Postgres (referência a `p` dentro do `ON CONFLICT`), então o botão "✓ Resolvido" do Inbox nunca devolvia a conversa para a Serena. Agora usa `excluded.status`.
+
+## Endpoint de config liberado para as chaves novas
+`GET /webhook/serena-wpp-config?t=an-wpp-7Qm3Vz9K&chave=X&valor=Y` aceita agora: on/off em `wpp_transacional, wpp_ack_rapido, wpp_audio_resposta, wpp_pos_entrega, detectar_irritado, detectar_lacunas, carrinho_via_serena, reposicao_ativa, antispam, auditoria_ativa, rastreio_proativo, meta_ativo`; números em `wpp_max_por_hora, wpp_pausa_humano_min, wpp_pausa_handoff_min, wpp_debounce_seg, wpp_alerta_min, max_tokens, reposicao_dias_antes, reposicao_min_dias, reposicao_hora_ini, reposicao_hora_fim, auditoria_amostra, auditoria_nota_alerta, rastreio_parado_dias`; texto em `wpp_teste_numeros, wpp_ignorar_regex, wpp_ack_regex, wpp_ack_texto, wpp_voz_id, modelo, inbox_etiquetas, meta_*`. `&bloquear=55...&motivo=...&detalhe=...` também grava o detalhe. A resposta lista toda a config (tokens da Meta mascarados).
+
+## Inbox v4 (arquivo `inbox.html`, asset `assets/serena_inbox.html`)
+Menu "☰ Mais" (Métricas, Perguntas sem resposta, Auditoria, Trocas, Reposições, Rastreios, Bloqueados, Respostas prontas), botão ✨ Sugerir no campo de resposta, resumo automático acima do composer e na aba Equipe, trocas e lacunas do contato na aba Equipe, canal `messenger`, métricas novas, `?modal=lacunas|auditoria|trocas` abre direto (links do Telegram). Cabeçalho compacto no celular.
+
+## Tabelas e config (UTIL v5, id tpxfFjyaCRIypRep)
+`serena_reposicao`, `serena_lacunas`, `serena_auditorias`, `serena_trocas`, `serena_rastreio_alertas`; colunas `resumo`/`resumo_em` em `serena_atribuicoes` e `detalhe` em `serena_wpp_bloqueados`. Config: `reposicao_ativa=on, reposicao_dias_antes=5, reposicao_min_dias=15, reposicao_hora_ini=9, reposicao_hora_fim=20, antispam=on, auditoria_ativa=on, auditoria_amostra=15, auditoria_nota_alerta=6, rastreio_proativo=on, rastreio_parado_dias=3, detectar_lacunas=on, meta_ativo=off, meta_verify_token, meta_page_token='', meta_ig_token='', meta_app_secret='', meta_page_id='', meta_ig_id=''`.
+
+## Fontes neste diretório
+`troca-devolucao.workflow.js`, `reposicao-automatica.workflow.js`, `rastreio-proativo.workflow.js`, `auditoria-diaria.workflow.js`, `meta-instagram-messenger.workflow.js`, `util-v5-lote2.workflow.js` (SDK, criados por `create_workflow_from_code`) e `nodes/` com o código atual dos nodes editados em workflows existentes: Core (Normalizar, Carregar Contexto, Cerebro Serena, Salvar Conversa, Montar Resposta), Painel API (Montar SQL, Formatar) e Entrada Samuel (Registrar no Buffer, Pode Responder?).
+
+## Custo adicional estimado
+Humor + lacuna: 1 chamada Haiku por resposta (já existia, só cresceu o prompt). Resumo no handoff: 1 Haiku por handoff. Sugestão: 1 chamada Sonnet com cache por clique. Reposição: 1 Sonnet (cache) por pedido entregue + 1 por aviso. Auditoria: até 15 Sonnet (cache, effort low) por dia ≈ R$ 0,80/dia. Rastreio: só o motor de rastreio, Sonnet apenas quando avisa. Anti-spam: 1 Haiku só em número novo suspeito. No total, bem abaixo de R$ 10/dia a mais.
