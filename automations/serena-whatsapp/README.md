@@ -506,3 +506,11 @@ Três correções:
 Testes: SQL do Coletar Buffer com trava ativa (segura), sem trava (junta as 2 mensagens), já processado (nada) e mensagem de 1 s (segura). Guarda de link testada com 4 cenários (repete sem pedir: remove; pede de novo: mantém; link novo: mantém; sem link: intacto).
 
 **Ajuste de velocidade (03/09, 19h).** Jaderson achou a voz nova lenta ("cansada"). O v3 aceita `speed`: padrão agora é **1,1** (v2 de reserva 1,08). O webhook aceita `velocidade` (0,7 a 1,2) e `tag` (direção do v3 no início do texto, ex. `[animada]`). Amostras enviadas: Fabi 1,1; Fabi 1,15 com `[animada]`; Bruna 1,05. Todas geradas pelo v3.
+
+
+## Respostas mais curtas e ordem das partes (03/09, 20h50)
+
+Print do Jaderson: primeiro contato recebeu um texto enorme (apresentação + explicação técnica + lista de 6 versões com preço) e a última parte ("Me conta um pouco mais...") chegou ANTES do bloco grande. Nos últimos 7 dias a resposta mediana da Serena tinha 353 caracteres, mas 10% passavam de 940.
+
+- **Core, cabeçalho**: regra FORMATO NO WHATSAPP: até 3 parágrafos curtos e uns 500 caracteres (1 ou 2 frases para dúvida simples), responder só o que foi perguntado e terminar com uma pergunta, apresentação em uma frase no primeiro contato, no máximo 2 versões citadas (nunca a lista inteira com preços), sem cabeçalhos ou explicação técnica não pedida. Pedido, rastreio, frete e link de pagamento podem ser completos.
+- **Entrada, Fatiar Resposta** (`nodes/entrada-fatiar-resposta.js`): a inversão acontecia porque cada parte vai para a Evolution com um `delay` ("digitando...") proporcional ao tamanho, e a Evolution aplica esse delay por conta própria: a parte curta (800 ms) chegava antes da longa (2500 ms). Agora cada parte espera pelo menos o delay da anterior + 600 ms.
