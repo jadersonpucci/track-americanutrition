@@ -491,3 +491,16 @@ Jaderson achou a voz da Serena robotizada. Mudanças no `[Serena WhatsApp] Envio
 **Amostras enviadas ao Jaderson (13 98188-5555)**: 1) v3 com Letícia, 2) v3 com Fabi (`e06XicPETIbfUaeHM9zH`, voz feminina brasileira "natural e emocional, ideal para conteúdos de IA"), 3) v2 novo com Letícia. As três geraram áudio (v3 funciona na chave da conta). Jaderson escolheu a amostra 2: `wpp_voz_id` agora é **Fabi** (`e06XicPETIbfUaeHM9zH`); Letícia continua como padrão do nó se a config ficar vazia.
 
 Para trocar a voz: `GET /webhook/serena-wpp-config?t=an-wpp-7Qm3Vz9K&chave=wpp_voz_id&valor=<voice_id>`. Outras vozes brasileiras femininas na conta: Beatriz "Warm and Natural" (`IWjNPa0ORoXjItd6yur0`), Pri "Warm & Natural" (`8EY2gK6oUxZCDZAlvUpZ`), Bruna "Energetic" (`ltwuRv7ECcYttSkIv4p8`).
+
+
+## Mensagens picadas e link repetido (03/09, 17h30)
+
+Caso relatado pelo Jaderson: a cliente +55 64 99225-0638 (Angelucia) recebeu 4 links de pagamento em 2 minutos. Ela escreveu 11 mensagens curtas em 2 minutos ("Eu já tomei", "Conheço", "Só quero comprar", "42 cápsula", "Eu uso", "Querobpedir", "E só isso"...). O debounce de 8 s juntava só as que chegavam antes da Serena começar a responder; as que chegavam **durante** a chamada ao Core (10 a 20 s) viravam uma execução nova, às vezes sem a resposta anterior no histórico, e a Serena reenviava o link a cada "quero pedir". Ela também gerou o link do frasco de 90 antes de a cliente dizer "42".
+
+Três correções:
+
+1. **Trava por telefone na Entrada** (`serena_wpp_lock`, nova tabela). "Chamar Serena Core" grava a trava antes de chamar o Core (vence em 120 s); "Marcar Entregue" apaga quando a resposta sai. "Coletar Buffer" devolve `segurar=true` enquanto a trava existir ou a mensagem mais nova tiver menos de 3 s, e o fluxo espera 3 s (nó "Esperar trava") e tenta de novo. Resultado: o que chegar durante a resposta é juntado e respondido depois, com a resposta anterior já no histórico. Fontes: `nodes/entrada-coletar-buffer.sql`, `nodes/entrada-chamar-serena-core.js`, `nodes/entrada-marcar-entregue.sql`.
+2. **Regras no Core** (cabeçalho do prompt): mensagens curtas que só confirmam ("quero pedir", "e só isso") recebem uma frase, sem repetir explicação nem link; nunca mandar o mesmo link duas vezes; antes de gerar link, confirmar produto, versão e tamanho se o cliente não disse.
+3. **Trava de link repetido no Core** (código, não depende do modelo): se a resposta traz uma URL que já apareceu nas últimas 8 mensagens da Serena e o cliente não pediu o link de novo ("manda de novo", "não abriu"...), a linha do link é removida e entra "É só abrir o link que te mandei acima ☝️". URL duplicada na mesma resposta também cai. A conversa ganha a etiqueta `link-repetido` para acompanhar no Inbox.
+
+Testes: SQL do Coletar Buffer com trava ativa (segura), sem trava (junta as 2 mensagens), já processado (nada) e mensagem de 1 s (segura). Guarda de link testada com 4 cenários (repete sem pedir: remove; pede de novo: mantém; link novo: mantém; sem link: intacto).

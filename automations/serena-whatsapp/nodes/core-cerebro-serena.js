@@ -87,6 +87,8 @@ const cabecalho = [
   ctx.nome ? 'Nome do cliente: ' + ctx.nome + '.' : '',
   identidade.join(' '),
   regraPedidos,
+  'MENSAGENS PICADAS: o cliente costuma escrever varias mensagens curtas em sequencia. Se a ultima mensagem so continua ou confirma o que voce acabou de responder ("quero pedir", "e so isso", "ok", "eu uso"), responda em uma frase, sem repetir explicacoes nem links. Nunca envie o mesmo link de pagamento duas vezes: se ja mandou, diga apenas que e so abrir o link acima. So reenvie se o cliente pedir o link de novo ou disser que nao abriu.',
+  'ANTES DE GERAR LINK DE PAGAMENTO: confirme produto, versao e tamanho (quantidade de capsulas ou frascos) quando o cliente nao tiver dito. Nao escolha por ele. Gere o link uma unica vez por pedido; se ele mudar o produto, gere outro e diga que o anterior nao vale mais.',
   fatos ? 'O que ja se sabe sobre este cliente:\n' + fatos : '',
   carrinhoTxt,
   correcoesTxt,
@@ -221,6 +223,33 @@ for (let volta = 0; volta < 6; volta++) {
   break;
 }
 
+// Link repetido: nao reenvia um link que a Serena ja mandou ha pouco (ultimas 8 mensagens dela), a menos que o cliente peca.
+// Tambem tira URL duplicada dentro da mesma resposta. Resolve o caso de varias mensagens curtas seguidas gerando 3 ou 4 links.
+let linkRepetido = false;
+if (resposta && !proativo && !sugerir) {
+  const urls = resposta.match(/https?:\/\/[^\s)>\]]+/g) || [];
+  if (urls.length) {
+    const pediuLink = /\b(link|manda|mande|envia|envie|de novo|novamente|outra vez|reenvia|n[a\u00e3]o (abr|cheg|receb|consegui|deu))/i.test(String(entrada.texto || ''));
+    const recentes = historico.filter(h => h.papel === 'serena').slice(0, 8).map(h => String(h.texto || '')).join('\n');
+    const vistos = new Set();
+    let mudou = false;
+    for (const u of urls) {
+      const jaMandou = recentes.indexOf(u) >= 0;
+      const dup = vistos.has(u);
+      vistos.add(u);
+      if ((jaMandou && !pediuLink) || dup) {
+        resposta = resposta.split('\n').filter(l => l.indexOf(u) < 0).join('\n');
+        mudou = true;
+      }
+    }
+    if (mudou) {
+      resposta = resposta.replace(/\n{3,}/g, '\n\n').trim();
+      if (!/acima|te mandei|j[a\u00e1] (te )?enviei|mesmo link/i.test(resposta)) resposta += (resposta ? '\n\n' : '') + '\u00c9 s\u00f3 abrir o link que te mandei acima \u261d\ufe0f';
+      linkRepetido = true;
+    }
+  }
+}
+
 // Falha da API do Claude (saldo, limite, indisponibilidade): avisa a equipe no Telegram (dedupe de 30 min)
 if (erro) {
   const tipoErro = /credit|billing|balance/i.test(erro) ? 'SALDO DA API DA ANTHROPIC ESGOTADO' : (/rate|overload|529|429/i.test(erro) ? 'API do Claude sobrecarregada / limite' : 'Falha na API do Claude');
@@ -233,6 +262,7 @@ if (erro) {
 // Etiquetas automaticas pelo que a Serena fez nesta conversa
 const tags = [];
 const temTool = n => ferramentasUsadas.indexOf(n) >= 0;
+if (linkRepetido) tags.push('link-repetido');
 if (temTool('gerar_checkout') || temTool('gerar_pix') || temTool('gerar_boleto') || temTool('carrinho_cupom_ig') || temTool('finalizar_cupom_ig')) tags.push('venda');
 if (temTool('rastrear_pedido') || temTool('consultar_status_pedido')) tags.push('rastreio');
 if (temTool('alterar_endereco')) tags.push('endereco');
