@@ -297,3 +297,15 @@ Tudo isso passa pelo workflow auxiliar `POST /webhook/serena-samuel-enviar`
 - Pós-entrega: linha `pedido_entregue` de teste (ImunoFosfo + Creatina) gerou o "pedido entregue" e, em seguida, o modo de uso
   tirado da base (dose, intervalo, com/sem alimento), ambos entregues no número de teste e gravados na conversa.
 - Contato de teste do handoff (canal site) foi apagado depois dos testes.
+
+## Inbox v2 (visual novo) e onde o HTML mora
+
+O HTML do Inbox agora é o arquivo `inbox.html` deste diretório, hospedado como asset `assets/serena_inbox.html` do tema Shopify
+(mesmo esquema do painel admin). O workflow `[Serena] Painel de Conversas` só busca o asset (cache de 5 min; `&nocache=1` força).
+
+Para publicar uma alteração: editar `inbox.html` e enviar via `POST /webhook/shopify-admin` com
+`{"acao":"atualizar_pedido","endpoint":"themes/153190498476/assets.json","metodo":"PUT","payload":{"asset":{"key":"assets/serena_inbox.html","value":"<html...>"}}}`.
+
+Visual: três colunas (lista com avatares, filtros em chips e ponto de não lido; conversa com bolhas estilo WhatsApp e ações no cabeçalho;
+ficha 360 em abas Resumo / Pedidos / Cliente / Equipe), modais para atendente, correção e métricas, toasts em vez de alertas,
+e layout de celular (lista → conversa → ficha, com botão voltar). Atendentes cadastrados: Cris e Samuel.
