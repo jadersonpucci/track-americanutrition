@@ -18,7 +18,7 @@ const criarPausas = node({ type: 'n8n-nodes-base.postgres', version: 2.6, config
   options: { queryBatching: 'single' } }, credentials: PG }, output: [{ success: true }] });
 
 const semearConfig = node({ type: 'n8n-nodes-base.postgres', version: 2.6, config: { name: 'Semear chaves wpp_ na serena_config', parameters: { operation: 'executeQuery',
-  query: "insert into serena_config (chave, valor) select v.c, v.v from (values ('wpp_modo','teste'), ('wpp_teste_numeros',''), ('wpp_max_por_hora','30'), ('wpp_pausa_humano_min','120'), ('wpp_ignorar_regex','(estrela|saldo do clube|resgat)'), ('wpp_debounce_seg','8')) as v(c, v) where not exists (select 1 from serena_config s where s.chave = v.c)",
+  query: "insert into serena_config (chave, valor) select v.c, v.v from (values ('wpp_modo','teste'), ('wpp_teste_numeros',''), ('wpp_max_por_hora','30'), ('wpp_pausa_humano_min','120'), ('wpp_ignorar_regex','(estrela|saldo do clube|resgat)'), ('wpp_debounce_seg','4')) as v(c, v) where not exists (select 1 from serena_config s where s.chave = v.c)",
   options: { queryBatching: 'single' } }, credentials: PG }, output: [{ success: true }] });
 
 const listarConfig = node({ type: 'n8n-nodes-base.postgres', version: 2.6, config: { name: 'Listar config wpp_', parameters: { operation: 'executeQuery',

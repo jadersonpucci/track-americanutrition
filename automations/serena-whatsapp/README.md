@@ -49,7 +49,7 @@ O Core já grava cliente + resposta em `serena_mensagens`, unifica identidade e 
 | `chave=wpp_modo&valor=teste` | `teste` / `producao` / `off` | Em `teste`, só os números da lista recebem a Serena |
 | `chave=wpp_teste_numeros&valor=5541999999999,5511888888888` | | Números (com 55 + DDD) liberados no modo teste |
 | `chave=wpp_max_por_hora&valor=30` | | Máximo de respostas da Serena por cliente por hora |
-| `chave=wpp_debounce_seg&valor=8` | | Segundos esperando mensagens picadas |
+| `chave=wpp_debounce_seg&valor=4` | | Segundos esperando mensagens picadas (4s por padrão) |
 | `chave=wpp_pausa_humano_min&valor=120` | | Minutos de pausa quando um humano responde pelo celular |
 | `chave=wpp_ignorar_regex&valor=(estrela\|saldo do clube\|resgat)` | | Mensagens que casam ficam com o bot do Clube |
 | `liberar=5541999999999` | | Remove a pausa automática daquele número |
