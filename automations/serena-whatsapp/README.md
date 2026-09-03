@@ -84,6 +84,33 @@ Na conversa com o cliente, digitar:
 - `#serena off` -> Serena para de responder aquele cliente por 30 dias
 - `#serena on` -> Serena volta a responder na hora
 
+## Painel de Conversas com ficha 360
+
+`GET https://n8n.americanutrition.com/webhook/serena-inbox?t=TOKEN` (workflow `[Serena] Painel de Conversas`,
+token no nó `Montar SQL` do `[Serena] Painel API`).
+
+Ao abrir uma conversa, a coluna da direita monta a **ficha 360** do contato (ação `ficha360` da API):
+
+- **Serena**: status (ativa, pausada pelo painel, pausada por humano no celular), contagem de mensagens por papel,
+  canais usados, primeira/última conversa, origem do lead (anúncio CTWA / site).
+- **Shopify**: cliente encontrado por telefone (com variações do 9º dígito) ou email, total de pedidos, total gasto,
+  cidade, tags, nota, link direto para o admin.
+- **Último envio**: rastreio ao vivo do pedido mais recente com código (mesmo motor do track.americanutrition.com):
+  status, onde está, previsão, atraso, recebido por, último evento, link.
+- **Pedidos**: últimos 8 com status, valor, cupom, itens, código de rastreio e link para o pedido no admin.
+- **Assinatura**, **Clube America** (nível, estrelas), **Carrinho abandonado** (com link do checkout),
+  **Avaliações**, **Disparos do Samuel** (com ack e opt-out) e **Fatos memorizados**.
+- Botões: pausar/reativar a Serena e abrir o contato no WhatsApp.
+
+A thread agora separa as mensagens por dia e mostra o canal de cada uma.
+
+## Contexto e pedidos pelo telefone (Core)
+
+O `[Serena] Core` carrega as últimas 20 mensagens do contato (qualquer canal, qualquer data) mais os fatos de
+`serena_fatos`. O prompt passou a incluir o telefone do canal e a regra: em pergunta sobre pedido, último pedido,
+entrega ou rastreio, chamar `buscar_pedido_telefone` com o número do WhatsApp sem pedir nada ao cliente e, se
+for o caso, `consultar_status_pedido` com o rastreio do pedido mais recente.
+
 ## Tabelas novas
 
 - `serena_wpp_buffer(id, msg_id unique, telefone, nome, texto, processado, criado_em, processado_em)`
