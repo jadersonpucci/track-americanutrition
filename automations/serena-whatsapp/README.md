@@ -246,7 +246,7 @@ Se a mensagem do cliente casa com `wpp_ack_regex` (pedido, rastreio, frete, CEP,
 ## 7. Resposta em áudio
 
 Quando o cliente manda áudio e a resposta da Serena é curta (até 400 caracteres, sem link), a resposta sai como mensagem de voz:
-ElevenLabs `eleven_multilingual_v2` com a voz `wpp_voz_id` (padrão **Letícia**, `CcElPA8NBrawbunFs7rh`) e
+ElevenLabs `eleven_v3` (desde 03/09; reserva `eleven_multilingual_v2`) com a voz `wpp_voz_id` (padrão **Letícia**, `CcElPA8NBrawbunFs7rh`) e
 `sendWhatsAppAudio` da Evolution (PTT). Se a geração falhar, cai no texto normal. `wpp_audio_resposta=on|off`.
 Para trocar a voz: `...&chave=wpp_voz_id&valor=<voice_id do ElevenLabs>`.
 
@@ -478,3 +478,16 @@ A afiliada continua `SERENA` (o `aff_ref` e a comissão não mudam): qualquer `r
 **Não coberto.** Links de recuperação de carrinho (`note=CARRINHO|RECUSA|BOLETO`) continuam com `LINK: X`; os que a Serena manda já vão com `ref=serena` e por isso também ganham `WPP`. Links mandados por outros fluxos sem `ref` não ganham tag de canal.
 
 **Rede de segurança (cron "AN - Marcar Pedidos Recuperados", 15 min).** O primeiro pedido pago logo depois da publicação (AN-15190, 16:31) saiu só com "AF: Serena": a instância do n8n ainda estava com a versão antiga do nó em memória. Para não depender disso, o cron ganhou a ETAPA B: pedido das últimas 8h com `aff_ref` SERENA ou whatsapp e sem nenhuma tag de canal (WPP / SERENA-IG / SERENA-MSG) recebe `WPP` (`nodes/marcar-recuperados-etapa-b.js`). Rodado na hora: marcou os pedidos da Serena de hoje (AN-15174 a AN-15190).
+
+
+## Voz mais natural (03/09, 17h)
+
+Jaderson achou a voz da Serena robotizada. Mudanças no `[Serena WhatsApp] Envio Samuel (texto ou audio)` (EhmndFruX6hOIRDN, fonte `envio-samuel.workflow.js`):
+
+- **Modelo `eleven_v3`** no lugar do `eleven_multilingual_v2` (muito mais expressivo e com entonação de conversa). Estabilidade 0,5 ("natural"), similaridade 0,8. Se o v3 falhar, o mesmo nó roda uma segunda passada com o `multilingual_v2` mais solto (estabilidade 0,38, estilo 0,45, speaker boost, velocidade 1,03); se falhar de novo, manda texto. Áudio a 128 kbps (era 64).
+- **Texto limpo antes de falar**: tira asteriscos e sublinhados do WhatsApp, emojis, links e marcadores; "R$ 1.147,90" vira "1147 reais e 90 centavos", "10%" vira "10 por cento", "nº" vira "número"; quebras de linha viram pausas. Antes o modelo lia os símbolos.
+- Webhook aceita `modelo: "v2"` e `estabilidade` para testes. A resposta traz `modelo`.
+
+**Amostras enviadas ao Jaderson (13 98188-5555)**: 1) v3 com Letícia, 2) v3 com Fabi (`e06XicPETIbfUaeHM9zH`, voz feminina brasileira "natural e emocional, ideal para conteúdos de IA"), 3) v2 novo com Letícia. As três geraram áudio (v3 funciona na chave da conta).
+
+Para trocar a voz: `GET /webhook/serena-wpp-config?t=an-wpp-7Qm3Vz9K&chave=wpp_voz_id&valor=<voice_id>`. Outras vozes brasileiras femininas na conta: Beatriz "Warm and Natural" (`IWjNPa0ORoXjItd6yur0`), Pri "Warm & Natural" (`8EY2gK6oUxZCDZAlvUpZ`), Bruna "Energetic" (`ltwuRv7ECcYttSkIv4p8`).
