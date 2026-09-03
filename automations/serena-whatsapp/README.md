@@ -111,7 +111,49 @@ O `[Serena] Core` carrega as últimas 20 mensagens do contato (qualquer canal, q
 entrega ou rastreio, chamar `buscar_pedido_telefone` com o número do WhatsApp sem pedir nada ao cliente e, se
 for o caso, `consultar_status_pedido` com o rastreio do pedido mais recente.
 
+## Painel admin central
+
+O card **Inbox Serena** foi adicionado ao painel admin central (`assets/america_admin.html` no tema Shopify,
+servido em `GET /webhook/admin`), grupo Clientes, com badge de "aguardando resposta" vindo de
+`GET /webhook/serena-inbox-count?t=TOKEN` (contatos cuja última mensagem é do cliente há mais de 2 min, nos últimos 3 dias).
+
+## Lista de números que a Serena nunca responde
+
+Tabela `serena_wpp_bloqueados` (telefone DDI+DDD+número, com tolerância ao 9º dígito). Checada na entrada
+antes de qualquer resposta automática. Não afeta as mensagens transacionais de pedido.
+
+- Pelo painel: botão "Nunca responder automaticamente" na ficha do contato.
+- Pela URL de config: `&bloquear=5513999999999&motivo=parceiro` / `&desbloquear=5513999999999`. Sem parâmetros lista os bloqueados.
+- Lista inicial carregada: 10 números informados em 03/09/2026.
+
+## Mensagens transacionais pelo Samuel
+
+`[Transacional] Dispatcher Samuel v3` (`WXncUehLXyuIMoSm`) substitui o `Cron Dispatcher Scheduled Messages v2`
+(Respond.io, despublicado). A cada minuto lê `scheduled_messages` pendentes e envia pelo Samuel:
+
+- `pedido_pago_confirmado` (agendado por `/webhook/pedido-pago`, disparado pela confirmação do Pagar.me).
+- `pedido_enviado` (agendado por `/webhook/pedido-enviado`, fulfillment da Shopify), com link
+  `https://track.americanutrition.com/CODIGO` sem encurtar.
+- Idempotente por pedido, respeita opt-out, 3 tentativas, e grava a mensagem na conversa do contato
+  (aparece no Inbox e vira contexto da Serena). Kill switch: `wpp_transacional=off`.
+- `pedido_entregue` ainda não tem texto definido e fica pendente na tabela.
+
+## Memória a partir das conversas
+
+`[Serena Memoria] Extrair Fatos das Conversas` (`j57i6dFvooHMFqu4`): a cada 30 min, contatos com mensagens
+novas e conversa ociosa há 30+ min têm a transcrição enviada ao Claude Haiku, que devolve só fatos duráveis
+(saúde, família, preferências, compra, perfil). Grava em `serena_fatos` (chave = categoria, com sufixo numérico
+quando repete) e o Core injeta no prompt. Controle em `serena_memoria_runs`. Não depende mais do Respond.io.
+
+## Ficha sem Respond.io
+
+O bloco "Campos (Respond.io)" saiu da ficha. Entrou "Cadastro (Shopify)" com endereço, CEP, cidade/UF, país,
+consentimento de email/SMS, opt-in de WhatsApp (note_attributes do último pedido), último pedido com cupom e
+pagamento, e cupom de boas-vindas do popup (`popup_leads`).
+
 ## Tabelas novas
 
 - `serena_wpp_buffer(id, msg_id unique, telefone, nome, texto, processado, criado_em, processado_em)`
 - `serena_wpp_pausas(telefone pk, ate, motivo, atualizado_em)`
+- `serena_wpp_bloqueados(telefone pk, motivo, criado_por, criado_em)`
+- `serena_memoria_runs(contato_id pk, processado_ate, fatos_extraidos, atualizado_em)`
