@@ -136,7 +136,8 @@ antes de qualquer resposta automática. Não afeta as mensagens transacionais de
   `https://track.americanutrition.com/CODIGO` sem encurtar.
 - Idempotente por pedido, respeita opt-out, 3 tentativas, e grava a mensagem na conversa do contato
   (aparece no Inbox e vira contexto da Serena). Kill switch: `wpp_transacional=off`.
-- `pedido_entregue` ainda não tem texto definido e fica pendente na tabela.
+- `pedido_entregue` (agendado quando o rastreio marca entrega), com o texto de 03/09.
+- Agendamentos com mais de 48h são marcados como expirados e não saem.
 
 ## Memória a partir das conversas
 
