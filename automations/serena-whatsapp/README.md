@@ -309,3 +309,56 @@ Para publicar uma alteração: editar `inbox.html` e enviar via `POST /webhook/s
 Visual: três colunas (lista com avatares, filtros em chips e ponto de não lido; conversa com bolhas estilo WhatsApp e ações no cabeçalho;
 ficha 360 em abas Resumo / Pedidos / Cliente / Equipe), modais para atendente, correção e métricas, toasts em vez de alertas,
 e layout de celular (lista → conversa → ficha, com botão voltar). Atendentes cadastrados: Cris e Samuel.
+
+---
+
+# Bloco 3 (03/09/2026): respostas prontas, etiquetas, cliente irritado, carrinho pela Serena, app no iPhone
+
+| Workflow | ID | O que mudou |
+|---|---|---|
+| `[Serena WhatsApp] UTIL v4 Prontas + Etiquetas + Push` | `xvJIdAIv7Ie85e6H` | Cria `serena_respostas_prontas` (7 atalhos iniciais), `serena_etiquetas`, `serena_push_subs`; semeia `inbox_etiquetas`, `detectar_irritado`, `carrinho_via_serena` (já executado) |
+| `[Serena] Core` | `5Z5MdXAiatwnjc73` | Detecção de humor (Haiku) com escalonamento automático; etiquetas automáticas; modo proativo |
+| `Dispatcher Carrinho Abandonado` | `MqCaAfZt6PIVat1R` | A primeira mensagem do carrinho é escrita pela Serena (fallback nos templates) |
+| `[Serena Tool] Escalar Humano` | `pENiiK4JvuowUEqn` | Além do card no Telegram, dispara push para os atendentes |
+| `[Serena WhatsApp] Push -> Atendentes` | `TBjkNpRT6iYJvsSC` | `POST /webhook/serena-push`: Web Push nativo (RFC 8291 + VAPID) sem biblioteca |
+| `[Serena] Painel API` | `YDUxkTRfg6uTucHB` | Ações `setup`, `prontas`, `pronta_salvar`, `pronta_apagar`, `etiquetar`, `push_sub`, `push_unsub`; filtro por etiqueta; métricas por etiqueta e irritados |
+| `[Serena] Painel de Conversas` | `yX8m7r9Zff5L77Ec` | Serve também `/webhook/serena-inbox-manifest` e `/webhook/serena-inbox-sw.js` (PWA) |
+
+## Respostas prontas
+Digite `/` no campo de resposta para abrir a lista (setas navegam, Tab ou Enter escolhe). O botão ⚡ abre a lista e o link
+"gerenciar" cadastra, edita e apaga. Variáveis: `{primeiro_nome}`, `{nome}`, `{agente}`, `{pedido}`, `{rastreio}`, `{rastreio_link}`,
+preenchidas com os dados da ficha. Atalhos iniciais: `/oi`, `/aguarde`, `/rastreio`, `/pix`, `/prazo`, `/troca`, `/encerrar`.
+
+## Etiquetas
+Lista padrão em `serena_config.inbox_etiquetas` (reclamacao, venda, duvida de uso, rastreio, troca/reembolso, elogio, urgente).
+No cabeçalho da conversa: "+ etiqueta" (ou uma nova digitada), "×" remove. Filtro "Todas as etiquetas" na lista e contagem
+por etiqueta nas métricas. A Serena etiqueta sozinha pelo que fez na conversa: `venda` (checkout/PIX/boleto), `rastreio`,
+`frete`, `endereco`, `humano` (escalou), `reclamacao` + `urgente` (cliente irritado), `insatisfeito`.
+
+## Cliente irritado: escala sozinha
+A cada mensagem, o Core pede ao Haiku uma classificação das últimas mensagens do cliente (`neutro | insatisfeito | irritado`).
+`irritado` (raiva explícita, ameaça de Procon/Reclame Aqui/processo, xingamento, terceira cobrança sem solução): a Serena ainda
+responde essa mensagem, mas já pausa, abre a atribuição com motivo `irritado`, manda o card no Telegram e o push.
+`insatisfeito` só etiqueta. Desliga com `detectar_irritado=off`. Testado: mensagem em caixa alta ameaçando Procon foi classificada e escalada.
+
+## Carrinho abandonado conduzido pela Serena
+O dispatcher continua decidindo quem recebe e quando (carrinho, cartão recusado, boleto pendente, checagem de pagamento na Shopify,
+link encurtado, intervalo anti-ban). A mensagem em si agora vem do Core em **modo proativo** (`modo: 'proativo'`, `tipo_proativo: 'carrinho'`,
+`instrucao` + `contexto.carrinho`): a Serena escreve no tom dela, com histórico do cliente se houver, e a mensagem fica gravada na conversa
+(autor `proativo:carrinho`), então a resposta do cliente continua com ela. Se o Core falhar ou `carrinho_via_serena=off`, caem os templates antigos.
+Métrica "Carrinhos pela Serena" no modal.
+
+## Inbox como app no iPhone, com notificação
+- Abra `https://n8n.americanutrition.com/webhook/serena-inbox?t=TOKEN` no Safari → Compartilhar → **Adicionar à Tela de Início**.
+  O manifest (`/webhook/serena-inbox-manifest?t=TOKEN`) deixa o app em tela cheia com ícone próprio.
+- Dentro do app instalado, toque em 🔔 **Notificações**, informe quem está atendendo e aceite. A inscrição vai para `serena_push_subs`.
+- A cada escalonamento (pedido pelo cliente ou irritado detectado) o `Escalar Humano` chama `/webhook/serena-push`, que cifra o aviso
+  e entrega pelo serviço de push da Apple/Google. Tocar na notificação abre a conversa direto.
+- Requisitos: iOS 16.4+ e o Inbox aberto pelo ícone da Tela de Início (Safari solto não recebe push). Android/Chrome funciona sem instalar.
+- Com o Inbox aberto, a fila também avisa na hora: toast, vibração, bip e contador no título.
+- Chaves VAPID geradas automaticamente na primeira chamada e guardadas em `serena_config` (`push_vapid_public/private`).
+
+## Tabelas
+- `serena_respostas_prontas(id, atalho unique, titulo, texto, ativo, criado_por, criado_em, atualizado_em)`
+- `serena_etiquetas(contato_id, etiqueta, origem manual|auto, criado_por, criado_em)`
+- `serena_push_subs(endpoint pk, p256dh, auth, agente, ua, ativo, falhas, criado_em, atualizado_em)`
