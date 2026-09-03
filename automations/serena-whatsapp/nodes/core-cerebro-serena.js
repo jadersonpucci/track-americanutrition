@@ -207,7 +207,7 @@ for (let volta = 0; volta < 6; volta++) {
         try {
           saida = await this.helpers.httpRequest({
             method: 'POST', url: ROUTER, json: true, timeout: 50000,
-            body: { acao: acao, dados: dados }
+            body: { acao: acao, dados: dados, canal: entrada.canal }
           });
         } catch (e) { saida = { erro: String(e.message) }; }
       }

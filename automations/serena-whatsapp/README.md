@@ -447,3 +447,32 @@ A Serena respondia "não consegui abrir o arquivo" para PDF (comprovante Pix, re
 - Limite: a Evolution só arquiva chats que ela conhece, ou seja, com mensagem trocada depois que o Samuel foi conectado nela (setembro). Conversas antigas do celular (era Respond.io) ficam como `sem_chat` e precisam ser arquivadas à mão uma vez. Daqui em diante toda conversa encerrada é arquivada sozinha.
 - Quando o cliente escreve de novo, o WhatsApp desarquiva o chat automaticamente. Para isso, no celular do Samuel, deixe DESLIGADA a opção Configurações > Conversas > Arquivadas > "Manter conversas arquivadas".
 - Config: `wpp_arquivar=on|off`, `wpp_arquivar_horas` (via `/webhook/serena-wpp-config`). Testes de 03/09: 9 conversas arquivadas (`archived: true`), inclusive a do próprio Jaderson.
+
+
+## Tag WPP nos pedidos gerados pela Serena (03/09, 16h30)
+
+Pedido do Jaderson: todo link que a Serena gera precisa chegar na Shopify com uma tag que identifique o canal, tipo `WPP`.
+
+**Como funciona.** O checkout customizado só repassa o parâmetro `ref` da URL ao Pagar.me (`metadata.ref`), e quem cria o pedido na Shopify é o workflow "Pagar.me — Confirmação Pago → Shopify". Então a marcação vai pelo `ref`:
+
+| Canal da conversa | Link da Serena | Tag no pedido Shopify |
+|---|---|---|
+| WhatsApp (Samuel) | `...&ref=serena` (inalterado) | `AF: Serena, WPP` |
+| Instagram | `...&ref=serena-ig` | `AF: Serena, SERENA-IG` |
+| Messenger | `...&ref=serena-msg` | `AF: Serena, SERENA-MSG` |
+| Link manual da equipe com `ref=whatsapp` | como já era | `WPP` |
+
+A afiliada continua `SERENA` (o `aff_ref` e a comissão não mudam): qualquer `ref` que comece com `serena` é tratado como SERENA. Nada foi mexido no checkout (front) nem no Fluxo A.
+
+**PIX e boleto** (draft order criado pela Serena) ganham a tag de canal direto no draft: `origem:serena, canal:whatsapp, pagamento:pix, WPP` (ou `SERENA-IG` / `SERENA-MSG`). Quando o pagamento cai e o draft vira pedido, as tags vão junto.
+
+**O que mudou.**
+- `[Serena] Core`, nó Cerebro Serena: a chamada ao Router agora leva `canal` (`nodes/core-cerebro-serena.js`).
+- `[Serena Tool] ROUTER`, nó Preparar rota: `canal` entra na lista de campos repassados à sub-ferramenta (`nodes/router-preparar-rota.js`).
+- `[Serena Tool] Gerar Checkout`, nó Montar URL checkout: `ref` por canal (`nodes/gerar-checkout-montar-url.js`). Sem `canal` no body, cai em `serena` (WhatsApp).
+- `[Serena Tool] Gerar PIX` e `Gerar Boleto`, nó Montar draft: tag de canal e nota "via Serena (WhatsApp)" (`nodes/gerar-pix-montar-draft.js`, `nodes/gerar-boleto-montar-draft.js`).
+- "Pagar.me — Confirmação Pago → Shopify" (dtDYBZJuAbFZV3cB), nó Montar Pedido Shopify: `refBase` + tabela `TAG_CANAL` (`nodes/confirmacao-pago-tag-canal.js`, só o trecho, porque o nó completo carrega a chave do Supabase).
+
+**Teste feito.** Router chamado com `gerar_checkout` e `canal` whatsapp / instagram / messenger / vazio: URLs saíram com `ref=serena`, `serena-ig`, `serena-msg` e `serena`. A lógica do nó da Confirmação foi testada isolada: `serena` → `AF: Serena, WPP`; `serena-ig` → `AF: Serena, SERENA-IG`; `serena-msg` com bg_ref → `AF: Serena, SERENA-MSG`; `whatsapp` → `WPP`; `promo5` → só a tag do afiliado; vazio → sem tag. O primeiro pedido pago vindo de link da Serena depois das 16h30 de 03/09 já deve aparecer com `WPP` na Shopify (filtro: tag `WPP`).
+
+**Não coberto.** Links de recuperação de carrinho (`note=CARRINHO|RECUSA|BOLETO`) continuam com `LINK: X`; os que a Serena manda já vão com `ref=serena` e por isso também ganham `WPP`. Links mandados por outros fluxos sem `ref` não ganham tag de canal.
