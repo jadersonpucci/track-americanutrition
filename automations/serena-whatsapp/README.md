@@ -488,6 +488,6 @@ Jaderson achou a voz da Serena robotizada. Mudanças no `[Serena WhatsApp] Envio
 - **Texto limpo antes de falar**: tira asteriscos e sublinhados do WhatsApp, emojis, links e marcadores; "R$ 1.147,90" vira "1147 reais e 90 centavos", "10%" vira "10 por cento", "nº" vira "número"; quebras de linha viram pausas. Antes o modelo lia os símbolos.
 - Webhook aceita `modelo: "v2"` e `estabilidade` para testes. A resposta traz `modelo`.
 
-**Amostras enviadas ao Jaderson (13 98188-5555)**: 1) v3 com Letícia, 2) v3 com Fabi (`e06XicPETIbfUaeHM9zH`, voz feminina brasileira "natural e emocional, ideal para conteúdos de IA"), 3) v2 novo com Letícia. As três geraram áudio (v3 funciona na chave da conta).
+**Amostras enviadas ao Jaderson (13 98188-5555)**: 1) v3 com Letícia, 2) v3 com Fabi (`e06XicPETIbfUaeHM9zH`, voz feminina brasileira "natural e emocional, ideal para conteúdos de IA"), 3) v2 novo com Letícia. As três geraram áudio (v3 funciona na chave da conta). Jaderson escolheu a amostra 2: `wpp_voz_id` agora é **Fabi** (`e06XicPETIbfUaeHM9zH`); Letícia continua como padrão do nó se a config ficar vazia.
 
 Para trocar a voz: `GET /webhook/serena-wpp-config?t=an-wpp-7Qm3Vz9K&chave=wpp_voz_id&valor=<voice_id>`. Outras vozes brasileiras femininas na conta: Beatriz "Warm and Natural" (`IWjNPa0ORoXjItd6yur0`), Pri "Warm & Natural" (`8EY2gK6oUxZCDZAlvUpZ`), Bruna "Energetic" (`ltwuRv7ECcYttSkIv4p8`).
