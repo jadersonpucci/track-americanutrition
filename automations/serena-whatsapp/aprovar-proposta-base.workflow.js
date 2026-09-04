@@ -21,7 +21,7 @@ const id = Number(q.id || 0);
 const acao = String(q.acao || 'ver');
 const item = q.item ? Number(q.item) : null;
 if (!id) return [{ json: { html: pagina('Proposta', '<h1>Faltou o id da proposta.</h1>') } }];
-const rows = await sql('select id, criado_em, periodo_ini, periodo_fim, resumo, itens, status, token from serena_base_propostas where id = ' + id);
+const rows = await sql('select id, criado_em, to_char(periodo_ini, ' + E('DD/MM/YYYY') + ') as periodo_ini, to_char(periodo_fim, ' + E('DD/MM/YYYY') + ') as periodo_fim, resumo, itens, status, token from serena_base_propostas where id = ' + id);
 const p = rows && rows[0];
 if (!p) return [{ json: { html: pagina('Proposta', '<h1>Proposta ' + id + ' n\\u00e3o encontrada.</h1>') } }];
 if (String(q.t || '') !== String(p.token || '')) return [{ json: { html: pagina('Proposta', '<h1>Link inv\\u00e1lido.</h1><p>O token n\\u00e3o confere com esta proposta.</p>') } }];
