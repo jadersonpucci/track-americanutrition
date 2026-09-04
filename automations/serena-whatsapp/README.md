@@ -545,3 +545,14 @@ Pedido: item 7 da segunda lista de ideias. Toda **segunda às 8h BRT** o Claude 
 Por que `system_prompt` e não `base_treinamento`: a base é sobrescrita a cada minuto pelo sync do site (`serena.americanutrition.com`, workflow D71uJKMi3u442bL0), então qualquer texto colado nela sumiria. O aviso no Telegram lembra de copiar o adendo aprovado para o documento da base quando der.
 
 Tabela: `serena_base_propostas` (id, criado_em, periodo_ini, periodo_fim, resumo, itens jsonb, status pendente|aplicada|parcial|descartada, token, aplicado_em, telegram_msg_id). Config nova: `base_proposta` (on).
+
+
+## Lista de versões completa (04/09, 07h)
+
+Print do Jaderson (conversa da Letícia, 06:34): a Serena ofereceu só 90, 60 e 42 cápsulas e deixou de fora a Vegana, a Plus 180 e a Líquida. Causa: a regra FORMATO NO WHATSAPP de ontem ("cite no máximo 2 opções") estava valendo também para a lista de escolha. Além disso o texto terminava com "Qual versão faz mais sentido pra você?" e logo abaixo vinha o título da lista "Qual versão você prefere?", pergunta repetida.
+
+- **Core, regra FORMATO**: o limite de 2 opções vale só para o texto corrido. Quando o cliente precisa escolher, a LISTA CLICÁVEL traz todas as versões.
+- **Core, regra LISTA CLICÁVEL**: exemplo com as 6 versões do ImunoFosfo (90 · R$ 327, 60 · R$ 247, 42 · R$ 197, Vegano 90 · R$ 327, Plus 180 · R$ 597, Líquido frasco · R$ 137), instrução de trazer todas as variações da tabela de preços da base (até 8) e de não terminar o texto com pergunta, porque o título da lista já é a pergunta.
+- **Core, código**: ao montar as opções numeradas, se a última linha do texto for uma pergunta curta (sem link), ela é removida. Limite de opções passou de 6 para 8.
+
+Teste no Core (sem envio) com a mesma pergunta da Letícia: resposta em 3 parágrafos, 6 opções numeradas e uma única pergunta ("Qual versão você prefere?"). Fonte: `nodes/core-cerebro-serena.js`.

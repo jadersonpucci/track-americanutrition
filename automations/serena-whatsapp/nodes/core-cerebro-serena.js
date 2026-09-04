@@ -109,9 +109,9 @@ const cabecalho = [
   nomeCliente ? 'Nome do cliente: ' + nomeCliente + '.' : '',
   identidade.join(' '),
   regraPedidos,
-  'FORMATO NO WHATSAPP: escreva como numa conversa de chat, curto. No maximo 3 paragrafos curtos e uns 500 caracteres; para duvida simples, 1 ou 2 frases. Responda so o que foi perguntado e termine com UMA pergunta que leve a conversa adiante. Na primeira mensagem, apresente-se em uma frase e va direto ao que a pessoa perguntou. Nao liste todas as versoes e precos de uma vez: cite no maximo 2 opcoes que fazem sentido para o caso e ofereca detalhar. Sem cabecalhos, sem listas longas e sem explicacao tecnica que nao foi pedida. Podem ser mais completos apenas: dados de pedido, rastreio, opcoes de frete e link de pagamento.',
+  'FORMATO NO WHATSAPP: escreva como numa conversa de chat, curto. No maximo 3 paragrafos curtos e uns 500 caracteres; para duvida simples, 1 ou 2 frases. Responda so o que foi perguntado e termine com UMA pergunta que leve a conversa adiante. Na primeira mensagem, apresente-se em uma frase e va direto ao que a pessoa perguntou. No texto corrido, nao despeje todas as versoes e precos: cite no maximo 2 opcoes que fazem sentido para o caso. Quando o cliente precisar ESCOLHER a versao, use a LISTA CLICAVEL (abaixo) com TODAS as versoes do produto. Sem cabecalhos, sem listas longas e sem explicacao tecnica que nao foi pedida. Podem ser mais completos apenas: dados de pedido, rastreio, opcoes de frete e link de pagamento.',
   'MENSAGENS PICADAS: o cliente costuma escrever varias mensagens curtas em sequencia. Se a ultima mensagem so continua ou confirma o que voce acabou de responder ("quero pedir", "e so isso", "ok", "eu uso"), responda em uma frase, sem repetir explicacoes nem links. Nunca envie o mesmo link de pagamento duas vezes: se ja mandou, diga apenas que e so abrir o link acima. So reenvie se o cliente pedir o link de novo ou disser que nao abriu.',
-  'LISTA CLICAVEL: quando precisar que o cliente ESCOLHA entre versoes, tamanhos ou opcoes (ate 6), termine a mensagem com uma linha no formato [[LISTA: Qual versão você prefere? | ImunoFosfo 90 cápsulas · R$ 327 | ImunoFosfo 42 cápsulas · R$ 197 | Plus 180 cápsulas · R$ 597]]. Isso vira um menu de botoes no WhatsApp; nao repita as opcoes no texto. Use so em escolha real, nunca em pergunta aberta.',
+  'LISTA CLICAVEL: quando precisar que o cliente ESCOLHA entre versoes, tamanhos ou opcoes (ate 8), termine a mensagem com uma linha no formato [[LISTA: Qual versão você prefere? | ImunoFosfo 90 cápsulas · R$ 327 | ImunoFosfo 60 cápsulas · R$ 247 | ImunoFosfo 42 cápsulas · R$ 197 | ImunoFosfo Vegano 90 cápsulas · R$ 327 | ImunoFosfo Plus 180 cápsulas · R$ 597 | ImunoFosfo Líquido (frasco) · R$ 137]]. A lista deve trazer TODAS as versoes atuais do produto com o preco da tabela de precos da base (para o ImunoFosfo: 90, 60, 42, Vegano 90, Plus 180 e Liquido; para outros produtos, todas as variacoes da tabela), nunca so as 2 ou 3 que voce citou no texto. Nao repita as opcoes no texto e nao termine o texto com pergunta: o titulo da lista ja e a pergunta. Use so em escolha real, nunca em pergunta aberta.',
   'ANTES DE GERAR LINK DE PAGAMENTO: confirme produto, versao e tamanho (quantidade de capsulas ou frascos) quando o cliente nao tiver dito. Nao escolha por ele. Gere o link uma unica vez por pedido; se ele mudar o produto, gere outro e diga que o anterior nao vale mais.',
   fatos ? 'O que ja se sabe sobre este cliente:\n' + fatos : '',
   pedidosTxt,
@@ -294,10 +294,14 @@ if (resposta) {
     const partes = ml[1].split('|').map(x => x.trim()).filter(Boolean);
     resposta = resposta.replace(ml[0], '').replace(/\n{3,}/g, '\n\n').trim();
     if (partes.length >= 3 && entrada.canal === 'whatsapp' && LISTA_NATIVA) {
-      lista = { titulo: partes[0].slice(0, 60), opcoes: partes.slice(1, 7).map(o => o.slice(0, 72)) };
+      lista = { titulo: partes[0].slice(0, 60), opcoes: partes.slice(1, 9).map(o => o.slice(0, 72)) };
       respostaHist = resposta + '\n(opções oferecidas: ' + lista.opcoes.join('; ') + ')';
     } else if (partes.length >= 2) {
-      resposta = resposta + '\n\n' + partes[0] + '\n' + partes.slice(1).map((o, i) => (i + 1) + '. ' + o).join('\n') + '\n_Responde só com o número_ 😉';
+      // O titulo da lista ja e a pergunta: tira uma pergunta solta no fim do texto ("Qual versão faz mais sentido pra você?").
+      const linhas = resposta.split('\n');
+      const ultima = (linhas[linhas.length - 1] || '').trim();
+      if (linhas.length > 1 && ultima.length <= 90 && /\?\s*[^\w\s]*\s*$/.test(ultima) && !/https?:\/\//i.test(ultima)) resposta = linhas.slice(0, -1).join('\n').trim();
+      resposta = resposta + '\n\n' + partes[0] + '\n' + partes.slice(1, 9).map((o, i) => (i + 1) + '. ' + o).join('\n') + '\n_Responde só com o número_ 😉';
       respostaHist = resposta;
     }
   }
@@ -309,7 +313,7 @@ let linkRepetido = false;
 if (resposta && !proativo && !sugerir) {
   const urls = resposta.match(/https?:\/\/[^\s)>\]]+/g) || [];
   if (urls.length) {
-    const pediuLink = /\b(link|manda|mande|envia|envie|de novo|novamente|outra vez|reenvia|n[a\u00e3]o (abr|cheg|receb|consegui|deu))/i.test(String(entrada.texto || ''));
+    const pediuLink = /\b(link|manda|mande|envia|envie|de novo|novamente|outra vez|reenvia|n[aã]o (abr|cheg|receb|consegui|deu))/i.test(String(entrada.texto || ''));
     const recentes = historico.filter(h => h.papel === 'serena').slice(0, 8).map(h => String(h.texto || '')).join('\n');
     const vistos = new Set();
     let mudou = false;
@@ -324,7 +328,7 @@ if (resposta && !proativo && !sugerir) {
     }
     if (mudou) {
       resposta = resposta.replace(/\n{3,}/g, '\n\n').trim();
-      if (!/acima|te mandei|j[a\u00e1] (te )?enviei|mesmo link/i.test(resposta)) resposta += (resposta ? '\n\n' : '') + '\u00c9 s\u00f3 abrir o link que te mandei acima \u261d\ufe0f';
+      if (!/acima|te mandei|j[aá] (te )?enviei|mesmo link/i.test(resposta)) resposta += (resposta ? '\n\n' : '') + 'É só abrir o link que te mandei acima ☝️';
       linkRepetido = true;
     }
   }
