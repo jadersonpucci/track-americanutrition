@@ -533,3 +533,15 @@ Pedido: "faça o 1, 2, 3, 4, 5, 6 (verificar) e 8" da lista de melhorias.
 **5. Escolha de versão.** A Serena marca `[[LISTA: título | opção | opção]]`. O plano era menu nativo (sendList), mas a Evolution atual devolve 400 `this.isZero is not a function`. Então o Core (`LISTA_NATIVA = false`) converte em opções numeradas no próprio texto ("Responde só com o número"). O caminho nativo está pronto (Envio Samuel aceita `{ number, lista }`, Entrada tem o nó `Enviar Lista`, `nodes/entrada-enviar-lista.js`); basta ligar quando a Evolution for atualizada.
 
 **6. Confirmação de pagamento no WhatsApp: já existia.** O `[Transacional] Dispatcher Samuel v3` manda `pedido_pago_confirmado` para todo pedido pago da Shopify, inclusive PIX/boleto gerados pela Serena (draft order): AN-15193 (PIX no checkout, 18:49) e AN-15083 (PIX da Serena, 28/08) receberam. Nada a fazer.
+
+
+## Proposta semanal de atualização da base (04/09, 01h50)
+
+Pedido: item 7 da segunda lista de ideias. Toda **segunda às 8h BRT** o Claude lê a base de treinamento inteira, os adendos já aprovados, as lacunas da semana (`serena_lacunas` não resolvidas) e as correções da equipe (`serena_correcoes`) e escreve até 8 adendos prontos para colar. Nada entra na base sem clique.
+
+- **`proposta-base.workflow.js`** (`[Serena] Proposta Semanal da Base`, id uAMAhYyFsr1fMQPx). Um nó Code: monta o prompt (base ≤ 380k caracteres + adendos + lacunas + correções), chama `/webhook/claude-call` com o modelo da config (`modelo`) e `effort: high`, exige JSON `{resumo, itens[]}`. Cada item tem `titulo`, `tipo` (`novo`, `ajuste` ou `pergunta` quando a informação não existe na base e a equipe precisa definir), `secao`, `texto`, `motivo` e as lacunas cobertas. Grava em `serena_base_propostas` (token por proposta) e manda ao Telegram (tópico 289) com botões: **Aplicar todos**, **Ver completo**, **Descartar** e **só n** por item. Se não houver lacuna nem correção na semana, não manda nada. Desligar: config `base_proposta = off`.
+- **`aprovar-proposta-base.workflow.js`** (`[Serena] Aprovar Proposta da Base`, id 1CfkoWCCfClLVId4). `GET /webhook/serena-base-proposta?t=TOKEN&id=N&acao=ver|aplicar|descartar[&item=n]`. Os botões do Telegram abrem esta página (o bot não tem webhook de callback, então os botões são links). Aplicar anexa `### Adendo aprovado em DD/MM/AAAA · título (seção)` + texto em **`serena_config.system_prompt`** (o Core carrega esse bloco junto com a base, em cache), marca o item como aplicado, a proposta como `aplicada` ou `parcial`, as lacunas cobertas como `resolvida` (`resolvido_por = adendo`) e avisa no Telegram. A Serena usa o adendo na mensagem seguinte.
+
+Por que `system_prompt` e não `base_treinamento`: a base é sobrescrita a cada minuto pelo sync do site (`serena.americanutrition.com`, workflow D71uJKMi3u442bL0), então qualquer texto colado nela sumiria. O aviso no Telegram lembra de copiar o adendo aprovado para o documento da base quando der.
+
+Tabela: `serena_base_propostas` (id, criado_em, periodo_ini, periodo_fim, resumo, itens jsonb, status pendente|aplicada|parcial|descartada, token, aplicado_em, telegram_msg_id). Config nova: `base_proposta` (on).
