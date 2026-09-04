@@ -556,3 +556,18 @@ Print do Jaderson (conversa da Letícia, 06:34): a Serena ofereceu só 90, 60 e 
 - **Core, código**: ao montar as opções numeradas, se a última linha do texto for uma pergunta curta (sem link), ela é removida. Limite de opções passou de 6 para 8.
 
 Teste no Core (sem envio) com a mesma pergunta da Letícia: resposta em 3 parágrafos, 6 opções numeradas e uma única pergunta ("Qual versão você prefere?"). Fonte: `nodes/core-cerebro-serena.js`.
+
+
+## Link de rastreio quebrado no "pedido enviado" (04/09, 09h30)
+
+Print do Jaderson: a Gislene (AN-15173) recebeu `https://track.americanutrition.com/https%3A%2F%2Fenvia.com%2Ftracking%3Flabel%3D888030910163172`. A J&T mandou a **URL inteira** dentro do campo `tracking_number` do fulfillment da Shopify, e o texto do transacional fazia `track.americanutrition.com/ + encodeURIComponent(codigo)`, então a URL virou parte do caminho. O certo é `https://track.americanutrition.com/888030910163172`.
+
+Nos últimos 90 dias só 2 dos 1.359 avisos de envio vieram assim (AN-15173 e AN-14059); o padrão da J&T é o código puro `888030…`, Correios `AD…BR`, Loggi 20 caracteres.
+
+Correção: função `soCodigo` (`nodes/rastreio-so-codigo.js`, com a lista dos 4 lugares onde está colada) extrai o código de qualquer URL (`?label=`, `?id=`, `#nums=`, caminho, percent-encoding até 3 níveis) e devolve vazio quando o valor não parece código (precisa de 8 a 40 caracteres e ao menos um dígito).
+
+- **`[Transacional] Pedido Enviado`** (XzWcKoGQrvVhovb8): normaliza antes de gravar em `scheduled_messages`; valor irrecuperável não agenda (motivo `tracking_invalido`).
+- **`[Transacional] Dispatcher Samuel v3`** (WXncUehLXyuIMoSm): rede de segurança na hora de enviar; sem código válido a mensagem é pulada (`rastreio_invalido`) em vez de sair com link quebrado. O `encodeURIComponent` saiu (o código já é alfanumérico).
+- **`[Serena] Painel API`** e **`[Serena] Rastreio Proativo`**: mesmo tratamento, porque leem o rastreio direto da Shopify.
+
+As duas linhas antigas do `scheduled_messages` foram normalizadas no banco. Teste de ponta a ponta (agendamento com a URL da J&T para o WhatsApp do Jaderson, pedido fictício AN-TESTE-LINK): a mensagem saiu com `https://track.americanutrition.com/888030910163172`. Função testada em 17 formatos (J&T, Correios, Loggi, UPS, USPS, Canada Post, linkcorreios, 17track, valores inválidos).

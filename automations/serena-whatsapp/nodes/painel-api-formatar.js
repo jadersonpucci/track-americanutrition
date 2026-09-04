@@ -3,6 +3,22 @@ const linhas = $input.all().map(i => i.json).filter(r => r && Object.keys(r).len
 const post = async (url, body, t) => { try { return await this.helpers.httpRequest({ method: 'POST', url: url, json: true, timeout: t || 25000, body: body }); } catch (e) { return null; } };
 const LOJA = 'https://admin.shopify.com/store/39c4f8-2';
 const TRACK = 'https://track.americanutrition.com/';
+// A transportadora as vezes preenche o rastreio com a URL inteira (ex.: https://envia.com/tracking?label=888...).
+// O link da AN e track.americanutrition.com/CODIGO, entao aqui fica so o codigo; sem codigo valido, sem link.
+function soCodigo(raw) {
+  let s = String(raw == null ? '' : raw).trim();
+  if (!s) return '';
+  for (let i = 0; i < 3 && /%[0-9A-Fa-f]{2}/.test(s); i++) { try { const d = decodeURIComponent(s); if (d === s) break; s = d; } catch (e) { break; } }
+  if (/^[a-z]+:\/\//i.test(s) || /^[\w.-]+\.[a-z]{2,}[/?#]/i.test(s)) {
+    const qs = s.match(/[?&#](?:label|code|codigo|tracking|tracking_number|trackingnumber|objeto|numero|nums|num|id|n)=([^&#\s]+)/i);
+    if (qs) s = qs[1];
+    else s = (s.split(/[?#]/)[0].replace(/\/+$/, '').split('/').pop() || '');
+    for (let i = 0; i < 3 && /%[0-9A-Fa-f]{2}/.test(s); i++) { try { const d = decodeURIComponent(s); if (d === s) break; s = d; } catch (e) { break; } }
+  }
+  s = s.replace(/\s+/g, '');
+  return (/^[A-Za-z0-9._-]{8,40}$/.test(s) && /\d/.test(s)) ? s : '';
+}
+const linkTrack = c => { const k = soCodigo(c); return k ? TRACK + k : null; };
 
 if (acao === 'ficha360') {
   const d = linhas[0];
@@ -40,7 +56,7 @@ if (acao === 'ficha360') {
       else if (o.financial_status === 'pending') st = 'Aguardando pagamento';
       const na = {};
       (o.note_attributes || []).forEach(x => { if (x && x.name) na[String(x.name).toLowerCase()] = x.value; });
-      return { id: o.id, numero: o.name, data: o.created_at, status: st, financeiro: o.financial_status, valor: o.total_price, itens: (o.line_items || []).map(i => i.quantity + 'x ' + i.title), rastreio: f.tracking_number || null, transportadora: f.tracking_company || null, link_rastreio: f.tracking_number ? TRACK + encodeURIComponent(f.tracking_number) : null, admin_url: LOJA + '/orders/' + o.id, cidade: o.shipping_address ? [o.shipping_address.city, o.shipping_address.province_code].filter(Boolean).join('/') : null, cupom: (o.discount_codes || []).map(x => x.code).join(', ') || null, gateway: o.gateway || (o.payment_gateway_names || [])[0] || null, note_attributes: na };
+      return { id: o.id, numero: o.name, data: o.created_at, status: st, financeiro: o.financial_status, valor: o.total_price, itens: (o.line_items || []).map(i => i.quantity + 'x ' + i.title), rastreio: soCodigo(f.tracking_number) || f.tracking_number || null, transportadora: f.tracking_company || null, link_rastreio: linkTrack(f.tracking_number), admin_url: LOJA + '/orders/' + o.id, cidade: o.shipping_address ? [o.shipping_address.city, o.shipping_address.province_code].filter(Boolean).join('/') : null, cupom: (o.discount_codes || []).map(x => x.code).join(', ') || null, gateway: o.gateway || (o.payment_gateway_names || [])[0] || null, note_attributes: na };
     });
     if (cadastro && pedidos.length) {
       const u = pedidos[0];
@@ -49,7 +65,7 @@ if (acao === 'ficha360') {
       cadastro.ultimo_pedido = { numero: u.numero, data: u.data, valor: u.valor, itens: u.itens, cupom: u.cupom, pagamento: u.gateway };
     }
   } else if (busca && busca.encontrado && Array.isArray(busca.pedidos)) {
-    pedidos = busca.pedidos.map(p => ({ numero: p.numero, data: p.data, status: p.status, valor: p.valor_total, itens: [p.itens], rastreio: p.rastreio, transportadora: p.transportadora, link_rastreio: p.rastreio ? TRACK + encodeURIComponent(p.rastreio) : null }));
+    pedidos = busca.pedidos.map(p => ({ numero: p.numero, data: p.data, status: p.status, valor: p.valor_total, itens: [p.itens], rastreio: soCodigo(p.rastreio) || p.rastreio, transportadora: p.transportadora, link_rastreio: linkTrack(p.rastreio) }));
   }
 
   // 3) rastreio ao vivo do ultimo pedido com codigo (mesmo motor do track.americanutrition.com)

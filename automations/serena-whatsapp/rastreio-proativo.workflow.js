@@ -23,6 +23,20 @@ const ENVIAR = 'https://n8n.americanutrition.com/webhook/serena-samuel-enviar';
 const API = 'https://n8n.americanutrition.com/webhook/painel-serena-api';
 const TOKEN = 'an-serena-9Kx4Lm2Q';
 const TRACK = 'https://track.americanutrition.com/';
+// O rastreio as vezes chega como URL inteira da transportadora; o link da AN e track.americanutrition.com/CODIGO.
+function soCodigo(raw) {
+  let s = String(raw == null ? '' : raw).trim();
+  if (!s) return '';
+  for (let i = 0; i < 3 && /%[0-9A-Fa-f]{2}/.test(s); i++) { try { const d = decodeURIComponent(s); if (d === s) break; s = d; } catch (e) { break; } }
+  if (/^[a-z]+:\\/\\//i.test(s) || /^[\\w.-]+\\.[a-z]{2,}[/?#]/i.test(s)) {
+    const qs = s.match(/[?&#](?:label|code|codigo|tracking|tracking_number|trackingnumber|objeto|numero|nums|num|id|n)=([^&#\\s]+)/i);
+    if (qs) s = qs[1];
+    else s = (s.split(/[?#]/)[0].replace(/\\/+$/, '').split('/').pop() || '');
+    for (let i = 0; i < 3 && /%[0-9A-Fa-f]{2}/.test(s); i++) { try { const d = decodeURIComponent(s); if (d === s) break; s = d; } catch (e) { break; } }
+  }
+  s = s.replace(/\\s+/g, '');
+  return (/^[A-Za-z0-9._-]{8,40}$/.test(s) && /\\d/.test(s)) ? s : '';
+}
 const NL = String.fromCharCode(10);
 const paradoDias = Number(cfg.parado_dias || 3);
 const horaOk = Number(cfg.hora) >= 8 && Number(cfg.hora) <= 20;
@@ -41,6 +55,9 @@ function dataDe(ev) {
 }
 const rows = [], avisados = [];
 for (const it of lista) {
+  const cod = soCodigo(it.codigo);
+  if (!cod) continue;
+  it.codigo = cod;
   let x = null;
   try {
     const rr0 = await this.helpers.httpRequest({ method: 'POST', url: RASTREIO, json: true, timeout: 40000, body: { modo: 'codigo', codigo: it.codigo } });
@@ -57,7 +74,7 @@ for (const it of lista) {
   const row = { codigo: it.codigo, pedido: it.pedido, telefone: it.telefone, nome: it.nome || '', ultimo_evento_em: ultimo.toISOString(), status_chave: x ? (x.status_chave || null) : null, status_txt: statusTxt.slice(0, 200), entregue: entregue || finalizado, avisar: false };
   const podeAvisar = ativo && horaOk && !entregue && !finalizado && x && parado >= paradoDias && Number(it.avisos || 0) < 2 && (!it.avisado_em || (Date.now() - new Date(it.avisado_em).getTime()) > 4 * 86400000);
   if (podeAvisar) {
-    const link = TRACK + encodeURIComponent(it.codigo);
+    const link = TRACK + it.codigo;
     const instr = 'RASTREIO PARADO: o pedido ' + (it.pedido || '') + ' (rastreio ' + it.codigo + (it.transportadora ? ', ' + it.transportadora : '') + ') esta sem movimentacao ha ' + parado + ' dias. Ultimo status: "' + statusTxt + '". Link oficial de acompanhamento: ' + link + '. Escreva UMA mensagem curta (ate 500 caracteres) avisando o cliente ANTES que ele pergunte: diga que notamos a parada, que ja estamos verificando com a transportadora e que ele nao precisa fazer nada; inclua o link; nao prometa data nem reenvio; termine dizendo que qualquer novidade voce avisa por aqui e que ele pode responder se quiser.';
     let texto = '';
     try {
