@@ -514,3 +514,22 @@ Print do Jaderson: primeiro contato recebeu um texto enorme (apresentação + ex
 
 - **Core, cabeçalho**: regra FORMATO NO WHATSAPP: até 3 parágrafos curtos e uns 500 caracteres (1 ou 2 frases para dúvida simples), responder só o que foi perguntado e terminar com uma pergunta, apresentação em uma frase no primeiro contato, no máximo 2 versões citadas (nunca a lista inteira com preços), sem cabeçalhos ou explicação técnica não pedida. Pedido, rastreio, frete e link de pagamento podem ser completos.
 - **Entrada, Fatiar Resposta** (`nodes/entrada-fatiar-resposta.js`): a inversão acontecia porque cada parte vai para a Evolution com um `delay` ("digitando...") proporcional ao tamanho, e a Evolution aplica esse delay por conta própria: a parte curta (800 ms) chegava antes da longa (2500 ms). Agora cada parte espera pelo menos o delay da anterior + 600 ms.
+
+
+## Lote 3 (03/09, 22h-23h): contatos unificados, cliente recorrente, follow-up de link, relatório diário, opções numeradas, resposta barata
+
+Pedido: "faça o 1, 2, 3, 4, 5, 6 (verificar) e 8" da lista de melhorias.
+
+**1. Contatos com e sem o 9 unificados.** Função `serena_tel_canon` (`nodes/sql-serena-tel-canon.sql`): celular BR de 12 dígitos ganha o 9. 23 pares duplicados foram unidos no contato de 13 dígitos (backup reversível em `serena_merge_backup`, função `serena_unificar_full`), 11 contatos sem gêmeo foram canonizados, um fixo repetido (Vox) foi unido. A Angelucia (caso do dia) agora é um contato só com 48 mensagens. Daqui em diante: Core `Normalizar` canoniza o telefone; Entrada (`Registrar no Buffer + Config`, `Registrar Intervencao Humana`) compara contatos e pausas pelo canônico (`nodes/entrada-registrar-buffer.sql`, `nodes/entrada-registrar-intervencao-humana.sql`). O envio continua pelo JID original.
+
+**2. Pedidos da Shopify no contexto.** Tabela `serena_pedidos_cache` (6h). O Cerebro chama `buscar-pedidos-telefone` quando o cache venceu, grava e coloca no cabeçalho "PEDIDOS DESTE CLIENTE NA LOJA" com a regra de cliente recorrente (oferecer repetir o último produto, não explicar do zero, usar os dados para status). Nome do cliente vem da Shopify quando o contato não tem. Teste: "quero comprar de novo" → "Você quer repetir o mesmo pedido do ImunoFosfo 90 cápsulas (2 unidades)...?".
+
+**8. Resposta barata para mensagem trivial.** Agradecimento, saudação, emoji ou "ok/certo/combinado" (estes só quando a última fala da Serena não terminou em pergunta) vão para o Haiku com as últimas 6 mensagens, uma frase, sem ferramentas nem detecção de humor. Teste: "Obrigado!" → "💙".
+
+**3. Follow-up de link não aberto** (`link-followup.workflow.js`, id oL5sdxV2bQWGzUeC, cron 15 min). Link de checkout da Serena com mais de `link_followup_horas` (2) sem clique no AN Links (`anl_clicks`) e sem o cliente falar depois recebe uma mensagem única (8h-20h BRT, uma por contato a cada 7 dias); respeita fila humana, pausa, bloqueio e conversa pausada. Config `link_followup` on/off. Registro em `serena_link_followups`; a mensagem entra no histórico como `proativo:link_followup`.
+
+**4. Relatório diário de vendas** (`relatorio-vendas.workflow.js`, id zwchhPYGzK73hFPd, 20h BRT, Telegram tópico 289). Primeiro relatório (03/09): 59 conversas, 28 links para 17 clientes, 24 abertos (86%), 10 pedidos WPP = R$ 5.209,24 (43% da receita do dia), conversão link→pedido 36%. Config `relatorio_vendas`.
+
+**5. Escolha de versão.** A Serena marca `[[LISTA: título | opção | opção]]`. O plano era menu nativo (sendList), mas a Evolution atual devolve 400 `this.isZero is not a function`. Então o Core (`LISTA_NATIVA = false`) converte em opções numeradas no próprio texto ("Responde só com o número"). O caminho nativo está pronto (Envio Samuel aceita `{ number, lista }`, Entrada tem o nó `Enviar Lista`, `nodes/entrada-enviar-lista.js`); basta ligar quando a Evolution for atualizada.
+
+**6. Confirmação de pagamento no WhatsApp: já existia.** O `[Transacional] Dispatcher Samuel v3` manda `pedido_pago_confirmado` para todo pedido pago da Shopify, inclusive PIX/boleto gerados pela Serena (draft order): AN-15193 (PIX no checkout, 18:49) e AN-15083 (PIX da Serena, 28/08) receberam. Nada a fazer.

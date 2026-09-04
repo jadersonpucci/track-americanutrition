@@ -46,6 +46,28 @@ const regraPedidos = telDigits
   ? 'REGRA DE PEDIDOS: se o cliente perguntar sobre pedido, ultimo pedido, entrega, rastreio ou prazo sem informar numero do pedido, NAO peca telefone nem email: chame consultar_sistema com acao buscar_pedido_telefone e dados {"telefone":"' + telDigits + '"}. Considere o pedido mais recente da lista como "o ultimo pedido". Se ele quiser saber onde esta ou o rastreio, chame em seguida consultar_status_pedido com o codigo_rastreio (ou numero_pedido) desse pedido e responda com o resultado. So peca email ou numero do pedido se a busca por telefone nao encontrar nada.'
   : '';
 
+// Pedidos do cliente na loja (cache de 6h em serena_pedidos_cache; consulta a Shopify quando vencido). Cliente recorrente e tratado como conhecido.
+const SB = 'https://supabase.americanutrition.com/pg/query';
+const SK = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIiwiaXNzIjoic3VwYWJhc2UiLCJpYXQiOjE3Nzk5MzQ2MDEsImV4cCI6MjA5NTI5NDYwMX0.-unrUEZisjdJ_Pjje72_ccV4qwLB3S0mAjjpndUhOhQ';
+let pedidos = (ctx.pedidos_cache && typeof ctx.pedidos_cache === 'object') ? ctx.pedidos_cache : null;
+const cacheVelho = !pedidos || !pedidos.atualizado_em || (Date.now() - new Date(pedidos.atualizado_em).getTime()) > 6 * 3600000;
+if (telDigits && cacheVelho && !sugerir) {
+  try {
+    const rp = await this.helpers.httpRequest({ method: 'POST', url: 'https://n8n.americanutrition.com/webhook/buscar-pedidos-telefone', json: true, timeout: 12000, body: { telefone: telDigits } });
+    const lista = (rp && rp.encontrado && Array.isArray(rp.pedidos)) ? rp.pedidos.slice(0, 5).map(p => ({ numero: p.numero, data: p.data, status: p.status, valor: p.valor_total, itens: p.itens, rastreio: p.rastreio || null })) : [];
+    pedidos = { pedidos: lista, total: Number((rp && rp.total_pedidos) || lista.length || 0), nome: (rp && rp.cliente_nome) || null, atualizado_em: new Date().toISOString() };
+    const E = v => "'" + String(v).replace(/'/g, "''") + "'";
+    await this.helpers.httpRequest({ method: 'POST', url: SB, headers: { apikey: SK, Authorization: 'Bearer ' + SK, 'Content-Type': 'application/json' }, json: true, timeout: 8000, body: { query: 'insert into serena_pedidos_cache (telefone, cliente_nome, total, pedidos, atualizado_em) values (' + E(telDigits) + ',' + (pedidos.nome ? E(pedidos.nome) : 'null') + ',' + pedidos.total + ',' + E(JSON.stringify(lista)) + '::jsonb, now()) on conflict (telefone) do update set cliente_nome = excluded.cliente_nome, total = excluded.total, pedidos = excluded.pedidos, atualizado_em = now()' } });
+  } catch (e) { /* segue sem pedidos */ }
+}
+let pedidosTxt = '';
+if (pedidos && Array.isArray(pedidos.pedidos) && pedidos.pedidos.length) {
+  pedidosTxt = 'PEDIDOS DESTE CLIENTE NA LOJA (' + pedidos.total + ' no total, mais recentes primeiro):\n'
+    + pedidos.pedidos.slice(0, 3).map(p => '- ' + p.numero + ' (' + p.data + '): ' + p.itens + ', ' + p.valor + ', ' + p.status + (p.rastreio ? ', rastreio ' + p.rastreio : '')).join('\n')
+    + '\nE cliente que ja comprou: trate como conhecido, nao explique o produto do zero. Se quiser comprar de novo, ofereca repetir o ultimo produto (mesma versao) e so confirme o que mudou. Para status ou rastreio use estes dados sem pedir numero de pedido; se precisar do status atual, chame consultar_status_pedido com o rastreio.';
+}
+const nomeCliente = ctx.nome || (pedidos && pedidos.nome ? String(pedidos.nome).split(' ')[0] : '');
+
 // Carrinho abandonado recente: recuperacao conversacional (no modo proativo o contexto vem do disparo)
 let carrinhoTxt = '';
 const car = (entrada.contexto && entrada.contexto.carrinho) || ctx.carrinho;
@@ -84,13 +106,15 @@ const proativoTxt = proativo
 const cabecalho = [
   'Voce e a Serena, do atendimento da America Nutrition.',
   'Canal atual: ' + entrada.canal + '.',
-  ctx.nome ? 'Nome do cliente: ' + ctx.nome + '.' : '',
+  nomeCliente ? 'Nome do cliente: ' + nomeCliente + '.' : '',
   identidade.join(' '),
   regraPedidos,
   'FORMATO NO WHATSAPP: escreva como numa conversa de chat, curto. No maximo 3 paragrafos curtos e uns 500 caracteres; para duvida simples, 1 ou 2 frases. Responda so o que foi perguntado e termine com UMA pergunta que leve a conversa adiante. Na primeira mensagem, apresente-se em uma frase e va direto ao que a pessoa perguntou. Nao liste todas as versoes e precos de uma vez: cite no maximo 2 opcoes que fazem sentido para o caso e ofereca detalhar. Sem cabecalhos, sem listas longas e sem explicacao tecnica que nao foi pedida. Podem ser mais completos apenas: dados de pedido, rastreio, opcoes de frete e link de pagamento.',
   'MENSAGENS PICADAS: o cliente costuma escrever varias mensagens curtas em sequencia. Se a ultima mensagem so continua ou confirma o que voce acabou de responder ("quero pedir", "e so isso", "ok", "eu uso"), responda em uma frase, sem repetir explicacoes nem links. Nunca envie o mesmo link de pagamento duas vezes: se ja mandou, diga apenas que e so abrir o link acima. So reenvie se o cliente pedir o link de novo ou disser que nao abriu.',
+  'LISTA CLICAVEL: quando precisar que o cliente ESCOLHA entre versoes, tamanhos ou opcoes (ate 6), termine a mensagem com uma linha no formato [[LISTA: Qual versão você prefere? | ImunoFosfo 90 cápsulas · R$ 327 | ImunoFosfo 42 cápsulas · R$ 197 | Plus 180 cápsulas · R$ 597]]. Isso vira um menu de botoes no WhatsApp; nao repita as opcoes no texto. Use so em escolha real, nunca em pergunta aberta.',
   'ANTES DE GERAR LINK DE PAGAMENTO: confirme produto, versao e tamanho (quantidade de capsulas ou frascos) quando o cliente nao tiver dito. Nao escolha por ele. Gere o link uma unica vez por pedido; se ele mudar o produto, gere outro e diga que o anterior nao vale mais.',
   fatos ? 'O que ja se sabe sobre este cliente:\n' + fatos : '',
+  pedidosTxt,
   carrinhoTxt,
   correcoesTxt,
   trocaTxt,
@@ -157,14 +181,47 @@ function memoriaLocal() {
 
 const modelo = ctx.modelo;
 const maxTok = Number(ctx.max_tokens || 1500);
+let resposta = null;
+let uso = { input: 0, cache_read: 0, cache_write: 0, output: 0, chamadas: 0 };
+
+// Mensagem trivial (obrigada, ok, bom dia, emoji): resposta de uma frase pelo Haiku, sem ferramentas nem contexto grande.
+// "ok"/"certo"/"combinado" so contam como trivial se a ultima fala da Serena NAO foi uma pergunta (senao pode ser um "sim").
+const ehTrivial = (() => {
+  if (proativo || sugerir || reprocessar || !temHistorico) return false;
+  const bruto = String(entrada.texto || '').trim();
+  if (!bruto || bruto.length > 40) return false;
+  if (/^[\s\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{200D}\u{2764}\u{1F44D}\u{1F64F}]+$/u.test(bruto)) return true;
+  const t = bruto.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z\s]/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!t || t.length > 30) return false;
+  const seguro = /^(valeu|vlw|obrigad[oa]s?|obg|brigad[oa]|muito obrigad[oa]|obrigad[oa] viu|de nada|amem|bom dia|boa tarde|boa noite|ate mais|tchau|abraco|abracos|bjs|beijos|deus abencoe|deus te abencoe)( (viu|entao|serena|querida|obrigad[oa]|tudo bem|tudo bom))*$/;
+  if (seguro.test(t)) return true;
+  const consentimento = /^(ok|okay|oks|okk+|blz|beleza|show|certo|ta|ta bom|tudo bem|tudo certo|perfeito|combinado|entendi|entendido|otimo|legal|top|joia)( (entao|serena|obrigad[oa]))*$/;
+  if (!consentimento.test(t)) return false;
+  const ultSerena = historico.find(h => h.papel === 'serena');
+  const perguntou = !!(ultSerena && /\?\s*[^a-zA-Z0-9]*$/.test(String(ultSerena.texto || '').trim()));
+  return !perguntou;
+})();
+let trivialOk = false;
+if (ehTrivial) {
+  try {
+    const ult = messages.slice(-6);
+    while (ult.length && ult[0].role !== 'user') ult.shift();
+    const hr = await this.helpers.httpRequest({ method: 'POST', url: CLAUDE, json: true, timeout: 20000, body: { model: 'claude-haiku-4-5-20251001', max_tokens: 80,
+      system: 'Voce e a Serena, do atendimento da America Nutrition no WhatsApp. O cliente acabou de mandar uma mensagem curta de cortesia (agradecimento, ok, saudacao ou emoji). Responda em UMA frase curta e calorosa, no tom da conversa, sem link, sem lista, sem nova pergunta, sem repetir o que ja foi dito, com no maximo um emoji. Se nao houver o que acrescentar, responda so com o emoji 💙.',
+      messages: ult } });
+    const txt = (hr && Array.isArray(hr.content)) ? hr.content.filter(c => c.type === 'text').map(c => c.text).join('').trim() : '';
+    if (txt && txt.length <= 300) {
+      resposta = txt; trivialOk = true;
+      if (hr.usage) { uso.chamadas++; uso.input += Number(hr.usage.input_tokens || 0); uso.output += Number(hr.usage.output_tokens || 0); }
+    }
+  } catch (e) { trivialOk = false; }
+}
 // Modelos da familia 4.6+ (Sonnet 5, Opus 5...) pensam por padrao; esforco medio mantem a resposta rapida no chat
 const modeloNovo = /claude-(sonnet|opus|fable)-5|claude-(sonnet|opus)-4-[678]/.test(String(modelo));
 const ferramentasUsadas = [];
-let resposta = null;
 let erro = null;
-let uso = { input: 0, cache_read: 0, cache_write: 0, output: 0, chamadas: 0 };
 
-for (let volta = 0; volta < 6; volta++) {
+for (let volta = 0; volta < (trivialOk ? 0 : 6); volta++) {
   let r;
   try {
     const corpo = { model: modelo, max_tokens: maxTok, system: system, messages: messages };
@@ -224,6 +281,28 @@ for (let volta = 0; volta < 6; volta++) {
   break;
 }
 
+// Lista clicavel: [[LISTA: titulo | opcao | opcao ...]] no fim da resposta vira menu nativo do WhatsApp (a Entrada envia).
+// No historico fica so o texto com as opcoes entre parenteses.
+// LISTA_NATIVA: o sendList da Evolution atual quebra ("this.isZero is not a function"), entao por enquanto as opcoes vao
+// numeradas no proprio texto (o cliente responde com o numero). Ligar quando a Evolution for atualizada.
+const LISTA_NATIVA = false;
+let lista = null;
+let respostaHist = resposta;
+if (resposta) {
+  const ml = resposta.match(/\[\[\s*LISTA\s*:\s*([^\]]+)\]\]/i);
+  if (ml) {
+    const partes = ml[1].split('|').map(x => x.trim()).filter(Boolean);
+    resposta = resposta.replace(ml[0], '').replace(/\n{3,}/g, '\n\n').trim();
+    if (partes.length >= 3 && entrada.canal === 'whatsapp' && LISTA_NATIVA) {
+      lista = { titulo: partes[0].slice(0, 60), opcoes: partes.slice(1, 7).map(o => o.slice(0, 72)) };
+      respostaHist = resposta + '\n(opções oferecidas: ' + lista.opcoes.join('; ') + ')';
+    } else if (partes.length >= 2) {
+      resposta = resposta + '\n\n' + partes[0] + '\n' + partes.slice(1).map((o, i) => (i + 1) + '. ' + o).join('\n') + '\n_Responde só com o número_ 😉';
+      respostaHist = resposta;
+    }
+  }
+}
+
 // Link repetido: nao reenvia um link que a Serena ja mandou ha pouco (ultimas 8 mensagens dela), a menos que o cliente peca.
 // Tambem tira URL duplicada dentro da mesma resposta. Resolve o caso de varias mensagens curtas seguidas gerando 3 ou 4 links.
 let linkRepetido = false;
@@ -278,7 +357,7 @@ let humor = null;
 let lacuna = null;
 const querHumor = String(ctx.detectar_irritado || 'on') === 'on';
 const querLacuna = String(ctx.detectar_lacunas || 'on') === 'on';
-if (!proativo && !sugerir && !erro && (querHumor || querLacuna)) {
+if (!proativo && !sugerir && !erro && !trivialOk && (querHumor || querLacuna)) {
   const ultimas = historico.filter(h => h.papel === 'cliente').slice(0, 5).reverse().map(h => String(h.texto || '').slice(0, 300));
   if (!reprocessar) ultimas.push(String(entrada.texto).slice(0, 500));
   try {
@@ -308,13 +387,14 @@ if (humor && humor.humor === 'irritado') {
 const agora = Date.now() / 1000;
 const msgs = [];
 if (!proativo && !reprocessar && !sugerir) msgs.push({ c: ctx.contato_id, p: 'cliente', t: entrada.texto, ca: entrada.canal, ts: agora });
-if (resposta && !sugerir) msgs.push({ c: ctx.contato_id, p: 'serena', t: resposta, ca: entrada.canal, ts: agora + 0.001, au: proativo ? ('proativo:' + (entrada.tipo_proativo || 'equipe')) : (reprocessar ? 'reprocessado' : null) });
+if (resposta && !sugerir) msgs.push({ c: ctx.contato_id, p: 'serena', t: (linkRepetido ? resposta : respostaHist), ca: entrada.canal, ts: agora + 0.001, au: proativo ? ('proativo:' + (entrada.tipo_proativo || 'equipe')) : (reprocessar ? 'reprocessado' : null) });
 
 return [{ json: {
   pausada: false,
   desligado: false,
   contato_id: ctx.contato_id,
   resposta: resposta,
+  lista: lista,
   erro: erro,
   ferramentas: ferramentasUsadas,
   handoff: sugerir ? false : handoff,
@@ -323,7 +403,8 @@ return [{ json: {
   lacuna: lacuna,
   sugestao: sugerir,
   tags: sugerir ? [] : tags,
-  modelo: modelo,
+  modelo: trivialOk ? 'claude-haiku-4-5-20251001' : modelo,
+  trivial: trivialOk,
   uso: uso,
   payload: JSON.stringify(sugerir ? { msgs: [], handoff: false, tags: [], contato_id: ctx.contato_id } : { msgs: msgs, handoff: handoff, motivo_handoff: motivoHandoff, tags: tags, lacuna: lacuna, contato_id: ctx.contato_id, telefone: telDigits, canal: entrada.canal, pausa_min: Number(ctx.pausa_handoff_min || 720) })
 } }];

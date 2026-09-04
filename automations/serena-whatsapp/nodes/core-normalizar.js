@@ -9,6 +9,8 @@ const contatoId = /^[0-9a-f-]{36}$/i.test(String(b.contato_id || '')) ? String(b
 
 let tel = String(b.telefone || '').replace(/\D/g, '');
 if (tel && tel.length >= 10 && !tel.startsWith('55')) tel = '55' + tel;
+// Canonico: celular brasileiro sem o nono digito (JID antigo do WhatsApp) vira o numero com 9, para nao duplicar contato
+if (tel.startsWith('55') && tel.length === 12 && '6789'.indexOf(tel.charAt(4)) >= 0) tel = tel.slice(0, 4) + '9' + tel.slice(4);
 tel = tel ? '+' + tel : '';
 
 const canal = String(b.canal || 'site').toLowerCase();
