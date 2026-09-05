@@ -12,43 +12,50 @@ const entradaPagina = trigger({ type: 'n8n-nodes-base.webhook', version: 2.1, co
 
 const montar = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Montar Pagina', parameters: { jsCode: `const SK = 'SUPABASE_SERVICE_KEY';
 const SB = 'https://supabase.americanutrition.com/pg/query';
+const LOGO = 'https://cdn.shopify.com/s/files/1/0643/9000/4908/files/LOGOTIPO_BRANCO_FUNDO_TRANSPARENTE.png?v=1739472401&width=400';
 const self = this;
-const NL = String.fromCharCode(10);
 async function sql(q) { const r = await self.helpers.httpRequest({ method: 'POST', url: SB, headers: { apikey: SK, Authorization: 'Bearer ' + SK, 'Content-Type': 'application/json' }, body: { query: q }, json: true, timeout: 20000 }); if (r && r.error) throw new Error(String(r.error).slice(0, 300)); return r; }
 const E = v => "'" + String(v == null ? '' : v).replace(/'/g, "''") + "'";
 const esc = t => String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-const CSS = 'body{margin:0;background:#0b1220;color:#e8edf7;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased}'
-  + '.wrap{max-width:460px;margin:0 auto;padding:24px 16px 48px}'
-  + '.marca{text-align:center;letter-spacing:.18em;font-size:12px;font-weight:700;color:#7f9cc9;margin-bottom:18px}'
-  + '.card{background:#111c31;border:1px solid #1f2f4d;border-radius:18px;padding:22px 20px}'
-  + 'h1{font-size:21px;margin:0 0 4px}'
-  + '.sub{color:#93a7c6;font-size:14px;margin:0 0 18px}'
-  + '.linha{display:flex;justify-content:space-between;align-items:baseline;padding:9px 0;border-bottom:1px solid #1c2b47;font-size:15px}'
-  + '.linha span{color:#93a7c6}.linha b{font-size:16px}'
-  + '.valor b{font-size:22px;color:#fff}'
-  + '.prazo{margin:14px 0 18px;font-size:14px;color:#ffd08a;text-align:center}'
-  + '.btn{display:block;width:100%;border:0;border-radius:14px;padding:17px;font-size:17px;font-weight:700;cursor:pointer;background:#22c55e;color:#06210f;font-family:inherit}'
+// Identidade America Nutrition: azul #07388E, verde #108474, vermelho #AD0404, fonte Barlow.
+const CSS = '*{box-sizing:border-box}'
+  + 'body{margin:0;background:#07388E;background:linear-gradient(180deg,#07388E 0%,#052A6B 55%,#03204F 100%);min-height:100vh;color:#16233a;font-family:Barlow,-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased}'
+  + '.wrap{max-width:440px;margin:0 auto;padding:26px 16px 44px}'
+  + '.marca{text-align:center;margin-bottom:20px}'
+  + '.marca img{height:38px;width:auto}'
+  + '.card{background:#fff;border-radius:20px;padding:24px 20px;box-shadow:0 18px 40px rgba(2,15,45,.35)}'
+  + 'h1{font-size:23px;line-height:1.2;margin:0 0 6px;color:#07388E;font-weight:700}'
+  + '.sub{color:#5b6b85;font-size:14.5px;margin:0 0 18px}'
+  + '.linha{display:flex;justify-content:space-between;align-items:baseline;padding:10px 0;border-bottom:1px solid #eaeff7;font-size:15px}'
+  + '.linha span{color:#7a8aa3}.linha b{color:#16233a;font-weight:600}'
+  + '.valor b{font-size:24px;color:#07388E;font-weight:700}'
+  + '.prazo{margin:16px 0 18px;padding:9px;border-radius:10px;background:#fff6e8;color:#8a5300;font-size:14px;text-align:center;font-weight:500}'
+  + '.btn{display:block;width:100%;border:0;border-radius:13px;padding:17px;font-size:17px;font-weight:700;cursor:pointer;background:#108474;color:#fff;font-family:inherit;box-shadow:0 6px 16px rgba(16,132,116,.32)}'
   + '.btn:active{transform:scale(.99)}'
-  + '.btn.copiado{background:#0f7a3d;color:#dcfce7}'
-  + '.aviso{background:#152744;border-radius:12px;padding:12px 14px;margin-top:16px;font-size:14px;color:#c8d6ee}'
-  + '.aviso ol{margin:8px 0 0;padding-left:20px}.aviso li{margin:4px 0}'
-  + '.qr{text-align:center;margin-top:22px}'
-  + '.qr p{color:#93a7c6;font-size:13px;margin:0 0 12px}'
-  + '.qr #qrbox{background:#fff;padding:14px;border-radius:14px;display:inline-block;line-height:0}'
-  + '.qr img,.qr canvas{width:200px;height:200px;display:block}'
-  + 'details{margin-top:18px}summary{color:#93a7c6;font-size:13px;cursor:pointer}'
-  + 'textarea{width:100%;box-sizing:border-box;margin-top:10px;background:#0b1220;color:#a9bdda;border:1px solid #26375a;border-radius:10px;padding:10px;font-size:11px;font-family:ui-monospace,Menlo,monospace;height:110px;resize:none}'
-  + '.pago{background:#0f7a3d;color:#eaffef;border-radius:16px;padding:20px;text-align:center;margin-top:18px}'
-  + '.pago b{display:block;font-size:19px;margin-bottom:4px}'
-  + '.expirado{background:#4a1d20;color:#ffd9dc;border-radius:14px;padding:16px;text-align:center;margin-top:16px;font-size:15px}'
-  + '.rodape{text-align:center;color:#6d82a6;font-size:12px;margin-top:22px}';
+  + '.btn.copiado{background:#0b6357}'
+  + '.aviso{background:#f3f7fd;border-radius:12px;padding:13px 15px;margin-top:16px;font-size:14.5px;color:#3c4a63}'
+  + '.aviso b{color:#07388E}'
+  + '.aviso ol{margin:8px 0 0;padding-left:19px}.aviso li{margin:5px 0}'
+  + '.qr{text-align:center;margin-top:22px;padding-top:20px;border-top:1px solid #eaeff7}'
+  + '.qr p{color:#7a8aa3;font-size:13.5px;margin:0 0 12px}'
+  + '.qr #qrbox{display:inline-block;line-height:0;padding:10px;border:1px solid #eaeff7;border-radius:14px}'
+  + '.qr img,.qr canvas{width:196px;height:196px;display:block}'
+  + 'details{margin-top:18px}summary{color:#7a8aa3;font-size:13px;cursor:pointer}'
+  + 'textarea{width:100%;margin-top:10px;background:#f7f9fc;color:#4a5a75;border:1px solid #e2e9f3;border-radius:10px;padding:10px;font-size:11px;font-family:ui-monospace,Menlo,monospace;height:104px;resize:none}'
+  + '.pago{background:#108474;color:#fff;border-radius:14px;padding:20px;text-align:center;margin-top:18px}'
+  + '.pago b{display:block;font-size:19px;margin-bottom:5px}'
+  + '.expirado{background:#fdeceb;color:#AD0404;border-radius:12px;padding:16px;text-align:center;margin-top:16px;font-size:15px;font-weight:500}'
+  + '.rodape{text-align:center;color:#a9c1e8;font-size:12.5px;margin-top:20px;line-height:1.45}';
 
 function pagina(titulo, corpo, extra) {
   return '<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
-    + '<title>' + esc(titulo) + '</title><style>' + CSS + '</style></head><body><div class="wrap">'
-    + '<div class="marca">AMERICA NUTRITION</div>' + corpo
-    + '<div class="rodape">Pagamento processado com seguran&ccedil;a. D&uacute;vidas? &Eacute; s&oacute; responder na conversa do WhatsApp.</div>'
+    + '<title>' + esc(titulo) + '</title>'
+    + '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
+    + '<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">'
+    + '<style>' + CSS + '</style></head><body><div class="wrap">'
+    + '<div class="marca"><img src="' + LOGO + '" alt="America Nutrition"></div>' + corpo
+    + '<div class="rodape">Pagamento processado com seguran&ccedil;a.<br>D&uacute;vidas? &Eacute; s&oacute; responder na conversa do WhatsApp.</div>'
     + '</div>' + (extra || '') + '</body></html>';
 }
 
@@ -89,14 +96,14 @@ if (!p.pago && !expirado) {
     + 'var FIM=Date.now()+' + (faltam * 1000) + ';'
     + 'var b=document.getElementById("copiar");'
     + 'function copiar(){var ok=false;try{if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(CODIGO);ok=true;}}catch(e){}'
-    + 'if(!ok){var t=document.getElementById("cod");t.style.position="fixed";t.style.opacity="0";t.select();t.setSelectionRange(0,99999);try{ok=document.execCommand("copy");}catch(e){}t.style.position="";t.style.opacity="";}'
+    + 'if(!ok){var t=document.getElementById("cod");document.querySelector("details").open=true;t.select();t.setSelectionRange(0,99999);try{ok=document.execCommand("copy");}catch(e){}}'
     + 'if(ok){b.textContent="C\\u00f3digo copiado! Cole no app do banco";b.className="btn copiado";}else{b.textContent="Toque no c\\u00f3digo abaixo e copie";document.querySelector("details").open=true;}}'
     + 'b.addEventListener("click",copiar);'
     + 'function tick(){var s=Math.floor((FIM-Date.now())/1000);var el=document.getElementById("cd");if(s<=0){el.textContent="expirado";location.reload();return;}'
     + 'var m=Math.floor(s/60);var r=s%60;el.textContent=m+":"+(r<10?"0":"")+r;}'
     + 'tick();setInterval(tick,1000);'
     + 'var box=document.getElementById("qrbox");'
-    + 'function desenhaQR(){if(window.QRCode){box.innerHTML="";new QRCode(box,{text:CODIGO,width:200,height:200,correctLevel:QRCode.CorrectLevel.M});}}'
+    + 'function desenhaQR(){if(window.QRCode){box.innerHTML="";new QRCode(box,{text:CODIGO,width:196,height:196,correctLevel:QRCode.CorrectLevel.M});}}'
     + 'var s=document.createElement("script");s.src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js";s.onload=desenhaQR;document.body.appendChild(s);'
     + 'function status(){fetch("/webhook/pix-status?t=' + encodeURIComponent(token) + '").then(function(r){return r.json();}).then(function(j){if(j&&j.pago){location.reload();}}).catch(function(){});}'
     + 'setInterval(status,10000);';

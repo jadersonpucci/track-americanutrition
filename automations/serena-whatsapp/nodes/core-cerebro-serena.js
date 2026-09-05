@@ -55,9 +55,45 @@ if (telDigits && cacheVelho && !sugerir) {
   try {
     const rp = await this.helpers.httpRequest({ method: 'POST', url: 'https://n8n.americanutrition.com/webhook/buscar-pedidos-telefone', json: true, timeout: 12000, body: { telefone: telDigits } });
     const lista = (rp && rp.encontrado && Array.isArray(rp.pedidos)) ? rp.pedidos.slice(0, 5).map(p => ({ numero: p.numero, data: p.data, status: p.status, valor: p.valor_total, itens: p.itens, rastreio: p.rastreio || null })) : [];
-    pedidos = { pedidos: lista, total: Number((rp && rp.total_pedidos) || lista.length || 0), nome: (rp && rp.cliente_nome) || null, atualizado_em: new Date().toISOString() };
+    // Cadastro do ultimo pedido (endereco, CPF, email): evita pedir dado a dado quem ja comprou.
+    let cad = null;
+    if (rp && rp.encontrado && rp.customer_id) {
+      try {
+        const ro = await this.helpers.httpRequest({ method: 'POST', url: 'https://n8n.americanutrition.com/webhook/shopify-admin', json: true, timeout: 15000, body: { acao: 'consultar', endpoint: 'customers/' + rp.customer_id + '/orders.json', params: { status: 'any', limit: 1, fields: 'id,name,created_at,email,phone,shipping_address,billing_address,note_attributes' } } });
+        const o = (ro && ro.ok && ro.dados && Array.isArray(ro.dados.orders)) ? ro.dados.orders[0] : null;
+        if (o) {
+          const lp = t => String(t == null ? '' : t).replace(/[\u200B-\u200F\u2060\uFEFF]/g, '').trim();
+          const ad = o.shipping_address || o.billing_address || {};
+          const na = {};
+          (o.note_attributes || []).forEach(x => { if (x && x.name) na[String(x.name).toLowerCase()] = x.value; });
+          // Shopify guarda rua e numero juntos em address1 ("Rua X, 1100"); separa para as ferramentas de pagamento
+          const a1 = lp(ad.address1);
+          const mnum = a1.match(/^(.*?)[,\s]+(\d+[A-Za-z]?)$/);
+          const a2 = lp(ad.address2);
+          const partes2 = a2 ? a2.split(',').map(x => x.trim()).filter(Boolean) : [];
+          cad = {
+            pedido: o.name || null,
+            data: String(o.created_at || '').slice(0, 10),
+            nome: lp(ad.name) || [lp(ad.first_name), lp(ad.last_name)].filter(Boolean).join(' ') || (rp.cliente_nome || ''),
+            cpf: lp(na.cpf || na['cpf/cnpj'] || na.documento || ''),
+            email: lp(o.email || rp.cliente_email || ''),
+            telefone: lp(ad.phone || o.phone || rp.cliente_telefone || ''),
+            endereco: {
+              rua: mnum ? lp(mnum[1]) : a1,
+              numero: mnum ? mnum[2] : 'S/N',
+              complemento: partes2.length > 1 ? partes2.slice(0, -1).join(', ') : a2,
+              bairro: partes2.length > 1 ? partes2[partes2.length - 1] : '',
+              cidade: lp(ad.city),
+              estado: lp(ad.province_code || ad.province),
+              cep: lp(ad.zip)
+            }
+          };
+        }
+      } catch (e) { cad = null; }
+    }
+    pedidos = { pedidos: lista, total: Number((rp && rp.total_pedidos) || lista.length || 0), nome: (rp && rp.cliente_nome) || null, cadastro: cad, atualizado_em: new Date().toISOString() };
     const E = v => "'" + String(v).replace(/'/g, "''") + "'";
-    await this.helpers.httpRequest({ method: 'POST', url: SB, headers: { apikey: SK, Authorization: 'Bearer ' + SK, 'Content-Type': 'application/json' }, json: true, timeout: 8000, body: { query: 'insert into serena_pedidos_cache (telefone, cliente_nome, total, pedidos, atualizado_em) values (' + E(telDigits) + ',' + (pedidos.nome ? E(pedidos.nome) : 'null') + ',' + pedidos.total + ',' + E(JSON.stringify(lista)) + '::jsonb, now()) on conflict (telefone) do update set cliente_nome = excluded.cliente_nome, total = excluded.total, pedidos = excluded.pedidos, atualizado_em = now()' } });
+    await this.helpers.httpRequest({ method: 'POST', url: SB, headers: { apikey: SK, Authorization: 'Bearer ' + SK, 'Content-Type': 'application/json' }, json: true, timeout: 8000, body: { query: 'insert into serena_pedidos_cache (telefone, cliente_nome, total, pedidos, cadastro, atualizado_em) values (' + E(telDigits) + ',' + (pedidos.nome ? E(pedidos.nome) : 'null') + ',' + pedidos.total + ',' + E(JSON.stringify(lista)) + '::jsonb, ' + (cad ? E(JSON.stringify(cad)) + '::jsonb' : 'null') + ', now()) on conflict (telefone) do update set cliente_nome = excluded.cliente_nome, total = excluded.total, pedidos = excluded.pedidos, cadastro = coalesce(excluded.cadastro, serena_pedidos_cache.cadastro), atualizado_em = now()' } });
   } catch (e) { /* segue sem pedidos */ }
 }
 let pedidosTxt = '';
@@ -65,6 +101,21 @@ if (pedidos && Array.isArray(pedidos.pedidos) && pedidos.pedidos.length) {
   pedidosTxt = 'PEDIDOS DESTE CLIENTE NA LOJA (' + pedidos.total + ' no total, mais recentes primeiro):\n'
     + pedidos.pedidos.slice(0, 3).map(p => '- ' + p.numero + ' (' + p.data + '): ' + p.itens + ', ' + p.valor + ', ' + p.status + (p.rastreio ? ', rastreio ' + p.rastreio : '')).join('\n')
     + '\nE cliente que ja comprou: trate como conhecido, nao explique o produto do zero. Se quiser comprar de novo, ofereca repetir o ultimo produto (mesma versao) e so confirme o que mudou. Para status ou rastreio use estes dados sem pedir numero de pedido; se precisar do status atual, chame consultar_status_pedido com o rastreio.';
+}
+// Cadastro conhecido: em vez de pedir dado a dado, a Serena mostra o que ja tem e pede so a confirmacao.
+let cadastroTxt = '';
+const cadC = pedidos && pedidos.cadastro;
+if (cadC && (cadC.cpf || (cadC.endereco && cadC.endereco.cep))) {
+  const en = cadC.endereco || {};
+  const ruaNum = [en.rua, en.numero && en.numero !== 'S/N' ? en.numero : ''].filter(Boolean).join(', ');
+  const endLinha = [ruaNum, en.complemento, en.bairro, [en.cidade, en.estado].filter(Boolean).join('/'), en.cep ? 'CEP ' + en.cep : ''].filter(Boolean).join(', ');
+  const linhas = [];
+  if (cadC.nome) linhas.push('- Nome: ' + cadC.nome);
+  if (cadC.cpf) linhas.push('- CPF: ' + cadC.cpf);
+  if (cadC.email) linhas.push('- Email: ' + cadC.email);
+  if (endLinha) linhas.push('- Endereco: ' + endLinha);
+  cadastroTxt = 'CADASTRO QUE JA TEMOS DESTE CLIENTE (do pedido ' + (cadC.pedido || 'anterior') + (cadC.data ? ', ' + cadC.data : '') + '):\n' + linhas.join('\n')
+    + '\nUSE ASSIM: para gerar PIX, boleto ou checkout, NAO pergunte esses dados um a um. Mande UMA mensagem curta repetindo nome, CPF e endereco acima e pergunte se continua tudo certo (ou se prefere outro endereco). Se o cliente confirmar, chame a ferramenta com exatamente esses dados. Se ele corrigir algo, troque so o que ele corrigiu e mantenha o resto. Pergunte item a item apenas o que estiver faltando aqui em cima.';
 }
 const nomeCliente = ctx.nome || (pedidos && pedidos.nome ? String(pedidos.nome).split(' ')[0] : '');
 
@@ -112,10 +163,11 @@ const cabecalho = [
   'FORMATO NO WHATSAPP: escreva como numa conversa de chat, curto. No maximo 3 paragrafos curtos e uns 500 caracteres; para duvida simples, 1 ou 2 frases. Responda so o que foi perguntado e termine com UMA pergunta que leve a conversa adiante. Na primeira mensagem, apresente-se em uma frase e va direto ao que a pessoa perguntou. No texto corrido, nao despeje todas as versoes e precos: cite no maximo 2 opcoes que fazem sentido para o caso. Quando o cliente precisar ESCOLHER a versao, use a LISTA CLICAVEL (abaixo) com TODAS as versoes do produto. Sem cabecalhos, sem listas longas e sem explicacao tecnica que nao foi pedida. Podem ser mais completos apenas: dados de pedido, rastreio, opcoes de frete e link de pagamento.',
   'MENSAGENS PICADAS: o cliente costuma escrever varias mensagens curtas em sequencia. Se a ultima mensagem so continua ou confirma o que voce acabou de responder ("quero pedir", "e so isso", "ok", "eu uso"), responda em uma frase, sem repetir explicacoes nem links. Nunca envie o mesmo link de pagamento duas vezes: se ja mandou, diga apenas que e so abrir o link acima. So reenvie se o cliente pedir o link de novo ou disser que nao abriu.',
   'LISTA CLICAVEL: quando precisar que o cliente ESCOLHA entre versoes, tamanhos ou opcoes (ate 8), termine a mensagem com uma linha no formato [[LISTA: Qual versão você prefere? | ImunoFosfo 90 cápsulas · R$ 327 | ImunoFosfo 60 cápsulas · R$ 247 | ImunoFosfo 42 cápsulas · R$ 197 | ImunoFosfo Vegano 90 cápsulas · R$ 327 | ImunoFosfo Plus 180 cápsulas · R$ 597 | ImunoFosfo Líquido (frasco) · R$ 137]]. A lista deve trazer TODAS as versoes atuais do produto com o preco da tabela de precos da base (para o ImunoFosfo: 90, 60, 42, Vegano 90, Plus 180 e Liquido; para outros produtos, todas as variacoes da tabela), nunca so as 2 ou 3 que voce citou no texto. Nao repita as opcoes no texto e nao termine o texto com pergunta: o titulo da lista ja e a pergunta. Use so em escolha real, nunca em pergunta aberta.',
-  'CODIGO DE PAGAMENTO (PIX copia e cola / linha digitavel do boleto): escreva o codigo EXATAMENTE como a ferramenta devolveu, em uma linha sozinha, sem quebrar, encurtar, reescrever nem colocar texto na mesma linha. O sistema envia esse codigo em uma mensagem separada para o cliente conseguir copiar de uma vez no WhatsApp e ja acrescenta a explicacao de colar no app do banco, entao nao repita essa explicacao. Antes do codigo, diga em uma frase que o pedido ja esta registrado e o valor.',
+  'CODIGO DE PAGAMENTO (PIX copia e cola / linha digitavel do boleto): escreva o codigo EXATAMENTE como a ferramenta devolveu, em uma linha sozinha, sem quebrar, encurtar, reescrever nem colocar texto na mesma linha. O sistema envia esse codigo em uma mensagem separada para o cliente conseguir copiar de uma vez no WhatsApp e ja acrescenta a explicacao de colar no app do banco, entao nao repita essa explicacao. Antes do codigo, diga em uma frase que o pedido ja esta registrado e o valor. Se a ferramenta devolver pagina_pix, repita esse link DEPOIS do codigo, em uma linha propria: e a saida de quem nao consegue copiar o codigo no WhatsApp.',
   'ANTES DE GERAR LINK DE PAGAMENTO: confirme produto, versao e tamanho (quantidade de capsulas ou frascos) quando o cliente nao tiver dito. Nao escolha por ele. Gere o link uma unica vez por pedido; se ele mudar o produto, gere outro e diga que o anterior nao vale mais.',
   fatos ? 'O que ja se sabe sobre este cliente:\n' + fatos : '',
   pedidosTxt,
+  cadastroTxt,
   carrinhoTxt,
   correcoesTxt,
   trocaTxt,
@@ -220,6 +272,8 @@ if (ehTrivial) {
 // Modelos da familia 4.6+ (Sonnet 5, Opus 5...) pensam por padrao; esforco medio mantem a resposta rapida no chat
 const modeloNovo = /claude-(sonnet|opus|fable)-5|claude-(sonnet|opus)-4-[678]/.test(String(modelo));
 const ferramentasUsadas = [];
+// Link da pagina de pagamento (Pix/boleto) devolvido pela ferramenta: o Core garante que ele va na resposta.
+let paginaPix = null;
 let erro = null;
 
 for (let volta = 0; volta < (trivialOk ? 0 : 6); volta++) {
@@ -271,6 +325,10 @@ for (let volta = 0; volta < (trivialOk ? 0 : 6); volta++) {
             body: { acao: acao, dados: dados, canal: entrada.canal }
           });
         } catch (e) { saida = { erro: String(e.message) }; }
+      }
+      if ((acao === 'gerar_pix' || acao === 'gerar_boleto') && saida) {
+        const pp = saida.pagina_pix || (saida.body && saida.body.pagina_pix) || null;
+        if (pp && /^https?:\/\//i.test(String(pp))) paginaPix = String(pp);
       }
       resultados.push({ type: 'tool_result', tool_use_id: bloco.id, content: JSON.stringify(saida).slice(0, 6000) });
     }
@@ -333,6 +391,13 @@ if (resposta && !proativo && !sugerir) {
       linkRepetido = true;
     }
   }
+}
+
+// Pagina de pagamento: o modelo as vezes resume a mensagem e corta o link. Como ele e a saida para quem nao
+// consegue copiar o codigo no WhatsApp, o Core garante que ele esteja na resposta.
+if (paginaPix && resposta && !sugerir && resposta.indexOf(paginaPix) < 0) {
+  resposta += '\n\nSe preferir, abra esta p\u00e1gina para copiar o c\u00f3digo com um toque ou pagar pelo QR Code:\n' + paginaPix;
+  respostaHist = resposta;
 }
 
 // Falha da API do Claude (saldo, limite, indisponibilidade): avisa a equipe no Telegram (dedupe de 30 min)

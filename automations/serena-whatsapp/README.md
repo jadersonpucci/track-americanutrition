@@ -601,3 +601,29 @@ Pedido do Jaderson depois do caso da Clarice: além do código em mensagem separ
 **Fatiar Resposta** ganhou detecção de explicação repetida: se o texto antes do código já ensina a colar no banco, entra só a dica curta ("toque e segure > *Copiar*"), senão entra a instrução completa.
 
 Teste de ponta a ponta: PIX real gerado pela ferramenta (pedido #D4083, R$ 327), link `seguro.americanutrition.com/CbZv6gH` redirecionando para a página, página respondendo com pedido/valor/código certos, status devolvendo `{"pago":false}`, e a mensagem fatiada em 3 partes (texto + dica / código sozinho / link + fechamento). O draft de teste foi apagado da Shopify e as linhas de teste do banco também.
+
+
+## Página do Pix com a marca + cadastro confirmado em vez de perguntado (05/09, manhã)
+
+Dois pedidos do Jaderson.
+
+**1. Página do Pix com a cara da América.** Fundo no azul da marca (#07388E, gradiente até #03204F), logo branco do CDN da Shopify no topo, cartão branco, botão no verde da marca (#108474), aviso de prazo em âmbar, tela de expirado no vermelho da marca (#AD0404) e fonte **Barlow** (a mesma do site). Estrutura igual: pedido, valor, contagem regressiva, botão de copiar, passo a passo, QR Code e o código em texto.
+
+**2. Cliente com cadastro não responde mais dado a dado.** Quando o telefone já tem pedido na Shopify, o Core busca o **último pedido** (`customers/<id>/orders.json`) junto com o cache de pedidos e guarda em `serena_pedidos_cache.cadastro` (coluna nova): nome, CPF (vem de `note_attributes`), email, telefone e endereço. O endereço da Shopify vem com rua e número juntos em `address1` e bairro no fim do `address2`, então o Core separa `rua / numero / complemento / bairro / cidade / estado / cep` para as ferramentas de pagamento.
+
+No prompt entra o bloco CADASTRO QUE JÁ TEMOS com a regra: para gerar PIX, boleto ou checkout, mandar **uma** mensagem repetindo nome, CPF e endereço e perguntar se está tudo certo; se confirmar, chamar a ferramenta com esses dados; se corrigir algo, trocar só aquilo; perguntar item a item apenas o que faltar.
+
+Teste (cliente com cadastro pedindo PIX):
+
+```
+Show, Jaderson! 💙 Antes de gerar, só confirmando os dados pra emitir certinho:
+📦 1x ImunoFosfo 90 cápsulas
+👤 Jaderson Pucci
+🪪 CPF 529.982.247-25
+📍 Avenida Ana Costa, 340, Sala 12, Gonzaga, Santos/SP, CEP 11060-002
+Tá tudo certo assim, ou muda a quantidade ou o endereço? 🧬
+```
+
+E no "pode gerar" ela chamou `gerar_pix` com esses dados, sem perguntar mais nada.
+
+**3. Link da página garantido.** Nesse teste a Serena resumiu a mensagem e cortou o link da página. Agora o Core guarda o `pagina_pix` devolvido pela ferramenta e, se o link não estiver na resposta, acrescenta ele no fim (com a instrução no prompt como reforço). Fontes: `nodes/core-cerebro-serena.js`, `nodes/core-carregar-contexto.sql`, `pagina-pix.workflow.js`.
