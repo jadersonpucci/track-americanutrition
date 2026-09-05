@@ -640,3 +640,16 @@ Agora a página do Pix tem **Open Graph próprio**:
 - `og:image:width/height`, `og:image:alt`, `twitter:card=summary_large_image`, `theme-color` no azul da marca.
 
 O WhatsApp guarda o preview por URL: links gerados antes desta mudança continuam com o preview antigo, os novos já saem com a imagem. Verificado buscando o link curto com o user-agent do WhatsApp.
+
+
+## Produto no lugar do número do rascunho (05/09)
+
+Observação do Jaderson: o `#D4085` que aparecia na mensagem e na página é o número do **rascunho** da Shopify. O número do pedido de verdade (AN-xxxxx) só nasce depois do pagamento, então mostrar o rascunho para o cliente só confunde. O que ele quer ver é **o que está comprando**.
+
+- `[Serena Tool] Gerar PIX`, `Montar draft`: a mutation `draftOrderCreate` agora também devolve `lineItems { title quantity variantTitle }`.
+- `Extrair draft`: monta o texto dos itens ("2x ImunoFosfo 90 Caps"). A variante vem como "Tradicionais / 90 Caps", então os pedaços genéricos (Tradicionais, Default Title, Padrão, Único) saem e o que identifica fica — "Vegano", "90 Caps" — sem repetir o que já está no título.
+- Mensagem do WhatsApp: `📦 2x ImunoFosfo 90 Caps` no lugar de `📦 Pedido: #D4085`. O rascunho continua no aviso do Telegram (é o que a equipe usa) e no JSON da ferramenta, com uma nota pedindo à Serena que não cite esse número ao cliente.
+- Página do Pix: linha **Produto** no lugar de Pedido, e a descrição do preview do WhatsApp virou "2x ImunoFosfo 90 Caps: copie o código com um toque ou escaneie o QR Code".
+- Coluna nova `serena_pix_links.itens`.
+
+Teste: PIX de 2 unidades gerado pela ferramenta, mensagem com o produto, página e Open Graph com "Pague R$ 654,00 com Pix" e o produto na descrição, sem nenhum `#D40xx` na parte visível ao cliente.

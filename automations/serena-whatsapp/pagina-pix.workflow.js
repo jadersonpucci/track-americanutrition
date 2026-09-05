@@ -32,7 +32,8 @@ const CSS = '*{box-sizing:border-box}'
   + 'h1{font-size:23px;line-height:1.2;margin:0 0 6px;color:#07388E;font-weight:700}'
   + '.sub{color:#5b6b85;font-size:14.5px;margin:0 0 18px}'
   + '.linha{display:flex;justify-content:space-between;align-items:baseline;padding:10px 0;border-bottom:1px solid #eaeff7;font-size:15px}'
-  + '.linha span{color:#7a8aa3}.linha b{color:#16233a;font-weight:600}'
+  + '.linha span{color:#7a8aa3;white-space:nowrap;padding-right:14px}.linha b{color:#16233a;font-weight:600}'
+  + '.linha.item{align-items:flex-start}.linha.item b{text-align:right;line-height:1.3}'
   + '.valor b{font-size:24px;color:#07388E;font-weight:700}'
   + '.prazo{margin:16px 0 18px;padding:9px;border-radius:10px;background:#fff6e8;color:#8a5300;font-size:14px;text-align:center;font-weight:500}'
   + '.btn{display:block;width:100%;border:0;border-radius:13px;padding:17px;font-size:17px;font-weight:700;cursor:pointer;background:#108474;color:#fff;font-family:inherit;box-shadow:0 6px 16px rgba(16,132,116,.32)}'
@@ -78,7 +79,7 @@ const q = $input.first().json.query || {};
 const token = String(q.t || '').trim();
 if (!token) return [{ json: { html: pagina('Pix', '<div class="card"><h1>Link inv&aacute;lido</h1><p class="sub">Volte na conversa do WhatsApp e pe&ccedil;a outro Pix.</p></div>') } }];
 
-const rows = await sql('select token, draft_numero, total_reais, qr_code, qr_code_url, expira_em, pago, extract(epoch from (expira_em - now())) as faltam from serena_pix_links where token = ' + E(token));
+const rows = await sql('select token, draft_numero, itens, total_reais, qr_code, qr_code_url, expira_em, pago, extract(epoch from (expira_em - now())) as faltam from serena_pix_links where token = ' + E(token));
 const p = rows && rows[0];
 if (!p) return [{ json: { html: pagina('Pix', '<div class="card"><h1>Link n&atilde;o encontrado</h1><p class="sub">Esse Pix pode ter sido cancelado. Volte na conversa do WhatsApp e pe&ccedil;a outro.</p></div>') } }];
 try { await sql('update serena_pix_links set aberturas = coalesce(aberturas, 0) + 1 where token = ' + E(token)); } catch (e) {}
@@ -88,20 +89,22 @@ const faltam = Math.floor(Number(p.faltam || 0));
 const expirado = !p.pago && faltam <= 0;
 
 // Preview do link no WhatsApp: titulo e descricao seguem o estado do Pix
+// O numero do rascunho e interno: o cliente ve o PRODUTO (o numero do pedido so sai depois do pagamento)
+const itens = String(p.itens || '').trim();
 if (p.pago) {
   ogTitulo = 'Pagamento confirmado - America Nutrition';
-  ogDesc = 'O Pix do pedido ' + (p.draft_numero || '') + ' foi confirmado e o pedido entrou em separacao.';
+  ogDesc = 'Seu Pix foi confirmado' + (itens ? ' (' + itens + ')' : '') + ' e o pedido entrou em separacao.';
 } else if (expirado) {
   ogTitulo = 'Pix expirado - America Nutrition';
   ogDesc = 'Este Pix passou do prazo. Volte na conversa do WhatsApp e peca outro, leva alguns segundos.';
 } else {
   ogTitulo = 'Pague ' + total + ' com Pix';
-  ogDesc = 'Pedido ' + (p.draft_numero || '') + ': copie o codigo com um toque ou escaneie o QR Code. Seu pedido ja esta reservado.';
+  ogDesc = (itens ? itens + ': c' : 'C') + 'opie o codigo com um toque ou escaneie o QR Code. Seu pedido ja esta reservado.';
 }
 
 let corpo = '<div class="card">';
 corpo += '<h1>Pague com Pix</h1><p class="sub">Seu pedido j&aacute; est&aacute; reservado. Falta s&oacute; o pagamento.</p>';
-corpo += '<div class="linha"><span>Pedido</span><b>' + esc(p.draft_numero || '') + '</b></div>';
+if (itens) corpo += '<div class="linha item"><span>Produto</span><b>' + esc(itens) + '</b></div>';
 corpo += '<div class="linha valor"><span>Valor</span><b>' + total + '</b></div>';
 
 if (p.pago) {
