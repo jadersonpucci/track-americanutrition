@@ -733,4 +733,11 @@ Teste com o caso real: *"o frasco de 42 cápsulas rende exatamente os 7 dias da 
 
 Isso está correto para o anti-spam (mesma tabela, motivo `antispam`), mas cega a equipe nos bloqueios manuais. Dois números da lista escreveram desde então: o número interno da América (+1 646) e o 13 98149-1402, uma afiliada que desde 04/09 15:41 pergunta por que o pedido AN-15217 não creditou a comissão dela, mandou prints e às 18:25 escreveu "Só nao me esquece!" — sem nenhum registro de resposta.
 
-Opção discutida, **não implementada**: gravar no histórico também as mensagens de bloqueados com motivo diferente de `antispam`, para elas aparecerem no Inbox sem a Serena responder.
+**Implementado (05/09).** O `Registrar no Buffer + Config` agora separa os dois tipos de bloqueio:
+
+| Bloqueio | Serena responde | Entra no Inbox | Buffer |
+| --- | --- | --- | --- |
+| manual (`lista inicial` e qualquer motivo ≠ `antispam`) | não | **sim** | nasce processado |
+| `antispam` | não | não | segue pendente, como antes |
+
+Mesmo mecanismo da pausa (CTE `silencio` = pausa ativa **ou** bloqueio manual). Se o número bloqueado ainda não tem contato, o contato é criado na hora, senão a mensagem não teria onde entrar. Testado nos quatro caminhos — bloqueio manual grava e marca o buffer; anti-spam não grava, não cria contato e mantém o buffer pendente; pausa continua gravando; número normal segue intocado — e depois de ponta a ponta pelo webhook real: a mensagem apareceu no histórico e a Serena ficou calada.
