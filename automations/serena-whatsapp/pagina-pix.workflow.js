@@ -13,6 +13,10 @@ const entradaPagina = trigger({ type: 'n8n-nodes-base.webhook', version: 2.1, co
 const montar = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Montar Pagina', parameters: { jsCode: `const SK = 'SUPABASE_SERVICE_KEY';
 const SB = 'https://supabase.americanutrition.com/pg/query';
 const LOGO = 'https://cdn.shopify.com/s/files/1/0643/9000/4908/files/LOGOTIPO_BRANCO_FUNDO_TRANSPARENTE.png?v=1739472401&width=400';
+// Imagem do preview no WhatsApp (1200x630, feita para o link): sem ela o WhatsApp recorta o logo transparente.
+const OG_IMG = 'https://supabase.americanutrition.com/storage/v1/object/public/imagens/pagamento/og-pix-america.png';
+let ogTitulo = 'Pague com Pix - America Nutrition';
+let ogDesc = 'Copie o codigo com um toque ou escaneie o QR Code. Seu pedido ja esta reservado.';
 const self = this;
 async function sql(q) { const r = await self.helpers.httpRequest({ method: 'POST', url: SB, headers: { apikey: SK, Authorization: 'Bearer ' + SK, 'Content-Type': 'application/json' }, body: { query: q }, json: true, timeout: 20000 }); if (r && r.error) throw new Error(String(r.error).slice(0, 300)); return r; }
 const E = v => "'" + String(v == null ? '' : v).replace(/'/g, "''") + "'";
@@ -51,6 +55,17 @@ const CSS = '*{box-sizing:border-box}'
 function pagina(titulo, corpo, extra) {
   return '<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
     + '<title>' + esc(titulo) + '</title>'
+    + '<meta name="description" content="' + esc(ogDesc) + '">'
+    + '<meta name="theme-color" content="#07388E">'
+    + '<meta property="og:type" content="website"><meta property="og:site_name" content="America Nutrition">'
+    + '<meta property="og:title" content="' + esc(ogTitulo) + '">'
+    + '<meta property="og:description" content="' + esc(ogDesc) + '">'
+    + '<meta property="og:image" content="' + OG_IMG + '"><meta property="og:image:type" content="image/png">'
+    + '<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">'
+    + '<meta property="og:image:alt" content="Pague com Pix na America Nutrition">'
+    + '<meta name="twitter:card" content="summary_large_image">'
+    + '<meta name="twitter:title" content="' + esc(ogTitulo) + '"><meta name="twitter:description" content="' + esc(ogDesc) + '">'
+    + '<meta name="twitter:image" content="' + OG_IMG + '">'
     + '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
     + '<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">'
     + '<style>' + CSS + '</style></head><body><div class="wrap">'
@@ -71,6 +86,18 @@ try { await sql('update serena_pix_links set aberturas = coalesce(aberturas, 0) 
 const total = 'R$ ' + Number(p.total_reais || 0).toFixed(2).replace('.', ',');
 const faltam = Math.floor(Number(p.faltam || 0));
 const expirado = !p.pago && faltam <= 0;
+
+// Preview do link no WhatsApp: titulo e descricao seguem o estado do Pix
+if (p.pago) {
+  ogTitulo = 'Pagamento confirmado - America Nutrition';
+  ogDesc = 'O Pix do pedido ' + (p.draft_numero || '') + ' foi confirmado e o pedido entrou em separacao.';
+} else if (expirado) {
+  ogTitulo = 'Pix expirado - America Nutrition';
+  ogDesc = 'Este Pix passou do prazo. Volte na conversa do WhatsApp e peca outro, leva alguns segundos.';
+} else {
+  ogTitulo = 'Pague ' + total + ' com Pix';
+  ogDesc = 'Pedido ' + (p.draft_numero || '') + ': copie o codigo com um toque ou escaneie o QR Code. Seu pedido ja esta reservado.';
+}
 
 let corpo = '<div class="card">';
 corpo += '<h1>Pague com Pix</h1><p class="sub">Seu pedido j&aacute; est&aacute; reservado. Falta s&oacute; o pagamento.</p>';

@@ -627,3 +627,16 @@ Tá tudo certo assim, ou muda a quantidade ou o endereço? 🧬
 E no "pode gerar" ela chamou `gerar_pix` com esses dados, sem perguntar mais nada.
 
 **3. Link da página garantido.** Nesse teste a Serena resumiu a mensagem e cortou o link da página. Agora o Core guarda o `pagina_pix` devolvido pela ferramenta e, se o link não estiver na resposta, acrescenta ele no fim (com a instrução no prompt como reforço). Fontes: `nodes/core-cerebro-serena.js`, `nodes/core-carregar-contexto.sql`, `pagina-pix.workflow.js`.
+
+
+## Imagem de compartilhamento do link do Pix (05/09)
+
+Print do Jaderson: no WhatsApp o preview do link pegava o logo transparente do site e cortava, virando um borrão vermelho e branco.
+
+Agora a página do Pix tem **Open Graph próprio**:
+
+- **Imagem 1200x630 feita para o preview** (`assets/og-pix-america.png`, fonte em `assets/og-pix-america.html`): fundo azul da marca com brilho verde, faixa vermelho/branco/verde no topo, logo branco, "Pague com Pix / em segundos", a explicação de copiar ou escanear, selo "Pedido reservado · pagamento seguro" e um cartão branco com QR ilustrativo e o botão verde. Hospedada no CDN da AN (Supabase Storage, `imagens/pagamento/`).
+- **Título e descrição conforme o estado do Pix**: aberto vira "Pague R$ 327,00 com Pix" + "Pedido #D4086: copie o código com um toque ou escaneie o QR Code"; pago vira "Pagamento confirmado"; vencido, "Pix expirado".
+- `og:image:width/height`, `og:image:alt`, `twitter:card=summary_large_image`, `theme-color` no azul da marca.
+
+O WhatsApp guarda o preview por URL: links gerados antes desta mudança continuam com o preview antigo, os novos já saem com a imagem. Verificado buscando o link curto com o user-agent do WhatsApp.

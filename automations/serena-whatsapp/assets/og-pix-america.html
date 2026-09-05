@@ -1,0 +1,43 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{width:1200px;height:630px;overflow:hidden;font-family:Barlow,system-ui,sans-serif;
+  background:radial-gradient(120% 120% at 12% 8%, #0b4bb8 0%, #07388E 42%, #03204F 100%);color:#fff;position:relative}
+.brilho{position:absolute;width:760px;height:760px;right:-210px;top:-260px;border-radius:50%;
+  background:radial-gradient(circle,rgba(16,132,116,.42) 0%,rgba(16,132,116,0) 65%)}
+.faixa{position:absolute;left:0;top:0;width:100%;height:8px;background:linear-gradient(90deg,#AD0404 0%,#AD0404 33%,#fff 33%,#fff 66%,#108474 66%,#108474 100%);opacity:.9}
+.grade{display:flex;height:100%;align-items:center;padding:0 66px;gap:54px;position:relative}
+.esq{flex:1}
+.logo{height:52px;margin-bottom:34px;display:block}
+h1{font-size:82px;line-height:.98;font-weight:700;letter-spacing:-1.5px}
+h1 small{display:block;font-size:82px;color:#7ee0cf;font-weight:700}
+p{font-size:31px;color:#bcd2f2;margin-top:22px;line-height:1.35;max-width:560px;font-weight:400}
+.selo{display:inline-flex;align-items:center;gap:12px;margin-top:32px;background:rgba(255,255,255,.1);
+  border:1px solid rgba(255,255,255,.22);padding:12px 22px;border-radius:100px;font-size:24px;font-weight:600;color:#eaf3ff}
+.dir{width:392px;background:#fff;border-radius:28px;padding:26px;text-align:center;
+  box-shadow:0 30px 70px rgba(0,10,35,.5)}
+.dir .tit{color:#07388E;font-size:24px;font-weight:700;margin-bottom:4px}
+.dir .sub{color:#7a8aa3;font-size:18px;margin-bottom:18px}
+#qr{display:inline-block;line-height:0;padding:10px;border:1px solid #e6ecf6;border-radius:16px}
+#qr canvas,#qr img{width:210px;height:210px;display:block}
+.botao{margin-top:20px;background:#108474;color:#fff;border-radius:14px;padding:15px;font-size:22px;font-weight:700}
+</style></head><body>
+<div class="faixa"></div><div class="brilho"></div>
+<div class="grade">
+  <div class="esq">
+    <img class="logo" src="https://cdn.shopify.com/s/files/1/0643/9000/4908/files/LOGOTIPO_BRANCO_FUNDO_TRANSPARENTE.png?v=1739472401&width=400" alt="America Nutrition">
+    <h1>Pague com Pix<small>em segundos</small></h1>
+    <p>Copie o código com um toque ou escaneie o QR Code no app do seu banco.</p>
+    <div class="selo">🔒 Pedido reservado · pagamento seguro</div>
+  </div>
+  <div class="dir">
+    <div class="tit">Pix Copia e Cola</div>
+    <div class="sub">abra o link para pagar</div>
+    <div id="qr"></div>
+    <div class="botao">Copiar código Pix</div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>new QRCode(document.getElementById('qr'),{text:'00020101021226820014br.gov.bcb.pix2560AMERICA-NUTRITION-PIX-EXEMPLO5204000053039865802BR5925America Nutrition Comerci6014RIO DE JANEIRO6304ABCD',width:210,height:210,correctLevel:QRCode.CorrectLevel.M});</script>
+</body></html>
