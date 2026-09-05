@@ -741,3 +741,18 @@ Isso está correto para o anti-spam (mesma tabela, motivo `antispam`), mas cega 
 | `antispam` | não | não | segue pendente, como antes |
 
 Mesmo mecanismo da pausa (CTE `silencio` = pausa ativa **ou** bloqueio manual). Se o número bloqueado ainda não tem contato, o contato é criado na hora, senão a mensagem não teria onde entrar. Testado nos quatro caminhos — bloqueio manual grava e marca o buffer; anti-spam não grava, não cria contato e mantém o buffer pendente; pausa continua gravando; número normal segue intocado — e depois de ponta a ponta pelo webhook real: a mensagem apareceu no histórico e a Serena ficou calada.
+
+
+## Lista clicável virou config (05/09)
+
+O `sendList` da Evolution continua quebrado — testado direto na API de produção, **2.3.7** devolve `TypeError: this.isZero is not a function`. O fix da 2.3.6 não cobriu esse caminho; quem resolve é a **2.4.0-rc1**, que trocou para o `listMessage` legado com `SINGLE_SELECT` porque o formato interativo novo não renderizava no Web/Desktop. Só que 2.4.0 existe apenas como release candidate (rc2, 17/05/2026) e a instância `Samuel` é a única do ambiente — atualizar mexe no canal de produção e pode exigir parear o WhatsApp de novo pelo QR Code. Fica para quando sair estável, ou depois de validar numa VPS de teste.
+
+Enquanto isso, o `LISTA_NATIVA` deixou de ser constante no código e virou **`serena_config.lista_nativa`** (on/off, padrão `off`). No dia que a Evolution suportar, é um GET:
+
+```
+/webhook/serena-wpp-config?t=TOKEN&chave=lista_nativa&valor=on
+```
+
+Se o `sendList` falhar mesmo ligado, o nó `Enviar Lista` da Entrada já cai sozinho no texto numerado — ligar não quebra nada. Testado nos dois sentidos: com `off` as opções saem numeradas no texto e `lista` volta `null`; com `on` o Core devolve o objeto de lista nativa e o texto fica curto; valor inválido é recusado (`lista_nativa aceita: on, off`).
+
+O endpoint de config também passou a aceitar **`wpp_pausa_irritado_min`**, que tinha sido criada hoje e só dava para mudar pelo banco.

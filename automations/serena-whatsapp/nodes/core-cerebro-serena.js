@@ -353,9 +353,13 @@ for (let volta = 0; volta < (trivialOk ? 0 : 6); volta++) {
 
 // Lista clicavel: [[LISTA: titulo | opcao | opcao ...]] no fim da resposta vira menu nativo do WhatsApp (a Entrada envia).
 // No historico fica so o texto com as opcoes entre parenteses.
-// LISTA_NATIVA: o sendList da Evolution atual quebra ("this.isZero is not a function"), entao por enquanto as opcoes vao
-// numeradas no proprio texto (o cliente responde com o numero). Ligar quando a Evolution for atualizada.
-const LISTA_NATIVA = false;
+// LISTA_NATIVA (serena_config.lista_nativa, on/off): o sendList da Evolution 2.3.7 ainda quebra com
+// "this.isZero is not a function" (corrigido so na 2.4.0-rc1, que trocou para o listMessage legado).
+// Enquanto isso as opcoes vao numeradas no proprio texto e o cliente responde com o numero.
+// Quando a Evolution for atualizada, ligar sem mexer em codigo:
+//   GET /webhook/serena-wpp-config?t=TOKEN&chave=lista_nativa&valor=on
+// Se o sendList falhar mesmo ligado, o no Enviar Lista da Entrada cai no texto numerado sozinho.
+const LISTA_NATIVA = String(ctx.lista_nativa || 'off') === 'on';
 let lista = null;
 let respostaHist = resposta;
 if (resposta) {
