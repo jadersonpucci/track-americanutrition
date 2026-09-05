@@ -653,3 +653,35 @@ Observação do Jaderson: o `#D4085` que aparecia na mensagem e na página é o 
 - Coluna nova `serena_pix_links.itens`.
 
 Teste: PIX de 2 unidades gerado pela ferramenta, mensagem com o produto, página e Open Graph com "Pague R$ 654,00 com Pix" e o produto na descrição, sem nenhum `#D40xx` na parte visível ao cliente.
+
+
+## Serena manda arquivos no WhatsApp: laudo do ImunoFosfo (05/09)
+
+Pedido do Jaderson: "Laudo toxicológico, preciso mandar esse PDF quando pedirem sobre o lote, laudos". A Evolution manda arquivos por `POST /message/sendMedia/Samuel` (`{ number, mediatype, mimetype, media (URL), fileName, caption, delay }`) — testado de ponta a ponta antes de montar o resto.
+
+**Onde ficam os arquivos.** `serena_config.documentos` guarda um JSON com a lista. Cada item:
+
+```json
+{ "chave": "laudo",
+  "nome": "Laudo Toxicologico - ImunoFosfo (NuLab Inc.).pdf",
+  "tipo": "document",
+  "url": "https://supabase.americanutrition.com/storage/v1/object/public/AmericaNutrition/ImunoFosfo_Toxicology_Report_NuLab_Inc.pdf",
+  "legenda": "Laudo toxicologico do ImunoFosfo, feito pelo laboratorio NuLab Inc.",
+  "quando": "o cliente pedir o laudo, laudo toxicologico, analise laboratorial, certificado de analise, teste de metais pesados/pureza, ou perguntar se o produto e testado / se o lote tem laudo",
+  "gatilhos": ["laudo"] }
+```
+
+`quando` entra no prompt (é o critério que a Serena lê); `gatilhos` (opcional, cai na `chave` se ausente) são as palavras que a rede de segurança procura. Para acrescentar um arquivo novo basta inserir outro item no JSON — nenhum workflow precisa mudar.
+
+**Workflow novo** `[Serena] Enviar Arquivo` (`enviar-arquivo.workflow.js`, id `iy1YjV6hQutIsh5v`): `POST /webhook/serena-samuel-arquivo` com `{ number, url, tipo, nome, legenda }` → `sendMedia` na instância Samuel → `{ ok, tipo, nome, message_id, erro }`.
+
+**Como a Serena manda.** O Core carrega `documentos` no contexto (`nodes/core-carregar-contexto.sql`) e monta o bloco `ARQUIVOS QUE VOCE PODE ENVIAR` no cabeçalho. Para enviar, ela termina a mensagem com uma linha `[[ARQUIVO: laudo]]`; o Core tira o marcador do texto e devolve `arquivo: { chave, url, tipo, nome, legenda }`. A Entrada prende esse arquivo na **última parte** da resposta fatiada e o nó `Enviar Arquivo` despacha; se o `sendMedia` falhar, manda a URL como texto para o cliente não ficar sem o documento. A conversa ganha a etiqueta `arquivo-enviado` e o histórico guarda o próprio marcador (`\n[[ARQUIVO: laudo]]`), para o modelo aprender a sintaxe em vez de imitar um texto solto.
+
+**Duas redes de segurança**, porque nos testes o modelo prometia o arquivo e esquecia o marcador:
+
+1. Se ele escrever `(arquivo enviado: Nome.pdf)` — imitando o registro antigo do histórico —, isso vira um envio de verdade e o trecho sai do texto.
+2. Se o cliente falou do documento (um `gatilho` na mensagem dele), ou a resposta tem verbo de envio + o gatilho, o Core anexa o arquivo sozinho. Não reenvia se já mandou nas últimas 4 falas dela, a menos que o cliente diga que não chegou / peça de novo. 7 casos cobertos em teste local (marcador, imitação, promessa sem marcador, reenvio, já mandou, assunto diferente, resposta sem verbo).
+
+**Três nós repassavam só uma lista fixa de campos** e engoliam o `arquivo` (o `lista` também, que nunca tinha sido notado porque a lista nativa está desligada): `Montar Resposta` no Core, `Chamar Serena Core` na Entrada e, por tabela, o `Fatiar Resposta`. Todos passam `lista` e `arquivo` agora.
+
+Teste real: mensagem "me manda o laudo toxicológico do ImunoFosfo aqui" no WhatsApp → resposta curta + PDF entregue (`arquivo_enviado: true`, `message_id 3EB03FF1AEC62642E51264`).

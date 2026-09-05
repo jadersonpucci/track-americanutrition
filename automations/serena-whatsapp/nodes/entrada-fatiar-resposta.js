@@ -57,5 +57,7 @@ return partes.map((t, i) => {
   let delay = Math.min(2500, Math.max(800, Math.round(t.length * 8)));
   if (i > 0) delay = Math.min(8000, Math.max(delay, anterior + 600));
   anterior = delay;
-  return { json: { number: number, text: t, delay: delay, contato_id: r.contato_id, parte: i + 1, total: partes.length } };
+  // arquivo (PDF/imagem marcado com [[ARQUIVO: ...]] no Core) e a lista vao junto da ultima parte, para o no seguinte enviar depois do texto
+  const ultimo = i === partes.length - 1;
+  return { json: { number: number, text: t, delay: delay, contato_id: r.contato_id, parte: i + 1, total: partes.length, arquivo: ultimo ? (r.arquivo || null) : null, lista: ultimo ? (r.lista || null) : null } };
 });

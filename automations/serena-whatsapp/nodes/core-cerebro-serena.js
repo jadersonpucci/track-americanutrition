@@ -117,6 +117,16 @@ if (cadC && (cadC.cpf || (cadC.endereco && cadC.endereco.cep))) {
   cadastroTxt = 'CADASTRO QUE JA TEMOS DESTE CLIENTE (do pedido ' + (cadC.pedido || 'anterior') + (cadC.data ? ', ' + cadC.data : '') + '):\n' + linhas.join('\n')
     + '\nUSE ASSIM: para gerar PIX, boleto ou checkout, NAO pergunte esses dados um a um. Mande UMA mensagem curta repetindo nome, CPF e endereco acima e pergunte se continua tudo certo (ou se prefere outro endereco). Se o cliente confirmar, chame a ferramenta com exatamente esses dados. Se ele corrigir algo, troque so o que ele corrigiu e mantenha o resto. Pergunte item a item apenas o que estiver faltando aqui em cima.';
 }
+// Arquivos que a Serena pode mandar no WhatsApp (serena_config.documentos). Ela so marca; a Entrada envia.
+let docsLista = [];
+try { docsLista = Array.isArray(ctx.documentos) ? ctx.documentos : JSON.parse(ctx.documentos || '[]'); } catch (e) { docsLista = []; }
+docsLista = docsLista.filter(d => d && d.chave && d.url);
+const documentosTxt = docsLista.length
+  ? 'ARQUIVOS QUE VOCE PODE ENVIAR (o sistema envia o arquivo; voce so marca):\n'
+    + docsLista.map(d => '- ' + d.chave + ': ' + (d.nome || d.chave) + (d.quando ? ' \u2014 mande quando ' + d.quando : '')).join('\n')
+    + '\nPara mandar, termine a mensagem com uma linha exatamente assim: [[ARQUIVO: ' + docsLista[0].chave + ']] (colchetes duplos, a palavra ARQUIVO em maiusculo e a chave da lista acima). Antes dela, escreva UMA frase curta dizendo que esta enviando o arquivo. Essa linha e a UNICA forma de mandar o arquivo: sem ela nada e enviado. NUNCA escreva no lugar dela algo como (arquivo enviado: ...) nem descreva o anexo em texto \u2014 isso aparece no historico so como registro do sistema, nao envia nada. Se o cliente pedir de novo, repita o marcador. Marque no maximo um arquivo por mensagem e so quando fizer sentido. NUNCA invente outro arquivo nem afirme resultados ou numeros que estejam dentro do documento e nao na base: se o cliente perguntar detalhes, diga que esta tudo no arquivo que voce mandou.'
+  : '';
+
 const nomeCliente = ctx.nome || (pedidos && pedidos.nome ? String(pedidos.nome).split(' ')[0] : '');
 
 // Carrinho abandonado recente: recuperacao conversacional (no modo proativo o contexto vem do disparo)
@@ -168,6 +178,7 @@ const cabecalho = [
   fatos ? 'O que ja se sabe sobre este cliente:\n' + fatos : '',
   pedidosTxt,
   cadastroTxt,
+  documentosTxt,
   carrinhoTxt,
   correcoesTxt,
   trocaTxt,
@@ -244,7 +255,7 @@ const ehTrivial = (() => {
   const bruto = String(entrada.texto || '').trim();
   if (!bruto || bruto.length > 40) return false;
   if (/^[\s\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{200D}\u{2764}\u{1F44D}\u{1F64F}]+$/u.test(bruto)) return true;
-  const t = bruto.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z\s]/g, ' ').replace(/\s+/g, ' ').trim();
+  const t = bruto.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z\s]/g, ' ').replace(/\s+/g, ' ').trim();
   if (!t || t.length > 30) return false;
   const seguro = /^(valeu|vlw|obrigad[oa]s?|obg|brigad[oa]|muito obrigad[oa]|obrigad[oa] viu|de nada|amem|bom dia|boa tarde|boa noite|ate mais|tchau|abraco|abracos|bjs|beijos|deus abencoe|deus te abencoe)( (viu|entao|serena|querida|obrigad[oa]|tudo bem|tudo bom))*$/;
   if (seguro.test(t)) return true;
@@ -366,6 +377,57 @@ if (resposta) {
   }
 }
 
+// Arquivo: [[ARQUIVO: chave]] vira um envio de PDF/imagem pela Entrada (webhook serena-samuel-arquivo).
+let arquivo = null;
+if (resposta && docsLista.length) {
+  const norm = t => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const acha = chave => docsLista.find(d => norm(d.chave) === norm(chave));
+  let doc = null;
+  const ma = resposta.match(/\[\[\s*ARQUIVO\s*:\s*([^\]]+)\]\]/i);
+  if (ma) {
+    resposta = resposta.replace(ma[0], '').replace(/\n{3,}/g, '\n\n').trim();
+    doc = acha(ma[1].trim());
+  }
+  // Rede de seguranca: as vezes o modelo imita o registro do historico e escreve
+  // "(arquivo enviado: Nome.pdf)" no lugar do marcador. Isso e um envio de verdade.
+  if (!doc) {
+    const mf = resposta.match(/\(\s*arquivo\s+enviad[oa]\s*:?\s*([^)]*)\)/i);
+    if (mf) {
+      resposta = resposta.replace(mf[0], '').replace(/[ \t]{2,}/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+      const alvo = norm(mf[1]);
+      doc = docsLista.find(d => alvo && (norm(d.nome).indexOf(alvo) >= 0 || alvo.indexOf(norm(d.chave)) >= 0 || (norm(d.nome) && alvo.indexOf(norm(d.nome)) >= 0)))
+        || (docsLista.length === 1 ? docsLista[0] : null);
+    }
+  }
+  // Segunda rede: o modelo promete o arquivo ("vou te mandar o laudo") e esquece o marcador.
+  // Se a resposta tem verbo de envio e o assunto bate com um documento (na resposta ou no que o cliente pediu), manda.
+  if (!doc && !proativo && !sugerir) {
+    const txtCli = norm(entrada.texto);
+    const txtResp = norm(resposta);
+    const verbo = /(segue|segui|mand|envi|anex|encaminh)/.test(txtResp);
+    {
+      const cand = docsLista.find(d => {
+        const gat = (Array.isArray(d.gatilhos) && d.gatilhos.length ? d.gatilhos : [d.chave]).map(norm).filter(g => g.length >= 4);
+        // o cliente falou do documento (ex.: "tem laudo?"), ou a Serena prometeu mandar
+        return gat.some(g => txtCli.indexOf(g) >= 0) || (verbo && gat.some(g => txtResp.indexOf(g) >= 0));
+      });
+      if (cand) {
+        const marca = '[[arquivo: ' + String(cand.chave).toLowerCase();
+        const jaMandou = historico.filter(h => h.papel === 'serena').slice(0, 4).some(h => String(h.texto || '').toLowerCase().indexOf(marca) >= 0);
+        const pediuDeNovo = /(de novo|novamente|outra vez|reenvi|mais uma vez|nao (chegou|recebi|veio|abriu)|n[\u00e3a]o (chegou|recebi|veio|abriu))/i.test(String(entrada.texto || ''));
+        if (!jaMandou || pediuDeNovo) doc = cand;
+      }
+    }
+  }
+  if (doc && !sugerir) {
+    arquivo = { chave: doc.chave, url: doc.url, tipo: doc.tipo || 'document', nome: doc.nome || 'arquivo', legenda: doc.legenda || '' };
+    // No historico fica o proprio marcador, para o modelo aprender a sintaxe certa em vez de imitar um texto solto.
+    respostaHist = resposta + '\n[[ARQUIVO: ' + doc.chave + ']]';
+  } else if (ma) {
+    respostaHist = resposta;
+  }
+}
+
 // Link repetido: nao reenvia um link que a Serena ja mandou ha pouco (ultimas 8 mensagens dela), a menos que o cliente peca.
 // Tambem tira URL duplicada dentro da mesma resposta. Resolve o caso de varias mensagens curtas seguidas gerando 3 ou 4 links.
 let linkRepetido = false;
@@ -413,6 +475,7 @@ if (erro) {
 const tags = [];
 const temTool = n => ferramentasUsadas.indexOf(n) >= 0;
 if (linkRepetido) tags.push('link-repetido');
+if (arquivo) tags.push('arquivo-enviado');
 if (temTool('gerar_checkout') || temTool('gerar_pix') || temTool('gerar_boleto') || temTool('carrinho_cupom_ig') || temTool('finalizar_cupom_ig')) tags.push('venda');
 if (temTool('rastrear_pedido') || temTool('consultar_status_pedido')) tags.push('rastreio');
 if (temTool('alterar_endereco')) tags.push('endereco');
@@ -465,6 +528,7 @@ return [{ json: {
   contato_id: ctx.contato_id,
   resposta: resposta,
   lista: lista,
+  arquivo: arquivo,
   erro: erro,
   ferramentas: ferramentasUsadas,
   handoff: sugerir ? false : handoff,

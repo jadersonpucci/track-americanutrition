@@ -33,4 +33,6 @@ const resposta = String(r.resposta);
 // Audio de resposta: so quando o cliente mandou audio, a resposta e curta e nao tem link
 const audioOk = p.audio === true && !!p.voz_id && resposta.length <= 400 && !/https?:\/\//i.test(resposta);
 
-return [{ json: { telefone: telefone, contato_id: r.contato_id || null, resposta: resposta, ferramentas: r.ferramentas || [], handoff: !!r.handoff, audio_ok: audioOk, voz_id: p.voz_id || '' } }];
+// lista e arquivo (PDF/imagem marcado com [[ARQUIVO: chave]]) precisam atravessar ate o Fatiar Resposta,
+// que os prende na ultima parte da mensagem para o Enviar Lista / Enviar Arquivo despacharem.
+return [{ json: { telefone: telefone, contato_id: r.contato_id || null, resposta: resposta, lista: r.lista || null, arquivo: r.arquivo || null, ferramentas: r.ferramentas || [], handoff: !!r.handoff, audio_ok: audioOk, voz_id: p.voz_id || '' } }];

@@ -1,0 +1,18 @@
+[
+  {
+    "chave": "laudo",
+    "nome": "Laudo Toxicologico - ImunoFosfo (NuLab Inc.).pdf",
+    "tipo": "document",
+    "url": "https://supabase.americanutrition.com/storage/v1/object/public/AmericaNutrition/ImunoFosfo_Toxicology_Report_NuLab_Inc.pdf",
+    "legenda": "Laudo toxicologico do ImunoFosfo, feito pelo laboratorio NuLab Inc.",
+    "quando": "o cliente pedir o laudo, laudo toxicologico, analise laboratorial, certificado de analise, teste de metais pesados/pureza, ou perguntar se o produto e testado / se o lote tem laudo",
+    "gatilhos": [
+      "laudo",
+      "laudos",
+      "toxicologic",
+      "certificado de analise",
+      "analise laboratorial",
+      "metais pesados"
+    ]
+  }
+]

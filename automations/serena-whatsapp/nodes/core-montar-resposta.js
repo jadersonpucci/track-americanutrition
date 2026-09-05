@@ -1,3 +1,7 @@
+// Nó "Montar Resposta" do workflow [Serena] Core (5Z5MdXAiatwnjc73).
+// Normaliza o markdown para o formato do WhatsApp e repassa para quem chamou o Core
+// (Entrada Samuel, Inbox, Meta, site) os campos que o canal precisa para entregar a resposta:
+// texto, lista clicavel e arquivo (PDF/imagem).
 const c = $('Cerebro Serena').first().json;
 const canal = $('Normalizar').first().json.entrada.canal;
 
@@ -33,6 +37,9 @@ return [{ json: {
   contato_id: c.contato_id,
   canal: canal,
   resposta: resposta,
+  // lista clicavel e arquivo (PDF/imagem) que a Entrada envia junto com a resposta
+  lista: c.lista || null,
+  arquivo: c.arquivo || null,
   ferramentas: c.ferramentas || [],
   erro: c.erro || null
 } }];
