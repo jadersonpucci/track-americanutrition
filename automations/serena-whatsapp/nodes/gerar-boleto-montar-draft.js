@@ -49,7 +49,9 @@ if (ctx.frete && Number(ctx.frete.valor) > 0) {
   };
 }
 
-const query = 'mutation draftOrderCreate($input: DraftOrderInput!) { draftOrderCreate(input: $input) { draftOrder { id name totalPrice invoiceUrl } userErrors { field message } } }';
+// lineItems na resposta: o cliente ve o PRODUTO na mensagem, nao o numero do rascunho
+// (o numero do pedido de verdade, AN-xxxxx, so existe depois do pagamento).
+const query = 'mutation draftOrderCreate($input: DraftOrderInput!) { draftOrderCreate(input: $input) { draftOrder { id name totalPrice invoiceUrl lineItems(first: 20) { edges { node { title quantity variantTitle } } } } userErrors { field message } } }';
 
 return [{ json: {
   graphql_body: { query: query, variables: { input: draftInput } },

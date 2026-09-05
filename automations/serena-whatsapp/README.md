@@ -685,3 +685,15 @@ Pedido do Jaderson: "Laudo toxicológico, preciso mandar esse PDF quando pedirem
 **Três nós repassavam só uma lista fixa de campos** e engoliam o `arquivo` (o `lista` também, que nunca tinha sido notado porque a lista nativa está desligada): `Montar Resposta` no Core, `Chamar Serena Core` na Entrada e, por tabela, o `Fatiar Resposta`. Todos passam `lista` e `arquivo` agora.
 
 Teste real: mensagem "me manda o laudo toxicológico do ImunoFosfo aqui" no WhatsApp → resposta curta + PDF entregue (`arquivo_enviado: true`, `message_id 3EB03FF1AEC62642E51264`).
+
+
+## Produto no lugar do número do rascunho: agora no boleto também (05/09)
+
+Mesmo tratamento que o PIX ganhou, aplicado ao `[Serena Tool] Gerar Boleto` (`gBgvM4y3bYzbnrE5`). O `#D40xx` é o rascunho da Shopify, interno; o número do pedido (AN-xxxxx) só nasce depois do pagamento.
+
+- `Montar draft` (`nodes/gerar-boleto-montar-draft.js`): a mutation `draftOrderCreate` também pede `lineItems(first: 20) { edges { node { title quantity variantTitle } } }`.
+- `Extrair draft` (`nodes/gerar-boleto-extrair-draft.js`): monta `itens_texto` com a mesma regra do PIX — a variante vem como "Tradicionais / 90 Caps" e os pedaços genéricos (Tradicionais, Default Title, Padrão, Único) saem, ficando o que identifica ("Vegano", "90 Caps"), sem repetir o que já está no título.
+- `Extrair boleto` (`nodes/gerar-boleto-extrair-boleto.js`): repassa `itens_texto` adiante.
+- `Formatar resposta` (`nodes/gerar-boleto-formatar-resposta.js`): a mensagem do cliente abre com `📦 2x ImunoFosfo 90 Caps` no lugar de `📦 Pedido: #D40xx`. O aviso do Telegram ganhou a linha do produto e o rascunho virou `📝 Rascunho:` (a equipe continua precisando dele para achar o pedido na Shopify). A saída da ferramenta ganhou `itens_texto` e a `nota_serena` pedindo que ela não cite o rascunho ao cliente, repita a linha digitável em uma linha sozinha e depois o link do PDF.
+
+Teste real (boleto de 2 itens diferentes, R$ 791,00): `itens_texto` = "2x ImunoFosfo 90 Caps, 1x ImunoFosfo Liquid", mensagem e card do Telegram conforme acima, nenhum `#D40xx` na parte visível ao cliente.
