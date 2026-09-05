@@ -584,3 +584,20 @@ Correção em três camadas:
 3. **Ferramentas Gerar PIX e Gerar Boleto**: a mensagem base agora diz que o pedido já está registrado e reservado e explica onde colar no app do banco, com o código sempre em linha própria.
 
 Testado com a mensagem real da conversa: 3 partes (texto + instrução / código intacto / fechamento), código byte a byte igual ao original. Mesmo teste para boleto e para mensagem sem código (segue em uma parte só).
+
+
+## Página do Pix (05/09): quem não consegue copiar o código abre um link
+
+Pedido do Jaderson depois do caso da Clarice: além do código em mensagem separada, mandar também um link com uma página que facilite o pagamento.
+
+**`[Serena] Pagina do Pix`** (`pagina-pix.workflow.js`, id d8xacawAcoWtppWh):
+
+- `GET /webhook/pix?t=TOKEN` — página de pagamento no celular: pedido e valor, **contagem regressiva** do prazo, botão grande **Copiar código Pix** (clipboard com fallback de seleção), passo a passo em 4 linhas, **QR Code** gerado na hora a partir do próprio código (biblioteca no cliente; a imagem do Pagar.me fica como reserva) e o código em texto para selecionar à mão.
+- `GET /webhook/pix-status?t=TOKEN` — a página consulta a cada 10 s. Quando o draft order da Shopify vira `completed` (a Confirmação de Pagamento fecha o pedido assim que o Pix cai), a página se atualiza sozinha e mostra **Pagamento confirmado**. Também há tela própria para Pix expirado.
+- Sem dado do cliente na URL: o token é aleatório e os dados ficam em `serena_pix_links` (token, draft, valor, código, expiração, pago, aberturas).
+
+**`[Serena Tool] Gerar PIX`** grava a linha, encurta o link pelo AN Links (`seguro.americanutrition.com/xxxxx`) e manda junto com o código: "Se preferir, abra esta página para copiar o código com um toque ou pagar pelo QR Code". O link vai na mensagem depois do código, então não atrapalha a cópia. Se o Supabase ou o encurtador falharem, a mensagem sai normal, só sem o link.
+
+**Fatiar Resposta** ganhou detecção de explicação repetida: se o texto antes do código já ensina a colar no banco, entra só a dica curta ("toque e segure > *Copiar*"), senão entra a instrução completa.
+
+Teste de ponta a ponta: PIX real gerado pela ferramenta (pedido #D4083, R$ 327), link `seguro.americanutrition.com/CbZv6gH` redirecionando para a página, página respondendo com pedido/valor/código certos, status devolvendo `{"pago":false}`, e a mensagem fatiada em 3 partes (texto + dica / código sozinho / link + fechamento). O draft de teste foi apagado da Shopify e as linhas de teste do banco também.

@@ -9,6 +9,7 @@ const MAX = 900;
 const RE_PIX = /0002010[0-9][\s\S]{40,}?6304[0-9A-Fa-f]{4}/;
 const RE_BOLETO = /\d{5}[. ]?\d{5}[ ]+\d{5}[. ]?\d{6}[ ]+\d{5}[. ]?\d{6}[ ]+\d[ ]+\d{14}|\b\d{47,48}\b/;
 const INSTR_PIX = 'Seu pedido já está registrado, falta só o pagamento ✅\n\nPara pagar, toque e segure na mensagem abaixo, escolha *Copiar* e cole no app do seu banco, em *Pix > Pix Copia e Cola*. Não precisa clicar no código, ele não é um link 💙';
+const DICA = 'Toque e segure na mensagem abaixo e escolha *Copiar* — o código não é um link 💙';
 const INSTR_BOLETO = 'Seu pedido já está registrado, falta só o pagamento ✅\n\nPara pagar, toque e segure na mensagem abaixo, escolha *Copiar* e cole no app do seu banco, na opção de pagar boleto pelo código de barras 💙';
 
 function quebrar(t) {
@@ -39,7 +40,9 @@ if (m) {
   // a explicacao fica na mensagem logo antes do codigo (a Serena pode ja ter escrito a dela; a nossa e a garantia)
   // tira um rotulo solto no fim ("PIX copia e cola:", "Linha digitavel:"), que a instrucao abaixo substitui
   antes = antes.replace(/\n[^\n]{0,60}:\s*$/, '').replace(/[:\s]*$/, '');
-  antes = (antes ? antes + '\n\n' : '') + instr;
+  // se a Serena (ou a ferramenta) ja explicou como pagar, nao repete a explicacao: entra so a dica de copiar
+  const jaExplica = /(copi|cole)[^\n]{0,80}(banco|copia e cola|c[oó]digo de barras)/i.test(antes);
+  antes = (antes ? antes + '\n\n' : '') + (jaExplica ? DICA : instr);
   partes = quebrar(antes).concat([codigo], quebrar(depois));
 } else {
   partes = quebrar(texto);
