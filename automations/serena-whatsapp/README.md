@@ -716,3 +716,21 @@ Três defeitos encadeados, os três corrigidos:
 **Bônus do mesmo print: a pergunta aparecia duas vezes.** "Qual versão você prefere?" saía no fim do texto e de novo como título da lista. O corte antigo só removia a última linha se ela tivesse até 90 caracteres — e ali a pergunta vinha no fim de um parágrafo longo. Agora corta só a **frase** final, preservando a explicação que vem antes (6 casos em teste local), e o prompt da lista passou a proibir a pergunta no texto.
 
 Ações no caso real: pausas das duas clientes liberadas na hora; as filas ficaram abertas de propósito, para a equipe olhar as duas conversas.
+
+
+## Frasco que não cobre o protocolo: a Serena avisa antes de gerar o link (05/09)
+
+Saiu do caso da Eliane: em câncer com metástase a Serena indicou fase de choque (6 cápsulas/dia por 7 dias) e a cliente escolheu o frasco de **42 cápsulas** — que acaba exatamente no fim do choque, sem sobrar nada para a manutenção. A Serena respeitou a escolha e gerou o link, sem comentar.
+
+Adendo novo em `serena_config.system_prompt` (mesmo bloco cacheado da base, formato dos adendos aprovados — ver `nodes/serena-config-adendos-prompt.md`): quando a versão escolhida não cobre o protocolo indicado **para aquele caso**, a Serena avisa antes de gerar o link, com a conta feita (cápsulas ÷ dose diária = dias). Uma frase só, reconhecendo a escolha, dizendo quantos dias rende e qual versão cobriria; a decisão continua sendo do cliente e, se ele mantiver, ela gera o link sem repetir o assunto. Não vale quando o cliente não perguntou de protocolo nem em recompra de quem já sabe a dose.
+
+Teste com o caso real: *"o frasco de 42 cápsulas rende exatamente os 7 dias da fase de choque (6/dia), mas não sobra nada para começar a manutenção depois — pra isso você precisaria do frasco de 90 ou comprar um segundo depois. Quer que eu gere o link do 42 mesmo assim, ou prefere já o de 90?"*. E o teste negativo ("quero comprar o de 42 cápsulas", sem contexto de protocolo) segue direto para o link, sem sermão.
+
+
+## Lista de números bloqueados: o que é
+
+`serena_wpp_bloqueados` tem 10 números, todos com motivo `lista inicial` gravados pelo `setup` em 02/09 — é a lista de exceções definida quando a Serena entrou no ar: números internos e parceiros que ela nunca deve responder. O `Pode Responder?` para no `if (r.bloqueado === true) return []`, **antes de qualquer gravação**, então as mensagens desses números também não entram em `serena_mensagens` e não aparecem no Inbox.
+
+Isso está correto para o anti-spam (mesma tabela, motivo `antispam`), mas cega a equipe nos bloqueios manuais. Dois números da lista escreveram desde então: o número interno da América (+1 646) e o 13 98149-1402, uma afiliada que desde 04/09 15:41 pergunta por que o pedido AN-15217 não creditou a comissão dela, mandou prints e às 18:25 escreveu "Só nao me esquece!" — sem nenhum registro de resposta.
+
+Opção discutida, **não implementada**: gravar no histórico também as mensagens de bloqueados com motivo diferente de `antispam`, para elas aparecerem no Inbox sem a Serena responder.
