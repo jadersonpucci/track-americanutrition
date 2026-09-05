@@ -10,6 +10,10 @@ if (modo === 'teste') {
   const lista = String(r.teste_numeros || '').split(/[\s,;]+/).map(n => n.replace(/\D/g, '')).filter(Boolean);
   if (lista.indexOf(tel) < 0) return [];
 }
+// Serena pausada (handoff, cliente irritado ou humano respondendo pelo celular): ela nao responde.
+// A mensagem do cliente ja foi gravada no historico pelo "Registrar no Buffer + Config", que tambem
+// marca a pendencia como processada — assim o atendente que assumiu ve no Inbox o que o cliente pediu
+// e a Serena nao volta depois respondendo uma mensagem velha fora de contexto.
 if (r.pausada_ate) return [];
 if (Number(r.respostas_1h || 0) >= Number(r.max_por_hora || 30)) return [];
 if (r.ignorar_regex) {

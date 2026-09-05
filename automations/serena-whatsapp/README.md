@@ -697,3 +697,22 @@ Mesmo tratamento que o PIX ganhou, aplicado ao `[Serena Tool] Gerar Boleto` (`gB
 - `Formatar resposta` (`nodes/gerar-boleto-formatar-resposta.js`): a mensagem do cliente abre com `📦 2x ImunoFosfo 90 Caps` no lugar de `📦 Pedido: #D40xx`. O aviso do Telegram ganhou a linha do produto e o rascunho virou `📝 Rascunho:` (a equipe continua precisando dele para achar o pedido na Shopify). A saída da ferramenta ganhou `itens_texto` e a `nota_serena` pedindo que ela não cite o rascunho ao cliente, repita a linha digitável em uma linha sozinha e depois o link do PDF.
 
 Teste real (boleto de 2 itens diferentes, R$ 791,00): `itens_texto` = "2x ImunoFosfo 90 Caps, 1x ImunoFosfo Liquid", mensagem e card do Telegram conforme acima, nenhum `#D40xx` na parte visível ao cliente.
+
+
+## Cliente com câncer classificado como "irritado": Serena calava por 12h (05/09)
+
+Caso real: a cliente perguntou sobre o marido com câncer no fígado com metástase, a Serena respondeu bem e ofereceu a lista de versões. **No mesmo instante o detector de humor marcou `irritado`**, abriu fila humana e pausou a Serena por 720 min. Quando ela respondeu "3" (escolhendo a versão), 1h40 depois, ninguém respondeu — e a mensagem sumiu. Um segundo caso idêntico aconteceu 1h47 depois (cliente comprando para a mãe que ia começar quimioterapia, marcado `irritado` no "No caso é pra minha mãe").
+
+O detector estava lendo **peso emocional como raiva**. Isso atinge exatamente as conversas mais delicadas e mais próximas da venda.
+
+Três defeitos encadeados, os três corrigidos:
+
+**1. O classificador confundia dor com raiva.** O prompt do Haiku agora define `irritado` como raiva dirigida **a nós** (empresa, produto, entrega, atendimento) e traz o contra-exemplo explícito: tristeza, medo, choro, desespero, angústia ou desabafo por doença grave (câncer, metástase, quimioterapia, AVC), diagnóstico ruim, dor ou preocupação com um familiar são **neutro**, "por mais pesada que seja a mensagem, e um cliente assim precisa da assistente respondendo, não de silêncio"; na dúvida, neutro. Testado: os dois casos reais voltam `neutro`, e o cliente de verdade irritado ("terceira vez que cobro, vocês são golpistas, vou no Procon") continua escalando com `handoff`.
+
+**2. Um falso positivo custava 12 horas de silêncio.** Config nova `wpp_pausa_irritado_min` (**60**): quando o `irritado` foi detectado sozinho pela IA, a pausa é de 1h em vez das 12h de `wpp_pausa_handoff_min` (que continua valendo para o handoff pedido pelo cliente ou pela própria Serena). Tempo de sobra para um humano assumir, sem sumir com o cliente o dia inteiro. Verificado: pausa gravada com 60 min.
+
+**3. O que o cliente escrevia durante a pausa desaparecia.** O `Pode Responder?` parava no `if (r.pausada_ate) return []` **antes** de qualquer gravação, e o `Registrar no Buffer` marca como processada toda pendência com mais de 2 minutos na mensagem seguinte. Resultado: o "3" da cliente não entrou em `serena_mensagens`, não apareceu no Inbox para o atendente que deveria assumir, e não foi visto pelo reprocessador (que lê `serena_mensagens`, não o buffer). Agora o `Registrar no Buffer + Config` grava a fala do cliente no histórico quando há pausa ativa, e já insere a linha do buffer como processada (a Serena não volta horas depois respondendo mensagem velha fora de contexto). Testado nos dois caminhos: com pausa grava no histórico e marca processado; sem pausa nada muda.
+
+**Bônus do mesmo print: a pergunta aparecia duas vezes.** "Qual versão você prefere?" saía no fim do texto e de novo como título da lista. O corte antigo só removia a última linha se ela tivesse até 90 caracteres — e ali a pergunta vinha no fim de um parágrafo longo. Agora corta só a **frase** final, preservando a explicação que vem antes (6 casos em teste local), e o prompt da lista passou a proibir a pergunta no texto.
+
+Ações no caso real: pausas das duas clientes liberadas na hora; as filas ficaram abertas de propósito, para a equipe olhar as duas conversas.
