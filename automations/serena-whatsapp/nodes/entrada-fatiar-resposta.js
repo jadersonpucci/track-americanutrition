@@ -2,18 +2,49 @@ const r = $input.first().json || {};
 const texto = String(r.resposta || '').trim();
 if (!texto) return [];
 const MAX = 900;
-let partes = [];
-if (texto.length <= MAX) {
-  partes = [texto];
-} else {
-  const paras = texto.split(/\n\s*\n/);
+
+// Codigo de pagamento (PIX copia e cola ou linha digitavel do boleto) vai SOZINHO numa mensagem:
+// no WhatsApp o cliente copia a mensagem inteira, entao codigo misturado com texto nao cola no app do banco.
+// O PIX BR Code comeca com 0002010x e termina em 6304 + 4 caracteres (CRC); a linha digitavel tem 47 ou 48 digitos.
+const RE_PIX = /0002010[0-9][\s\S]{40,}?6304[0-9A-Fa-f]{4}/;
+const RE_BOLETO = /\d{5}[. ]?\d{5}[ ]+\d{5}[. ]?\d{6}[ ]+\d{5}[. ]?\d{6}[ ]+\d[ ]+\d{14}|\b\d{47,48}\b/;
+const INSTR_PIX = 'Seu pedido já está registrado, falta só o pagamento ✅\n\nPara pagar, toque e segure na mensagem abaixo, escolha *Copiar* e cole no app do seu banco, em *Pix > Pix Copia e Cola*. Não precisa clicar no código, ele não é um link 💙';
+const INSTR_BOLETO = 'Seu pedido já está registrado, falta só o pagamento ✅\n\nPara pagar, toque e segure na mensagem abaixo, escolha *Copiar* e cole no app do seu banco, na opção de pagar boleto pelo código de barras 💙';
+
+function quebrar(t) {
+  t = String(t || '').trim();
+  if (!t) return [];
+  if (t.length <= MAX) return [t];
+  const paras = t.split(/\n\s*\n/);
+  const out = [];
   let cur = '';
   for (const p of paras) {
-    if (cur && (cur + '\n\n' + p).length > MAX) { partes.push(cur); cur = p; }
+    if (cur && (cur + '\n\n' + p).length > MAX) { out.push(cur); cur = p; }
     else { cur = cur ? cur + '\n\n' + p : p; }
   }
-  if (cur) partes.push(cur);
+  if (cur) out.push(cur);
+  return out;
 }
+
+let partes = [];
+const mp = texto.match(RE_PIX);
+const mb = mp ? null : texto.match(RE_BOLETO);
+const m = mp || mb;
+if (m) {
+  const codigo = m[0].trim();
+  const i = texto.indexOf(m[0]);
+  let antes = texto.slice(0, i).trim();
+  const depois = texto.slice(i + m[0].length).trim();
+  const instr = mp ? INSTR_PIX : INSTR_BOLETO;
+  // a explicacao fica na mensagem logo antes do codigo (a Serena pode ja ter escrito a dela; a nossa e a garantia)
+  // tira um rotulo solto no fim ("PIX copia e cola:", "Linha digitavel:"), que a instrucao abaixo substitui
+  antes = antes.replace(/\n[^\n]{0,60}:\s*$/, '').replace(/[:\s]*$/, '');
+  antes = (antes ? antes + '\n\n' : '') + instr;
+  partes = quebrar(antes).concat([codigo], quebrar(depois));
+} else {
+  partes = quebrar(texto);
+}
+
 const number = String(r.telefone || '').replace(/\D/g, '');
 // Ordem das partes: a Evolution aplica o 'delay' (digitando...) de cada envio por conta propria, entao uma parte curta
 // com delay menor chegava ANTES de uma parte longa enviada antes dela. Cada parte agora espera pelo menos

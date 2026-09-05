@@ -571,3 +571,16 @@ Correção: função `soCodigo` (`nodes/rastreio-so-codigo.js`, com a lista dos 
 - **`[Serena] Painel API`** e **`[Serena] Rastreio Proativo`**: mesmo tratamento, porque leem o rastreio direto da Shopify.
 
 As duas linhas antigas do `scheduled_messages` foram normalizadas no banco. Teste de ponta a ponta (agendamento com a URL da J&T para o WhatsApp do Jaderson, pedido fictício AN-TESTE-LINK): a mensagem saiu com `https://track.americanutrition.com/888030910163172`. Função testada em 17 formatos (J&T, Correios, Loggi, UPS, USPS, Canada Post, linkcorreios, 17track, valores inválidos).
+
+
+## PIX copia e cola em mensagem separada (05/09, manhã)
+
+Print do Jaderson (Clarice, +55 16 99717-0593): a Serena mandou o PIX copia e cola **dentro** da mensagem com pedido, valor e explicação. No WhatsApp o "Copiar" leva a mensagem inteira, então a cliente não conseguia copiar só o código; ela tentou clicar nele e recebeu "NÃO FOI POSSÍVEL ACESSAR O SITE" (o BR Code tem `pix.stone.com.br/...` dentro e o WhatsApp transforma em link).
+
+Correção em três camadas:
+
+1. **Entrada, `Fatiar Resposta`** (`nodes/entrada-fatiar-resposta.js`) — a garantia. Detecta o PIX BR Code (começa com `0002010x` e termina em `6304` + CRC) ou a linha digitável do boleto (47-48 dígitos) e envia **o código sozinho em uma mensagem**, com o texto antes e o texto depois em mensagens próprias. Na mensagem anterior entra a instrução: pedido já registrado, e para pagar é só tocar e segurar na mensagem de baixo, *Copiar*, e colar no app do banco em *Pix > Pix Copia e Cola* (avisando que o código não é link). Um rótulo solto no fim do texto ("PIX copia e cola:") é removido, já que a instrução o substitui. Vale para qualquer resposta da Serena, independente de como ela escreveu.
+2. **Core, cabeçalho**: regra CÓDIGO DE PAGAMENTO — reproduzir o código exatamente como a ferramenta devolveu, em uma linha sozinha, sem quebrar nem reescrever, sem repetir a explicação (o sistema já acrescenta) e dizendo antes que o pedido está registrado.
+3. **Ferramentas Gerar PIX e Gerar Boleto**: a mensagem base agora diz que o pedido já está registrado e reservado e explica onde colar no app do banco, com o código sempre em linha própria.
+
+Testado com a mensagem real da conversa: 3 partes (texto + instrução / código intacto / fechamento), código byte a byte igual ao original. Mesmo teste para boleto e para mensagem sem código (segue em uma parte só).
