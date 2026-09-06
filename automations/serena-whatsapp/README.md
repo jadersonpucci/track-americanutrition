@@ -756,3 +756,26 @@ Enquanto isso, o `LISTA_NATIVA` deixou de ser constante no código e virou **`se
 Se o `sendList` falhar mesmo ligado, o nó `Enviar Lista` da Entrada já cai sozinho no texto numerado — ligar não quebra nada. Testado nos dois sentidos: com `off` as opções saem numeradas no texto e `lista` volta `null`; com `on` o Core devolve o objeto de lista nativa e o texto fica curto; valor inválido é recusado (`lista_nativa aceita: on, off`).
 
 O endpoint de config também passou a aceitar **`wpp_pausa_irritado_min`**, que tinha sido criada hoje e só dava para mudar pelo banco.
+
+
+## Depoimento de grupo vira review no site com um botão (06/09)
+
+O `Grupos | Radar de Oportunidade e Risco` já lia os 14 grupos e mandava no Telegram o card **DEPOIMENTO ESPONTANEO** com a leitura da IA e o texto original — 14 depoimentos detectados em 30 dias, confiança média 82%, mas nenhum virava nada porque o card era só texto. Agora ele tem botão.
+
+**No card:** `⭐ Virar review no site`. O `Decidir e Alertar` passou a capturar o id da linha do `grupo_radar` (o insert virou `... returning id`, com fallback de `select` quando a mensagem já existia) e o botão abre `/webhook/dep-review?t=TOKEN&id=<id>`. Os cards de compra quente e risco continuam iguais.
+
+**Workflow novo** `[Depoimentos] Review de Grupo` (`dep-review.workflow.js`, id `1z8vXF57zD3DicR2`), `GET /webhook/dep-review`. A página abre no celular com a marca da América e traz:
+
+- a mensagem original do grupo, quem escreveu, qual grupo, a data e a confiança da IA;
+- **nome sugerido no formato de e-commerce**: "MARCIA GABRIELA SP" vira `Marcia S.`; quando o `push_name` é um e-mail (acontece bastante), sugere `Cliente` para quem aprova digitar o nome de verdade;
+- o texto já limpo, **editável** numa textarea — dá para cortar o que não deve ir ao ar;
+- seletor de produto (os 11 que concentram os reviews) e de nota (padrão 5 estrelas), e uma caixa "marcar como destaque";
+- botões **Publicar review** e **Descartar**.
+
+**Aviso de alegação terapêutica.** Quando o texto cita cura, tumor, câncer, metástase, quimio, PSA, próstata, hiperplasia, "reduziu", "desapareceu" e afins, a página mostra um aviso amarelo listando os termos encontrados: suplemento não pode alegar que trata ou cura doença (ANVISA RDC 240/243) e review no site próprio conta como publicidade. **Não bloqueia nada** — só põe a informação na frente de quem clica. No depoimento do print (PSA + hiperplasia da próstata) o aviso aparece com os três termos.
+
+**Onde o review cai.** Na tabela `reviews` que já roda o site (42 mil linhas), com `origem = 'whatsapp'`, `status = 'aprovado'` (ou `destaque`) e `verified = false` — a pessoa não comprou por um pedido rastreável, então não leva selo de compra verificada. O `ia_flags` guarda o rastro: grupo, autor, confiança da IA e o **texto original** completo, para provar de onde veio se alguém questionar. O `grupo_radar` ganhou `review_id`, `decisao` e `decidido_em`, então clicar duas vezes no botão mostra "já virou review" em vez de duplicar.
+
+Testado de ponta a ponta: mensagem falsa pelo webhook do Radar → classificada como depoimento (82%) → card com botão → página → publicação → linha em `reviews` com o rastro certo → segundo clique recusado → token errado recusado. O review de teste foi marcado como `rejeitado` e as linhas de teste do radar como `teste`.
+
+**Decisões suas:** publica direto, sem pedir autorização à pessoa; nome no formato primeiro nome + inicial.
