@@ -1,6 +1,7 @@
 // No "Pagina ou Publicar" do workflow [Depoimentos] Review de Grupo (id 1z8vXF57zD3DicR2).
-// GET /webhook/dep-review?t=TOKEN&id=<grupo_radar.id> — o botao do card do Radar abre aqui.
-// A service key vai literal no no do n8n; aqui fica o placeholder.
+// GET /webhook/dep-review?t=TOKEN         -> fila dos depoimentos ainda nao decididos
+// GET /webhook/dep-review?t=TOKEN&id=N    -> um depoimento, com o formulario de publicacao
+// O botao do card do Radar aponta para a segunda forma. Service key redigida aqui.
 const SK = 'SUPABASE_SERVICE_KEY';
 const SB = 'https://supabase.americanutrition.com/pg/query';
 const BASE = 'https://n8n.americanutrition.com/webhook/dep-review';
@@ -69,7 +70,13 @@ const CSS = 'body{font-family:-apple-system,system-ui,Segoe UI,sans-serif;max-wi
   + '.btn{display:inline-block;border:0;background:#108474;color:#fff;font:inherit;font-size:15px;font-weight:600;padding:12px 20px;border-radius:10px;cursor:pointer;text-decoration:none;margin-top:16px}'
   + '.btn.sec{background:#fff;color:#8a94a6;border:1px solid #ccd5e2;font-weight:500;padding:11px 18px}'
   + '.meta{font-size:13px;color:#6b7a90}.meta b{color:#12203a;font-weight:600}'
-  + '.ok{background:#108474;color:#fff;border-radius:14px;padding:18px}.ok h1{margin:0 0 6px;font-size:18px}.ok a{color:#fff}';
+  + '.ok{background:#108474;color:#fff;border-radius:14px;padding:18px}.ok h1{margin:0 0 6px;font-size:18px}.ok a{color:#fff}'
+  + '.fila a.item{display:block;text-decoration:none;color:inherit}.fila a.item:active{opacity:.7}'
+  + '.chip{display:inline-block;font-size:11px;font-weight:700;padding:3px 8px;border-radius:99px;background:#eef2f7;color:#5a6a80;margin-left:6px}'
+  + '.chip.alerta{background:#fff1d6;color:#8a5b00}.trecho{font-size:14px;color:#3a475c;margin:8px 0 0}'
+  + '.contas{display:flex;gap:8px;margin:0 0 14px}.contas div{flex:1;background:#fff;border:1px solid #e3e8f0;border-radius:10px;padding:10px;text-align:center}'
+  + '.contas b{display:block;font-size:20px}.contas span{font-size:11px;color:#6b7a90;text-transform:uppercase;letter-spacing:.04em}'
+  + '.vazio{text-align:center;color:#6b7a90;padding:30px 10px}';
 
 const pagina = (titulo, corpo) => '<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + esc(titulo) + '</title><style>' + CSS + '</style></head><body>' + corpo + '</body></html>';
 const erro = (msg) => [{ json: { html: pagina('Depoimento', '<div class="card"><h1>' + esc(msg) + '</h1></div>') } }];
@@ -77,7 +84,31 @@ const erro = (msg) => [{ json: { html: pagina('Depoimento', '<div class="card"><
 const q = $input.first().json.query || {};
 if (String(q.t || '') !== TOKEN) return erro('Link invalido ou expirado.');
 const id = Number(q.id || 0);
-if (!id) return erro('Depoimento nao informado.');
+
+// Sem id: fila com tudo que ainda nao foi decidido, do mais confiante para o menos
+if (!id) {
+  const pend = await sql('select id, grupo_nome, push_name, texto, confianca, criado_em from grupo_radar where tipo = ' + E('depoimento') + ' and decisao is null order by confianca desc, criado_em desc limit 50');
+  const cont = await sql('select coalesce(decisao, ' + E('pendente') + ') as d, count(*)::int as n from grupo_radar where tipo = ' + E('depoimento') + ' group by 1');
+  const num = alvo => { const l = cont.filter(c => c.d === alvo)[0]; return l ? l.n : 0; };
+  let c = '<div class="topo"><h1>Depoimentos dos grupos</h1><p>' + pend.length + ' esperando decisao</p></div>';
+  c += '<div class="contas"><div><b>' + num('pendente') + '</b><span>na fila</span></div><div><b>' + num('publicado') + '</b><span>publicados</span></div><div><b>' + num('descartado') + '</b><span>descartados</span></div></div>';
+  if (!pend.length) {
+    c += '<div class="card vazio">Nada na fila. Quando o Radar achar um depoimento novo nos grupos, ele aparece aqui e no Telegram.</div>';
+  } else {
+    c += '<div class="fila">';
+    for (const p of pend) {
+      const alerta = alegacoes(p.texto).length;
+      const dt = String(p.criado_em || '').slice(0, 10).split('-').reverse().join('/');
+      const trecho = String(p.texto || '').replace(/\s+/g, ' ').trim();
+      c += '<a class="item card" href="' + BASE + '?t=' + esc(TOKEN) + '&id=' + p.id + '">'
+        + '<p class="meta"><b>' + esc(nomeCurto(p.push_name)) + '</b> &middot; ' + esc(p.grupo_nome || '') + ' &middot; ' + esc(dt)
+        + '<span class="chip">' + (p.confianca || 0) + '%</span>' + (alerta ? '<span class="chip alerta">alegacao</span>' : '') + '</p>'
+        + '<p class="trecho">' + esc(trecho.slice(0, 200)) + (trecho.length > 200 ? '...' : '') + '</p></a>';
+    }
+    c += '</div>';
+  }
+  return [{ json: { html: pagina('Fila de depoimentos', c) } }];
+}
 
 const linhas = await sql('select id, grupo_nome, push_name, autor, texto, confianca, resumo, criado_em, decisao, review_id::text as review_id from grupo_radar where id = ' + id + ' and tipo = ' + E('depoimento') + ' limit 1');
 const d = linhas[0];
@@ -90,12 +121,12 @@ if (d.decisao && acao !== 'ver') {
   const jaTxt = d.decisao === 'publicado'
     ? 'Este depoimento ja virou review no site.' + (d.review_id ? ' (id ' + esc(d.review_id) + ')' : '')
     : 'Este depoimento foi descartado.';
-  return [{ json: { html: pagina('Depoimento', '<div class="card"><p class="rot">Ja resolvido</p><p>' + esc(jaTxt) + '</p></div>') } }];
+  return [{ json: { html: pagina('Depoimento', '<div class="card"><p class="rot">Ja resolvido</p><p>' + esc(jaTxt) + '</p></div>' + '<p><a class="btn sec" href="' + BASE + '?t=' + esc(TOKEN) + '">Voltar para a fila</a></p>') } }];
 }
 
 if (acao === 'descartar') {
   await sql('update grupo_radar set decisao = ' + E('descartado') + ', decidido_em = now() where id = ' + id);
-  return [{ json: { html: pagina('Descartado', '<div class="card"><p class="rot">Pronto</p><p>Depoimento descartado. Nada foi publicado.</p></div>') } }];
+  return [{ json: { html: pagina('Descartado', '<div class="card"><p class="rot">Pronto</p><p>Depoimento descartado. Nada foi publicado.</p></div>' + '<p><a class="btn sec" href="' + BASE + '?t=' + esc(TOKEN) + '">Voltar para a fila</a></p>') } }];
 }
 
 if (acao === 'publicar') {
@@ -116,7 +147,8 @@ if (acao === 'publicar') {
 
   const corpo = '<div class="ok"><h1>Review publicado</h1><p>' + esc(nome) + ' &middot; ' + rating + ' estrelas &middot; ' + esc(prod.titulo) + (status === 'destaque' ? ' &middot; em destaque' : '') + '</p></div>'
     + '<div class="card"><p class="rot">Como ficou</p><div class="orig">' + esc(texto) + '</div>'
-    + '<p class="meta" style="margin-top:12px"><a href="' + LOJA + esc(prod.handle) + '">Ver na pagina do produto</a></p></div>';
+    + '<p class="meta" style="margin-top:12px"><a href="' + LOJA + esc(prod.handle) + '">Ver na pagina do produto</a></p></div>'
+    + '<p><a class="btn sec" href="' + BASE + '?t=' + esc(TOKEN) + '">Voltar para a fila</a></p>';
   return [{ json: { html: pagina('Review publicado', corpo) } }];
 }
 

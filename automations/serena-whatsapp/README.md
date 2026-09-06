@@ -779,3 +779,5 @@ O `Grupos | Radar de Oportunidade e Risco` já lia os 14 grupos e mandava no Tel
 Testado de ponta a ponta: mensagem falsa pelo webhook do Radar → classificada como depoimento (82%) → card com botão → página → publicação → linha em `reviews` com o rastro certo → segundo clique recusado → token errado recusado. O review de teste foi marcado como `rejeitado` e as linhas de teste do radar como `teste`.
 
 **Decisões suas:** publica direto, sem pedir autorização à pessoa; nome no formato primeiro nome + inicial.
+
+**Fila (06/09).** `GET /webhook/dep-review?t=TOKEN`, sem `id`, lista tudo que ainda não foi decidido, do mais confiante para o menos: contadores no topo (na fila / publicados / descartados) e um cartão por depoimento com nome sugerido, grupo, data, a confiança da IA e uma etiqueta **alegacao** quando o texto tem termo terapêutico — dá para escolher pelo que ler antes de abrir. Cada cartão abre a página individual, e publicar ou descartar volta para a fila, então dá para varrer a lista de uma sentada. Os 13 depoimentos que já tinham sido detectados antes do botão existir aparecem aí (6 com etiqueta de alegação).
