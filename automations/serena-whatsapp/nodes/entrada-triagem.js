@@ -58,6 +58,15 @@ if (inner.imageMessage) {
 if (doc && /pdf/i.test(String(doc.mimetype || '') + ' ' + String(doc.fileName || ''))) {
   return [{ json: Object.assign({}, base, { tipo: 'imagem', texto: texto, mimetype: 'application/pdf', documento: true, arquivo: String(doc.fileName || 'documento.pdf').slice(0, 120) }) }];
 }
+// Video: a fala vai para a transcricao (mesmo caminho do audio; o ElevenLabs aceita mp4).
+// GIF disfarcado de video e video muito longo nao valem a transcricao.
+if (inner.videoMessage && !inner.videoMessage.gifPlayback) {
+  const segs = Number(inner.videoMessage.seconds || 0);
+  if (segs <= 300) {
+    return [{ json: Object.assign({}, base, { tipo: 'video', texto: '', legenda: texto, segundos: segs, mimetype: inner.videoMessage.mimetype || 'video/mp4' }) }];
+  }
+  return [{ json: Object.assign({}, base, { tipo: 'texto', texto: (texto ? texto + ' ' : '') + '[O cliente enviou um video longo (' + Math.round(segs / 60) + ' min) que nao da para ouvir por aqui. Agradeca e peca o resumo em texto, ou avise que a equipe vai assistir.]' }) }];
+}
 if (inner.audioMessage) {
   return [{ json: Object.assign({}, base, { tipo: 'audio', texto: '', mimetype: inner.audioMessage.mimetype || 'audio/ogg' }) }];
 }

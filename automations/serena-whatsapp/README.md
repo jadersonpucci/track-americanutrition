@@ -781,3 +781,19 @@ Testado de ponta a ponta: mensagem falsa pelo webhook do Radar → classificada 
 **Decisões suas:** publica direto, sem pedir autorização à pessoa; nome no formato primeiro nome + inicial.
 
 **Fila (06/09).** `GET /webhook/dep-review?t=TOKEN`, sem `id`, lista tudo que ainda não foi decidido, do mais confiante para o menos: contadores no topo (na fila / publicados / descartados) e um cartão por depoimento com nome sugerido, grupo, data, a confiança da IA e uma etiqueta **alegacao** quando o texto tem termo terapêutico — dá para escolher pelo que ler antes de abrir. Cada cartão abre a página individual, e publicar ou descartar volta para a fila, então dá para varrer a lista de uma sentada. Os 13 depoimentos que já tinham sido detectados antes do botão existir aparecem aí (6 com etiqueta de alegação).
+
+
+## Serena entende vídeo (07/09)
+
+Cliente mandou um vídeo de 1 minuto com a legenda "Vídeo novo" — era um depoimento — e a Serena respondeu *"Não entendi bem o que você precisa com 'vídeo novo'"*. O motivo: a `Triagem` só tratava imagem (descrita pelo Claude), áudio (transcrito pelo ElevenLabs) e PDF. Vídeo caía na regra genérica e, **quando tinha legenda, só a legenda virava a mensagem** — o conteúdo do vídeo era invisível.
+
+O ElevenLabs `speech-to-text` aceita vídeo direto ("all major audio and video formats"), então o vídeo entrou no **mesmo caminho do áudio**, sem serviço novo:
+
+- `Triagem`: `videoMessage` vira `tipo: 'video'`, guardando a legenda separada em `legenda` e a duração em `segundos`. GIF disfarçado de vídeo (`gifPlayback`) e vídeo com mais de 5 minutos não são transcritos — o longo vira uma nota pedindo o resumo em texto ou avisando que a equipe vai assistir.
+- `Rotear por Tipo`: saída nova `video` apontando para o `Baixar Audio (Evolution)` que já existia.
+- `Preparar Audio`: reconhece vídeo (nomeia `video.mp4`, mimetype certo) e **barra arquivo acima de 25 MB** antes de carregar na memória do n8n.
+- `Montar Texto do Audio`: `[Video do cliente, fala transcrita]: ...` em vez de `[Audio...]`, e a legenda entra junto (`[Legenda que ele escreveu junto: ...]`). Sem fala, vira um pedido para a Serena perguntar o que a pessoa quis mostrar. O `tipo` continua `video`, então a resposta em áudio (que só vale para quem mandou áudio) não dispara.
+
+Testado em duas partes: a classificação com 7 casos (vídeo com e sem legenda, GIF, vídeo longo, áudio, imagem e texto — nenhuma regressão), e a transcrição de verdade num workflow temporário que baixou um mp4 de 3,8 MB e mandou pelo mesmo caminho binário da produção — 398 caracteres transcritos corretamente. O workflow de teste foi arquivado.
+
+**Número em atendimento manual.** `+55 96 98146-0353` entrou em `serena_wpp_bloqueados` com motivo `manual` — a Serena não responde, mas como o motivo não é `antispam`, as mensagens dele continuam entrando no histórico e aparecendo no Inbox.
