@@ -17,9 +17,10 @@ review 5★ nova (audio_em IS NULL)
   → concatenação dos 2 MP3 em memória
   → serviço FFmpeg gera o MP4 (fundo em loop + áudio + card final)
   → upload no Hostinger
-  → card com botões [Aprovar] [Descartar] no Telegram do revisor
-        ├─ Aprovar  → Shopify (staged upload + metaobject) + grupo TG + WhatsApp
-        └─ Descartar → status 'descartado', nada é publicado
+  → card com botões [Aprovar] [Trocar voz] [Descartar] no Telegram do revisor
+        ├─ Aprovar     → Shopify (staged upload + metaobject) + grupo TG + WhatsApp
+        ├─ Trocar voz  → regera a locução com a outra voz e devolve um card novo
+        └─ Descartar   → status 'descartado', nada é publicado
 ```
 
 Nada vai ao ar sem clique humano: o nó de curadoria devolve **zero itens**, o que
@@ -33,6 +34,12 @@ faz o n8n pular toda a cadeia de publicação.
   por voz de inteligência artificial**. O mesmo aviso vai na legenda do post.
 - A limpeza do texto só corrige digitação, acentuação, pontuação e termos médicos
   escritos errado. Reescrever, resumir ou acrescentar é proibido no prompt.
+- A voz sai do gênero de quem escreveu, deduzido nesta ordem: título no nome
+  (Pastor, Dr., Dona), concordância no próprio texto ("fiquei curado" / "curada")
+  e por último o primeiro nome. Parentes citados no relato não contam — "meu esposo"
+  não diz o gênero de quem escreve. Sem nenhuma pista, cai na voz feminina e o
+  revisor corrige pelo botão **Trocar voz**, que regera inclusive a abertura do
+  locutor (muda "escrito pela cliente" para "pelo cliente").
 - **Nenhum depoimento é filtrado por conteúdo.** Todo relato 5★ aprovado vai para o
   Telegram. Termos regulatórios sinalizados (`reviews.ia_flags`) e o alerta gerado na
   limpeza aparecem no card apenas como aviso; quem decide publicar é o revisor.
@@ -46,6 +53,7 @@ faz o n8n pular toda a cadeia de publicação.
 | `[Depoimentos] Reviews -> Audio (curadoria)` | Busca reviews novas, limpa o texto, gera a locução e dispara a geração do vídeo. Cron a cada 8h + execução manual. |
 | `[Depoimentos] Audio -> Video` | Gera o MP4 e sobe no Hostinger. Aceita áudio do Telegram (`file_id`), binário pronto ou `audio_url`. Em `modo: curadoria` manda para aprovação e para; em `modo: publicar` segue o fluxo antigo. |
 | `[Depoimentos] Publicar Aprovado` | Webhook disparado pelo botão Aprovar. Publica no Shopify, no grupo do Telegram e no WhatsApp. |
+| `[Depoimentos] Trocar Voz` | Webhook disparado pelo botão Trocar voz. Regera a locução com a outra voz, remonta o vídeo e devolve o card. |
 | `Depoimentos v14` (bot) | Trata os callbacks dos botões `depok:<id>` / `depno:<id>`. |
 | `ElevenLabs Bridge` / `Claude SQL Bridge` | Pontes HTTP autenticadas por header, usadas pelos nós Code. |
 
@@ -60,6 +68,7 @@ faz o n8n pular toda a cadeia de publicação.
 | `voz`, `genero` | qual voz leu |
 | `video_url` | MP4 no Hostinger |
 | `status` | `pendente` → `publicando` → `publicado`, ou `descartado` |
+| `primeiro_nome` | como a pessoa é chamada na locução ("Pastor B." vira "Pastor") |
 | `tg_chat_id`, `tg_message_id` | card enviado ao revisor |
 | `criado_em`, `decidido_em`, `publicado_em` | linha do tempo |
 
