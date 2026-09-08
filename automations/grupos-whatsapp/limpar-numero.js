@@ -54,6 +54,9 @@ for (let page = 1; page <= 40; page++) {
     const quem = String(k.participant || '') + ' ' + String(k.participantAlt || '') + ' ' + String(m.participant || '');
     if (quem.indexOf(numero) < 0) continue;
     if (!m.message) continue;
+    // ja apagada: a Evolution guarda o corpo no banco dela e so marca o update como DELETED/REVOKED
+    const upd = Array.isArray(m.MessageUpdate) ? m.MessageUpdate : [];
+    if (upd.some((u) => /DELET|REVOK/i.test(String((u && u.status) || '')))) continue;
     if (vistos[k.id]) continue;
     vistos[k.id] = 1;
     const mm = m.message || {};
