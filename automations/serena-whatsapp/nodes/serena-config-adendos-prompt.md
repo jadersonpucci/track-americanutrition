@@ -26,3 +26,4 @@ A Serena passa a seguir na mensagem seguinte (o cache do prefixo e reconstruido)
 | --- | --- |
 | 04/09/2026 | Fechar resposta de dosagem sempre com o protocolo concreto |
 | 05/09/2026 | Frasco escolhido tem que cobrir o protocolo indicado |
+| 08/09/2026 | Link de checkout nao pede cadastro |

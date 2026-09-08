@@ -797,3 +797,31 @@ O ElevenLabs `speech-to-text` aceita vídeo direto ("all major audio and video f
 Testado em duas partes: a classificação com 7 casos (vídeo com e sem legenda, GIF, vídeo longo, áudio, imagem e texto — nenhuma regressão), e a transcrição de verdade num workflow temporário que baixou um mp4 de 3,8 MB e mandou pelo mesmo caminho binário da produção — 398 caracteres transcritos corretamente. O workflow de teste foi arquivado.
 
 **Número em atendimento manual.** `+55 96 98146-0353` entrou em `serena_wpp_bloqueados` com motivo `manual` — a Serena não responde, mas como o motivo não é `antispam`, as mensagens dele continuam entrando no histórico e aparecendo no Inbox.
+
+
+## Checkout não pede cadastro (08/09/2026)
+
+Caso real com `+55 74 8857-3235`: o cliente estava comprando **para a mãe**, que mora em Rio Verde de Goiás, e mandou o print da sacola com 3 itens. Em vez de gerar o link, a Serena respondeu *"preciso do telefone ou e-mail dela para eu já preparar o checkout no nome certo"* — e travou a venda ali.
+
+O link de checkout nunca precisou disso: `gerar-checkout-montar-url.js` monta a URL só com `items=variant_id:qtd` e o `ref` do canal. Quem preenche nome, endereço e pagamento é a própria pessoa na página. Não havia regra mandando pedir contato — a Serena inventou o requisito, ajudada por uma linha do bloco `CADASTRO QUE JA TEMOS` que juntava "PIX, boleto ou checkout" na hora de confirmar dados.
+
+Corrigido por **adendo em `serena_config.system_prompt`** (o mecanismo do projeto para correção de conduta, sem mexer nos 44 KB do node do Cérebro):
+
+- O link de checkout precisa **só** dos produtos e das versões. Nunca pedir nome, telefone, e-mail, CPF ou endereço para gerá-lo.
+- Carrinho pronto (print ou lista) → gerar o link na hora, sem reconfirmar item por item.
+- **Compra para outra pessoa** é venda normal: gera o link e avisa que o endereço dela é preenchido na própria página. Não pede contato dela e **não usa o cadastro deste telefone** (que é do dono do número que está falando).
+- Cadastro completo (nome, CPF, endereço) só para **PIX e boleto**, porque aí o pedido é registrado no sistema. A frase encerra dizendo que substitui qualquer instrução anterior que junte checkout com PIX e boleto.
+
+Testado no sandbox com as mensagens do print: ela gerou o link na primeira mensagem ("é só abrir e preencher o endereço de entrega da sua mãe por lá") e, com a lista dos 3 itens, gerou o link dos 3 direto — sem pedir contato em nenhum momento.
+
+## Sandbox de testes (08/09/2026) — n8n `0rrRVxUQWrb31Ob6`
+
+`GET /webhook/serena-lab?t=an-lab-6Hj2Pk8T`
+
+Página de conversa para perguntar coisas à Serena e ver o que ela responderia, sem WhatsApp e sem cliente real. Chama o `serena-core` direto (o mesmo Core da produção, mesmo prompt, mesmas ferramentas), então o que aparece ali é exatamente o que o cliente receberia.
+
+- **Contato isolado por aba.** Cada aba gera uma sessão em `localStorage` e ganha um contato próprio (`serena_contatos.session_site = 'lab-<sessao>'`). O histórico do teste nunca encosta em conversa de cliente.
+- **Telefone opcional.** Preenchendo o campo, o Core consulta os pedidos daquele número na Shopify — é assim que se testa o fluxo de cliente conhecido (cadastro, último pedido, rastreio). O `contato_id` continua mandando no `carregar contexto`, então a conversa segue gravada no contato de teste, não no do cliente.
+- **Mostra o que rodou.** Abaixo de cada resposta aparecem as ferramentas chamadas, se houve handoff, se saiu lista clicável ou arquivo, e o tempo da resposta. Ferramentas de escrita (`gerar_pix`, `gerar_boleto`, `escalar_humano`, `registrar_troca`) vêm destacadas em laranja.
+- **As ferramentas rodam de verdade** — PIX e boleto criam rascunho na Shopify, escalar abre card para a equipe. A página avisa isso no topo.
+- **Limpar conversa** apaga mensagens, conversa, fatos e o contato de teste da sessão.
