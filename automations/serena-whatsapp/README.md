@@ -1074,3 +1074,37 @@ automática. Para voltar ao bot enquanto isso, é trocar a constante de volta.
 
 O node também teve `TG_CHAT` renomeado para `TG_GRUPO`, só para o arquivo do repositório parar de
 divergir do que está no ar — o nome já era esse no n8n.
+
+### Site volta para WhatsApp + Telegram, sem o chat (09/09)
+
+Com o número do Samuel de volta, o chat da Serena saiu do site e o botão verde do WhatsApp
+voltou. Ficaram dois botões flutuantes, lado a lado: **WhatsApp** e **Telegram**.
+
+- O `an-chat-serena` deixou de ser chamado no `layout/theme.liquid`. Era ele que escondia o
+  `.an-wpp-btn` do tema, então o botão do WhatsApp voltou sozinho, sem precisar de nada.
+  O snippet continua no tema, sem uso, caso o chat precise voltar.
+- Snippet novo `an-botao-telegram.liquid` (fonte em `nodes/shopify-an-botao-telegram.liquid`):
+  só o botão azul apontando para `t.me/AmericaNutrition`.
+
+**Por que lado a lado e não empilhado.** O Telegram usa o mesmo `bottom` do `.an-wpp-btn` em
+cada breakpoint e só anda para a esquerda: 60px com `right: 94px` no desktop, 54px com
+`right: 82px` no celular, e `bottom: 178px` na página de produto, igual ao do tema. Assim o par
+tem a altura de um botão só e a folga da barra de compra continua sendo a que o tema já
+calculava. Empilhados, os dois passavam de 110px e subiam demais no celular — foi o problema
+que apareceu quando o chat e o Telegram ficaram um em cima do outro.
+
+Os números vieram copiados do bloco `.an-wpp-btn` do `theme.liquid`. Se aquele bloco mudar,
+mude o snippet junto ou os dois desalinham.
+
+Conferido no HTML servido: na home e na página de produto os dois botões aparecem, ambos com
+`is-product` na página de produto, e o chat e o popup não aparecem mais em lugar nenhum.
+
+O workflow `Serena | Chat do Site` continua ativo de propósito: a página avulsa
+(`/webhook/serena-chat`) ainda serve para mandar o link direto a um cliente. Só não é mais
+carregada na loja.
+
+**Atenção enquanto a Evolution não for pareada.** O botão do WhatsApp leva para
+`wa.me/13472225493` (via o redirect `ir-whats`, que está de pé). A mensagem chega no aparelho,
+mas a instância `Samuel` está com estado `close` desde 08/09 16:31 (código 401), então a Serena
+não lê nem responde nada por lá. Até parear de novo, quem chegar pelo WhatsApp depende de
+alguém responder na mão.

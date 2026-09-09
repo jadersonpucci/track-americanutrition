@@ -1,0 +1,46 @@
+{%- comment -%}
+  Botao flutuante do Telegram, ao lado do botao verde do WhatsApp que ja existe no tema.
+
+  Fica LADO A LADO, nao empilhado: usa o mesmo 'bottom' do .an-wpp-btn em cada breakpoint e
+  so anda para a esquerda. Assim o par tem a altura de um botao so, e a folga da barra de
+  compra na pagina de produto continua sendo a mesma que o tema ja calculava. Empilhado, o
+  conjunto passava de 110px de altura e subia demais no celular.
+
+  Numeros copiados do bloco .an-wpp-btn do layout/theme.liquid: 60px / bottom 22 / right 22 no
+  desktop, 54px / bottom 92 / right 18 no celular, e bottom 178 na pagina de produto. Se aquele
+  bloco mudar, mude aqui junto ou os dois desalinham.
+
+  PARA TIRAR: apague a linha {% render 'an-botao-telegram' %} do layout/theme.liquid.
+  O botao do WhatsApp nao depende deste arquivo e continua igual.
+{%- endcomment -%}
+
+<a href="https://t.me/AmericaNutrition"
+   class="an-tg-btn{% if template.name == 'product' %} is-product{% endif %}"
+   target="_blank" rel="noopener" aria-label="Falar no Telegram">
+  <svg viewBox="0 0 24 24" width="30" height="30" fill="#fff" aria-hidden="true">
+    <path d="M9.42 15.18l-.4 5.58c.57 0 .82-.24 1.11-.54l2.66-2.54 5.52 4.04c1.01.56 1.73.27 2-.93L23.93 3.82c.32-1.5-.54-2.08-1.53-1.71L1.11 10.18c-1.46.57-1.44 1.37-.25 1.74l5.45 1.69L19.99 5.62c.59-.4 1.13-.18.69.22z"/>
+  </svg>
+</a>
+
+<style>
+.an-tg-btn{
+  position:fixed; bottom:22px; right:94px; z-index:99999;
+  width:60px; height:60px; border-radius:50%;
+  background:#229ED9; display:flex; align-items:center; justify-content:center;
+  box-shadow:0 6px 18px rgba(0,0,0,.25);
+  cursor:pointer; transition:transform .25s ease;
+  animation:an-float 3s ease-in-out infinite;
+}
+.an-tg-btn:hover{ transform:scale(1.08); }
+@media (max-width:600px){
+  .an-tg-btn{ width:54px; height:54px; bottom:92px; right:82px; }
+  .an-tg-btn.is-product{ bottom:178px; }
+}
+/* mesma regra do WhatsApp: nao cobre carrinho, menu nem busca abertos */
+body:has(.drawer[open]) .an-tg-btn,
+html.drawer-open .an-tg-btn{
+  opacity:0 !important;
+  visibility:hidden !important;
+  pointer-events:none !important;
+}
+</style>
