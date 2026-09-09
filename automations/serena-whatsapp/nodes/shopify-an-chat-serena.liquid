@@ -19,7 +19,11 @@
     z-index: 99999 !important;
     box-shadow: 0 6px 18px rgba(0,0,0,.25) !important;
   }
-  #anchat-p { bottom: 92px !important; right: 22px !important; z-index: 99999 !important; }
+  /* so no desktop: no celular quem manda na geometria e o proprio widget (teclado do iOS) */
+  @media (min-width: 601px) {
+    #anchat-p { bottom: 92px !important; right: 22px !important; }
+  }
+  #anchat-p { z-index: 99999 !important; }
 
   @media (max-width: 600px) {
     #anchat-b {
@@ -28,7 +32,8 @@
       bottom: {% if template.name == 'product' %}178px{% else %}92px{% endif %} !important;
       right: 18px !important;
     }
-    #anchat-p { bottom: 0 !important; right: 0 !important; }
+    /* no mobile o painel e tela cheia e o proprio widget cuida da altura pelo
+       visualViewport (teclado do iOS): nao force bottom/height aqui. */
   }
 
   /* mesma regra do buybar: nao cobre carrinho, menu nem busca abertos */

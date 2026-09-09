@@ -863,3 +863,22 @@ O snippet **esconde o botão verde do WhatsApp** (`.an-wpp-btn{display:none}`), 
 Testado ponta a ponta: cliente pergunta → Serena responde (`gerar_checkout` inclusive) → atendente responde pelo Inbox → resposta aparece na página. O HTML servido em `www.americanutrition.com` já traz o script e o CSS.
 
 **Fica pendente:** o popup de "produto esgotado" ainda tem um `wa.me/13472225493` fixo dentro do JS do tema, e o `webhook/ir-whats` continua redirecionando para o número banido.
+
+### Teclado do iPhone (09/09)
+
+Primeira versão quebrava ao tocar no campo de texto: o painel é `position:fixed` com `height:100dvh`, e **`dvh` não encolhe quando o teclado sobe** — a caixa de digitação ficava boiando no meio da tela com o site aparecendo por baixo.
+
+Corrigido amarrando o painel ao `visualViewport`:
+
+- `ajusta()` escreve `top: vv.offsetTop` e `height: vv.height` via `setProperty(..., 'important')` (inline com `!important` é o único jeito de ganhar de regra `!important` do tema), nos eventos `resize` e `scroll` do `visualViewport`, no `focus`/`blur` do textarea e no `orientationchange`.
+- `travar()`/`destravar()` prendem a página atrás (`body{position:fixed;top:-scroll}`) enquanto o chat está aberto e devolvem o scroll ao fechar. Sem isso o iOS rola o site junto e o painel se solta.
+- Flexbox saudável: cabeçalho e rodapé `flex:0 0 auto`, mensagens `flex:1 1 auto;min-height:0`, e `padding-bottom` com `env(safe-area-inset-bottom)`.
+- Fonte do textarea em **16px** — abaixo disso o Safari dá zoom sozinho ao focar.
+- No snippet do tema, a regra de desktop (`#anchat-p{bottom:92px}`) passou a viver num `@media (min-width:601px)`; no celular quem manda na geometria é só o widget.
+
+**Dois bugs achados testando, não em produção:**
+
+1. Comentários `//` dentro da string do JS. O widget é montado por concatenação e sai **numa linha só**, então o primeiro `//` comentava o arquivo inteiro — `node --check` acusou `Unexpected end of input` e o widget ficou alguns minutos servindo JS quebrado. Agora só `/* */` ali dentro, com aviso no topo do node.
+2. `localStorage` lançando exceção (webview restrita, cookies bloqueados) derrubava o widget inteiro antes de desenhar qualquer coisa. Agora passa por `lsGet`/`lsSet` com try/catch: sem storage, o chat funciona igual, só não lembra a conversa entre visitas.
+
+Verificado em Chromium 393×852 contra uma página com 4000px de altura: painel 852px ao abrir com a página travada em scroll 900; simulando o teclado (`visualViewport.height = 516`) o painel vai para 516px, o rodapé do input fica exatamente em 516 e a área de mensagens continua com 388px; ao fechar, scroll volta para 900 e o `body` volta a `static`. Também testado com `localStorage` lançando: monta e abre normal, sem erro de JS.
