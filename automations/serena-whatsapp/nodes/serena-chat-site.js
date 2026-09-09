@@ -76,15 +76,16 @@ if (acao === 'novas') {
 // --an-azul e o mesmo #07388e do <meta name="theme-color"> da loja: assim a barra
 // de status do Safari e o cabecalho do chat viram um bloco continuo, sem emenda.
 // Texto que o cliente le vai com escape unicode: acento literal ja chegou corrompido
-// em node deste projeto antes. Os dois botoes flutuantes vivem dentro de #anchat-fab:
-// o tema posiciona so o container e nao precisa saber que sao dois.
+// em node deste projeto antes. Os dois botoes flutuantes vivem dentro de #anchat-fab
+// e tem o MESMO tamanho: lado a lado, diametros diferentes so parecem desalinhados.
+// O tema posiciona so o container e nao precisa saber que sao dois.
 const CSS = ':root{--an-azul:#07388e;--an-link:#1f4fd8;--an-tg:#229ED9}'
   + '#anchat-fab{position:fixed;right:18px;bottom:18px;z-index:2147483000;display:flex;flex-direction:column;align-items:center;gap:10px}'
-  + '#anchat-b,#anchat-tg{border:0;cursor:pointer;border-radius:50%;display:flex;align-items:center;justify-content:center;position:relative;padding:0}'
-  + '#anchat-b{width:60px;height:60px;background:var(--an-azul);box-shadow:0 8px 26px rgba(0,0,0,.28)}'
-  + '#anchat-b svg{width:28px;height:28px;fill:#fff}'
-  + '#anchat-tg{width:48px;height:48px;background:var(--an-tg);box-shadow:0 6px 18px rgba(0,0,0,.24);text-decoration:none}'
-  + '#anchat-tg svg{width:24px;height:24px;fill:#fff;position:relative;left:-1px}'
+  + '#anchat-b,#anchat-tg{width:58px;height:58px;border:0;cursor:pointer;border-radius:50%;display:flex;align-items:center;justify-content:center;position:relative;padding:0;box-shadow:0 7px 22px rgba(0,0,0,.26)}'
+  + '#anchat-b{background:var(--an-azul)}'
+  + '#anchat-tg{background:var(--an-tg);text-decoration:none}'
+  + '#anchat-b svg{width:26px;height:26px;fill:#fff}'
+  + '#anchat-tg svg{width:27px;height:27px;fill:#fff;position:relative;left:-1px}'
   + '#anchat-b .pt{position:absolute;top:-4px;right:-4px;background:#e23b3b;color:#fff;font:700 11px system-ui;border-radius:10px;padding:1px 6px;display:none}'
   + '#anchat-p{position:fixed;right:18px;bottom:88px;z-index:2147483000;width:360px;max-width:calc(100vw - 24px);height:520px;max-height:calc(100vh - 120px);background:#fff;border-radius:16px;box-shadow:0 18px 50px rgba(0,0,0,.3);display:none;flex-direction:column;overflow:hidden;font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}'
   + '#anchat-p.on{display:flex}'
@@ -114,7 +115,7 @@ const CSS = ':root{--an-azul:#07388e;--an-link:#1f4fd8;--an-tg:#229ED9}'
   + '#anchat-s svg{width:17px;height:17px;fill:#fff}'
   + '#anchat-s:disabled{opacity:.45}'
   + '.antp{color:#8a93a3;font-size:13px;padding:2px 6px}'
-  + '@media(max-width:520px){#anchat-p{top:0;left:0;right:0;bottom:auto;width:100vw;max-width:100vw;height:100dvh;max-height:none;border-radius:0}#anchat-fab{right:14px;bottom:14px}}';
+  + '@media(max-width:520px){#anchat-p{top:0;left:0;right:0;bottom:auto;width:100vw;max-width:100vw;height:100dvh;max-height:none;border-radius:0}#anchat-fab{right:14px;bottom:14px;flex-direction:row;align-items:flex-end}#anchat-b,#anchat-tg{width:54px;height:54px}}';
 
 const SVG_TG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.42 15.18l-.4 5.58c.57 0 .82-.24 1.11-.54l2.66-2.54 5.52 4.04c1.01.56 1.73.27 2-.93L23.93 3.82c.32-1.5-.54-2.08-1.53-1.71L1.11 10.18c-1.46.57-1.44 1.37-.25 1.74l5.45 1.69L19.99 5.62c.59-.4 1.13-.18.69.22z"/></svg>';
 

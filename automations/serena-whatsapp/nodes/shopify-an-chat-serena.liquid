@@ -39,8 +39,8 @@
       bottom: {% if template.name == 'product' %}104px{% else %}92px{% endif %} !important;
       right: 18px !important;
     }
-    #anchat-b { width: 54px !important; height: 54px !important; }
-    #anchat-tg { width: 44px !important; height: 44px !important; }
+    /* tamanho dos dois botoes vem do widget (#anchat-b,#anchat-tg): iguais.
+       Lado a lado, diametros diferentes so parecem desalinhados. */
     /* no mobile o painel e tela cheia e o proprio widget cuida da altura pelo
        visualViewport (teclado do iOS): nao force bottom/height aqui. */
   }
