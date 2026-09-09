@@ -1108,3 +1108,22 @@ carregada na loja.
 mas a instância `Samuel` está com estado `close` desde 08/09 16:31 (código 401), então a Serena
 não lê nem responde nada por lá. Até parear de novo, quem chegar pelo WhatsApp depende de
 alguém responder na mão.
+
+### Sandbox no Painel Central (09/09)
+
+O sandbox da Serena virou um card do Painel Central, ao lado do Inbox, no grupo Clientes:
+
+| Campo | Valor |
+|---|---|
+| Título | Sandbox da Serena |
+| Descrição | Testa perguntas sem falar com cliente nenhum |
+| Link | `/webhook/serena-lab?t=an-lab-6Hj2Pk8T` |
+
+O painel é o asset `assets/america_admin.html` do tema, servido pelo CDN da Shopify. A lista de
+ferramentas é o array `SISTEMAS` dentro dele, e os grupos da navegação saem da ordem desse array
+— por isso o card entrou logo depois do `serena`, para cair em Clientes junto do Inbox. O ícone
+novo (`sandbox`, um béquer) foi acrescentado ao mapa `IC`; sem entrada lá o tile sairia vazio.
+
+Conferido no arquivo que o CDN serve: o card aparece, o link está certo e o bloco de script
+continua parseando (`node --check`). Vale checar isso sempre que mexer nesse arquivo — é um
+HTML de 22 KB com um script só, e um erro de vírgula derruba o painel inteiro, não só o card.
