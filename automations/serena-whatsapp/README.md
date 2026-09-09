@@ -952,3 +952,11 @@ Esse é o argumento honesto para migrar: o chat do site não tem push. Fechou a 
 **Posição no celular.** Empilhados, os dois somam 112px de altura contra os 54px do botão antigo, e na página de produto ficavam no meio da tela. No mobile eles vão **lado a lado** (`flex-direction: row`), então o conjunto volta a ter a altura de um botão só. E o `bottom` da página de produto caiu de **178px para 104px**: o 178 era `92 (folga) + 86 (barra de compra)`, mas os 92px já passavam do topo da barra — a barra estava sendo contada duas vezes e sobravam ~90px de folga. Com 104px sobram ~17px, medidos contra uma barra de 86px.
 
 Também corrigidos os acentos do texto que o cliente lê ("Lá você", "Não consegui enviar", "conexão", a página avulsa). Tudo com escape unicode dentro do JS concatenado — acento literal já chegou corrompido em node deste projeto antes.
+
+### Onde a equipe acompanha o Telegram (09/09)
+
+No **Inbox** (`/webhook/serena-inbox?t=an-serena-9Kx4Lm2Q`), junto com todo o resto — o canal `telegram` entra na mesma lista e o filtro por canal funciona. Testado ponta a ponta: cliente escreveu, Serena respondeu, atendente respondeu pelo Inbox (`acao: enviar`, canal `telegram`), o cron de 1 minuto entregou e marcou `entregue = true`.
+
+Os avisos chegam no tópico 💬 Atendimento (conversa nova e cliente pedindo atendente) e no push dos atendentes.
+
+**Buraco corrigido na hora:** quem mandava só `/start` e não escrevia mais nada ficava **invisível no Inbox**. A listagem faz join com a última mensagem do contato, e o `/start` respondia as boas-vindas sem gravar nada em `serena_mensagens`. Descoberto porque uma cliente real (Vera Lucia) entrou no bot às 23:05 com zero mensagens registradas. Agora `/start`, telefone compartilhado e mídia sem texto gravam o par cliente/Serena no histórico. O caso da Vera Lucia foi preenchido à mão com a data original.

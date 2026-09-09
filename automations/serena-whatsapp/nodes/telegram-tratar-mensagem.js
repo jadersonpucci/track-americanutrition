@@ -85,6 +85,7 @@ const BOTAO_TEL = { keyboard: [[{ text: '\u{1F4F1} Compartilhar meu telefone', r
 const enviar = async (texto, extra) => await tg('sendMessage', Object.assign({ chat_id: chatId, text: texto, disable_web_page_preview: false }, extra || {}));
 // o webhook ja mandou a resposta: marca entregue para o cron de 1 minuto nao mandar de novo
 const marcarEntregue = async () => await sql("update serena_mensagens set entregue = true where contato_id = " + E(contatoId) + "::uuid and papel = 'serena' and entregue is distinct from true");
+const gravar = async (papel, texto) => await sql("insert into serena_mensagens (contato_id, papel, texto, canal, entregue, criado_em) values (" + E(contatoId) + "::uuid, " + E(papel) + ", " + E(texto) + ", 'telegram', true, now())");
 
 let texto = '';
 if (cq) {
@@ -98,13 +99,20 @@ if (cq) {
   let tel = String(msg.contact.phone_number).replace(/[^0-9]/g, '');
   if (tel.length >= 10 && tel.indexOf('55') !== 0) tel = '55' + tel;
   await sql("insert into serena_fatos (contato_id, chave, valor, origem) values (" + E(contatoId) + "::uuid, 'telefone', " + E(tel) + ", 'cliente') on conflict (contato_id, chave) do update set valor = excluded.valor, atualizado_em = now()");
-  await enviar('Perfeito, obrigada! \u{1F499} Agora consigo ver seus pedidos e o rastreio por aqui. O que voce precisa?', { reply_markup: { remove_keyboard: true } });
+  const okTel = 'Perfeito, obrigada! \u{1F499} Agora consigo ver seus pedidos e o rastreio por aqui. O que voc\u00ea precisa?';
+  await enviar(okTel, { reply_markup: { remove_keyboard: true } });
+  await gravar('cliente', '[Compartilhou o telefone: ' + tel + ']');
+  await gravar('serena', okTel);
   return [{ json: { ok: true, acao: 'telefone_salvo', chat_id: chatId } }];
 } else if (msg.text && msg.text.trim().indexOf('/start') === 0) {
-  await enviar('Oi! Sou a Serena, do atendimento da America Nutrition \u{1F499}' + NL + NL
-    + 'Posso te ajudar com produtos, preco, frete, pagamento e rastreio do seu pedido.' + NL + NL
-    + 'Se quiser, toque no botao abaixo para compartilhar seu telefone: assim eu ja acho seus pedidos sem voce precisar digitar nada. Ou e so me escrever direto.',
-    { reply_markup: BOTAO_TEL });
+  // Grava a abertura no historico: sem isso quem so da /start e nao escreve mais nada
+  // fica invisivel no Inbox, que lista pela ultima mensagem do contato.
+  const boasVindas = 'Oi! Sou a Serena, do atendimento da America Nutrition \u{1F499}' + NL + NL
+    + 'Posso te ajudar com produtos, pre\u00e7o, frete, pagamento e rastreio do seu pedido.' + NL + NL
+    + 'Se quiser, toque no bot\u00e3o abaixo para compartilhar seu telefone: assim eu j\u00e1 acho seus pedidos sem voc\u00ea precisar digitar nada. Ou \u00e9 s\u00f3 me escrever direto.';
+  await enviar(boasVindas, { reply_markup: BOTAO_TEL });
+  await gravar('cliente', '[Abriu a conversa no Telegram]');
+  await gravar('serena', boasVindas);
   await req({ method: 'POST', url: BOT_PUB + 'sendMessage', json: true, timeout: 10000,
     body: { chat_id: TG_GRUPO, message_thread_id: TG_TOPICO, parse_mode: 'HTML', disable_web_page_preview: true, text: '\u{1F680} <b>Nova conversa no Telegram</b>' + NL + (nome || 'sem nome') + NL + NL + '<a href="' + INBOX + '">Abrir no Inbox</a>' } });
   return [{ json: { ok: true, acao: 'start', chat_id: chatId } }];
@@ -113,17 +121,16 @@ if (cq) {
   // senao o cliente manda um video e nao recebe resposta nenhuma.
   texto = String(msg.text || msg.caption || '').trim();
   if (!texto) {
-    if (msg.voice || msg.audio || msg.video_note) {
-      await enviar('Ainda nao consigo ouvir audio por aqui \u{1F605} Pode me escrever em poucas palavras o que voce precisa? Se preferir falar com uma pessoa, e so pedir.');
-      return [{ json: { ok: true, acao: 'audio_sem_texto', chat_id: chatId } }];
-    }
+    let aviso = '';
+    let rotulo = '';
+    if (msg.voice || msg.audio || msg.video_note) { aviso = 'Ainda n\u00e3o consigo ouvir \u00e1udio por aqui \u{1F605} Pode me escrever em poucas palavras o que voc\u00ea precisa? Se preferir falar com uma pessoa, \u00e9 s\u00f3 pedir.'; rotulo = '[O cliente mandou um \u00e1udio]'; }
+    else if (msg.video || msg.animation) { aviso = 'Recebi seu v\u00eddeo \u{1F499} Ainda n\u00e3o consigo assisti-lo por aqui. Me conta em uma frase o que voc\u00ea precisa, ou pe\u00e7a para falar com uma pessoa da equipe.'; rotulo = '[O cliente mandou um v\u00eddeo]'; }
+    else if (msg.document || msg.sticker || msg.location || msg.poll) { aviso = 'Recebi \u{1F499} Me conta em uma frase o que voc\u00ea precisa que eu te ajudo, ou pe\u00e7a para falar com uma pessoa da equipe.'; rotulo = '[O cliente mandou um arquivo]'; }
     if (msg.photo) { texto = '[O cliente mandou uma foto, sem escrever nada junto]'; }
-    else if (msg.video || msg.animation) {
-      await enviar('Recebi seu video \u{1F499} Ainda nao consigo assisti-lo por aqui. Me conta em uma frase o que voce precisa, ou peca para falar com uma pessoa da equipe.');
-      return [{ json: { ok: true, acao: 'video_sem_texto', chat_id: chatId } }];
-    }
-    else if (msg.document || msg.sticker || msg.location || msg.poll) {
-      await enviar('Recebi \u{1F499} Me conta em uma frase o que voce precisa que eu te ajudo, ou peca para falar com uma pessoa da equipe.');
+    else if (aviso) {
+      await enviar(aviso);
+      await gravar('cliente', rotulo);
+      await gravar('serena', aviso);
       return [{ json: { ok: true, acao: 'midia_sem_texto', chat_id: chatId } }];
     }
     else { return []; }
@@ -137,7 +144,7 @@ if (nome) corpo.nome = nome;
 if (telefone.length >= 10) corpo.telefone = telefone;
 const r = await req({ method: 'POST', url: CORE, json: true, timeout: 180000, body: corpo });
 
-if (!r) { await enviar('Tive um problema tecnico agora. Tente de novo em instantes, por favor.'); return [{ json: { ok: false, chat_id: chatId } }]; }
+if (!r) { await enviar('Tive um problema t\u00e9cnico agora. Tente de novo em instantes, por favor.'); return [{ json: { ok: false, chat_id: chatId } }]; }
 if (r.pausada === true) { return [{ json: { ok: true, acao: 'pausada', chat_id: chatId } }]; }
 
 let resposta = String(r.resposta || '').replace(/\[\[ARQUIVO:[^\]]*\]\]/gi, '').trim();
