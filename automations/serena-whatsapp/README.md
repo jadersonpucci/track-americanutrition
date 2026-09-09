@@ -890,3 +890,28 @@ O topo ficava feio no iPhone: a barra de status é pintada pelo Safari com o `th
 O cabeçalho passou a usar o mesmo `#07388e`, então a barra do sistema e o cabeçalho viram um bloco contínuo — sem precisar mexer no `theme-color` da página. `--an-azul` agora é a cor da marca (cabeçalho, botão flutuante, botão de enviar e balão do cliente) e `--an-link` guarda o azul claro só para links dentro das respostas.
 
 Junto: avatar circular branco com "AN", bolinha verde antes do subtítulo, botão de fechar num círculo translúcido, `padding-top: max(11px, env(safe-area-inset-top))` no cabeçalho e sombra leve nos balões da Serena.
+
+
+## Serena no Telegram (09/09/2026) — n8n `GwreSR7VN3bfSqaO`
+
+Com o WhatsApp banido, o segundo canal. O bot **já existia**: `@AmericaNutritionSerena_bot` é o mesmo que manda os alertas internos — só que ninguém tinha ligado a entrada dele. Estava com uma mensagem pendente sem resposta.
+
+`POST /webhook/serena-telegram` recebe os updates (`message`, `edited_message`, `callback_query`) e conversa com o `serena-core` no canal `telegram`. Cada conversa vira um contato por `session_site = 'tg-<chat_id>'`.
+
+### Bot ≠ o número +1 347 222 5493
+
+São coisas diferentes no Telegram. O bot é a API oficial e **não é banido por automação** — é para isso que ela existe. Automatizar a conta do número de verdade exigiria um cliente MTProto rodando fora do n8n, e depois do que aconteceu com o Baileys hoje não vale repetir a receita. Quem escrever direto para o número continua caindo na conta da equipe.
+
+### O que ele faz
+
+- **`/start`** manda as boas-vindas com o botão nativo **"Compartilhar meu telefone"**. Com o número, a Serena já consulta pedidos, rastreio e cadastro na Shopify — resolve o buraco que o chat do site tem, onde ela não sabe quem é a pessoa. O telefone é gravado em `serena_fatos` (chave `telefone`), **não** em `serena_contatos`: evita conflito com o contato que a mesma pessoa já tem por WhatsApp e mesmo assim libera a busca por telefone.
+- **Lista clicável vira botão de verdade.** O Core só devolve o campo `lista` quando o canal é `whatsapp` com lista nativa ligada; fora disso ele escreve as opções numeradas no texto, fechando com *"Responde só com o número"*. O `extrairLista()` reconhece esse bloco, tira do texto e monta um teclado inline. Quando alguém toca, o rótulo do botão (lido do próprio `callback_query`) vira a mensagem do cliente. É a lista que o WhatsApp nunca entregou direito.
+- **Nunca fica em silêncio.** Áudio, vídeo, documento, sticker e localização sem texto recebem uma resposta pedindo uma frase. Foto sem legenda entra como `[O cliente mandou uma foto, sem escrever nada junto]`. Áudio ainda não é transcrito aqui — fica para a próxima.
+- **Handoff** usa o caminho de sempre: push para os atendentes e resposta pelo Inbox.
+- **Cron de 1 minuto** entrega no Telegram o que o atendente escrever no Inbox.
+
+### Um bug que quase passou
+
+A resposta da Serena ficava com `entregue = null`, e o cron de 1 minuto **reenviaria a mesma mensagem** — cliente receberia tudo duplicado. Agora o webhook marca `entregue = true` assim que o envio dá certo, e o cron continua servindo de rede de segurança para o que não saiu.
+
+Testado ponta a ponta antes de abrir: `/start`, pergunta livre, lista com 8 botões, clique num botão (virou "ImunoFosfo 60 cápsulas · R$ 247" e a Serena seguiu a venda), vídeo sem legenda e a flag de entrega. Conversa de teste apagada depois.
