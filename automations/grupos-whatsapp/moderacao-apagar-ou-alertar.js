@@ -2,7 +2,9 @@ const SK = 'SUPABASE_SERVICE_KEY';
 const EVO = 'http://evolution-api-aru6-api-1:8080';
 const EVO_KEY = 'EVO_API_KEY';
 const TG = 'http://telegram-bot-api:8081/bot<TOKEN>/sendMessage';
-const TG_CHAT = '6531084136';
+// grupo "America Nutrition Alertas", topico 1630 (Moderacao): a equipe inteira ve, nao so um celular
+const TG_CHAT = '-1003766435449';
+const TG_TOPICO = 1630;
 const NL = String.fromCharCode(10);
 const MODO_AUTO = ['spam_venda', 'golpe', 'spam_geral', 'ausencia_automatica', 'link_grupo_externo'];
 const CONF_MIN = 90;
@@ -59,5 +61,5 @@ if (cat === 'ausencia_automatica' && acao === 'apagada') {
   if (acao === 'alertada') { t += NL + NL + 'Nada foi apagado. Decida voce.'; }
   if (acao === 'apagada') { t += NL + NL + 'O texto acima fica salvo em grupo_moderacao caso precise repostar.'; }
 }
-await req({ method: 'POST', url: TG, headers: { 'Content-Type': 'application/json' }, body: { chat_id: TG_CHAT, text: t, disable_web_page_preview: true }, json: true });
+await req({ method: 'POST', url: TG, headers: { 'Content-Type': 'application/json' }, body: { chat_id: TG_CHAT, message_thread_id: TG_TOPICO, text: t, disable_web_page_preview: true }, json: true });
 return [{ json: { categoria: cat, confianca: conf, acao: acao, grupo: ctx.grupo_nome } }];

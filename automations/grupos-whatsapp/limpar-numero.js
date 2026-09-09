@@ -30,7 +30,9 @@ const EVO = 'http://evolution-api-aru6-api-1:8080';
 const EVO_KEY = 'EVO_API_KEY';
 const SK = 'SUPABASE_SERVICE_KEY';
 const TG = 'http://telegram-bot-api:8081/bot<TOKEN>/sendMessage';
-const TG_CHAT = '6531084136';
+// grupo "America Nutrition Alertas", topico 1630 (Moderacao): a equipe inteira ve, nao so um celular
+const TG_CHAT = '-1003766435449';
+const TG_TOPICO = 1630;
 const NL = String.fromCharCode(10);
 const E = (v) => (v === null || v === undefined || v === '') ? 'null' : ("'" + String(v).replace(/'/g, "''").slice(0, 900) + "'");
 const req = async (o) => { try { return await this.helpers.httpRequest(o); } catch (e) { return null; } };
@@ -99,5 +101,5 @@ for (const g of Object.keys(porGrupo)) { t += '  - ' + g + ': ' + porGrupo[g] + 
 if (falhas.length) { t += 'Falharam: ' + falhas.length + NL; }
 if (removidoDe.length) { t += 'Removido dos grupos: ' + removidoDe.join(', ') + NL; }
 t += NL + 'O texto original ficou salvo em grupo_moderacao.';
-await req({ method: 'POST', url: TG, headers: { 'Content-Type': 'application/json' }, body: { chat_id: TG_CHAT, text: t, disable_web_page_preview: true }, json: true });
+await req({ method: 'POST', url: TG, headers: { 'Content-Type': 'application/json' }, body: { chat_id: TG_CHAT, message_thread_id: TG_TOPICO, text: t, disable_web_page_preview: true }, json: true });
 return [{ json: { numero: numero, horas: horas, encontradas: alvos.length, apagadas: apagadas, falhas: falhas.length, por_grupo: porGrupo, removido_de: removidoDe } }];

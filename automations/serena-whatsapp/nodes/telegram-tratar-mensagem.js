@@ -8,7 +8,9 @@ const PUSH = 'https://n8n.americanutrition.com/webhook/serena-push';
 const INBOX = 'https://n8n.americanutrition.com/webhook/serena-inbox?t=an-serena-9Kx4Lm2Q';
 const BOT = 'http://telegram-bot-api:8081/bot<TOKEN>/';
 const BOT_PUB = 'https://api.telegram.org/bot<TOKEN>/';
-const TG_EQUIPE = '6531084136';
+// grupo "America Nutrition Alertas", topico 1628 (Atendimento): a equipe inteira ve, nao so um celular
+const TG_GRUPO = '-1003766435449';
+const TG_TOPICO = 1628;
 const self = this;
 const NL = String.fromCharCode(10);
 const E = (v) => (v === null || v === undefined || v === '') ? 'null' : ("'" + String(v).replace(/'/g, "''") + "'");
@@ -104,7 +106,7 @@ if (cq) {
     + 'Se quiser, toque no botao abaixo para compartilhar seu telefone: assim eu ja acho seus pedidos sem voce precisar digitar nada. Ou e so me escrever direto.',
     { reply_markup: BOTAO_TEL });
   await req({ method: 'POST', url: BOT_PUB + 'sendMessage', json: true, timeout: 10000,
-    body: { chat_id: TG_EQUIPE, parse_mode: 'HTML', disable_web_page_preview: true, text: '\u{1F680} <b>Nova conversa no Telegram</b>' + NL + (nome || 'sem nome') + NL + NL + '<a href="' + INBOX + '">Abrir no Inbox</a>' } });
+    body: { chat_id: TG_GRUPO, message_thread_id: TG_TOPICO, parse_mode: 'HTML', disable_web_page_preview: true, text: '\u{1F680} <b>Nova conversa no Telegram</b>' + NL + (nome || 'sem nome') + NL + NL + '<a href="' + INBOX + '">Abrir no Inbox</a>' } });
   return [{ json: { ok: true, acao: 'start', chat_id: chatId } }];
 } else {
   // NUNCA ficar em silencio: midia que eu ainda nao leio vira um pedido de texto,

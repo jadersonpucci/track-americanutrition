@@ -915,3 +915,25 @@ São coisas diferentes no Telegram. O bot é a API oficial e **não é banido po
 A resposta da Serena ficava com `entregue = null`, e o cron de 1 minuto **reenviaria a mesma mensagem** — cliente receberia tudo duplicado. Agora o webhook marca `entregue = true` assim que o envio dá certo, e o cron continua servindo de rede de segurança para o que não saiu.
 
 Testado ponta a ponta antes de abrir: `/start`, pergunta livre, lista com 8 botões, clique num botão (virou "ImunoFosfo 60 cápsulas · R$ 247" e a Serena seguiu a venda), vídeo sem legenda e a flag de entrega. Conversa de teste apagada depois.
+
+## Avisos: do privado para o grupo da equipe (09/09/2026)
+
+Auditoria feita a pedido do Jaderson ("todo mundo recebe as coisas que vão pra lá?"). A resposta era **não**: estava dividido em dois lugares, e a divisão não fazia sentido.
+
+O que ia para o **privado da conta @AmericaNutrition** (só uma pessoa via): depoimentos do Radar, moderação de grupos, limpeza manual e — o pior — os **dois avisos de conversa nova**, do site e do Telegram. Com o WhatsApp banido, essas são as portas de entrada: o único aviso de que um cliente chegou ia para um chat que uma pessoa só lê.
+
+O que já ia para o grupo **America Nutrition Alertas 🚨** (5 pessoas): tópico 289 com proposta de base, auditoria, anti-spam, rastreio proativo, relatório de vendas e watchdog; tópico 94 com trocas.
+
+Três tópicos novos no mesmo grupo (o bot é admin com `can_manage_topics`, então dá para criar pela API):
+
+| Tópico | `message_thread_id` | Recebe |
+| --- | --- | --- |
+| 💬 Atendimento | 1628 | Nova conversa no site, nova conversa no Telegram, cliente pedindo atendente nos dois canais, compra quente e risco do Radar |
+| ⭐ Depoimentos | 1629 | Cards de depoimento espontâneo, com o botão de virar review |
+| 🛡 Moderação | 1630 | Moderação automática dos grupos e limpeza manual de número |
+
+Cinco nodes apontados: `Chat do Site`, `Tratar Mensagem` (Telegram), `Limpar Mensagens`, `Apagar ou Alertar` (moderação) e `Decidir e Alertar` (Radar). O Radar roteia por tipo: depoimento vai para 1629, compra quente e risco para 1628.
+
+Aproveitando, o handoff nos canais novos passou a avisar no tópico de Atendimento além do push — antes a fila só aparecia no Inbox.
+
+Nenhum aviso vai mais para chat privado. Cada tópico recebeu uma mensagem de confirmação depois da mudança.

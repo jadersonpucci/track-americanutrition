@@ -5,7 +5,11 @@ const SK = 'SUPABASE_SERVICE_KEY';
 const EVO = 'http://evolution-api-aru6-api-1:8080';
 const EVO_KEY = 'EVOLUTION_APIKEY';
 const TG = 'http://telegram-bot-api:8081/botTELEGRAM_BOT_TOKEN/sendMessage';
-const TG_CHAT = '6531084136';
+// grupo "America Nutrition Alertas" em vez do privado de uma pessoa so: a equipe inteira ve.
+// Depoimento vai para o topico 1629 (Depoimentos); compra quente e risco para o 1628 (Atendimento).
+const TG_CHAT = '-1003766435449';
+const TOPICO_DEPOIMENTOS = 1629;
+const TOPICO_ATENDIMENTO = 1628;
 const CRIS = '16464270203';
 const NL = String.fromCharCode(10);
 const ctx = $('Registrar e Pre-filtrar').first().json;
@@ -63,7 +67,7 @@ t += 'Confianca: ' + conf + '%' + NL + NL;
 t += 'Leitura: ' + resumo + NL + NL;
 t += 'Mensagem original:' + NL + String(ctx.texto).slice(0, 400);
 if (tipo === 'depoimento') { t += NL + NL + 'Vale pedir autorizacao e virar review no site.'; }
-const corpoTG = { chat_id: TG_CHAT, text: t, disable_web_page_preview: true };
+const corpoTG = { chat_id: TG_CHAT, message_thread_id: (tipo === 'depoimento' ? TOPICO_DEPOIMENTOS : TOPICO_ATENDIMENTO), text: t, disable_web_page_preview: true };
 // Depoimento com id resolvido ganha o botao que abre a pagina de virar review no site
 if (tipo === 'depoimento' && radarId) {
   corpoTG.reply_markup = { inline_keyboard: [[{ text: '\u2b50 Virar review no site', url: 'https://n8n.americanutrition.com/webhook/dep-review?t=an-dep-3Xk9Wq7Vz&id=' + radarId }]] };
