@@ -937,3 +937,14 @@ Cinco nodes apontados: `Chat do Site`, `Tratar Mensagem` (Telegram), `Limpar Men
 Aproveitando, o handoff nos canais novos passou a avisar no tópico de Atendimento além do push — antes a fila só aparecia no Inbox.
 
 Nenhum aviso vai mais para chat privado. Cada tópico recebeu uma mensagem de confirmação depois da mudança.
+
+### Botão do Telegram no site (09/09)
+
+Duas entradas para o Telegram, sem competir com o chat:
+
+- **Botão flutuante** em azul Telegram (48px), logo acima do balão do chat. Abre `t.me/AmericaNutritionSerena_bot`. Os dois agora vivem dentro de `#anchat-fab`, um flex column: o tema posiciona só o container e não precisa saber que são dois — o snippet ficou mais simples e o espaçamento não depende de calcular offsets.
+- **Faixa dentro do painel**, logo abaixo do cabeçalho: *"Prefere Telegram? Lá você recebe a resposta no celular, mesmo depois de sair do site."* Ela **some assim que a conversa começa** (`faixaTg()`, mais de uma bolha na tela). Trocar de canal no meio do atendimento perde o histórico: no Telegram a pessoa vira outro contato. O convite só faz sentido antes de digitar.
+
+Esse é o argumento honesto para migrar: o chat do site não tem push. Fechou a aba, a resposta do atendente não chega. No Telegram chega.
+
+Também corrigidos os acentos do texto que o cliente lê ("Lá você", "Não consegui enviar", "conexão", a página avulsa). Tudo com escape unicode dentro do JS concatenado — acento literal já chegou corrompido em node deste projeto antes.
