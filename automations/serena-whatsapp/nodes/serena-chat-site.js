@@ -6,10 +6,12 @@ const CORE = 'https://n8n.americanutrition.com/webhook/serena-core';
 const BASE = 'https://n8n.americanutrition.com/webhook/serena-chat';
 const PUSH = 'https://n8n.americanutrition.com/webhook/serena-push';
 const INBOX = 'https://n8n.americanutrition.com/webhook/serena-inbox?t=an-serena-9Kx4Lm2Q';
-const TELEGRAM = 'https://t.me/AmericaNutritionSerena_bot';
+// Aponta para a conta do Samuel (Telegram Business), nao para o bot: a conversa nasce
+// dentro do app da equipe e a resposta sai em nome dele, nao em nome de um bot.
+const TELEGRAM = 'https://t.me/AmericaNutrition';
 const TG = 'http://telegram-bot-api:8081/bot<TOKEN>/sendMessage';
 // grupo "America Nutrition Alertas", topico 1628 (Atendimento): a equipe inteira ve, nao so um celular
-const TG_CHAT = '-1003766435449';
+const TG_GRUPO = '-1003766435449';
 const TG_TOPICO = 1628;
 const LIMITE_HORA = 40;
 const self = this;
@@ -51,7 +53,7 @@ if (acao === 'enviar') {
   if (novo) {
     const preview = texto.replace(/[<>&]/g, ' ').slice(0, 180);
     await req({ method: 'POST', url: TG, headers: { 'Content-Type': 'application/json' }, json: true, timeout: 10000,
-      body: { chat_id: TG_CHAT, message_thread_id: TG_TOPICO, parse_mode: 'HTML', disable_web_page_preview: true,
+      body: { chat_id: TG_GRUPO, message_thread_id: TG_TOPICO, parse_mode: 'HTML', disable_web_page_preview: true,
         text: '\u{1F4AC} <b>Nova conversa no chat do site</b>' + String.fromCharCode(10) + '<i>' + preview + '</i>' + String.fromCharCode(10) + String.fromCharCode(10) + '<a href="' + INBOX + '">Abrir no Inbox</a>' } });
     await req({ method: 'POST', url: PUSH, json: true, timeout: 15000, body: { titulo: '\u{1F4AC} Chat do site', corpo: preview.slice(0, 140), url: INBOX, tag: 'chat-site' } });
   }

@@ -1056,3 +1056,21 @@ Testado ponta a ponta com payloads sintéticos no webhook de produção: conexã
 vencer, telefone capturado do texto. As linhas de teste foram apagadas.
 
 `setWebhook` passou a aceitar `business_connection`, `business_message` e `edited_business_message`.
+
+### Botão do site aponta para a conta do Samuel (09/09)
+
+O botão azul do Telegram no site e a faixa dentro do painel do chat passaram a abrir
+`t.me/AmericaNutrition`, a conta do Samuel, em vez de `t.me/AmericaNutritionSerena_bot`.
+É o que faz a conversa nascer já dentro do app da equipe, com a resposta saindo em nome dele.
+
+É uma constante só (`TELEGRAM`, no node `Chat do Site`), usada nos dois lugares. Antes de trocar
+eu baixei o widget servido, troquei e baixei de novo: o diff mostrou exatamente uma diferença, a
+URL, e mais nada. O `Cache-Control: no-store` da resposta faz a troca valer na hora, sem esperar
+cache de navegador. O tema da Shopify não precisou de deploy, porque ele só carrega o script.
+
+**Atenção enquanto o Business Mode não estiver ligado:** quem tocar nesse botão cai numa conversa
+com a conta do Samuel onde a Serena ainda não responde. Chega no app da equipe, mas sem resposta
+automática. Para voltar ao bot enquanto isso, é trocar a constante de volta.
+
+O node também teve `TG_CHAT` renomeado para `TG_GRUPO`, só para o arquivo do repositório parar de
+divergir do que está no ar — o nome já era esse no n8n.
