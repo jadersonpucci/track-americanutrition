@@ -960,3 +960,42 @@ No **Inbox** (`/webhook/serena-inbox?t=an-serena-9Kx4Lm2Q`), junto com todo o re
 Os avisos chegam no tópico 💬 Atendimento (conversa nova e cliente pedindo atendente) e no push dos atendentes.
 
 **Buraco corrigido na hora:** quem mandava só `/start` e não escrevia mais nada ficava **invisível no Inbox**. A listagem faz join com a última mensagem do contato, e o `/start` respondia as boas-vindas sem gravar nada em `serena_mensagens`. Descoberto porque uma cliente real (Vera Lucia) entrou no bot às 23:05 com zero mensagens registradas. Agora `/start`, telefone compartilhado e mídia sem texto gravam o par cliente/Serena no histórico. O caso da Vera Lucia foi preenchido à mão com a data original.
+
+### Transacionais pelo Telegram (09/09)
+
+Confirmação de pedido, pedido pago, pedido enviado, pedido entregue e o modo de uso do
+pós-entrega passaram a sair **pelo Telegram** para quem já conversa com a Serena por lá.
+Quem não está no Telegram continua recebendo pelo WhatsApp, sem nenhuma mudança.
+
+A parada é única, num só lugar: o node **`Rota do Envio`** (`nodes/envio-rota-telegram.js`),
+entre o `Preparar` e o `E audio?` do **Envio Samuel** (`EhmndFruX6hOIRDN`). Antes de chamar a
+Evolution ele procura o telefone em `serena_fatos` (chave `telefone`) ligado a um contato
+`session_site like 'tg-%'`. Achou, manda pelo bot e devolve `{ ok, tipo: 'telegram', message_id }`;
+não achou, o item segue igual pelo caminho do WhatsApp.
+
+- **Casamento de telefone tolerante ao 9º dígito**: a chave é `DDD + 8 últimos`, então
+  `5511987654321` e `551187654321` batem no mesmo contato. Testado nos dois formatos.
+- **Telegram recusou** (bloqueou o bot, chat apagado): cai para o WhatsApp em vez de perder a mensagem.
+- **Sem mensagem duplicada**: a gravação em `serena_mensagens` acontece uma vez só, na conversa
+  do canal que entregou. O dispatcher passou a usar `gravar: ok && via === 'whatsapp'`.
+- **`autor` preservado** (`transacional:pedido_pago_confirmado`, `pos_entrega:...`): o webhook
+  aceita `autor` no corpo e o `Rota do Envio` grava junto, então no Inbox continua dando para
+  distinguir mensagem automática de mensagem escrita na hora.
+- **Lista clicável** vira teclado inline no Telegram, com o mesmo `callback_data` (`op:<i>`) que o
+  `Tratar Mensagem` já entende.
+
+O **Dispatcher Samuel v3** (`WXncUehLXyuIMoSm`) mandava direto para a Evolution
+(`/message/sendText/Samuel`) e por isso não passava por essa rota. Agora ele posta no
+`/webhook/serena-samuel-enviar`. O `Avaliar Envio` aceita a resposta nova (`{ ok, tipo }`) e a
+antiga (resposta crua da Evolution), e o `Entregues p/ Pos-entrega` passou a filtrar por
+`enviado` em vez de `gravar` — senão quem recebesse pelo Telegram ficaria sem o modo de uso.
+
+Testado ponta a ponta com um contato de teste apontado para o grupo de alertas: `pedido pago`
+e `pedido entregue` entraram na fila, o cron pegou, os dois saíram pelo Telegram com o `autor`
+certo, o pós-entrega gerado pela Claude saiu junto, e o registro no Inbox ficou único. As linhas
+de teste foram apagadas depois.
+
+**Hoje isso não entrega nada.** Só existe uma pessoa no bot (Vera Lucia) e ela ainda não tocou em
+*Compartilhar meu telefone* — sem esse toque não dá para saber que o cliente do pedido é o mesmo
+do chat. A rota está pronta para quando a base do Telegram crescer; enquanto isso todo transacional
+segue tentando o WhatsApp, que está banido.

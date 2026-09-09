@@ -1,5 +1,10 @@
 // n8n Workflow SDK — [Serena WhatsApp] Envio Samuel (texto ou audio) (id EhmndFruX6hOIRDN)
-// POST /webhook/serena-samuel-enviar  { number, text, delay } | { number, audio_texto, voz_id, delay }
+// POST /webhook/serena-samuel-enviar  { number, text, delay, autor? } | { number, audio_texto, voz_id, delay }
+//
+// ESTE ARQUIVO E A CRIACAO ORIGINAL. Depois dele o workflow ganhou, direto no n8n:
+//  - "Enviar Lista (Samuel)": menu nativo do WhatsApp quando vem { lista: { titulo, opcoes } };
+//  - "Rota do Envio" + "Foi pelo Telegram?": antes de mandar pela Evolution, se o telefone ja
+//    conversa com a Serena no Telegram, a mensagem sai por la. Codigo em nodes/envio-rota-telegram.js.
 import { workflow, node, trigger, sticky, switchCase, expr } from '@n8n/workflow-sdk';
 
 const EVO = { httpHeaderAuth: { id: 'PgPwcyexFAbimWtd', name: 'Evolution Samuel' } };
