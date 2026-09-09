@@ -999,3 +999,60 @@ de teste foram apagadas depois.
 *Compartilhar meu telefone* — sem esse toque não dá para saber que o cliente do pedido é o mesmo
 do chat. A rota está pronta para quando a base do Telegram crescer; enquanto isso todo transacional
 segue tentando o WhatsApp, que está banido.
+
+### Serena atendendo pelo número do Samuel (Telegram Business, 09/09)
+
+O cliente escreve para a **conta do Samuel** no Telegram, a Serena responde dentro daquela
+conversa e a mensagem sai **como se o Samuel tivesse escrito**. A equipe acompanha e responde
+tudo pelo próprio app do Telegram, sem abrir o Inbox.
+
+Isso usa o recurso oficial de **Telegram Business**: uma conta Premium conecta um bot em
+*Ajustes → Telegram Business → Chatbots* e o bot passa a receber `business_message` e a
+responder com `business_connection_id`. Nada de conta automatizada por fora da API — o caminho
+que faria isso sem Premium viola os termos do Telegram e derruba a conta.
+
+**Para ligar (só o dono da conta consegue fazer):**
+
+1. BotFather → `/mybots` → `@AmericaNutritionSerena_bot` → *Bot Settings* → *Business Mode* → ligar.
+   Hoje o bot responde `can_connect_to_business: false`, então sem esse passo nada acontece.
+2. Telegram Premium na conta do Samuel (`+1 347 222 5493`).
+3. Naquela conta: *Ajustes → Telegram Business → Chatbots* → adicionar o bot e marcar a
+   permissão de **responder mensagens**.
+
+Assim que conectar, chega um `business_connection` e o tópico 💬 Atendimento recebe a
+confirmação, dizendo inclusive se a permissão de responder ficou marcada. Se alguém desconectar,
+chega o aviso contrário.
+
+**Os dois modos convivem.** Quem falar com o bot continua tendo `/start`, botão de compartilhar
+telefone e lista clicável. Quem falar com o Samuel entra pelo modo business. O contato é o mesmo
+`tg-<chat_id>` nos dois casos, então o histórico não se divide.
+
+**Diferenças do modo business, que são limites do Telegram e não escolhas:**
+
+- **Sem botões.** Mensagem enviada em nome de uma conta de pessoa não carrega teclado, inline nem
+  de resposta. As opções vão numeradas no texto, exatamente como a Serena já faz fora do WhatsApp.
+- **Sem botão de compartilhar telefone.** Por isso o node passou a **reconhecer o telefone quando
+  o cliente digita**, e grava em `serena_fatos` com origem `conversa`. Sem isso a Serena não acha o
+  pedido na Shopify e nenhuma transacional consegue sair por aqui. O detector exige DDD válido e
+  celular começando em 9 (ou fixo de 2 a 5), com lookbehind de dígito para não confundir com CPF,
+  código de rastreio ou número de pedido. Testado com 11 casos, incluindo CPF com e sem pontuação.
+- **A Serena não puxa conversa.** Um bot business só fala em chat que já existe. Transacional para
+  quem nunca escreveu continua indo pelo WhatsApp.
+
+**Resposta manual pelo app.** Quando alguém da equipe responde direto no Telegram, o bot recebe
+essa mensagem também. Ela entra no histórico como `humano` (autor `app_telegram`) e **pausa a
+Serena naquela conversa**, senão ela responderia por cima da pessoa. A pausa não é eterna: passados
+`tg_pausa_min` minutos (padrão 180) sem ninguém responder, a Serena volta a atender aquele cliente
+sozinha. Sem esse prazo toda conversa tocada na mão ficaria parada esperando alguém lembrar de
+resolver no Inbox.
+
+**Quem entrega o quê:** o cron de 1 minuto (respostas do Inbox) e a rota transacional
+(`nodes/envio-rota-telegram.js`) agora leem o fato `tg_business` do contato e mandam com o
+`business_connection_id` quando ele existe. Sem isso a mesma conversa alternaria entre a voz do
+Samuel e a de um bot.
+
+Testado ponta a ponta com payloads sintéticos no webhook de produção: conexão registrada em
+`serena_config`, resposta manual gravada e conversa pausada, cliente respondido depois da pausa
+vencer, telefone capturado do texto. As linhas de teste foram apagadas.
+
+`setWebhook` passou a aceitar `business_connection`, `business_message` e `edited_business_message`.
