@@ -947,4 +947,6 @@ Duas entradas para o Telegram, sem competir com o chat:
 
 Esse é o argumento honesto para migrar: o chat do site não tem push. Fechou a aba, a resposta do atendente não chega. No Telegram chega.
 
+**Posição no celular.** Empilhados, os dois somam 112px de altura contra os 54px do botão antigo, e na página de produto ficavam no meio da tela. No mobile eles vão **lado a lado** (`flex-direction: row`), então o conjunto volta a ter a altura de um botão só. E o `bottom` da página de produto caiu de **178px para 104px**: o 178 era `92 (folga) + 86 (barra de compra)`, mas os 92px já passavam do topo da barra — a barra estava sendo contada duas vezes e sobravam ~90px de folga. Com 104px sobram ~17px, medidos contra uma barra de 86px.
+
 Também corrigidos os acentos do texto que o cliente lê ("Lá você", "Não consegui enviar", "conexão", a página avulsa). Tudo com escape unicode dentro do JS concatenado — acento literal já chegou corrompido em node deste projeto antes.

@@ -26,8 +26,17 @@
   #anchat-p { z-index: 99999 !important; }
 
   @media (max-width: 600px) {
+    /* Lado a lado, nao empilhados: empilhado o par tem 112px de altura e sobe demais
+       na pagina de produto. Em linha o conjunto volta a ter a altura de um botao so.
+
+       Sobre o 104px: o tema usava 178px (92 de folga + 86 da barra de compra), mas
+       os 92px ja passavam do topo da barra - estava contando a barra duas vezes, e o
+       botao ficava ~90px acima dela. 104px deixa ~17px de folga real. */
     #anchat-fab {
-      bottom: {% if template.name == 'product' %}178px{% else %}92px{% endif %} !important;
+      flex-direction: row !important;
+      align-items: flex-end !important;
+      gap: 10px !important;
+      bottom: {% if template.name == 'product' %}104px{% else %}92px{% endif %} !important;
       right: 18px !important;
     }
     #anchat-b { width: 54px !important; height: 54px !important; }
