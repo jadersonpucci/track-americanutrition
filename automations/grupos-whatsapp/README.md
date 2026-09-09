@@ -88,3 +88,61 @@ limpar repete exatamente o disparo que derrubou o número.
 - Leitura pura, que nunca posta: Radar, Snapshot de grupos, Leitor de Imagens, Raio-X Semanal,
   Fila de Oportunidades, Expurgo, painéis.
 - **Grupos | Limpar Mensagens de um Numero**: endpoint manual, só roda quando alguém chama.
+
+## Filas zeradas e a trava contra represamento (09/09/2026)
+
+### O que foi removido
+
+| Fila | Antes | Depois |
+|---|---|---|
+| `convites_grupo` | 1.255 agendados, 1.207 vencidos, o mais antigo de 24/06 | 0 |
+| `carrinhos_abandonados` | 124 pendentes vencidos, o mais antigo de 22/06 | 0 |
+
+Nada foi apagado: as linhas viraram `status = 'expirado'`, então o histórico continua lá para
+auditoria e nenhuma dessas mensagens sai mais. As demais filas (transacional, avaliação,
+reposição, broadcast) já estavam limpas.
+
+**Correção sobre o relato anterior.** Os "76 convites de avaliação vencidos" que eu citei não
+eram fila: os 76 estão com `status = 'cancelado'`. A consulta que eu usei filtrava só por
+`enviado_em is null`, que naquela tabela não distingue cancelado de pendente. Não havia
+represamento em `review_convites`. O workflow `AN - Reviews Convite Pós-Entrega` foi pausado
+por causa dessa leitura errada — continua pausado, mas por decisão, não por fila.
+
+**Achado no lugar disso:** `carrinhos_abandonados` tinha 124 pendentes vencidos desde 22/06,
+num cron de 1 minuto e com o workflow **ligado**. Minha primeira consulta usou `abandonado_em`
+em vez de `abandonar_em` e por isso mostrou 1. Nenhuma mensagem de carrinho chegou a sair
+depois que o número voltou; o `Dispatcher Carrinho Abandonado` (`MqCaAfZt6PIVat1R`) foi pausado
+antes disso.
+
+### A trava: `Filas | Guarda de Represamento` (`z75qStbDY4Xu2pUv`)
+
+Código em `guarda-filas.js`. Cron de 15 minutos, mais
+`GET /webhook/filas-guarda?t=TOKEN` (`&teste=1` só conta, não expira).
+
+A regra é uma frase: **mensagem atrasada demais não é mensagem atrasada, é mensagem que não
+deve mais existir.** A cada rodada ele expira o que passou do prazo e alerta no tópico 289
+quando ainda sobra fila vencida.
+
+| Fila | Prazo | TTL | Alerta acima de |
+|---|---|---|---|
+| `convites_grupo` | `enviar_em` | 72h | 30 |
+| `carrinhos_abandonados` | `abandonar_em` | 72h | 30 |
+| `scheduled_messages` | `send_at` | 48h | 30 |
+| `review_convites` | `enviar_em` | 168h | 30 |
+| `serena_reposicao` | `avisar_em` | 168h | 30 |
+| `broadcasts_grupos` | `enviar_em` | 24h | 3 |
+
+Duas camadas, de propósito. O TTL impede o disparo em massa mesmo que ninguém esteja olhando:
+por mais tempo que um disparador fique parado, a fila não vira bomba. O alerta é o que evita a
+próxima surpresa: represamento passa a ser aviso, não descoberta depois do estrago.
+
+Os nomes de tabela e coluna são fixos no node, nunca vêm do banco — o node monta SQL e isso
+tinha que ficar fechado. O webhook exige token porque mexe em dado de produção; o cron entra
+sem query e roda direto.
+
+**Para vigiar uma fila nova**, acrescente uma linha em `FILAS`. Fila de disparo nova sem linha
+aqui é fila que pode represar de novo.
+
+Testado em produção: `?teste=1` contou 124 carrinhos vencidos sem tocar em nada; a rodada real
+expirou os 124, zerou todas as filas e mandou o alerta no tópico 289; sem token, responde
+`token invalido`.
