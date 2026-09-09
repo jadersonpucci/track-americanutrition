@@ -28,3 +28,63 @@ Faltava uma forma de limpar **o número inteiro** de uma vez, sem depender do cl
 Parâmetros: `&teste=1` só lista (use sempre antes), `&horas=48` amplia a janela (padrão 24, máx. 720), `&remover=1` também tira a pessoa dos grupos onde ela postou. Números da equipe são recusados.
 
 Limite do WhatsApp: só dá para apagar para todos **em grupo**. Na conversa privada, mensagem que o outro mandou não pode ser "desenviada" — some só do nosso lado.
+
+## Pausa geral das automações de grupo (09/09/2026)
+
+O número do Samuel voltou depois do banimento. Antes de religar qualquer coisa, tudo o que
+posta ou apaga em grupo, e tudo o que dispara mensagem não pedida, foi **despublicado no n8n**.
+Nada foi apagado: é só publicar de novo, um de cada vez.
+
+| Workflow | ID | O que fazia |
+|---|---|---|
+| Grupos \| Auto-Resposta v2 (IA) | `4fR11ODZtAJB6rWc` | Respondia preço, link e posologia dentro dos grupos |
+| Grupos \| Moderação Automática | `AyS0758LjFJ1qx8v` | Apagava spam para todos |
+| Grupos \| Resumo Diário com Aprovação | `OgE8nAxAwjCwKtJp` | Gerava o resumo diário |
+| Grupos \| Publicar Resumo Aprovado | `mWXSSyxqBfhpLX3V` | Publicava o resumo no clique do botão |
+| Grupos \| Disparador de Resumos Agendados | `8ZGjprsMgYiwNQNC` | Postava os resumos aprovados a cada 5 min |
+| AN - Receita do Dia (Grupos WhatsApp) | `5ZJByEsg1RWkk9gr` | 1 receita por dia, 10h BRT, em todos os grupos |
+| Broadcast Grupos \| WF-B Dispatcher | `Znr91NDLNbICdik3` | Cron de 1 min que disparava os broadcasts agendados |
+| Convite Grupo \| WF1 Agendador | `L291r4YlBnxu4Cfs` | Agendava convite 3 dias após cada compra |
+| Convite Grupo \| WF2 Dispatcher | `4fThGqrY5TnS8Xle` | Mandava os convites a cada 10 min |
+| Popup Boas-Vindas - Cupom 10% | `9RlnW2MtMFGeQ07s` | Mandava o cupom de boas-vindas pelo Samuel |
+| AN - Popup Follow-up Cupom (Samuel) | `C0lG0p0hYBpfqDmU` | Lembrete do cupom 48h depois |
+| AN - Reviews Convite Pós-Entrega (Samuel) | `QWB9Gw8e7DTH4bP5` | Convite de avaliação 15 dias após a postagem |
+
+O popup dos 10% também saiu do site: no `layout/theme.liquid` a linha
+`{% render 'an-popup-boasvindas' %}` virou comentário, com a explicação em volta. O snippet
+continua no tema, então religar é tirar o comentário. Conferido no HTML servido de
+`www.americanutrition.com`: o popup sumiu e o chat da Serena continua lá.
+
+### Por que a pressa: a fila de convites
+
+Antes de pausar, a tabela `convites_grupo` tinha **1.207 convites vencidos** esperando envio,
+o mais antigo agendado para **24/06**. O histórico de envio conta o resto:
+
+| Quando (BRT) | Convites enviados |
+|---|---|
+| 30/05 10h | 1 |
+| 08/09 18h | 118 |
+| 08/09 19h | 32 |
+
+Ou seja: o dispatcher passou meses sem entregar, acumulou mais de mil convites e despejou 150
+em duas horas no dia 08/09 — o mesmo dia do banimento. Convite não solicitado, em volume, para
+gente que nunca escreveu para o número. É o padrão que o WhatsApp pune.
+
+Não dá para afirmar que foi a única causa, mas é o sinal mais forte que os dados mostram. E a
+fila continuava armada: no minuto em que o número voltasse, os outros 1.207 sairiam.
+
+O mesmo padrão, menor, estava em `review_convites`: **76 convites de avaliação vencidos**, o mais
+antigo de **02/07**. Por isso esse workflow entrou na lista, mesmo não sendo de grupo.
+
+**Antes de religar qualquer um desses, esvaziar ou expirar a fila acumulada.** Publicar sem
+limpar repete exatamente o disparo que derrubou o número.
+
+### O que continua ligado (e por quê)
+
+- **Entrada Samuel** e **Envio Samuel**: a Serena só responde quem escreve primeiro.
+- **Dispatcher Transacional v3**: pago, enviado e entregue. Fila vazia, é resposta a compra real.
+- **Carrinho Abandonado**: 1 carrinho vencido na fila, sem represamento.
+- **Rastreio Proativo** e **Reposição Automática**: 0 vencidos nas duas filas.
+- Leitura pura, que nunca posta: Radar, Snapshot de grupos, Leitor de Imagens, Raio-X Semanal,
+  Fila de Oportunidades, Expurgo, painéis.
+- **Grupos | Limpar Mensagens de um Numero**: endpoint manual, só roda quando alguém chama.
