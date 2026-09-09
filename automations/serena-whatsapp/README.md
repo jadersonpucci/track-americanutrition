@@ -882,3 +882,11 @@ Corrigido amarrando o painel ao `visualViewport`:
 2. `localStorage` lançando exceção (webview restrita, cookies bloqueados) derrubava o widget inteiro antes de desenhar qualquer coisa. Agora passa por `lsGet`/`lsSet` com try/catch: sem storage, o chat funciona igual, só não lembra a conversa entre visitas.
 
 Verificado em Chromium 393×852 contra uma página com 4000px de altura: painel 852px ao abrir com a página travada em scroll 900; simulando o teclado (`visualViewport.height = 516`) o painel vai para 516px, o rodapé do input fica exatamente em 516 e a área de mensagens continua com 388px; ao fechar, scroll volta para 900 e o `body` volta a `static`. Também testado com `localStorage` lançando: monta e abre normal, sem erro de JS.
+
+### Cabeçalho (09/09)
+
+O topo ficava feio no iPhone: a barra de status é pintada pelo Safari com o `theme-color` da loja (**`#07388e`**, que sai de `settings.color_button_background`), e o cabeçalho do chat era quase preto (`#0e1726`). Dois azuis diferentes empilhados, com uma emenda visível no meio.
+
+O cabeçalho passou a usar o mesmo `#07388e`, então a barra do sistema e o cabeçalho viram um bloco contínuo — sem precisar mexer no `theme-color` da página. `--an-azul` agora é a cor da marca (cabeçalho, botão flutuante, botão de enviar e balão do cliente) e `--an-link` guarda o azul claro só para links dentro das respostas.
+
+Junto: avatar circular branco com "AN", bolinha verde antes do subtítulo, botão de fechar num círculo translúcido, `padding-top: max(11px, env(safe-area-inset-top))` no cabeçalho e sombra leve nos balões da Serena.

@@ -70,24 +70,30 @@ if (acao === 'novas') {
 // ---------- front ----------
 // ATENCAO: o JS abaixo e montado por concatenacao e sai numa linha so.
 // Nunca use comentario // dentro dele: comentaria o arquivo inteiro. Use /* */.
-const CSS = ':root{--an-azul:#1f4fd8;--an-esc:#0e1726}'
+// --an-azul e o mesmo #07388e do <meta name="theme-color"> da loja: assim a barra
+// de status do Safari e o cabecalho do chat viram um bloco continuo, sem emenda.
+const CSS = ':root{--an-azul:#07388e;--an-link:#1f4fd8}'
   + '#anchat-b{position:fixed;right:18px;bottom:18px;z-index:2147483000;width:60px;height:60px;border-radius:50%;background:var(--an-azul);border:0;cursor:pointer;box-shadow:0 8px 26px rgba(0,0,0,.28);display:flex;align-items:center;justify-content:center}'
   + '#anchat-b svg{width:28px;height:28px;fill:#fff}'
   + '#anchat-b .pt{position:absolute;top:-4px;right:-4px;background:#e23b3b;color:#fff;font:700 11px system-ui;border-radius:10px;padding:1px 6px;display:none}'
   + '#anchat-p{position:fixed;right:18px;bottom:88px;z-index:2147483000;width:360px;max-width:calc(100vw - 24px);height:520px;max-height:calc(100vh - 120px);background:#fff;border-radius:16px;box-shadow:0 18px 50px rgba(0,0,0,.3);display:none;flex-direction:column;overflow:hidden;font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}'
   + '#anchat-p.on{display:flex}'
-  + '#anchat-h{background:var(--an-esc);color:#fff;padding:13px 15px;display:flex;align-items:center;gap:10px;flex:0 0 auto}'
-  + '#anchat-h b{font-size:15px;display:block}#anchat-h span{font-size:12px;opacity:.72}'
-  + '#anchat-h .x{margin-left:auto;background:0;border:0;color:#fff;font-size:22px;line-height:1;cursor:pointer;opacity:.75;padding:0 2px}'
-  + '#anchat-m{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px;background:#f5f6f8}'
+  + '#anchat-h{background:var(--an-azul);color:#fff;padding:11px 14px;padding-top:max(11px,env(safe-area-inset-top));display:flex;align-items:center;gap:11px;flex:0 0 auto}'
+  + '#anchat-h .av{flex:0 0 38px;width:38px;height:38px;border-radius:50%;background:#fff;color:var(--an-azul);font:800 13px/38px -apple-system,system-ui,sans-serif;font-style:normal;text-align:center;letter-spacing:.4px}'
+  + '#anchat-h .nm{min-width:0}'
+  + '#anchat-h b{font-size:15px;display:block;line-height:1.25;letter-spacing:-.1px}'
+  + '#anchat-h span{font-size:12px;opacity:.82;display:block;line-height:1.3}'
+  + '#anchat-h .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#3ddc84;margin-right:5px}'
+  + '#anchat-h .x{margin-left:auto;flex:0 0 30px;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.16);border:0;color:#fff;font-size:19px;line-height:30px;cursor:pointer;padding:0;text-align:center}'
+  + '#anchat-m{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px;background:#f4f6f9}'
   + '.anm{margin:8px 0;display:flex}.anm.eu{justify-content:flex-end}'
   + '.anb{max-width:82%;padding:9px 13px;border-radius:15px;white-space:pre-wrap;word-wrap:break-word;font-size:14.5px}'
   + '.eu .anb{background:var(--an-azul);color:#fff;border-bottom-right-radius:4px}'
-  + '.ela .anb{background:#fff;color:#16202e;border:1px solid #e3e6ec;border-bottom-left-radius:4px}'
+  + '.ela .anb{background:#fff;color:#16202e;border:1px solid #e3e6ec;border-bottom-left-radius:4px;box-shadow:0 1px 2px rgba(16,32,60,.05)}'
   + '.anb a{color:inherit;text-decoration:underline;word-break:break-all}'
-  + '.ela .anb a{color:var(--an-azul)}'
+  + '.ela .anb a{color:var(--an-link)}'
   + '.anh{text-align:center;font-size:11.5px;color:#8a93a3;margin:6px 0}'
-  + '#anchat-f{flex:0 0 auto;border-top:1px solid #e3e6ec;padding:9px;display:flex;gap:8px;background:#fff;padding-bottom:calc(9px + env(safe-area-inset-bottom))}'
+  + '#anchat-f{flex:0 0 auto;border-top:1px solid #e3e6ec;padding:9px;display:flex;gap:8px;align-items:flex-end;background:#fff;padding-bottom:calc(9px + env(safe-area-inset-bottom))}'
   + '#anchat-t{flex:1;border:1px solid #d8dce4;border-radius:20px;padding:9px 14px;font:16px/1.35 inherit;resize:none;max-height:96px;outline:0}'
   + '#anchat-t:focus{border-color:var(--an-azul)}'
   + '#anchat-s{background:var(--an-azul);border:0;border-radius:50%;width:38px;height:38px;cursor:pointer;flex:0 0 38px;display:flex;align-items:center;justify-content:center}'
@@ -108,7 +114,7 @@ const JS = '(function(){if(window.__anchat)return;window.__anchat=1;'
   + 'var b=document.createElement("button");b.id="anchat-b";b.setAttribute("aria-label","Falar com a gente");'
   + 'b.innerHTML=\'<svg viewBox="0 0 24 24"><path d="M20 2H4a2 2 0 00-2 2v18l4-4h14a2 2 0 002-2V4a2 2 0 00-2-2z"/></svg><i class="pt"></i>\';'
   + 'var p=document.createElement("div");p.id="anchat-p";'
-  + 'p.innerHTML=\'<div id="anchat-h"><div><b>America Nutrition</b><span>Atendimento \\u00b7 respondemos por aqui</span></div><button class="x" aria-label="Fechar">\\u00d7</button></div><div id="anchat-m"></div><div id="anchat-f"><textarea id="anchat-t" rows="1" placeholder="Escreva sua mensagem..."></textarea><button id="anchat-s" aria-label="Enviar"><svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg></button></div>\';'
+  + 'p.innerHTML=\'<div id="anchat-h"><i class="av">AN</i><div class="nm"><b>America Nutrition</b><span><i class="dot"></i>Atendimento \\u00b7 respondemos por aqui</span></div><button class="x" aria-label="Fechar">\\u00d7</button></div><div id="anchat-m"></div><div id="anchat-f"><textarea id="anchat-t" rows="1" placeholder="Escreva sua mensagem..."></textarea><button id="anchat-s" aria-label="Enviar"><svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg></button></div>\';'
   + 'document.body.appendChild(b);document.body.appendChild(p);'
   + 'var mm=p.querySelector("#anchat-m"),tx=p.querySelector("#anchat-t"),bs=p.querySelector("#anchat-s"),pt=b.querySelector(".pt");'
   + 'var naoLidas=0,aberto=false;'
@@ -162,7 +168,7 @@ if (acao === 'widget') {
 }
 
 // pagina avulsa: mesmo widget, ja aberto, para mandar o link direto ao cliente
-let html = '<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">';
+let html = '<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#07388e">';
 html += '<title>Atendimento America Nutrition</title>';
 html += '<style>body{margin:0;background:#0e1726;color:#e7e9ee;font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}';
 html += '.c{max-width:620px;margin:0 auto;padding:56px 20px 140px;text-align:center}h1{font-size:24px;margin:0 0 10px}p{color:#9aa3b5;margin:0 auto 8px;max-width:460px}</style></head><body>';
