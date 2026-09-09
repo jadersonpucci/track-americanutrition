@@ -1,0 +1,45 @@
+{%- comment -%}
+  Chat do site (Serena) — canal de atendimento enquanto o WhatsApp esta fora.
+  Workflow n8n: "Serena | Chat do Site" (gVun1aWoIRm4VrXk), GET /webhook/serena-chat.
+
+  PARA VOLTAR AO WHATSAPP: apague a linha {% render 'an-chat-serena' %} no
+  layout/theme.liquid. O botao verde do WhatsApp volta sozinho, nada mais muda.
+{%- endcomment -%}
+
+<style>
+  /* o botao do WhatsApp aponta para um numero fora do ar: sai de cena enquanto isso */
+  .an-wpp-btn { display: none !important; }
+
+  /* o chat assume a mesma posicao, tamanho e comportamento que o botao verde tinha */
+  #anchat-b {
+    bottom: 22px !important;
+    right: 22px !important;
+    width: 60px !important;
+    height: 60px !important;
+    z-index: 99999 !important;
+    box-shadow: 0 6px 18px rgba(0,0,0,.25) !important;
+  }
+  #anchat-p { bottom: 92px !important; right: 22px !important; z-index: 99999 !important; }
+
+  @media (max-width: 600px) {
+    #anchat-b {
+      width: 54px !important;
+      height: 54px !important;
+      bottom: {% if template.name == 'product' %}178px{% else %}92px{% endif %} !important;
+      right: 18px !important;
+    }
+    #anchat-p { bottom: 0 !important; right: 0 !important; }
+  }
+
+  /* mesma regra do buybar: nao cobre carrinho, menu nem busca abertos */
+  body:has(.drawer[open]) #anchat-b,
+  html.drawer-open #anchat-b,
+  body:has(.drawer[open]) #anchat-p,
+  html.drawer-open #anchat-p {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+</style>
+
+<script src="https://n8n.americanutrition.com/webhook/serena-chat?acao=widget" defer></script>

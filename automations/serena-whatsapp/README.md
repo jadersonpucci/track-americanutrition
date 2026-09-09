@@ -825,3 +825,41 @@ Página de conversa para perguntar coisas à Serena e ver o que ela responderia,
 - **Mostra o que rodou.** Abaixo de cada resposta aparecem as ferramentas chamadas, se houve handoff, se saiu lista clicável ou arquivo, e o tempo da resposta. Ferramentas de escrita (`gerar_pix`, `gerar_boleto`, `escalar_humano`, `registrar_troca`) vêm destacadas em laranja.
 - **As ferramentas rodam de verdade** — PIX e boleto criam rascunho na Shopify, escalar abre card para a equipe. A página avisa isso no topo.
 - **Limpar conversa** apaga mensagens, conversa, fatos e o contato de teste da sessão.
+
+
+## Chat do site (09/09/2026) — n8n `gVun1aWoIRm4VrXk`
+
+**O WhatsApp do Samuel foi banido.** A sessão do Baileys travou às 19:15:05 UTC (contador da Evolution parado em 57.321, `connectionState` mentindo `open`), o aparelho principal encheu de bolhas vazias — tráfego de protocolo de uma sessão quebrada — e o número acabou banido. O canal principal de atendimento parou.
+
+O site virou a porta de entrada. `GET /webhook/serena-chat`:
+
+| Parâmetro | O que faz |
+| --- | --- |
+| `?acao=widget` | devolve o JS do widget (é o que o tema carrega) |
+| `?acao=enviar&sessao=&texto=` | manda para o `serena-core` com `canal: 'site'` e devolve a resposta |
+| `?acao=novas&sessao=&desde=` | busca resposta de atendente vinda do Inbox |
+| sem parâmetro | página de conversa avulsa, para mandar o link direto ao cliente |
+
+Deu para fazer rápido porque quase tudo já existia:
+
+- O Core já aceita `canal: 'site'` com `session_site` — o mesmo caminho que o sandbox usa. Cada visitante vira um contato `session_site = 'chat-<sessao>'`, com a sessão guardada no `localStorage`.
+- O Inbox **já tratava canal site**: na ação `enviar` do painel, mensagem de humano em canal `site` ou `widget` entra com `entregue = true`. A página faz `acao=novas` de 5 em 5 segundos e a resposta do atendente aparece.
+- O handoff usa o caminho de sempre: card no Telegram + push para os atendentes, Serena pausada, e quem assumir responde pelo Inbox.
+- Conversa nova no canal também avisa no Telegram e no push, porque hoje é a porta de entrada principal.
+
+Trava contra abuso: o endpoint é público e cada mensagem custa uma chamada ao modelo, então são no máximo 40 mensagens por hora por sessão, texto cortado em 1200 caracteres.
+
+### Instalação na loja
+
+Tema publicado **153190498476** (America Nutrition - Concept 5.3.3):
+
+- `snippets/an-chat-serena.liquid` (fonte em `nodes/shopify-an-chat-serena.liquid`) — carrega o widget e posiciona o botão exatamente onde ficava o do WhatsApp: `bottom:22px/right:22px` no desktop, `92px` no mobile, `178px` em página de produto (para não cobrir o buybar), e some junto com os drawers pelas mesmas regras `:has(.drawer[open])` / `.drawer-open`.
+- `layout/theme.liquid` — uma linha, `{% render 'an-chat-serena' %}`, ao lado do `an-popup-boasvindas`.
+
+O snippet **esconde o botão verde do WhatsApp** (`.an-wpp-btn{display:none}`), que apontava para `webhook/ir-whats` → número banido. Botão visível levando a número morto é pior que botão nenhum.
+
+**Para voltar ao WhatsApp:** apague a linha `{% render 'an-chat-serena' %}` do `theme.liquid`. O botão verde volta sozinho e nada mais muda.
+
+Testado ponta a ponta: cliente pergunta → Serena responde (`gerar_checkout` inclusive) → atendente responde pelo Inbox → resposta aparece na página. O HTML servido em `www.americanutrition.com` já traz o script e o CSS.
+
+**Fica pendente:** o popup de "produto esgotado" ainda tem um `wa.me/13472225493` fixo dentro do JS do tema, e o `webhook/ir-whats` continua redirecionando para o número banido.
