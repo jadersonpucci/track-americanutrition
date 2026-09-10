@@ -146,3 +146,31 @@ aqui é fila que pode represar de novo.
 Testado em produção: `?teste=1` contou 124 carrinhos vencidos sem tocar em nada; a rodada real
 expirou os 124, zerou todas as filas e mandou o alerta no tópico 289; sem token, responde
 `token invalido`.
+
+### A própria guarda virou spam, e o conserto (10/09)
+
+Print da madrugada: "Guarda de filas — carrinhos_abandonados, ainda vencidos: 31" às 02:30,
+02:45, 03:00, 03:15... O cron é de 15 minutos e a primeira versão avisava sempre que uma fila
+passava do limite, sem checar se algo havia mudado. Foi o mesmo erro que o watchdog cometia com
+a fila humana, cometido de novo por mim no dia seguinte.
+
+**Fila esvaziada.** 33 carrinhos `pendente` vencidos (de 09/09 em diante) viraram `expirado`.
+Sobrou 1, que ainda não venceu. Nenhum deles ia sair mesmo: o `Dispatcher Carrinho Abandonado`
+está despublicado.
+
+**Dedupe de verdade.** O alerta agora fala quando o **conjunto** de filas em alarme muda, e se
+nada mudou repete no máximo uma vez a cada 12h. O conjunto vai em `serena_alertas.detalhe`,
+mesma tabela que o watchdog usa. Quando o alarme cessa, manda uma linha de "filas normalizadas"
+e apaga o estado. Erro de SQL e expurgo grande (10+) mantêm aviso próprio, com piso de 30 min.
+
+Importante: o conjunto é comparado por **nome de fila**, não pela contagem. Comparar contagem
+não resolveria nada — era justamente o que fazia o texto parecer novo a cada rodada, porque o
+número muda sozinho.
+
+**Flag `pausado`.** Fila cujo disparador está desligado de propósito (`convites_grupo` e
+`carrinhos_abandonados` hoje) continua sendo expirada, mas não gera alerta: acumular era o
+esperado, e avisar disso a cada rodada é só barulho. **Ao republicar o disparador, tire a flag** —
+senão a fila volta a acumular sem ninguém ser avisado, que é exatamente o buraco de 08/09.
+
+Conferido em produção: modo conferência e rodada real, as duas com `em_alarme: null` e
+`avisou: false`.
