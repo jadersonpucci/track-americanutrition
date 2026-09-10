@@ -1127,3 +1127,43 @@ novo (`sandbox`, um béquer) foi acrescentado ao mapa `IC`; sem entrada lá o ti
 Conferido no arquivo que o CDN serve: o card aparece, o link está certo e o bloco de script
 continua parseando (`node --check`). Vale checar isso sempre que mexer nesse arquivo — é um
 HTML de 22 KB com um script só, e um erro de vírgula derruba o painel inteiro, não só o card.
+
+### O alerta de fila humana virou ruído, e por quê (10/09)
+
+Print da noite de 09/09: o mesmo aviso "Clientes aguardando atendente" com as mesmas 7 pessoas,
+às 20:20 e de novo às 21:25, só com os minutos maiores. Suely apareceu com 3.476 min e depois
+com 3.541 min — 58 horas esperando. Alerta que repete o que já foi dito não é alerta, é barulho,
+e barulho treina a equipe a não ler.
+
+**Duas causas.** O watchdog reavisava a cada 60 min enquanto a fila não estivesse vazia, sem
+olhar se algo havia mudado. E a fila nunca esvaziava, porque atribuição aberta só fecha na mão
+pelo Inbox.
+
+**O que mudou no node `Avaliar`** (`nodes/watchdog-avaliar.js`):
+
+- **Avisa quando entra gente nova**, nomeando só quem entrou, com uma linha de contexto
+  ("Fila total: N. A mais antiga há X min"). Piso de 15 min entre avisos.
+- **Se nada mudou, cala.** Uma única linha de lembrete a cada 12h, sem repetir a lista.
+- A comparação é pelo conjunto de contatos, guardado em `serena_config.fila_humano_ids`. O
+  conjunto só é gravado quando o aviso sai — assim quem entrou dentro do piso de 15 min continua
+  contando como novo na rodada seguinte, em vez de passar batido.
+- **Higiene antes de montar a fila:** fecha a atribuição nos dois casos inequívocos, alguém da
+  equipe já respondeu depois do handoff, ou o contato é um número nosso. Fechou 2 na primeira
+  rodada: o número do próprio Jaderson (de um teste em 05/09) e o Rafael DR, que já tinha
+  resposta humana.
+- **Não mexe em `ia_pausada` de propósito.** Despausar sozinho poderia fazer a Serena falar por
+  cima de um atendimento humano em curso. Fechar a atribuição tira da fila sem esse risco.
+
+Estado semeado com a fila atual (7 contatos) para o primeiro ciclo não disparar um aviso com
+todo mundo. Conferido em produção: a rodada seguinte levou 93 ms (as anteriores, 37 ms, sem as
+consultas novas) e não emitiu alerta nenhum — antes teria reavisado no minuto 60.
+
+**O que sobrou para decidir.** Restam 7 na fila, e várias não parecem espera de verdade: a
+última mensagem do HUDSONCOSTA é "Obrigado", e Dircilene, Eliane e Marcos Alberto têm como
+última mensagem um transacional da Serena ("pedido postado"), não uma pergunta. Fechar essas
+é julgamento sobre atendimento, não regra técnica, então ficaram abertas.
+
+**Uma armadilha que continua de pé:** a consulta do watchdog só olha atribuições dos últimos
+3 dias. As 5 que estão abertas desde 05/09 não aparecem em alerta nenhum e ninguém as vê,
+a não ser abrindo a fila no Inbox. Mesmo padrão da fila represada: o que envelhece demais sai
+do radar em vez de ser resolvido.

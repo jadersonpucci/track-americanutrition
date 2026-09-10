@@ -1,4 +1,9 @@
 // n8n Workflow SDK — [Serena WhatsApp] Watchdog -> Telegram (id sYBUj3v8LGAtZYR8)
+//
+// ESTE ARQUIVO E A CRIACAO ORIGINAL. O node "Avaliar" mudou em 10/09/2026 e a versao
+// que esta no ar vive em nodes/watchdog-avaliar.js: a fila humana passou a avisar so
+// quando entra gente nova (antes repetia a lista inteira de hora em hora) e ganhou a
+// higiene que fecha atribuicao que nao e espera de verdade.
 import { workflow, node, trigger, sticky } from '@n8n/workflow-sdk';
 
 const PG = { postgres: { id: 'wXEAOLDYpG7MuiLL', name: 'Postgres account' } };
