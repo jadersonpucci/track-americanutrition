@@ -8,6 +8,11 @@ const TOKEN = 'an-mod-5Rt8Bn2W';
 if (String(q.t || '') !== TOKEN) return [{ json: { erro: 'token invalido' } }];
 const numero = String(q.numero || '').replace(/[^0-9]/g, '');
 if (numero.length < 10) return [{ json: { erro: 'use ?numero=55DDD9XXXXXXXX' } }];
+// Chave tolerante ao nono digito: DDD + os 8 ultimos. 5562992506712 e 556292506712 viram a mesma coisa.
+// O WhatsApp entrega a MESMA pessoa nos dois formatos dependendo de onde o numero foi salvo, e em
+// 10/09 isso fez esta limpeza responder "0 encontradas" para mensagens que estavam la.
+const chave = (n) => { const d = String(n || '').replace(/[^0-9]/g, ''); return d.length < 10 ? '' : (d.slice(2, 4) + d.slice(-8)); };
+const alvoChave = chave(numero);
 const horas = Math.max(1, Math.min(720, Number(q.horas || 24)));
 const soListar = String(q.teste || '') === '1';
 const remover = String(q.remover || '') === '1';
@@ -53,8 +58,17 @@ for (let page = 1; page <= 40; page++) {
     if (ts < corte) continue;
     if (!GRUPOS[k.remoteJid]) continue;
     if (k.fromMe === true) continue;
-    const quem = String(k.participant || '') + ' ' + String(k.participantAlt || '') + ' ' + String(m.participant || '');
-    if (quem.indexOf(numero) < 0) continue;
+    // O autor vem como @lid (id interno do WhatsApp, so digitos e NAO e telefone) e o telefone real
+    // aparece em participantAlt. Comparar por substring pegava @lid parecido de outra pessoa, entao
+    // aqui so entram identificadores que sao mesmo telefone, comparados pela chave tolerante.
+    const fones = [];
+    for (const b of [k.participant, k.participantAlt, k.senderPn, m.participant]) {
+      const raw = String(b || '');
+      if (!raw || raw.indexOf('@lid') !== -1) continue;
+      const d = raw.split('@')[0].replace(/[^0-9]/g, '');
+      if (d.length >= 10) fones.push(chave(d));
+    }
+    if (fones.indexOf(alvoChave) < 0) continue;
     if (!m.message) continue;
     // ja apagada: a Evolution guarda o corpo no banco dela e so marca o update como DELETED/REVOKED
     const upd = Array.isArray(m.MessageUpdate) ? m.MessageUpdate : [];

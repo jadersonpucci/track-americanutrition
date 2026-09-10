@@ -29,6 +29,36 @@ Parâmetros: `&teste=1` só lista (use sempre antes), `&horas=48` amplia a janel
 
 Limite do WhatsApp: só dá para apagar para todos **em grupo**. Na conversa privada, mensagem que o outro mandou não pode ser "desenviada" — some só do nosso lado.
 
+### Correção de 10/09/2026 — o endpoint achava "0 encontradas" com o número certo
+
+Pedido para apagar duas respostas automáticas de bots comerciais no **#1 ImunoFosfo**, o endpoint
+respondeu `encontradas: 0` para os dois números, inclusive com `&horas=720`. As mensagens estavam lá.
+
+Duas causas somadas:
+
+1. O WhatsApp hoje manda o autor em `key.participant` como **`@lid`** (um id interno, só dígitos, que
+   **não é telefone**) e põe o telefone real em `key.participantAlt`.
+2. Esse telefone vem **sem o nono dígito**: `556292506712`, não `5562992506712`. Quem pede a limpeza
+   digita o número como ele aparece no celular, com o 9.
+
+A comparação era `indexOf(numero)` sobre os três campos concatenados — não casava, e pior, podia casar
+por acaso com o `@lid` de outra pessoa (um `@lid` terminado em `7475` entrou na busca por `...96317475`).
+
+Agora o node descarta qualquer identificador `@lid` e compara pela **chave tolerante ao nono dígito**
+(`DDD + os 8 últimos`), a mesma usada em `envio-rota-telegram.js`. Com isso `5562992506712` e
+`556292506712` viram a mesma pessoa, e `@lid` nenhum entra na conta.
+
+Resultado: as duas respostas automáticas eram **quatro** mensagens, porque cada bot postou nos dois
+grupos. Todas apagadas para todos, texto salvo antes em `grupo_moderacao`:
+
+| Quem | Número | Grupos |
+|---|---|---|
+| espaçodelazer | `5562992506712` | #1 ImunoFosfo, ImunoFosfo Connect Oncológicas |
+| Daniele Sales | `5583996317475` | #1 ImunoFosfo, ImunoFosfo Connect Oncológicas |
+
+A moderação automática **não** tinha esse problema: `moderacao-prefiltro.js` já resolve `@lid` para
+telefone consultando `GET /group/participants/Samuel`. O furo era só na limpeza manual.
+
 ## Pausa geral das automações de grupo (09/09/2026)
 
 O número do Samuel voltou depois do banimento. Antes de religar qualquer coisa, tudo o que
