@@ -174,3 +174,42 @@ senão a fila volta a acumular sem ninguém ser avisado, que é exatamente o bur
 
 Conferido em produção: modo conferência e rodada real, as duas com `em_alarme: null` e
 `avisou: false`.
+
+## Moderação religada só para a mensagem automática de ausência (10/09/2026)
+
+Print do grupo #1 ImunoFosfo: uma cliente perguntou sobre a fórmula e, logo em seguida, dois
+robôs de WhatsApp Business responderam no grupo — "Agradecemos sua mensagem. Não estamos
+disponíveis no momento" e "Olá! Obrigada pelo seu contato. No momento estou fora do atendimento
+(...) Daniele Sales Corretora de Imóveis, Creci 5853f". É o robô de quem está no grupo
+respondendo à mensagem dos outros. Enterra a pergunta de quem é cliente de verdade.
+
+**A capacidade já existia e não foi acionada porque eu tinha pausado a moderação em 09/09.**
+A categoria `ausencia_automatica` já estava no pré-filtro e já era de remoção automática.
+Conferido com os textos exatos do print, mais quatro mensagens legítimas de controle:
+
+| Mensagem | Resultado |
+|---|---|
+| "Agradecemos sua mensagem. Não estamos disponíveis no momento..." | apaga |
+| "Obrigada pelo seu contato. No momento estou fora do atendimento..." | apaga |
+| "Oi boa tarde, gostaria de saber sobre essa fórmula, a opinião de quem usou" | passa |
+| "Comecei a tomar mês passado e minha disposição melhorou muito, obrigada a todos" | passa |
+| "Muito obrigada pela atenção de vocês, Deus abençoe" | passa |
+| "Bom dia, quantas cápsulas por dia devo tomar?" | passa |
+
+**O que mudou ao religar:**
+
+- `MODO_AUTO` ficou só com `ausencia_automatica`. Spam de venda, golpe, spam geral e convite
+  para grupo de fora continuam sendo detectados e avisados no tópico 🛡 Moderação, mas **não
+  apagam nada sozinhos** — reativando por partes, como combinado. Para voltar a apagar, é só
+  devolvê-los à lista.
+- **Teto de 20 remoções por hora**, contadas em `grupo_moderacao`. Acima disso o Samuel para de
+  apagar e passa a só alertar, mesmo com confiança alta. Apagar em massa é comportamento de
+  conta comprometida, e foi volume que derrubou o número em 08/09. Um grupo saudável não produz
+  20 mensagens automáticas por hora; se produzir, alguém precisa olhar antes.
+- O aviso no Telegram passou a dizer **por que** não apagou: teto batido, ou categoria em modo
+  aviso.
+
+**Dois limites honestos.** A decisão final é do classificador (Claude), que precisa devolver
+confiança de 90 ou mais; abaixo disso a mensagem só é avisada, não apagada. E o texto original
+fica salvo em `grupo_moderacao` antes de qualquer remoção, para repostar se algo for apagado
+por engano.
