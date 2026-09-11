@@ -279,3 +279,27 @@ Conferido com os textos exatos do print, mais quatro mensagens legítimas de con
 confiança de 90 ou mais; abaixo disso a mensagem só é avisada, não apagada. E o texto original
 fica salvo em `grupo_moderacao` antes de qualquer remoção, para repostar se algo for apagado
 por engano.
+
+## Religamento de 11/09/2026 — carrinho, convite de avaliação e receita do dia
+
+Três disparadores voltaram. Antes de cada um, a fila foi contada.
+
+**Dispatcher Carrinho Abandonado** (`MqCaAfZt6PIVat1R`). A tabela tinha 24 pendentes, mas o node
+`Buscar Pendentes` só pega carrinho com `atualizado_em` nas últimas 3 horas (52h para boleto). Na
+prática eram 3. Esse filtro é o que sempre protegeu o carrinho: fila velha não dispara nem quando o
+disparador volta, que é exatamente o que faltava em `convites_grupo`. O `Montar Texto` já dorme
+30 a 50 segundos antes de cada envio. Primeira rodada: 3 candidatos, 2 já tinham comprado e viraram
+`convertido`, 1 mensagem saiu, escrita pela Serena, com link encurtado. A flag `pausado` saiu de
+`carrinhos_abandonados` no guarda de filas.
+
+**AN - Reviews Convite Pós-Entrega** (`QWB9Gw8e7DTH4bP5`). Nenhum convite vencido: os 76 que eu tinha
+contado em 09/09 estavam todos `cancelado`. O workflow também não acumula, porque só olha uma janela
+fixa de pedidos (entre 15 e 25 dias atrás) e deduplica por `order_id`. O problema era outro: ele
+mandava **15 de uma vez**, com só 2,5 a 9 segundos entre um e outro. Em 02/07 fez isso três vezes
+seguidas. Para um número recém-desbanido é rajada demais, então `review_config.convites_por_rodada`
+caiu de 15 para 5. Continua sendo 10 por hora de capacidade contra uma demanda real de 7 a 28 por dia.
+
+**AN - Receita do Dia** (`5ZJByEsg1RWkk9gr`). 1 grupo, 1 receita por dia às 10h, 8 pendentes na fila e
+modo cíclico ligado. Vai pelo dispatcher de broadcast, que já espaça 4 segundos por grupo. Risco baixo.
+
+`convites_grupo` continua pausado e com a flag no guarda de filas. É o único que ainda não voltou.

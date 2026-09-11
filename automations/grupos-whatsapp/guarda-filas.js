@@ -32,7 +32,7 @@
 // a cada rodada so produz barulho. AO REPUBLICAR o disparador, tire a flag.
 const FILAS = [
   { tabela: 'convites_grupo', prazo: 'enviar_em', enviado: 'enviado_em', estados: ['agendado'], ttl_h: 72, alerta: 30, pausado: true, o_que: 'convite para o grupo de WhatsApp' },
-  { tabela: 'carrinhos_abandonados', prazo: 'abandonar_em', enviado: null, estados: ['pendente'], ttl_h: 72, alerta: 30, pausado: true, o_que: 'recuperacao de carrinho' },
+  { tabela: 'carrinhos_abandonados', prazo: 'abandonar_em', enviado: null, estados: ['pendente'], ttl_h: 72, alerta: 30, o_que: 'recuperacao de carrinho' },
   { tabela: 'scheduled_messages', prazo: 'send_at', enviado: 'enviada_em', estados: ['pendente'], ttl_h: 48, alerta: 30, o_que: 'transacional (pago, enviado, entregue)' },
   { tabela: 'review_convites', prazo: 'enviar_em', enviado: 'enviado_em', estados: ['agendado', 'pendente'], ttl_h: 168, alerta: 30, o_que: 'convite de avaliacao' },
   { tabela: 'serena_reposicao', prazo: 'avisar_em', enviado: 'enviado_em', estados: ['agendado'], ttl_h: 168, alerta: 30, o_que: 'lembrete de reposicao' },
