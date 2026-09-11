@@ -59,6 +59,42 @@ grupos. Todas apagadas para todos, texto salvo antes em `grupo_moderacao`:
 A moderação automática **não** tinha esse problema: `moderacao-prefiltro.js` já resolve `@lid` para
 telefone consultando `GET /group/participants/Samuel`. O furo era só na limpeza manual.
 
+### As "mensagens vazias" do Samuel nos grupos — 11/09/2026
+
+Logo depois dessa limpeza apareceram duas bolhas azuis vazias nossas no **#1 ImunoFosfo**, sem texto,
+só a hora e o tique. O Samuel já tinha visto esse mesmo padrão na época do banimento.
+
+Não é automação mandando mensagem em branco. Levantamento feito:
+
+- A Evolution registra as próprias saídas (o broadcast das 18:07 está lá, 12 registros). No #1
+  ImunoFosfo **não existe nenhuma saída nossa** naquele horário.
+- O único envio que rodou no minuto foi para um número privado, não para grupo.
+- O `Preparar` do Envio Samuel já lança erro se `text`, `audio_texto` e `lista` vierem todos vazios,
+  então o caminho de envio não consegue emitir texto em branco.
+- A única mensagem nossa realmente vazia no período saiu do **WhatsApp Web** (`source: "web"`,
+  com status `EDITED`) para um chat privado, sem execução de n8n correspondente. Foi alguém digitando.
+
+O que sobra, e bate em grupo, contagem e minuto: **é o recibo da exclusão**. `deleteMessageForEveryone`
+manda uma mensagem de protocolo a partir do nosso número, e o app do celular desenha uma bolha vazia
+nossa para cada uma. Foram duas exclusões nesse grupo, e são duas bolhas.
+
+**A consequência é o que importa.** Apagar não é grátis: cada exclusão é tráfego de saída do nosso
+número. No dia do banimento (08/09) foram **55 exclusões**, sendo **41 em cerca de 90 segundos** e
+mais 14 num segundo lote. Somado aos 150 convites de grupo do mesmo dia, é um segundo sinal de
+rajada vindo do mesmo número.
+
+Por isso a limpeza manual agora tem ritmo:
+
+| Trava | Valor | Para quê |
+|---|---|---|
+| `MAX_POR_RODADA` | 25 | teto por chamada; o resto volta no JSON em `restantes` |
+| `PAUSA_MS` | 4s + jitter | nunca mais 41 exclusões em 90 segundos |
+| `TETO_HORA` | 40 | conta junto com o que a Moderação Automática já apagou na mesma hora |
+
+A Moderação Automática já tinha `LIMITE_APAGAR_HORA = 20`, e as duas agora dividem o mesmo teto
+porque leem a mesma tabela. `&remover=1` só age quando a limpeza terminou (`restantes = 0`), para não
+tirar a pessoa do grupo deixando mensagem dela para trás.
+
 ## Pausa geral das automações de grupo (09/09/2026)
 
 O número do Samuel voltou depois do banimento. Antes de religar qualquer coisa, tudo o que

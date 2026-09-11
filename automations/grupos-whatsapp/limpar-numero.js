@@ -31,6 +31,16 @@ const GRUPOS = {
 };
 const EQUIPE = ['5513981885555', '16464270203', '13472225493'];
 if (EQUIPE.indexOf(numero) !== -1) return [{ json: { erro: 'esse numero e da equipe, nao vou apagar' } }];
+// RITMO. Apagar para todos nao e uma operacao silenciosa: cada exclusao e uma mensagem de protocolo
+// que sai DO NOSSO NUMERO para o grupo, e o WhatsApp do celular ainda desenha uma bolha vazia nossa
+// para cada uma. Em 08/09 esta limpeza apagou 41 mensagens em ~90 segundos e outras 14 depois - 55 no
+// dia do banimento. Rajada de exclusao conta como rajada de envio.
+// Entao: no maximo MAX_POR_RODADA por chamada, com PAUSA_MS entre uma e outra, e um teto por hora
+// somado ao que a Moderacao Automatica ja apagou (mesma tabela, mesma conta). Se sobrar, o retorno
+// diz quantas faltam: e so chamar de novo mais tarde.
+const MAX_POR_RODADA = 25;
+const PAUSA_MS = 4000;
+const TETO_HORA = 40;
 const EVO = 'http://evolution-api-aru6-api-1:8080';
 const EVO_KEY = 'EVO_API_KEY';
 const SK = 'SUPABASE_SERVICE_KEY';
@@ -85,13 +95,20 @@ for (let page = 1; page <= 40; page++) {
 }
 alvos.sort((a, b) => a.ts - b.ts);
 if (soListar) {
-  return [{ json: { numero: numero, horas: horas, encontradas: alvos.length, modo: 'teste (nada foi apagado)', mensagens: alvos.map((a) => ({ grupo: a.grupo, texto: a.texto.slice(0, 120) })) } }];
+  return [{ json: { numero: numero, horas: horas, encontradas: alvos.length, modo: 'teste (nada foi apagado)', por_rodada: MAX_POR_RODADA, mensagens: alvos.map((a) => ({ grupo: a.grupo, texto: a.texto.slice(0, 120) })) } }];
 }
-// 2) grava e apaga
+// 2) grava e apaga, devagar
+const cHora = await sql("select count(*)::int as n from grupo_moderacao where acao = 'apagada' and criado_em > now() - interval '1 hour'");
+const jaNaHora = (Array.isArray(cHora) && cHora[0]) ? Number(cHora[0].n || 0) : 0;
+const cabeNaHora = Math.max(0, TETO_HORA - jaNaHora);
+const cota = Math.min(alvos.length, MAX_POR_RODADA, cabeNaHora);
+const fila = alvos.slice(0, cota);
+const restantes = alvos.length - fila.length;
 let apagadas = 0;
 const falhas = [];
 const porGrupo = {};
-for (const a of alvos) {
+for (const a of fila) {
+  if (apagadas || falhas.length) { await new Promise((r) => setTimeout(r, PAUSA_MS + Math.floor(Math.random() * 1500))); }
   await sql('insert into grupo_moderacao (grupo_jid,grupo_nome,autor,telefone,push_name,msg_id,texto,categoria,confianca,motivo,acao) values (' + E(a.jid) + ',' + E(a.grupo) + ',' + E(numero) + ',' + E(numero) + ',' + E(a.push_name) + ',' + E(a.id) + ',' + E(a.texto) + ",'spam_geral',100,'Limpeza manual do numero inteiro','apagada') on conflict (msg_id) do nothing;");
   const r = await req({ method: 'DELETE', url: EVO + '/chat/deleteMessageForEveryone/Samuel', headers: { apikey: EVO_KEY, 'Content-Type': 'application/json' }, body: { id: a.id, remoteJid: a.jid, fromMe: false, participant: a.participant }, json: true, timeout: 30000 });
   if (r) { apagadas++; porGrupo[a.grupo] = (porGrupo[a.grupo] || 0) + 1; }
@@ -99,9 +116,9 @@ for (const a of alvos) {
 }
 // 3) opcional: tira a pessoa dos grupos onde ela postou
 const removidoDe = [];
-if (remover) {
+if (remover && !restantes) {
   const jids = {};
-  for (const a of alvos) { jids[a.jid] = a.participant; }
+  for (const a of fila) { jids[a.jid] = a.participant; }
   for (const j of Object.keys(jids)) {
     const r = await req({ method: 'POST', url: EVO + '/group/updateParticipant/Samuel?groupJid=' + encodeURIComponent(j), headers: { apikey: EVO_KEY, 'Content-Type': 'application/json' }, body: { action: 'remove', participants: [jids[j] || (numero + '@s.whatsapp.net')] }, json: true, timeout: 30000 });
     if (r) removidoDe.push(GRUPOS[j] || j);
@@ -111,9 +128,10 @@ let t = '\u{1F9F9} LIMPEZA MANUAL' + NL + NL;
 t += 'Numero: wa.me/' + numero + (alvos.length && alvos[0].push_name ? (' (' + alvos[0].push_name + ')') : '') + NL;
 t += 'Janela: ultimas ' + horas + 'h' + NL;
 t += 'Apagadas para todos: ' + apagadas + ' de ' + alvos.length + NL;
+if (restantes) { t += 'Faltam ' + restantes + ' (ritmo controlado). Chame de novo mais tarde.' + NL; }
 for (const g of Object.keys(porGrupo)) { t += '  - ' + g + ': ' + porGrupo[g] + NL; }
 if (falhas.length) { t += 'Falharam: ' + falhas.length + NL; }
 if (removidoDe.length) { t += 'Removido dos grupos: ' + removidoDe.join(', ') + NL; }
 t += NL + 'O texto original ficou salvo em grupo_moderacao.';
 await req({ method: 'POST', url: TG, headers: { 'Content-Type': 'application/json' }, body: { chat_id: TG_CHAT, message_thread_id: TG_TOPICO, text: t, disable_web_page_preview: true }, json: true });
-return [{ json: { numero: numero, horas: horas, encontradas: alvos.length, apagadas: apagadas, falhas: falhas.length, por_grupo: porGrupo, removido_de: removidoDe } }];
+return [{ json: { numero: numero, horas: horas, encontradas: alvos.length, apagadas: apagadas, restantes: restantes, ja_apagadas_na_hora: jaNaHora, teto_hora: TETO_HORA, falhas: falhas.length, por_grupo: porGrupo, removido_de: removidoDe } }];
