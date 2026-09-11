@@ -303,3 +303,45 @@ caiu de 15 para 5. Continua sendo 10 por hora de capacidade contra uma demanda r
 modo cíclico ligado. Vai pelo dispatcher de broadcast, que já espaça 4 segundos por grupo. Risco baixo.
 
 `convites_grupo` continua pausado e com a flag no guarda de filas. É o único que ainda não voltou.
+
+## A bolha vazia nos grupos — diagnóstico e correção (11/09/2026)
+
+O Samuel vinha deixando **bolhas vazias** nos grupos: no #1 ImunoFosfo, e depois no ImunoFosfo
+Connect às 21:02, uma bolha vazia para cada mensagem apagada. O Jaderson associava isso ao
+banimento, e com razão: em 08/09 foram 55 exclusões.
+
+Primeiro, o que é impossível. Apagar para todos **é** um envio. A própria Evolution mostra na
+resposta do `DELETE /chat/deleteMessageForEveryone`:
+
+```json
+{"key":{"id":"3EB06F42F038331CE633D2"},
+ "message":{"protocolMessage":{"key":{"id":"3EB0932019871747BD5257"},"type":"REVOKE"}}}
+```
+
+Uma mensagem nova, com id próprio, saindo do nosso número. Tem que ser assim: a revogação precisa
+chegar em todos os aparelhos do grupo. Não existe apagar sem enviar.
+
+O que **não** é normal é a revogação aparecer como bolha. O certo é a original virar "Mensagem
+apagada" no lugar dela, sem nada extra. Três testes no grupo QA Teste Evolution:
+
+| Teste | `participant` enviado | Resultado no aparelho |
+|---|---|---|
+| 1 | omitido | bolha órfã E a original nem sumiu |
+| A | `136795312382168@lid` | limpo |
+| B | `13472225493@s.whatsapp.net` | limpo |
+
+O apagar manual, feito no dedo pelo WhatsApp, também sai limpo. Ou seja: a revogação precisa
+declarar de quem era a mensagem, e esse autor tem que ser resolvível. Sem isso ela não casa com a
+original e o cliente desenha uma bolha para um comando que deveria ser invisível.
+
+Nas exclusões reais a gente mandava `key.participant`, que hoje vem como **`@lid`** — o mesmo
+formato que naquela manhã tinha feito a limpeza por número responder "0 encontradas". Agora os dois
+nós mandam o **telefone** (`participantAlt`), com o `@lid` só como reserva:
+
+- `limpar-numero.js`: guarda `participant_fone` junto de cada alvo e usa `a.participant_fone || a.participant`.
+- `moderacao-apagar-ou-alertar.js`: usa `ctx.telefone + '@s.whatsapp.net'`, caindo em `ctx.participant`.
+
+Com isso a moderação voltou a apagar sozinha a resposta automática de ausência. As outras categorias
+seguem só avisando, e o aviso agora traz um link pronto (em modo teste) para conferir o que aquele
+número postou nas últimas 6 horas. Reclamação e menção a concorrente nunca recebem essa sugestão:
+é fala legítima de cliente.

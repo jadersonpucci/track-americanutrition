@@ -6,18 +6,11 @@ const TG = 'http://telegram-bot-api:8081/bot<TOKEN>/sendMessage';
 const TG_CHAT = '-1003766435449';
 const TG_TOPICO = 1630;
 const NL = String.fromCharCode(10);
-// MODO_AUTO VAZIO desde 11/09/2026, por decisao do Jaderson: nada e apagado sozinho.
-//
-// Motivo: apagar mensagem de outra pessoa NAO e uma operacao silenciosa. O "apagar para todos"
-// do WhatsApp e, no protocolo, uma mensagem de revogacao que sai DO NOSSO NUMERO para o grupo,
-// e o aparelho do Samuel ainda desenha uma bolha vazia nossa para cada uma. Nao existe apagar
-// sem enviar: a revogacao precisa chegar em todos os aparelhos, senao ninguem esconderia nada.
-// Em 08/09, dia do banimento, foram 55 exclusoes, 41 delas em cerca de 90 segundos.
-//
-// Entao agora toda categoria vira aviso no Telegram, com o texto original e um link pronto para
-// conferir o que aquele numero postou. Quem decide apagar e uma pessoa.
-// Para voltar a apagar sozinho, basta colocar a categoria de volta nesta lista.
-const MODO_AUTO = [];
+// 11/09/2026: volta a apagar sozinho so a resposta automatica de ausencia, agora que a bolha vazia
+// foi corrigida (ver o comentario do autor da revogacao mais abaixo). As outras categorias continuam
+// so avisando: spam, golpe e concorrente exigem leitura humana e nao valem o risco depois do
+// banimento de 08/09. Para voltar a apagar alguma delas, basta acrescentar aqui.
+const MODO_AUTO = ['ausencia_automatica'];
 const CONF_MIN = 90;
 // Teto de seguranca: apagar em massa e comportamento de conta comprometida. Em rajada acima
 // disso o Samuel para de apagar e passa a so alertar, mesmo com confianca alta. Um grupo
@@ -62,7 +55,10 @@ if (podeApagar) {
 let acao = podeApagar ? 'apagada' : 'alertada';
 await sql('insert into grupo_moderacao (grupo_jid,grupo_nome,autor,telefone,push_name,msg_id,texto,categoria,confianca,motivo,acao,erro) values (' + E(ctx.jid) + ',' + E(ctx.grupo_nome) + ',' + E(ctx.autor_num) + ',' + E(ctx.telefone) + ',' + E(ctx.push_name) + ',' + E(ctx.msg_id) + ',' + E(ctx.texto) + ',' + E(cat) + ',' + (confOk ? conf : 0) + ',' + E(motivo) + ',' + E(acao) + ',' + E(confOk ? null : 'confianca ausente na resposta da IA') + ') on conflict (msg_id) do nothing;');
 if (podeApagar) {
-  const r = await req({ method: 'DELETE', url: EVO + '/chat/deleteMessageForEveryone/Samuel', headers: { apikey: EVO_KEY, 'Content-Type': 'application/json' }, body: { id: ctx.msg_id, remoteJid: ctx.jid, fromMe: false, participant: ctx.participant }, json: true, timeout: 30000 });
+  // AUTOR NA REVOGACAO (11/09/2026): telefone primeiro, @lid so como reserva. Revogacao com autor
+  // que a Evolution nao resolve nao casa com a original e deixa uma bolha vazia nossa no grupo.
+  const autorJid = ctx.telefone ? (ctx.telefone + '@s.whatsapp.net') : ctx.participant;
+  const r = await req({ method: 'DELETE', url: EVO + '/chat/deleteMessageForEveryone/Samuel', headers: { apikey: EVO_KEY, 'Content-Type': 'application/json' }, body: { id: ctx.msg_id, remoteJid: ctx.jid, fromMe: false, participant: autorJid }, json: true, timeout: 30000 });
   if (!r) { acao = 'falha_ao_apagar'; await sql("update grupo_moderacao set acao = 'falha_ao_apagar', erro = 'delete recusado pela Evolution' where msg_id = " + E(ctx.msg_id) + ';'); }
 }
 const IC = { spam_venda: '🚫', golpe: '⚠️', spam_geral: '🚫', ausencia_automatica: '🧹', mencao_concorrente: '👀', reclamacao: '📣', link_grupo_externo: '🔗' };
@@ -84,8 +80,7 @@ if (cat === 'ausencia_automatica' && acao === 'apagada') {
   t += 'Motivo: ' + motivo + NL + NL;
   t += 'Texto original:' + NL + String(ctx.texto).slice(0, 600);
   if (acao === 'alertada' && travado) { t += NL + NL + 'NAO apaguei: ja foram ' + LIMITE_APAGAR_HORA + ' remocoes nesta hora e o teto de seguranca travou. Confira se nao tem coisa errada acontecendo.'; }
-  else if (acao === 'alertada' && !MODO_AUTO.length) { t += NL + NL + 'Nada foi apagado. A exclusao automatica esta desligada: cada "apagar para todos" sai como mensagem nossa no grupo e deixa uma bolha vazia. Quem decide apagar e voce.'; }
-  else if (acao === 'alertada' && (MODO_AUTO.indexOf(cat) === -1)) { t += NL + NL + 'Nada foi apagado: esta categoria esta so em modo aviso.'; }
+  else if (acao === 'alertada' && (MODO_AUTO.indexOf(cat) === -1)) { t += NL + NL + 'Nada foi apagado: esta categoria esta so em modo aviso. Quem decide apagar e voce.'; }
   else if (acao === 'alertada') { t += NL + NL + 'Nada foi apagado. Decida voce.'; }
   if (acao === 'apagada') { t += NL + NL + 'O texto acima fica salvo em grupo_moderacao caso precise repostar.'; }
   if (acao === 'alertada' && ctx.telefone && OFERECER_LIMPEZA.indexOf(cat) !== -1) {

@@ -88,7 +88,7 @@ for (let page = 1; page <= 40; page++) {
     const mm = m.message || {};
     let texto = mm.conversation || (mm.extendedTextMessage && mm.extendedTextMessage.text) || (mm.imageMessage && mm.imageMessage.caption) || (mm.videoMessage && mm.videoMessage.caption) || (mm.documentMessage && mm.documentMessage.caption) || '';
     if (!texto) { texto = '[' + String(m.messageType || 'midia') + ']'; }
-    alvos.push({ id: String(k.id), jid: String(k.remoteJid), participant: String(k.participant || ''), grupo: GRUPOS[k.remoteJid], texto: String(texto), push_name: String(m.pushName || ''), ts: ts });
+    alvos.push({ id: String(k.id), jid: String(k.remoteJid), participant: String(k.participant || ''), participant_fone: String(k.participantAlt || k.senderPn || ''), grupo: GRUPOS[k.remoteJid], texto: String(texto), push_name: String(m.pushName || ''), ts: ts });
   }
   if (maisVelho && maisVelho < corte) break;
   if (recs.length < 100) break;
@@ -110,7 +110,13 @@ const porGrupo = {};
 for (const a of fila) {
   if (apagadas || falhas.length) { await new Promise((r) => setTimeout(r, PAUSA_MS + Math.floor(Math.random() * 1500))); }
   await sql('insert into grupo_moderacao (grupo_jid,grupo_nome,autor,telefone,push_name,msg_id,texto,categoria,confianca,motivo,acao) values (' + E(a.jid) + ',' + E(a.grupo) + ',' + E(numero) + ',' + E(numero) + ',' + E(a.push_name) + ',' + E(a.id) + ',' + E(a.texto) + ",'spam_geral',100,'Limpeza manual do numero inteiro','apagada') on conflict (msg_id) do nothing;");
-  const r = await req({ method: 'DELETE', url: EVO + '/chat/deleteMessageForEveryone/Samuel', headers: { apikey: EVO_KEY, 'Content-Type': 'application/json' }, body: { id: a.id, remoteJid: a.jid, fromMe: false, participant: a.participant }, json: true, timeout: 30000 });
+  // AUTOR NA REVOGACAO (11/09/2026). Apagar para todos manda uma mensagem de revogacao, e ela precisa
+  // dizer de quem era a mensagem. Se esse autor nao for resolvivel, a revogacao nao casa com a original
+  // e o aparelho desenha uma BOLHA VAZIA nossa no grupo - foi o que apareceu no ImunoFosfo Connect.
+  // Testado no grupo QA: sem autor -> bolha orfa e a original nem some; com autor -> limpo.
+  // O telefone (participantAlt) resolve sempre; o @lid nem sempre. Entao telefone primeiro.
+  const autorJid = a.participant_fone || a.participant;
+  const r = await req({ method: 'DELETE', url: EVO + '/chat/deleteMessageForEveryone/Samuel', headers: { apikey: EVO_KEY, 'Content-Type': 'application/json' }, body: { id: a.id, remoteJid: a.jid, fromMe: false, participant: autorJid }, json: true, timeout: 30000 });
   if (r) { apagadas++; porGrupo[a.grupo] = (porGrupo[a.grupo] || 0) + 1; }
   else { falhas.push(a.id); await sql("update grupo_moderacao set acao = 'falha_ao_apagar', erro = 'delete recusado pela Evolution' where msg_id = " + E(a.id) + ';'); }
 }
@@ -118,7 +124,7 @@ for (const a of fila) {
 const removidoDe = [];
 if (remover && !restantes) {
   const jids = {};
-  for (const a of fila) { jids[a.jid] = a.participant; }
+  for (const a of fila) { jids[a.jid] = a.participant_fone || a.participant; }
   for (const j of Object.keys(jids)) {
     const r = await req({ method: 'POST', url: EVO + '/group/updateParticipant/Samuel?groupJid=' + encodeURIComponent(j), headers: { apikey: EVO_KEY, 'Content-Type': 'application/json' }, body: { action: 'remove', participants: [jids[j] || (numero + '@s.whatsapp.net')] }, json: true, timeout: 30000 });
     if (r) removidoDe.push(GRUPOS[j] || j);
