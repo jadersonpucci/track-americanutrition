@@ -1,0 +1,24 @@
+# track.americanutrition.com (Hostinger / Apache)
+# Abre a pagina de rastreio para /{codigo}: a propria pagina le o codigo da URL e busca sozinha.
+RewriteEngine On
+RewriteBase /
+
+# Forca HTTPS
+RewriteCond %{HTTPS} !=on
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# /stories.php continua funcionando (mesmo conteudo do index.html)
+RewriteRule ^stories\.php$ index.html [L]
+
+# /AD123456789BR  ->  index.html  (so quando nao existe arquivo/pasta com esse nome)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^([A-Za-z0-9]{8,})/?$ index.html [L,QSA]
+
+# Qualquer outro caminho inexistente cai na pagina de busca em vez do 404 da Hostinger
+ErrorDocument 404 /index.html
+
+# Nao deixar o HTML ficar preso no cache do CDN/navegador
+<FilesMatch "\.(html|php)$">
+  Header set Cache-Control "public, max-age=0, must-revalidate"
+</FilesMatch>
