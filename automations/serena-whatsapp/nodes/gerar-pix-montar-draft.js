@@ -1,3 +1,4 @@
+// Node "Montar draft" do workflow "[Serena Tool] Gerar PIX" (n8n SkETGTmcqtlTR0Lp).
 // Monta a mutation GraphQL draftOrderCreate com o CPF em localizationExtensions.
 const ctx = $input.first().json;
 
@@ -40,7 +41,25 @@ const draftInput = {
   }]
 };
 
-const query = 'mutation draftOrderCreate($input: DraftOrderInput!) { draftOrderCreate(input: $input) { draftOrder { id name totalPrice invoiceUrl } userErrors { field message } } }';
+// DESCONTO: appliedDiscount de porcentagem sobre o pedido. O titulo leva o cupom quando existe,
+// para a venda ficar rastreavel no relatorio da Shopify. Sem desconto_pct, nada e aplicado.
+const pct = Number(ctx.desconto_pct || 0);
+if (pct > 0) {
+  const rotulo = ctx.cupom ? ('Cupom ' + ctx.cupom) : ('Desconto ' + pct + '%');
+  draftInput.appliedDiscount = {
+    valueType: 'PERCENTAGE',
+    value: pct,
+    title: rotulo.slice(0, 80),
+    description: (ctx.cupom ? ('Cupom ' + ctx.cupom + ' aplicado pela Serena') : 'Desconto aplicado pela Serena').slice(0, 200)
+  };
+  draftInput.note = draftInput.note + ' - ' + rotulo;
+  if (ctx.cupom) draftInput.tags.push('cupom:' + ctx.cupom);
+}
+
+// lineItems na resposta: o cliente ve o PRODUTO na mensagem e na pagina do Pix, nao o numero do rascunho
+// (o numero do pedido de verdade, AN-xxxxx, so existe depois do pagamento).
+// appliedDiscount na resposta: confirma que o desconto entrou de fato, em vez de supor.
+const query = 'mutation draftOrderCreate($input: DraftOrderInput!) { draftOrderCreate(input: $input) { draftOrder { id name totalPrice invoiceUrl appliedDiscount { title value valueType } lineItems(first: 20) { edges { node { title quantity variantTitle } } } } userErrors { field message } } }';
 
 return [{ json: {
   graphql_body: { query: query, variables: { input: draftInput } },

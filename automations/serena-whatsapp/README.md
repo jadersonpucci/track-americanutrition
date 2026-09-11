@@ -1167,3 +1167,43 @@ consultas novas) e não emitiu alerta nenhum — antes teria reavisado no minuto
 3 dias. As 5 que estão abertas desde 05/09 não aparecem em alerta nenhum e ninguém as vê,
 a não ser abrindo a fila no Inbox. Mesmo padrão da fila represada: o que envelhece demais sai
 do radar em vez de ser resolvido.
+
+## O gerador de PIX ignorava cupom (11/09/2026) — n8n `SkETGTmcqtlTR0Lp`
+
+Caso real: **Pr. Alexandre Zéllmanne** (`5562999785281`) pediu 1x ImunoFosfo 180 Caps. A Serena
+chamou `gerar_pix` com `cupom: IMUNOFOSFO` e o Pix voltou **R$ 597,00, sem desconto**. Ele perguntou
+por que não tinha ficado 537, e a Serena respondeu que o cupom era de uso único e "parece que ele já
+foi usado", depois especulou que "o sistema já registrou o uso dele no seu cadastro". Ele respondeu
+*"Já não gostei... Seu atendimento é maravilhoso, mas esse quesito..."* e o caso foi escalado.
+
+Nada disso era verdade. O cupom nunca foi tentado: **o nó `Validar dados` descartava o campo `cupom`**
+e o `Montar draft` nunca montava `appliedDiscount`. Todo Pix da Serena saía no valor cheio, e quando o
+cliente reclamava ela inventava uma explicação plausível, porque não tinha como saber o que aconteceu.
+
+O `popup_leads` confirmava a versão do cliente: cupom `BEMVINDO-4V92XA`, `convertido = false`. Ele
+nunca comprou, então o desconto de primeira compra continuava válido.
+
+### O que mudou
+
+| Nó | Mudança |
+|---|---|
+| `Validar dados` | aceita `desconto_pct` (0 a 50) e `cupom`, e os repassa no contexto |
+| `Montar draft` | monta `appliedDiscount` de porcentagem, põe o cupom no título, na nota e na tag `cupom:X` do pedido |
+| `Extrair draft` | lê o `appliedDiscount` que a **Shopify devolveu**, não o que pedimos |
+| `Extrair PIX` | carrega cupom e desconto adiante |
+| `Formatar resposta` | mensagem com "De R$ X por R$ Y" e o alerta quando o desconto não entrou |
+
+A regra que importa é a última. Se `desconto_pct` foi pedido e a Shopify não aplicou, ou se veio
+`cupom` sem porcentagem, a resposta traz `aviso: 'desconto nao aplicado'` e o `nota_serena` instrui
+explicitamente: *nunca diga ao cliente que o cupom já foi usado nem invente motivo; diga que vai
+confirmar com a equipe e escale*. O Telegram (tópico 98) também recebe o aviso em negrito.
+
+O silêncio era o bug de verdade. Um campo ignorado sem reclamar virou uma conversa em que a Serena
+contou uma história para o cliente, e ninguém na equipe soube.
+
+### Pendente: quem decide os 10%
+
+O gerador agora aplica o desconto que mandarem, mas a Serena ainda não decide sozinha que um lead com
+cupom de boas-vindas não convertido tem direito aos 10%. Hoje isso depende de alguém passar
+`desconto_pct`. A regra do Jaderson é: **o desconto de primeira compra vale até o cliente comprar; se
+não comprou, o cupom continua valendo**, mesmo expirado. Falta ensinar isso ao Core.
