@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#F3F6FB">
+<title>Acompanhe sua entrega · America Nutrition</title>
+<meta name="description" content="Status em tempo real, localização e previsão de entrega do seu pedido.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://track.americanutrition.com/">
+<meta property="og:title" content="Acompanhe sua entrega · America Nutrition">
+<meta property="og:description" content="Status em tempo real, localização e previsão de entrega do seu pedido.">
+<meta property="og:image" content="https://cdn.americanutrition.com/imagens/og/og-rastreio.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:site_name" content="America Nutrition">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://cdn.americanutrition.com/imagens/og/og-rastreio.jpg">
+<link rel="icon" type="image/png" href="https://cdn.shopify.com/s/files/1/0643/9000/4908/t/26/assets/logo-america-nutrition.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;700&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+:root{--blue:#07388E;--blue2:#2F6BE0;--ink:#0A1B3D;--mist:#F3F6FB;--red:#AD0404;--live:#E8262C;--muted:#5B667E;--soft:#8A94A8;--line:#E3E9F2;--amber:#B26A00}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{background:var(--mist)}
+body{font-family:Figtree,system-ui,-apple-system,sans-serif;color:var(--ink);background:var(--mist);min-height:100vh;-webkit-font-smoothing:antialiased}
+button,input{font-family:inherit}
+.app{max-width:480px;margin:0 auto;padding:calc(env(safe-area-inset-top) + 14px) 22px 130px;position:relative}
+.bars{display:flex;gap:5px}
+.bars span{flex:1;height:4px;border-radius:9px;background:#D8E0EC;overflow:hidden}
+.bars i{display:block;height:100%;width:100%;background:var(--blue);transform:scaleX(0);transform-origin:left;transition:transform .6s cubic-bezier(.2,.8,.2,1)}
+.bars .on i{transform:scaleX(1)}
+.bars .cur i{animation:fillbar 3.2s linear infinite}
+.bars .err i{background:var(--live)}
+@keyframes fillbar{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.hdr{display:flex;justify-content:space-between;align-items:center;margin-top:14px;font-size:13px;color:var(--muted)}
+.hdr img{height:17px;display:block}
+.hdr button{background:none;border:0;color:var(--muted);font-size:13px;display:flex;gap:4px;align-items:center;cursor:pointer}
+.etapa{font-size:12.5px;color:var(--soft);margin-top:10px;min-height:16px}
+.hero{margin-top:30px}
+.hero h1{font-family:Unbounded;font-weight:700;font-size:clamp(34px,10.5vw,44px);line-height:1.02;letter-spacing:-1.4px}
+.hero h1 em{font-style:normal;color:var(--blue)}
+.hero h1 em.r{color:var(--red)}
+.dt{display:inline-block;width:12px;height:12px;border-radius:50%;background:var(--live);margin-left:5px;vertical-align:middle;animation:pulse 1.6s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(232,38,44,.5)}100%{box-shadow:0 0 0 10px rgba(232,38,44,0)}}
+.hero p{font-size:16px;color:var(--muted);line-height:1.5;margin-top:14px}
+.tag{display:inline-flex;align-items:center;gap:6px;margin-top:14px;padding:7px 12px;border-radius:99px;font-size:13px;font-weight:600}
+.tag.warn{background:#FFF3DC;color:var(--amber)}
+.tag.usa{background:#EEF3FC;color:var(--blue);margin-left:6px}
+.carousel{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;margin:30px -22px 0;padding:14px 22px 4px;scrollbar-width:none}
+.carousel::-webkit-scrollbar{display:none}
+.card{flex:0 0 86%;scroll-snap-align:center;border-radius:32px;min-height:250px;position:relative;overflow:hidden;padding:24px}
+.card.main{background:var(--blue);color:#fff;box-shadow:0 18px 40px -18px rgba(7,56,142,.55)}
+.card.main.alert{background:var(--red);box-shadow:0 18px 40px -18px rgba(173,4,4,.55)}
+.card.main:before,.card.main:after{content:'';position:absolute;left:18px;right:18px;border-radius:32px;z-index:-1}
+.card small{font-size:12.5px;opacity:.72;display:block}
+.card .big{font-family:Unbounded;font-weight:600;font-size:24px;letter-spacing:-.5px;line-height:1.15;margin-top:4px;max-width:62%}
+.card .meta{position:absolute;left:24px;bottom:22px;font-size:12.5px;display:flex;flex-direction:column;gap:6px;max-width:calc(100% - 118px)}
+.card .meta>span{max-width:100%;line-height:1.35}
+.code{display:inline-flex;gap:6px;align-items:center;background:rgba(255,255,255,.15);padding:6px 10px;border-radius:99px;font-weight:600;letter-spacing:.2px;border:0;color:inherit;font-size:12px;cursor:pointer;width:max-content}
+.bottle{position:absolute;right:20px;bottom:18px;width:84px;transform:rotate(8deg);animation:float 5s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0) rotate(8deg)}50%{transform:translateY(-8px) rotate(6deg)}}
+.bottle .cp{height:24px;margin:0 8px;border-radius:7px 7px 3px 3px;background:#0B3D95;box-shadow:inset 0 -3px 0 #062A6A,inset 0 3px 0 rgba(255,255,255,.15)}
+.alert .bottle .cp{background:#7E0303;box-shadow:inset 0 -3px 0 #5A0202}
+.bottle .bd{height:110px;background:#fff;border-radius:14px 14px 18px 18px;margin-top:2px;position:relative;overflow:hidden}
+.bottle .bd:before{content:'';position:absolute;left:0;right:0;top:32px;height:3px;background:var(--red)}
+.bottle .bd b{position:absolute;left:9px;right:6px;top:44px;font-family:Unbounded;font-size:10px;color:var(--blue);line-height:1.12;word-break:break-word}
+.bottle .bd s{position:absolute;left:9px;bottom:10px;font-size:9px;color:var(--soft);text-decoration:none}
+.bottle.photo{width:100px;right:14px;bottom:14px;background:#fff;border-radius:22px;padding:6px;box-shadow:0 14px 30px -12px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.35);transform:rotate(4deg)}
+.bottle.photo img{display:block;width:100%;aspect-ratio:1;object-fit:contain;border-radius:14px;background:#fff}
+.bottle.photo .qt{position:absolute;top:-8px;left:-8px;min-width:26px;height:26px;padding:0 8px;border-radius:99px;background:var(--red);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(0,0,0,.25)}
+.alert .bottle.photo .qt{background:var(--ink)}
+@keyframes floatp{0%,100%{transform:translateY(0) rotate(4deg)}50%{transform:translateY(-8px) rotate(2deg)}}
+.bottle.photo{animation:floatp 5s ease-in-out infinite}
+.prod{align-items:center}
+.prod .pn{display:flex;align-items:center;gap:10px;min-width:0}
+.prod .pn img{width:40px;height:40px;flex:none;object-fit:contain;border-radius:10px;background:#F6F8FC;border:1px solid var(--line)}
+.card.white{background:#fff;border:1px solid var(--line)}
+.card.white h3{font-size:15px;font-weight:600;margin-bottom:12px}
+.prod{display:flex;justify-content:space-between;gap:10px;padding:9px 0;font-size:14.5px;border-bottom:1px solid #F0F3F8}
+.prod:last-of-type{border-bottom:0}
+.prod > span:last-child{color:var(--soft);font-weight:600}
+.lbl{font-size:12px;color:var(--soft);margin-top:14px}
+.val{font-size:14.5px;font-weight:500;margin-top:2px}
+.reveal{position:relative;cursor:pointer;display:inline-block;border-radius:8px}
+.reveal .txt{filter:blur(6px);transition:filter .35s;user-select:none}
+.reveal.on .txt{filter:none;user-select:auto}
+.reveal .hint{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--blue);gap:4px}
+.reveal.on .hint{display:none}
+.card.review{background:#FFF1F1;border:1px solid #FAD7D7}
+.stars{color:#F5A623;font-size:22px;letter-spacing:2px}
+.card.review h3{font-family:Unbounded;font-weight:600;font-size:20px;margin-top:10px;letter-spacing:-.4px;line-height:1.2}
+.card.review p{color:var(--muted);font-size:14.5px;margin-top:8px;line-height:1.45}
+.card.review a{display:inline-flex;margin-top:18px;height:46px;padding:0 20px;border-radius:99px;background:var(--red);color:#fff;font-weight:600;align-items:center;gap:8px;text-decoration:none;font-size:14.5px}
+.fotos{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap}
+.fotos img{width:88px;height:88px;object-fit:cover;border-radius:16px;cursor:pointer;background:#EEF1F7}
+.dots{display:flex;gap:6px;justify-content:center;margin-top:14px}
+.dots span{width:6px;height:6px;border-radius:9px;background:#CDD6E4;transition:all .3s}
+.dots span.on{width:18px;background:var(--blue)}
+.sec{margin-top:40px}
+.sec h2{font-family:Unbounded;font-weight:600;font-size:18px;letter-spacing:-.3px;margin-bottom:16px}
+.ev{display:flex;gap:14px;position:relative;padding-bottom:20px}
+.ev:before{content:'';position:absolute;left:6px;top:16px;bottom:0;width:2px;background:var(--line);border-radius:2px}
+.ev:last-child:before{display:none}
+.ev .d{width:14px;height:14px;border-radius:50%;background:#C9D3E4;margin-top:3px;flex:none;position:relative;z-index:1;border:3px solid var(--mist)}
+.ev.first .d{background:var(--live);box-shadow:0 0 0 4px #FDE4E4;border:0;width:14px;height:14px}
+.ev.first.ok .d{background:#17924A;box-shadow:0 0 0 4px #DDF3E6}
+.ev.past .d{background:var(--blue)}
+.ev p{font-size:15px;font-weight:600;line-height:1.3}
+.ev .s{font-size:13px;color:var(--muted);margin-top:3px;line-height:1.4}
+.ev .s a{color:var(--blue)}
+.ev small{font-size:12.5px;color:var(--soft);display:block;margin-top:3px}
+.dock{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom) + 16px);width:calc(100% - 32px);max-width:448px;height:64px;border-radius:99px;background:rgba(10,27,61,.94);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);display:flex;align-items:center;padding:7px;gap:4px;z-index:50;box-shadow:0 14px 34px -12px rgba(10,27,61,.5)}
+.dock .t{width:50px;height:50px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:21px;background:none;border:0;cursor:pointer}
+.dock .go{margin-left:auto;height:50px;border-radius:99px;background:#fff;color:var(--ink);padding:0 20px;display:flex;align-items:center;gap:8px;font-weight:600;font-size:14.5px;text-decoration:none}
+.form{margin-top:34px;background:#fff;border-radius:32px;padding:10px;border:1px solid var(--line)}
+.seg{display:flex;background:var(--mist);border-radius:99px;padding:4px}
+.seg button{flex:1;height:40px;border-radius:99px;border:0;background:none;font-size:14px;font-weight:600;color:var(--muted);cursor:pointer;transition:all .25s}
+.seg button.on{background:#fff;color:var(--ink);box-shadow:0 2px 8px rgba(10,27,61,.08)}
+.fld{padding:14px 12px 4px}
+.fld label{font-size:12.5px;color:var(--soft);display:block;margin-bottom:6px}
+.fld input{width:100%;height:52px;border-radius:18px;border:1.5px solid var(--line);background:var(--mist);padding:0 16px;font-size:16px;color:var(--ink);outline:none;transition:border .2s}
+.fld input:focus{border-color:var(--blue2);background:#fff}
+.fld + .fld{padding-top:8px}
+.submit{margin:14px 12px 12px;width:calc(100% - 24px);height:54px;border-radius:99px;border:0;background:var(--blue);color:#fff;font-size:15.5px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer}
+.ferr{color:var(--live);font-size:13px;padding:6px 14px 0;min-height:0}
+.sk{background:linear-gradient(90deg,#E6ECF5 0,#F2F5FA 50%,#E6ECF5 100%);background-size:200% 100%;animation:sh 1.3s infinite;border-radius:14px}
+@keyframes sh{from{background-position:200% 0}to{background-position:-200% 0}}
+.msgload{font-size:14px;color:var(--muted);margin-top:18px;display:flex;align-items:center;gap:8px}
+.hidden{display:none!important}
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 94px);transform:translate(-50%,20px);opacity:0;background:var(--ink);color:#fff;padding:10px 16px;border-radius:99px;font-size:13.5px;font-weight:500;transition:all .3s;z-index:60;pointer-events:none}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.lb{position:fixed;inset:0;background:rgba(10,27,61,.92);display:none;align-items:center;justify-content:center;z-index:80;padding:24px}
+.lb.on{display:flex}
+.lb img{max-width:100%;max-height:85vh;border-radius:18px}
+#confete{position:fixed;inset:0;pointer-events:none;z-index:70}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+@media (min-width:560px){.app{padding-top:40px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="bars" id="bars" aria-hidden="true"><span><i></i></span><span><i></i></span><span><i></i></span><span><i></i></span><span><i></i></span></div>
+  <div class="hdr"><img src="https://cdn.shopify.com/s/files/1/0643/9000/4908/t/26/assets/logo-america-nutrition.png" alt="America Nutrition"><span id="hdr-dir"></span></div>
+  <div class="etapa" id="etapa"></div>
+
+  <section id="v-busca">
+    <div class="hero"><h1>Onde está<br><em>seu pedido</em></h1><p>Digite o código dos Correios ou o número do pedido pra ver tudo em tempo real.</p></div>
+    <div class="form">
+      <div class="seg" role="tablist"><button class="on" data-m="codigo" type="button">Código</button><button data-m="pedido" type="button">Nº do pedido</button></div>
+      <div id="f-codigo"><div class="fld"><label for="i-cod">Código de rastreio</label><input id="i-cod" placeholder="AD123456789BR" autocomplete="off" autocapitalize="characters" spellcheck="false"></div></div>
+      <div id="f-pedido" class="hidden"><div class="fld"><label for="i-ped">Número do pedido</label><input id="i-ped" placeholder="15240" inputmode="numeric"></div><div class="fld"><label for="i-val">Email ou CEP da compra</label><input id="i-val" placeholder="voce@email.com" autocomplete="email"></div></div>
+      <div class="ferr" id="ferr"></div>
+      <button class="submit" id="b-buscar" type="button"><i class="ti ti-search"></i>Rastrear</button>
+    </div>
+  </section>
+
+  <section id="v-load" class="hidden" aria-live="polite">
+    <div class="hero"><div class="sk" style="height:44px;width:60%"></div><div class="sk" style="height:44px;width:82%;margin-top:8px"></div><div class="sk" style="height:18px;width:92%;margin-top:18px"></div></div>
+    <div class="sk" style="height:250px;border-radius:32px;margin-top:40px"></div>
+    <div class="msgload"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i><span id="msgload">Chamando os Correios…</span></div>
+  </section>
+
+  <section id="v-res" class="hidden">
+    <div class="hero" aria-live="polite"><h1 id="r-titulo"></h1><p id="r-sub"></p><div id="r-tags"></div></div>
+    <div class="carousel" id="carousel"></div>
+    <div class="dots" id="dots"></div>
+    <div class="sec" id="caminho"><h2>O caminho todo</h2><div id="timeline"></div></div>
+  </section>
+</div>
+
+<nav class="dock hidden" id="dock">
+  <button class="t" id="b-hist" aria-label="Ver histórico"><i class="ti ti-history"></i></button>
+  <button class="t" id="b-share" aria-label="Compartilhar rastreio"><i class="ti ti-share-2"></i></button>
+  <a class="go" id="b-wpp" target="_blank" rel="noopener"><i class="ti ti-brand-whatsapp"></i>Falar com a gente</a>
+</nav>
+<div class="toast" id="toast"></div>
+<div class="lb" id="lb"><img alt="Comprovante de entrega"></div>
+<canvas id="confete"></canvas>
+<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+
+<script>
+const CONFIG={WEBHOOK_URL:'https://n8n.americanutrition.com/webhook/rastreio/buscar',WHATSAPP_NUM:'13472225493',WHATSAPP_MSG:'Olá Serena, preciso de ajuda com meu pedido',CATALOGO_URL:'https://americanutrition.com/products.json?limit=250',CATALOGO_TIMEOUT:2500};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const wpp=m=>`https://wa.me/${CONFIG.WHATSAPP_NUM}?text=${encodeURIComponent(m||CONFIG.WHATSAPP_MSG)}`;
+const MESES=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+const DIAS=['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+const OCULTAR=/juros|parcelament|taxa/i;
+let modo='codigo',ultimoCodigo='',loadTimer=null;
+
+function toast(t){const e=$('toast');e.textContent=t;e.classList.add('on');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('on'),1800)}
+function parseData(v){if(!v)return null;let s=String(v).trim();if(/^\d{4}-\d{2}-\d{2}$/.test(s)){const[a,m,d]=s.split('-').map(Number);return new Date(a,m-1,d,12)}if(!/[zZ]$|[+-]\d{2}:?\d{2}$/.test(s))s=s.replace(' ','T')+'-03:00';const t=Date.parse(s);return isNaN(t)?null:new Date(t)}
+function hhmm(d){return d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',timeZone:'America/Sao_Paulo'})}
+function diaBR(d){return d.toLocaleDateString('en-CA',{timeZone:'America/Sao_Paulo'})}
+function quando(v){const d=parseData(v);if(!d)return'';const hoje=diaBR(new Date()),ontem=diaBR(new Date(Date.now()-864e5)),k=diaBR(d);if(k===hoje)return'Hoje, '+hhmm(d);if(k===ontem)return'Ontem, '+hhmm(d);const[,m,dd]=k.split('-');return dd+'/'+m+', '+hhmm(d)}
+function dataLonga(v){const d=parseData(v);if(!d)return'';return DIAS[d.getDay()]+',<br>'+d.getDate()+' de '+MESES[d.getMonth()]}
+function titulo(s){return String(s||'').toLowerCase().replace(/(^|[\s(/-])(\p{L})/gu,(a,b,c)=>b+c.toUpperCase()).replace(/\b(De|Da|Do|Das|Dos|E)\b/g,m=>m.toLowerCase()).replace(/\/([a-z]{2})$/i,(a,u)=>'/'+u.toUpperCase())}
+function mascNome(n){if(!n)return'';const p=n.trim().split(/\s+/);return p.length===1?p[0]:titulo(p[0])+' '+p.slice(1).map(x=>x[0].toUpperCase()+'.').join(' ')}
+function mascEnd(e){return String(e||'').replace(/\b(\d)(\d{2,})\b/g,(_,a,b)=>a+'•'.repeat(b.length))}
+function limpaStatus(s){return String(s||'Atualização').replace(/\s*-\s*por favor aguarde\.?/i,'').replace(/^Objeto /,'Pacote ').trim()}
+function linkify(t){return esc(t).replace(/(https?:\/\/[^\s<]+)/g,u=>`<a href="${u.replace(/[.,;:!?]+$/,'')}" target="_blank" rel="noopener">link</a>`)}
+
+// ---- Catálogo da loja (foto real do frasco) ----
+// A loja Shopify expõe /products.json publicamente (com CORS). Carregamos uma vez, no início,
+// e casamos cada item do pedido por variante_id > produto_id > nome.
+const CAT={porProduto:new Map(),porVariante:new Map(),lista:[],pronto:false};
+const norm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
+const catalogoP=(async()=>{try{const r=await fetch(CONFIG.CATALOGO_URL,{mode:'cors'});if(!r.ok)return;const j=await r.json();for(const p of (j.products||[])){const img=(p.images&&p.images[0]&&p.images[0].src)||'';const item={id:p.id,titulo:p.title,n:norm(p.title),img};CAT.porProduto.set(String(p.id),item);CAT.lista.push(item);for(const v of (p.variants||[])){const vi=v.featured_image&&v.featured_image.src;if(vi)CAT.porVariante.set(String(v.id),vi)}}CAT.pronto=true}catch(e){}})();
+function imgTam(u,w){if(!u)return'';return u+(u.includes('?')?'&':'?')+'width='+w}
+function imagemProduto(p){
+  if(!p)return'';
+  if(p.imagem)return p.imagem;
+  if(p.variante_id&&CAT.porVariante.has(String(p.variante_id)))return CAT.porVariante.get(String(p.variante_id));
+  if(p.produto_id&&CAT.porProduto.has(String(p.produto_id)))return CAT.porProduto.get(String(p.produto_id)).img;
+  const n=norm(p.nome);if(!n)return'';
+  const exato=CAT.lista.find(c=>c.n===n);if(exato)return exato.img;
+  const cand=CAT.lista.filter(c=>c.n&&(n.includes(c.n)||c.n.includes(n))).sort((a,b)=>b.n.length-a.n.length);
+  return cand.length?cand[0].img:'';
+}
+function nomeGarrafaDe(nome){return esc(String(nome||'').replace(/([a-zà-ú])([A-Z])/g,'$1 $2').split(/\s+/).slice(0,2).join(' ')).replace(' ','<br>')}
+function garrafaCss(nomeGarrafa,rodape){return `<div class="bottle" aria-hidden="true"><div class="cp"></div><div class="bd"><b>${nomeGarrafa}</b><s>${rodape}</s></div></div>`}
+function fotoFalhou(el){el.outerHTML=garrafaCss(nomeGarrafaDe(el.dataset.nome),esc(el.dataset.rod||''))}
+
+document.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{modo=b.dataset.m;document.querySelectorAll('.seg button').forEach(x=>x.classList.toggle('on',x===b));$('f-codigo').classList.toggle('hidden',modo!=='codigo');$('f-pedido').classList.toggle('hidden',modo!=='pedido');$('ferr').textContent=''});
+['i-cod','i-ped','i-val'].forEach(id=>{$(id).addEventListener('input',()=>$('ferr').textContent='');$(id).addEventListener('keydown',e=>{if(e.key==='Enter')enviar()})});
+$('b-buscar').onclick=enviar;
+function enviar(){
+  if(modo==='codigo'){const c=$('i-cod').value.replace(/\s+/g,'').toUpperCase();if(!/^[A-Z0-9]{8,}$/.test(c)){$('ferr').textContent='Digite o código completo, com letras e números.';return}buscar({modo:'codigo',codigo:c})}
+  else{const p=$('i-ped').value.replace(/\D/g,''),v=$('i-val').value.trim();if(!p){$('ferr').textContent='Digite o número do pedido.';return}if(!v){$('ferr').textContent='Digite o email ou CEP usado na compra.';return}buscar({modo:'pedido',pedido:p,validacao:v})}
+}
+
+function setBars(n,cur,err){[...$('bars').children].forEach((s,i)=>{s.className=i<n?'on':(i===n&&cur?'cur':'');if(err&&i===n)s.className='cur err'})}
+function view(v){['v-busca','v-load','v-res'].forEach(x=>$(x).classList.toggle('hidden',x!==v));$('dock').classList.toggle('hidden',v!=='v-res')}
+
+const MSGS=['Chamando os Correios…','Conferindo cada parada…','Quase lá…'];
+async function buscar(payload){
+  view('v-load');setBars(0,true);$('etapa').textContent='';let i=0;$('msgload').textContent=MSGS[0];clearInterval(loadTimer);loadTimer=setInterval(()=>{i=(i+1)%MSGS.length;$('msgload').textContent=MSGS[i]},1600);
+  try{
+    const r=await fetch(CONFIG.WEBHOOK_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    clearInterval(loadTimer);
+    if(r.status===429)return erro('Muitas tentativas agora. Espere um minutinho e tente de novo.');
+    if(r.status===404)return erro('Não achamos esse pedido. Confira o número e o email ou CEP da compra.');
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    const d=await r.json();
+    if(!d.sucesso)return erro(d.mensagem||'Não achamos esse código. Confira se digitou igual ao que recebeu.');
+    // espera o catálogo (já em carregamento desde o início) por no máximo alguns instantes pra pintar a foto real de primeira
+    if(!CAT.pronto)await Promise.race([catalogoP,new Promise(res=>setTimeout(res,CONFIG.CATALOGO_TIMEOUT))]);
+    render(d);
+  }catch(e){clearInterval(loadTimer);erro('Não conseguimos falar com os Correios agora. Tente de novo em instantes.')}
+}
+function erro(m){view('v-busca');setBars(0,false);$('ferr').textContent=m;$('hdr-dir').textContent=''}
+
+const ETAPA={waiting:1,created:0,picked_up:1,in_transit:2,out_for_delivery:3,delivered:5,exception:2,returned:2};
+const NOMES=['Confirmado','Postado','Em trânsito','Saiu para entrega','Entregue'];
+
+function render(d){
+  const R=d.rastreio||{},P=d.pedido||{};const semMov=!(R.eventos||[]).length&&!R.postado_em&&R.status_chave!=='delivered';const st=semMov?'waiting':(R.status_chave||'in_transit');
+  const prods=(P.produtos||[]).map(p=>typeof p==='string'?{nome:p}:{nome:p.nome||p.title||'',qtd:p.quantidade||p.quantity,produto_id:p.produto_id||p.product_id,variante_id:p.variante_id||p.variant_id,imagem:p.imagem||p.image}).filter(p=>p.nome&&!OCULTAR.test(p.nome));
+  prods.forEach(p=>p.img=imagemProduto(p));
+  const prod1=prods[0]?prods[0].nome:'pedido';
+  const dest=R.destino||{},cidade=titulo((dest.cidade||'').split('/')[0]),uf=((dest.cidade||'').split('/')[1]||'').toUpperCase();
+  const numPed=P.numero?'AN-'+P.numero+'-BR':'';
+  ultimoCodigo=R.codigo||'';
+  const evs=(R.eventos||[]).slice().sort((a,b)=>(parseData(b.data)||0)-(parseData(a.data)||0));
+  const ult=evs[0]||{};
+  const alvo=cidade?('pra '+cidade):'pro seu endereço';
+  const avaliacao=[R.detalhe_atual,...evs.map(e=>e.detalhe)].find(x=>x&&String(x).startsWith('[AVALIACAO_CARD]'));
+  const detalhe=R.detalhe_atual&&!String(R.detalhe_atual).startsWith('[AVALIACAO_CARD]')?R.detalhe_atual:'';
+
+  const T={
+    created:[['Preparando','seu pedido'],'Estamos separando e embalando com cuidado. O rastreio começa assim que postarmos.'],
+    picked_up:[['Já está','nos Correios'],`Seu ${esc(prod1)} foi postado e logo começa a viagem ${esc(alvo)}.`],
+    in_transit:[['Tá','chegando'],`Seu ${esc(prod1)} está em trânsito e segue ${esc(alvo)}.`],
+    out_for_delivery:[['Hoje é','o dia'],'Saiu para entrega. Deixe alguém no endereço pra receber o carteiro.'],
+    delivered:[['Pedido','entregue'],`Seu ${esc(prod1)} chegou. Aproveite e conte pra gente como foi.`],
+    exception:[['Precisa de','atenção'],esc(limpaStatus(R.status_atual)||'Aconteceu algo com a entrega.')+(detalhe?' '+linkify(detalhe):'')+' Fale com a gente que resolvemos.'],
+    waiting:[['Aguardando','os Correios'],'Esse código ainda não teve movimentação. Pode levar até 24h depois da postagem pra aparecer. Confira se digitou igual ao que recebeu.'],
+    returned:[['Voltou','pra gente'],'O pacote retornou ao remetente. Fale com a gente pra combinar o reenvio.']
+  }[st]||[['Acompanhe','seu pedido'],esc(R.status_atual||'Atualizado agora.')];
+  const vermelho=st==='exception'||st==='returned';
+  $('r-titulo').innerHTML=`${T[0][0]}<br><em class="${vermelho?'r':''}">${T[0][1]}</em>${st==='delivered'?'':'<span class="dt"></span>'}`;
+  $('r-sub').innerHTML=T[1];
+  let tags='';
+  if(R.atrasado&&st!=='delivered')tags+='<span class="tag warn"><i class="ti ti-clock"></i>Um pouco atrasado</span>';
+  if(evs.some(e=>e.eh_importacao))tags+='<span class="tag usa"><i class="ti ti-plane"></i>Importado dos EUA</span>';
+  $('r-tags').innerHTML=tags;
+
+  const n=ETAPA[st]??2;setBars(Math.min(n,5),st!=='delivered',vermelho);
+  $('etapa').textContent=st==='delivered'?'Todas as etapas concluídas':`Etapa ${Math.min(n+1,5)} de 5 · ${vermelho?(st==='returned'?'Devolvido':'Atenção'):st==='waiting'?'Aguardando postagem':NOMES[n]}`;
+  $('hdr-dir').textContent=P.numero?'#'+P.numero:'';
+
+  const serv=/SEDEX/i.test(R.servico||'')?'Sedex':/PAC/i.test(R.servico||'')?'PAC':(R.transportadora||'Correios');
+  const ent=parseData(R.entregue_em);
+  const bigTxt=st==='delivered'&&ent?(ent.getDate()+' de '+MESES[ent.getMonth()]+',<br>às '+hhmm(ent)):(dataLonga(R.previsao_entrega)||(st==='waiting'?'Assim que<br>postarem':'Em breve'));
+  const nomeGarrafa=nomeGarrafaDe(prod1);
+  let cards=`<div class="card main ${vermelho?'alert':''}">
+    <small>${st==='delivered'?'Entregue em':'Previsão de entrega'}</small><div class="big">${bigTxt}</div>
+    <div class="meta"><span>${esc(serv)}${cidade?' · '+esc(cidade)+(uf?', '+esc(uf):''):''}</span>${R.codigo?`<button class="code" onclick="copiar()"><i class="ti ti-copy"></i>${esc(R.codigo)}</button>`:''}</div>
+    ${(()=>{const rod=prods.length>1?'+'+(prods.length-1)+' item'+(prods.length>2?'s':''):'America';const foto=prods[0]&&prods[0].img;
+      if(!foto)return garrafaCss(nomeGarrafa,rod);
+      const extra=prods.length>1?`<span class="qt">+${prods.length-1}</span>`:(prods[0].qtd>1?`<span class="qt">${prods[0].qtd}x</span>`:'');
+      return `<div class="bottle photo" data-nome="${esc(prods[0].nome)}" data-rod="${esc(rod)}"><img src="${esc(imgTam(foto,480))}" alt="${esc(prods[0].nome)}" onerror="fotoFalhou(this.parentNode)">${extra}</div>`})()}</div>`;
+  if(avaliacao){const url=String(avaliacao).replace('[AVALIACAO_CARD]','').trim();cards+=`<div class="card review"><div class="stars">★★★★★</div><h3>Como foi sua experiência?</h3><p>Avalie sua entrega e ganhe 5% OFF na próxima compra.</p><a href="${esc(url)}" target="_blank" rel="noopener">Avaliar agora<i class="ti ti-arrow-right"></i></a></div>`}
+  if(prods.length||dest.nome||dest.endereco_completo)cards+=`<div class="card white"><h3>Seu pedido ${esc(numPed)}</h3>${prods.map(p=>`<div class="prod"><span class="pn">${p.img?`<img src="${esc(imgTam(p.img,120))}" alt="" loading="lazy" onerror="this.remove()">`:''}<span>${esc(p.nome)}</span></span><span>${p.qtd?p.qtd+'x':''}</span></div>`).join('')||'<div class="prod"><span>Itens do pedido</span><span></span></div>'}
+    ${dest.nome?`<div class="lbl">Pra quem</div><div class="val">${esc(mascNome(dest.nome))}</div>`:''}
+    ${dest.endereco_completo?`<div class="lbl">Endereço</div><div class="val"><span class="reveal" onclick="this.classList.add('on')"><span class="txt">${esc(mascEnd(dest.endereco_completo))}</span><span class="hint"><i class="ti ti-eye"></i>Toque pra ver</span></span></div>`:''}</div>`;
+  const c=R.comprovante,fotos=c?[c.url,...(c.evidencias||[])].filter(Boolean):[];
+  if(fotos.length){cards+=`<div class="card white"><h3>Comprovante de entrega</h3><p style="font-size:13px;color:var(--muted)">${c.recebido_por?'Recebido por <b>'+esc(c.recebido_por)+'</b>':'Registro feito pela transportadora'}</p><div class="fotos">${fotos.map(u=>`<img src="${esc(u)}" loading="lazy" onclick="abrirFoto(this.src)" onerror="this.remove()" alt="Comprovante">`).join('')}</div></div>`}
+  $('carousel').innerHTML=cards;$('carousel').scrollLeft=0;
+  const qt=$('carousel').children.length;$('dots').innerHTML=qt>1?Array.from({length:qt},(_,i)=>`<span class="${i?'':'on'}"></span>`).join(''):'';
+
+  $('timeline').innerHTML=evs.length?evs.map((e,i)=>{
+    const ok=e.status_chave==='delivered'||/entregue/i.test(e.status||'');
+    let loc='';
+    if(e.eh_importacao)loc='Chegou dos EUA';
+    else if(e.eh_transferencia&&e.local_destino)loc='A caminho de '+titulo(e.local_destino);
+    else if(e.unidade)loc=titulo(e.unidade);
+    const det=e.detalhe&&!String(e.detalhe).startsWith('[AVALIACAO_CARD]')?linkify(e.detalhe):'';
+    return `<div class="ev ${i===0?'first'+(ok?' ok':''):'past'}"><span class="d"></span><div><p>${esc(limpaStatus(e.status))}</p>${loc||det?`<div class="s">${esc(loc)}${loc&&det?' · ':''}${det}</div>`:''}<small>${quando(e.data)}</small></div></div>`}).join('')
+    :'<p style="color:var(--muted);font-size:14.5px">Assim que os Correios registrarem a primeira movimentação, ela aparece aqui.</p>';
+
+  $('b-wpp').href=wpp(`Olá Serena! Preciso de ajuda com o pedido ${numPed} (rastreio ${R.codigo||''}).`);
+  const pth=location.pathname.replace(/^\/+|\/+$/g,'');if(R.codigo&&pth!==R.codigo&&(pth===''||/^index/.test(pth)||/^[A-Za-z0-9]{8,}$/.test(pth)))history.replaceState(null,'','/'+R.codigo+location.search.replace(/([?&])(codigo|pedido|v|email|cep)=[^&]*/g,'').replace(/^&/,'?'));
+  view('v-res');window.scrollTo({top:0,behavior:'smooth'});
+  if(st==='delivered'&&ent&&(Date.now()-ent)/36e5<=24)setTimeout(confete,500);
+}
+
+$('carousel').addEventListener('scroll',()=>{const c=$('carousel'),w=c.children[0]?c.children[0].offsetWidth+12:1,i=Math.round(c.scrollLeft/w);[...$('dots').children].forEach((d,j)=>d.classList.toggle('on',j===i))},{passive:true});
+function copiar(){if(!ultimoCodigo)return;(navigator.clipboard?navigator.clipboard.writeText(ultimoCodigo):Promise.reject()).then(()=>toast('Código copiado')).catch(()=>toast(ultimoCodigo))}
+$('b-hist').onclick=()=>$('caminho').scrollIntoView({behavior:'smooth',block:'start'});
+$('b-share').onclick=async()=>{const url=location.origin+'/'+ultimoCodigo;try{if(navigator.share)await navigator.share({title:'Rastreio America Nutrition',text:'Acompanhe a entrega:',url});else{await navigator.clipboard.writeText(url);toast('Link copiado')}}catch(e){}};
+function abrirFoto(u){const l=$('lb');l.querySelector('img').src=u;l.classList.add('on')}
+$('lb').onclick=()=>$('lb').classList.remove('on');
+
+function confete(){if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;const cv=$('confete'),x=cv.getContext('2d');cv.width=innerWidth;cv.height=innerHeight;const cor=['#07388E','#AD0404','#2F6BE0','#ffffff','#E8262C'];const ps=Array.from({length:120},()=>({x:Math.random()*cv.width,y:-20-Math.random()*cv.height*.5,w:6+Math.random()*6,h:8+Math.random()*8,c:cor[Math.random()*5|0],vy:2+Math.random()*3,vx:-1+Math.random()*2,r:Math.random()*6,vr:-.1+Math.random()*.2}));let t=0;(function f(){x.clearRect(0,0,cv.width,cv.height);ps.forEach(p=>{p.y+=p.vy;p.x+=p.vx;p.r+=p.vr;x.save();x.translate(p.x,p.y);x.rotate(p.r);x.fillStyle=p.c;x.fillRect(-p.w/2,-p.h/2,p.w,p.h);x.restore()});if(++t<220)requestAnimationFrame(f);else x.clearRect(0,0,cv.width,cv.height)})()}
+
+(function auto(){const q=new URLSearchParams(location.search);let c=q.get('codigo');const p=q.get('pedido'),v=q.get('v')||q.get('email')||q.get('cep');if(!c){const path=location.pathname.replace(/^\/+|\/+$/g,'').replace(/\.(php|html)$/,'');if(/^[A-Za-z0-9]{8,}$/.test(path)&&!/^index$/i.test(path))c=path.toUpperCase()}
+if(c){$('i-cod').value=c;buscar({modo:'codigo',codigo:c})}else if(p&&v){buscar({modo:'pedido',pedido:p,validacao:v})}else view('v-busca')})();
+</script>
+</body>
+</html>

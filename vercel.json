@@ -1,14 +1,14 @@
 {
-  "redirects": [
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/:code([A-Za-z0-9]{8,})", "destination": "/index.html" }
+  ],
+  "headers": [
     {
-      "source": "/:code",
-      "destination": "https://envia.com/pt-BR/tracking?label=:code",
-      "permanent": false
-    },
-    {
-      "source": "/",
-      "destination": "https://americanutrition.com",
-      "permanent": false
+      "source": "/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
+      ]
     }
   ]
 }
