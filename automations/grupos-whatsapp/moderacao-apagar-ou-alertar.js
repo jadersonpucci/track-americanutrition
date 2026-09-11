@@ -6,16 +6,24 @@ const TG = 'http://telegram-bot-api:8081/bot<TOKEN>/sendMessage';
 const TG_CHAT = '-1003766435449';
 const TG_TOPICO = 1630;
 const NL = String.fromCharCode(10);
-// Religado em 10/09/2026 SO para a resposta automatica de ausencia, que foi o que o Jaderson
-// pediu. As outras categorias continuam sendo detectadas e avisadas no Telegram, mas nao
-// apagam nada sozinhas ate ele mandar - estamos reativando o grupo por partes depois do
-// banimento de 08/09. Para voltar a apagar spam e golpe, basta devolve-los a esta lista.
-const MODO_AUTO = ['ausencia_automatica'];
+// MODO_AUTO VAZIO desde 11/09/2026, por decisao do Jaderson: nada e apagado sozinho.
+//
+// Motivo: apagar mensagem de outra pessoa NAO e uma operacao silenciosa. O "apagar para todos"
+// do WhatsApp e, no protocolo, uma mensagem de revogacao que sai DO NOSSO NUMERO para o grupo,
+// e o aparelho do Samuel ainda desenha uma bolha vazia nossa para cada uma. Nao existe apagar
+// sem enviar: a revogacao precisa chegar em todos os aparelhos, senao ninguem esconderia nada.
+// Em 08/09, dia do banimento, foram 55 exclusoes, 41 delas em cerca de 90 segundos.
+//
+// Entao agora toda categoria vira aviso no Telegram, com o texto original e um link pronto para
+// conferir o que aquele numero postou. Quem decide apagar e uma pessoa.
+// Para voltar a apagar sozinho, basta colocar a categoria de volta nesta lista.
+const MODO_AUTO = [];
 const CONF_MIN = 90;
 // Teto de seguranca: apagar em massa e comportamento de conta comprometida. Em rajada acima
 // disso o Samuel para de apagar e passa a so alertar, mesmo com confianca alta. Um grupo
 // saudavel nao produz 20 mensagens automaticas por hora; se produzir, quero olhar antes.
 const LIMITE_APAGAR_HORA = 20;
+const LIMPAR = 'https://n8n.americanutrition.com/webhook/grupo-limpar?t=an-mod-5Rt8Bn2W';
 const ctx = $('Pre-filtro de Suspeita').first().json;
 const E = (v) => (v === null || v === undefined || v === '') ? 'null' : ("'" + String(v).replace(/'/g, "''").slice(0, 900) + "'");
 const req = async (o) => { try { return await this.helpers.httpRequest(o); } catch (e) { return null; } };
@@ -59,6 +67,9 @@ if (podeApagar) {
 }
 const IC = { spam_venda: '🚫', golpe: '⚠️', spam_geral: '🚫', ausencia_automatica: '🧹', mencao_concorrente: '👀', reclamacao: '📣', link_grupo_externo: '🔗' };
 const NOME = { spam_venda: 'Spam de venda', golpe: 'Golpe', spam_geral: 'Spam', ausencia_automatica: 'Mensagem automatica de ausencia', mencao_concorrente: 'Mencao a concorrente', reclamacao: 'Reclamacao de cliente', link_grupo_externo: 'Convite para grupo de fora' };
+// So faz sentido oferecer limpeza para o que e lixo. Reclamacao e mencao a concorrente sao fala
+// legitima de cliente e nunca devem virar sugestao de apagar.
+const OFERECER_LIMPEZA = ['spam_venda', 'golpe', 'spam_geral', 'ausencia_automatica', 'link_grupo_externo'];
 let t;
 if (cat === 'ausencia_automatica' && acao === 'apagada') {
   t = '🧹 APAGUEI UMA MENSAGEM AUTOMATICA' + NL + NL;
@@ -73,9 +84,14 @@ if (cat === 'ausencia_automatica' && acao === 'apagada') {
   t += 'Motivo: ' + motivo + NL + NL;
   t += 'Texto original:' + NL + String(ctx.texto).slice(0, 600);
   if (acao === 'alertada' && travado) { t += NL + NL + 'NAO apaguei: ja foram ' + LIMITE_APAGAR_HORA + ' remocoes nesta hora e o teto de seguranca travou. Confira se nao tem coisa errada acontecendo.'; }
-  else if (acao === 'alertada' && (MODO_AUTO.indexOf(cat) === -1)) { t += NL + NL + 'Nada foi apagado: esta categoria esta so em modo aviso enquanto reativamos os grupos por partes.'; }
+  else if (acao === 'alertada' && !MODO_AUTO.length) { t += NL + NL + 'Nada foi apagado. A exclusao automatica esta desligada: cada "apagar para todos" sai como mensagem nossa no grupo e deixa uma bolha vazia. Quem decide apagar e voce.'; }
+  else if (acao === 'alertada' && (MODO_AUTO.indexOf(cat) === -1)) { t += NL + NL + 'Nada foi apagado: esta categoria esta so em modo aviso.'; }
   else if (acao === 'alertada') { t += NL + NL + 'Nada foi apagado. Decida voce.'; }
   if (acao === 'apagada') { t += NL + NL + 'O texto acima fica salvo em grupo_moderacao caso precise repostar.'; }
+  if (acao === 'alertada' && ctx.telefone && OFERECER_LIMPEZA.indexOf(cat) !== -1) {
+    t += NL + NL + 'Ver o que esse numero postou nas ultimas 6h:' + NL + LIMPAR + '&numero=' + ctx.telefone + '&horas=6&teste=1' + NL;
+    t += 'Para apagar de verdade, abra o mesmo link sem o &teste=1 do final.';
+  }
 }
 await req({ method: 'POST', url: TG, headers: { 'Content-Type': 'application/json' }, body: { chat_id: TG_CHAT, message_thread_id: TG_TOPICO, text: t, disable_web_page_preview: true }, json: true });
 return [{ json: { categoria: cat, confianca: conf, acao: acao, travado: travado, grupo: ctx.grupo_nome } }];
