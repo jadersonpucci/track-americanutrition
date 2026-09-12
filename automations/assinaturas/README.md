@@ -65,3 +65,31 @@ dias sem pagamento. Se o cliente não pagar, a assinatura volta a pausar sozinha
 
 A mensagem muda nesse caminho: em vez de "sua renovação vence em 11/09", que soaria como cobrança
 atrasada, vai "preparei aqui a renovação da sua assinatura".
+
+## QR Code e página de pagamento na renovação (12/09/2026)
+
+O Marcelo recebeu o PIX e respondeu: *"Vc consegue mandar QR code?"* e *"Não tá dando certo esse
+código"*. Ele estava certo. Um código PIX tem cerca de 200 caracteres. No celular ele quebra em cinco
+ou seis linhas, e copiar do WhatsApp falha com facilidade.
+
+A **página do Pix** (`serena_pix_links` + workflow `[Serena] Pagina do Pix`) já existia e resolve isso:
+QR Code na tela, botão de copiar com um toque, passo a passo e contagem do prazo. Só que apenas o
+caminho de **venda** da Serena a usava. A renovação de assinatura mandava o código cru e nada mais.
+
+Agora a renovação também cria a página:
+
+| Onde | O que mudou |
+|---|---|
+| `Pos Gerar` | grava em `serena_pix_links`, encurta o link e manda junto com o valor; o código continua em mensagem separada |
+| `Buscar Acoes` | passou a trazer `c.pix_order_id`, que é como o lembrete acha a página |
+| `Pos Outros` | os dois lembretes levam o link da página, não só o código |
+
+Dois ajustes na própria página, que só apareceram agora porque o PIX de assinatura é diferente do de venda:
+
+- **Contador.** O PIX de venda expira em 30 minutos, o de assinatura em 9 dias. O contador formatava
+  só `mm:ss`, então mostraria `12960:00`, que parece defeito. Agora mostra dias, horas ou minutos,
+  conforme o prazo.
+- **Confirmação de pagamento.** O `pix-status` só sabia checar pelo draft order da Shopify, e
+  assinatura não tem draft. Agora, quando não há `draft_id`, ele confere `assinatura_cobrancas` pelo
+  `pix_order_id` — é onde a **AN - Assinatura PIX Confirmar** marca pago. Sem isso a página ficaria
+  para sempre em "aguardando", mesmo depois de o cliente pagar.

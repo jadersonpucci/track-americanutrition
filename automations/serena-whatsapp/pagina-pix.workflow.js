@@ -129,8 +129,11 @@ if (!p.pago && !expirado) {
     + 'if(!ok){var t=document.getElementById("cod");document.querySelector("details").open=true;t.select();t.setSelectionRange(0,99999);try{ok=document.execCommand("copy");}catch(e){}}'
     + 'if(ok){b.textContent="C\\u00f3digo copiado! Cole no app do banco";b.className="btn copiado";}else{b.textContent="Toque no c\\u00f3digo abaixo e copie";document.querySelector("details").open=true;}}'
     + 'b.addEventListener("click",copiar);'
+    + 'function fmt(s){if(s>=86400){var d=Math.floor(s/86400);var hd=Math.floor((s%86400)/3600);return d+(d===1?" dia":" dias")+(hd>0?" e "+hd+"h":"");}'
+    + 'if(s>=3600){var h=Math.floor(s/3600);var mh=Math.floor((s%3600)/60);return h+"h"+(mh<10?"0":"")+mh;}'
+    + 'var m=Math.floor(s/60);var r=s%60;return m+":"+(r<10?"0":"")+r;}'
     + 'function tick(){var s=Math.floor((FIM-Date.now())/1000);var el=document.getElementById("cd");if(s<=0){el.textContent="expirado";location.reload();return;}'
-    + 'var m=Math.floor(s/60);var r=s%60;el.textContent=m+":"+(r<10?"0":"")+r;}'
+    + 'el.textContent=fmt(s);}'
     + 'tick();setInterval(tick,1000);'
     + 'var box=document.getElementById("qrbox");'
     + 'function desenhaQR(){if(window.QRCode){box.innerHTML="";new QRCode(box,{text:CODIGO,width:196,height:196,correctLevel:QRCode.CorrectLevel.M});}}'
@@ -157,18 +160,25 @@ const q = $input.first().json.query || {};
 const token = String(q.t || '').trim();
 if (!token) return [{ json: { pago: false, erro: 'sem token' } }];
 
-const rows = await sql('select token, draft_id, pago, extract(epoch from (expira_em - now())) as faltam from serena_pix_links where token = ' + E(token));
+const rows = await sql('select token, draft_id, pagarme_order_id, pago, extract(epoch from (expira_em - now())) as faltam from serena_pix_links where token = ' + E(token));
 const p = rows && rows[0];
 if (!p) return [{ json: { pago: false, erro: 'nao encontrado' } }];
 if (p.pago) return [{ json: { pago: true } }];
 
-// O draft order da Shopify vira "completed" quando a Confirmacao de Pagamento fecha o pedido pago.
 let pago = false;
 if (p.draft_id) {
+  // Pix de venda: o draft order da Shopify vira "completed" quando a Confirmacao de Pagamento fecha o pedido.
   try {
     const r = await self.helpers.httpRequest({ method: 'POST', url: SHOPIFY, json: true, timeout: 20000, body: { acao: 'consultar', endpoint: 'draft_orders/' + p.draft_id + '.json' } });
     const d = r && r.ok && r.dados && r.dados.draft_order;
     if (d && (String(d.status || '') === 'completed' || d.order_id)) pago = true;
+  } catch (e) { pago = false; }
+} else if (p.pagarme_order_id) {
+  // Pix de renovacao de assinatura: nao existe draft order. Quem marca pago e a
+  // "AN - Assinatura PIX Confirmar", em assinatura_cobrancas.
+  try {
+    const r = await sql("select status from assinatura_cobrancas where pix_order_id = " + E(p.pagarme_order_id) + " limit 1");
+    if (r && r[0] && String(r[0].status || '') === 'pago') pago = true;
   } catch (e) { pago = false; }
 }
 if (pago) { try { await sql('update serena_pix_links set pago = true, pago_em = now() where token = ' + E(token)); } catch (e) {} }
