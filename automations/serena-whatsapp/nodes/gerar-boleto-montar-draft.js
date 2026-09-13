@@ -39,14 +39,17 @@ const draftInput = {
   }]
 };
 
+// FRETE (13/09/2026): o Validar dados ja garante frete informado, cotado ou gratis (acima de R$ 250).
 if (ctx.frete && Number(ctx.frete.valor) > 0) {
   draftInput.shippingLine = {
-    title: ctx.frete.titulo,
+    title: ctx.frete.titulo || 'Frete',
     priceWithCurrency: {
       amount: Number(ctx.frete.valor).toFixed(2),
       currencyCode: 'BRL'
     }
   };
+} else if (ctx.frete && ctx.frete.origem === 'gratis') {
+  draftInput.shippingLine = { title: 'Frete grátis', priceWithCurrency: { amount: '0.00', currencyCode: 'BRL' } };
 }
 
 // lineItems na resposta: o cliente ve o PRODUTO na mensagem, nao o numero do rascunho

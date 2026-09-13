@@ -15,6 +15,12 @@ if (respDub && respDub.shortLink && !respDub.error) {
 
 const total = (d.total_reais || 0).toFixed(2).replace('.', ',');
 const itens = String(d.itens_texto || '').trim();
+// FRETE (13/09/2026): o total ja inclui a linha de frete do draft; mostrar a composicao ao cliente.
+const brl = n => Number(n || 0).toFixed(2).replace('.', ',');
+const fr = (d.frete && typeof d.frete === 'object') ? d.frete : { valor: 0, titulo: '', origem: '' };
+const freteValor = Math.round(Number(fr.valor || 0) * 100) / 100;
+const freteGratis = freteValor <= 0 && fr.origem === 'gratis';
+const subtotal = Math.round((Number(d.total_reais || 0) - freteValor) * 100) / 100;
 
 let venc = '';
 try {
@@ -30,7 +36,9 @@ try {
 // separada, senao o cliente nao consegue copiar so o codigo no WhatsApp (a copia leva a mensagem inteira).
 let msg = '📄 *Seu boleto foi gerado!*\n\n';
 if (itens) msg += '📦 ' + itens + '\n';
-msg += '💰 Valor: R$ ' + total + '\n';
+if (freteValor > 0) msg += '🚚 Frete: ' + (fr.titulo || 'Frete') + ' — R$ ' + brl(freteValor) + '\n';
+else if (freteGratis) msg += '🚚 Frete grátis\n';
+msg += '💰 Valor: *R$ ' + total + '*' + (freteValor > 0 ? ' (produto R$ ' + brl(subtotal) + ' + frete R$ ' + brl(freteValor) + ')' : '') + '\n';
 if (venc) msg += '📅 Vence em: ' + venc + '\n';
 msg += '\nSeu pedido já está registrado, falta só o pagamento. Copie o código de barras abaixo e cole no app do seu banco, na opção de pagar boleto:\n';
 msg += d.linha_digitavel + '\n';
@@ -54,6 +62,8 @@ let msgTelegram = '🧾 <b>BOLETO GERADO</b>\n\n';
 msgTelegram += '👤 Cliente: ' + escapeHtml(d.cliente_nome) + '\n';
 if (itens) msgTelegram += '📦 ' + escapeHtml(itens) + '\n';
 msgTelegram += '📝 Rascunho: <code>' + escapeHtml(d.draft_numero) + '</code>\n';
+if (freteValor > 0) msgTelegram += '🚚 Frete: ' + escapeHtml(fr.titulo || 'Frete') + ' R$ ' + escapeHtml(brl(freteValor)) + (fr.origem === 'cotado' ? ' <i>(cotado pela ferramenta)</i>' : '') + '\n';
+else if (freteGratis) msgTelegram += '🚚 Frete grátis\n';
 msgTelegram += '💰 Valor: R$ ' + escapeHtml(total) + '\n';
 if (venc) msgTelegram += '📅 Vence em: ' + escapeHtml(venc) + '\n';
 if (tel) msgTelegram += '\n<a href="' + tel + '">💬 Conversa do cliente</a>\n';
@@ -64,7 +74,11 @@ return [{ json: {
   draft_numero: d.draft_numero,
   draft_id: d.draft_id,
   itens_texto: itens,
-  nota_serena: 'Nao cite o numero do rascunho (' + String(d.draft_numero || '') + ') para o cliente: e interno e nao e o numero do pedido, que so sai depois do pagamento. Fale o produto e o valor. Repita a linha digitavel exatamente como veio, em uma linha sozinha, e depois o link do PDF.',
+  nota_serena: 'Nao cite o numero do rascunho (' + String(d.draft_numero || '') + ') para o cliente: e interno e nao e o numero do pedido, que so sai depois do pagamento. Fale o produto e o valor. Repita a linha digitavel exatamente como veio, em uma linha sozinha, e depois o link do PDF.' + (freteValor > 0 ? ' O valor de R$ ' + total + ' JA INCLUI o frete: produto R$ ' + brl(subtotal) + ' + frete ' + (fr.titulo || '') + ' R$ ' + brl(freteValor) + '. Diga isso ao cliente.' : (freteGratis ? ' Este pedido saiu com frete gratis (acima de R$ 250).' : '')),
+  frete_valor: freteValor,
+  frete_titulo: fr.titulo || (freteGratis ? 'Frete grátis' : ''),
+  frete_origem: fr.origem || '',
+  subtotal_reais: subtotal,
   pagarme_order_id: d.pagarme_order_id,
   pagarme_charge_id: d.pagarme_charge_id,
   linha_digitavel: d.linha_digitavel,

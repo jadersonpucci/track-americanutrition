@@ -1207,3 +1207,33 @@ O gerador agora aplica o desconto que mandarem, mas a Serena ainda não decide s
 cupom de boas-vindas não convertido tem direito aos 10%. Hoje isso depende de alguém passar
 `desconto_pct`. A regra do Jaderson é: **o desconto de primeira compra vale até o cliente comprar; se
 não comprou, o cupom continua valendo**, mesmo expirado. Falta ensinar isso ao Core.
+
+## Frete no Gerar PIX e no Gerar Boleto (13/09/2026)
+
+Caso: 12/09, 21:36, a Eliane pediu Pix de 1x ImunoFosfo 42 caps (R$ 197, abaixo do mínimo de frete grátis). O Pix
+saiu R$ 197,00 sem frete. Ela perguntou "cadê o frete", a Serena respondeu certo ("J&T R$ 33,44, o Pix foi só do
+produto, gero um novo com o valor certo?"), a cliente disse "ok gere com o frete" e a Serena chamou `gerar_pix` de
+novo **com exatamente os mesmos dados**: saiu outro Pix de R$ 197,00. O `[Serena Tool] Gerar PIX` não tinha campo de
+frete nenhum; o `Gerar Boleto` tinha, mas opcional, e a Serena não sabia que precisava mandar.
+
+Correção (fontes em `nodes/gerar-pix-*.js` e `nodes/gerar-boleto-*.js`, `Validar dados` novo para o boleto):
+
+- **O frete é responsabilidade da ferramenta.** No `Validar dados`, se a Serena não mandar `frete_valor`, a ferramenta
+  cota sozinha em `POST /webhook/calcular-frete` com `{cep, itens_str}` (o Envia devolve subtotal, peso e
+  `elegivel_frete_gratis`): a partir de R$ 250 sai `Frete grátis`; abaixo entra a opção mais barata
+  (`menor_preco`, título "J&T Express (1-2 dias úteis)"). Se a cotação falhar, **não gera sem frete**: devolve erro
+  pedindo `calcular_frete` + `frete_valor`/`frete_titulo` (ou `frete_gratis=true` acima de R$ 250).
+- `frete_valor` + `frete_titulo` informados pela Serena são respeitados (cliente escolheu SEDEX, por exemplo).
+- `Montar draft`: `shippingLine` no draft da Shopify; o `totalPrice` que vira o valor do Pix/boleto já sai com o frete.
+  Frete grátis entra como linha de R$ 0, para a equipe ver a escolha no pedido.
+- `Formatar resposta`: mensagem com "🚚 Frete: … — R$ 33,44" e "💰 Valor: R$ 230,44 (produto R$ 197,00 + frete
+  R$ 33,44)"; a página do Pix mostra "1x ImunoFosfo 42 Caps + frete R$ 33,44"; Telegram com a linha do frete;
+  resposta com `frete_valor`, `frete_titulo`, `frete_origem` (`cotado|informado|gratis`) e `subtotal_reais`;
+  `nota_serena` diz que o valor já inclui o frete. Com desconto, o "de" é `(total - frete)/(1 - pct) + frete`, para o
+  frete não aparecer descontado.
+- `serena_config.system_prompt` (adendos) ganhou o adendo de 13/09: a Serena fala a composição produto + frete = total
+  e nunca "gera de novo com o frete" repetindo a mesma chamada.
+
+Teste real (13/09, 01:16 UTC), dados da Eliane: `#D4108`, R$ 230,44 = 197,00 + J&T 33,44, `frete_origem: cotado`,
+página do Pix com o frete. Simulações locais: 2 unidades (R$ 394) → frete grátis; `frete_valor` informado → respeitado;
+CEP inválido → erro pedindo `calcular_frete`, sem gerar Pix.

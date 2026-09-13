@@ -57,5 +57,7 @@ return [{ json: {
   itens_texto: itensTxt,
   total_reais: totalReais,
   total_cents: totalCents,
+  frete: (ctx.frete && typeof ctx.frete === 'object') ? ctx.frete : { valor: 0, titulo: '', origem: '', prazo: '' },
+  subtotal_reais: Math.round((totalReais - Number((ctx.frete && ctx.frete.valor) || 0)) * 100) / 100,
   ctx: ctx
 }}];

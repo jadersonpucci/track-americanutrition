@@ -1,5 +1,5 @@
-// Node "Validar dados" do workflow "[Serena Tool] Gerar PIX" (n8n SkETGTmcqtlTR0Lp).
-// Valida itens e dados obrigatorios do cliente para cobranca PIX.
+// Node "Validar dados" do workflow "[Serena Tool] Gerar Boleto" (n8n gBgvM4y3bYzbnrE5).
+// Valida itens e dados obrigatorios do cliente para emissao de boleto. Mesma regra de frete do Gerar PIX.
 const body = $input.first().json.body || $input.first().json;
 
 let itens = [];
@@ -29,18 +29,6 @@ const estado = (body.estado || body.uf || '').toString().trim().toUpperCase();
 const cepRaw = (body.cep || '').toString().replace(/\D/g, '');
 const complemento = (body.complemento || '').toString().trim();
 
-// DESCONTO (11/09/2026). Antes disto o campo 'cupom' chegava aqui e era DESCARTADO em silencio:
-// o draft saia sempre no valor cheio. Em 11/09 a Serena mandou cupom IMUNOFOSFO para o Alexandre,
-// o Pix veio R$ 597,00 sem desconto, e ela explicou ao cliente que o cupom "ja tinha sido usado" -
-// que era invencao, porque nunca foi nem tentado. O cliente ficou chateado, com razao.
-// Agora: desconto_pct e a fonte da verdade e vira appliedDiscount no draft da Shopify.
-// Se vier cupom SEM desconto_pct, o cupom NAO e aplicado e a resposta diz isso em voz alta,
-// para a Serena falar a verdade em vez de inventar um motivo.
-const cupom = (body.cupom || '').toString().trim().toUpperCase().slice(0, 40);
-let descontoPct = Number(body.desconto_pct != null ? body.desconto_pct : body.desconto);
-if (!isFinite(descontoPct) || descontoPct <= 0) descontoPct = 0;
-descontoPct = Math.min(50, Math.round(descontoPct * 100) / 100);
-
 const faltando = [];
 if (!nome || nome.split(' ').length < 2) faltando.push('nome completo');
 if (cpfRaw.length !== 11) faltando.push('CPF valido');
@@ -55,7 +43,7 @@ if (cepRaw.length !== 8) faltando.push('CEP');
 if (faltando.length) {
   return [{ json: {
     erro: true,
-    mensagem: 'Para gerar o PIX preciso de: ' + faltando.join(', ') + '.'
+    mensagem: 'Para gerar o boleto preciso de: ' + faltando.join(', ') + '.'
   }}];
 }
 
@@ -69,8 +57,8 @@ const numeroTel = telefone.slice(2);
 const cpfFmt = cpfRaw.slice(0,3) + '.' + cpfRaw.slice(3,6) + '.' + cpfRaw.slice(6,9) + '-' + cpfRaw.slice(9,11);
 
 
-// FRETE (13/09/2026). Antes disto o Gerar PIX nao tinha campo de frete nenhum: o draft saia so com o
-// produto e o Pix vinha sem o frete. Em 12/09 a Eliane (pedido de R$ 197, abaixo do minimo de frete
+// FRETE (13/09/2026). O Gerar Boleto aceitava frete opcional, mas se a Serena nao mandasse o boleto
+// saia so com o produto, o mesmo erro do Pix. Em 12/09 a Eliane (pedido de R$ 197, abaixo do minimo de frete
 // gratis) perguntou "cade o frete", a Serena prometeu "gero um novo com o frete" e chamou a mesma
 // ferramenta com os mesmos dados: saiu outro Pix de R$ 197. Ela nao tinha como acertar.
 // Agora o frete e responsabilidade da ferramenta, nao da memoria da Serena:
@@ -115,7 +103,7 @@ if (freteValor <= 0) {
   } else {
     return [{ json: {
       erro: true,
-      mensagem: 'Nao consegui calcular o frete para o CEP ' + cepRaw + ' agora, e sem frete o PIX sairia errado. Chame calcular_frete com este CEP e itens_str, escolha a opcao com o cliente e repita gerar_pix passando frete_valor e frete_titulo. Se o pedido passa de R$ 250 e o cliente quer a opcao gratis, repita com frete_gratis=true.'
+      mensagem: 'Nao consegui calcular o frete para o CEP ' + cepRaw + ' agora, e sem frete o boleto sairia errado. Chame calcular_frete com este CEP e itens_str, escolha a opcao com o cliente e repita gerar_boleto passando frete_valor e frete_titulo. Se o pedido passa de R$ 250 e o cliente quer a opcao gratis, repita com frete_gratis=true.'
     }}];
   }
 }
@@ -123,8 +111,6 @@ if (freteValor <= 0) {
 return [{ json: {
   erro: false,
   itens: itens,
-  cupom: cupom,
-  desconto_pct: descontoPct,
   frete: { valor: freteValor, titulo: freteTitulo, origem: freteOrigem, prazo: fretePrazo, subtotal_cotado: subtotalCotado },
   cliente: {
     nome: nome,

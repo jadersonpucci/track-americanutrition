@@ -44,6 +44,8 @@ return [{ json: {
   draft_id: dadosDraft.draft_id,
   itens_texto: dadosDraft.itens_texto || '',
   total_reais: dadosDraft.total_reais,
+  frete: dadosDraft.frete || { valor: 0, titulo: '', origem: '', prazo: '' },
+  subtotal_reais: Number(dadosDraft.subtotal_reais != null ? dadosDraft.subtotal_reais : dadosDraft.total_reais),
   cupom: dadosDraft.cupom || '',
   desconto_pct: Number(dadosDraft.desconto_pct || 0),
   desconto_pedido_pct: Number(dadosDraft.desconto_pedido_pct || 0),

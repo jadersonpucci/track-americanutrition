@@ -15,6 +15,7 @@ const E = v => "'" + String(v == null ? '' : v).replace(/'/g, "''") + "'";
 const brl = n => Number(n || 0).toFixed(2).replace('.', ',');
 const total = brl(d.total_reais);
 const itens = String(d.itens_texto || '').trim();
+const itensPagina = (itens + (Number((d.frete || {}).valor || 0) > 0 ? ' + frete R$ ' + brl((d.frete || {}).valor) : ((d.frete || {}).origem === 'gratis' ? ' (frete grátis)' : ''))).slice(0, 200);
 
 // DESCONTO. pct e o que a Shopify confirmou ter aplicado no rascunho. O valor "de" e derivado do
 // proprio total, sem depender de outra consulta: total = cheio * (1 - pct/100).
@@ -22,7 +23,13 @@ const pct = Number(d.desconto_pct || 0);
 const pctPedido = Number(d.desconto_pedido_pct || 0);
 const cupom = String(d.cupom || '').trim();
 const temDesconto = pct > 0;
-const cheio = temDesconto ? (Number(d.total_reais || 0) / (1 - pct / 100)) : 0;
+// FRETE (13/09/2026): o total ja inclui a linha de frete do draft. O desconto incide so no produto,
+// entao o valor "de" e (total - frete) / (1 - pct) + frete, senao o frete apareceria com desconto.
+const fr = (d.frete && typeof d.frete === 'object') ? d.frete : { valor: 0, titulo: '', origem: '' };
+const freteValor = Math.round(Number(fr.valor || 0) * 100) / 100;
+const freteGratis = freteValor <= 0 && fr.origem === 'gratis';
+const subtotal = Math.round((Number(d.total_reais || 0) - freteValor) * 100) / 100;
+const cheio = temDesconto ? ((subtotal / (1 - pct / 100)) + freteValor) : 0;
 const pctTxt = Number.isInteger(pct) ? String(pct) : brl(pct);
 // pediram desconto e a Shopify nao aplicou, ou veio cupom sem porcentagem: a Serena precisa saber
 // para NAO inventar explicacao ao cliente (foi o que aconteceu em 11/09 com o Alexandre).
@@ -43,7 +50,7 @@ let token = '';
 try {
   token = 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   const sql = 'insert into serena_pix_links (token, draft_id, draft_numero, itens, total_reais, qr_code, qr_code_url, expira_em, pagarme_order_id, pagarme_charge_id, cliente_nome, telefone) values ('
-    + E(token) + ', ' + E(d.draft_id) + ', ' + E(d.draft_numero) + ', ' + E(itens) + ', ' + Number(d.total_reais || 0) + ', ' + E(d.qr_code) + ', ' + E(d.qr_code_url || '') + ', '
+    + E(token) + ', ' + E(d.draft_id) + ', ' + E(d.draft_numero) + ', ' + E(itensPagina) + ', ' + Number(d.total_reais || 0) + ', ' + E(d.qr_code) + ', ' + E(d.qr_code_url || '') + ', '
     + (d.expira_em ? E(d.expira_em) + '::timestamptz' : "now() + interval '30 minutes'") + ', ' + E(d.pagarme_order_id || '') + ', ' + E(d.pagarme_charge_id || '') + ', ' + E(d.cliente_nome || '') + ', ' + E(d.cliente_telefone || '') + ')';
   const r = await self.helpers.httpRequest({ method: 'POST', url: SB, headers: { apikey: SK, Authorization: 'Bearer ' + SK, 'Content-Type': 'application/json' }, body: { query: sql }, json: true, timeout: 15000 });
   if (r && r.error) throw new Error(String(r.error).slice(0, 200));
@@ -60,11 +67,13 @@ try {
 // separada, senao o cliente nao consegue copiar so o codigo no WhatsApp (a copia leva a mensagem inteira).
 let msg = '\u{1F4A0} *Seu PIX foi gerado!*\n\n';
 if (itens) msg += '\u{1F4E6} ' + itens + '\n';
+if (freteValor > 0) msg += '\u{1F69A} Frete: ' + (fr.titulo || 'Frete') + ' \u2014 R$ ' + brl(freteValor) + '\n';
+else if (freteGratis) msg += '\u{1F69A} Frete grátis\n';
 if (temDesconto) {
-  msg += '\u{1F3F7}\u{FE0F} De R$ ' + brl(cheio) + ' por *R$ ' + total + '*\n';
+  msg += '\u{1F3F7}\u{FE0F} De R$ ' + brl(cheio) + ' por *R$ ' + total + '*' + (freteValor > 0 ? ' (produto R$ ' + brl(subtotal) + ' + frete)' : '') + '\n';
   msg += '\u{2705} ' + pctTxt + '% de desconto' + (cupom ? ' (cupom ' + cupom + ')' : '') + ' já aplicado\n';
 } else {
-  msg += '\u{1F4B0} Valor: R$ ' + total + '\n';
+  msg += '\u{1F4B0} Valor: *R$ ' + total + '*' + (freteValor > 0 ? ' (produto R$ ' + brl(subtotal) + ' + frete R$ ' + brl(freteValor) + ')' : '') + '\n';
 }
 if (expira) msg += '\u{23F0} Validade: pague até ' + expira + ' (30 minutos)\n';
 msg += '\nSeu pedido já está registrado e reservado, falta só o pagamento. Copie o código abaixo e cole no app do seu banco, em *Pix > Pix Copia e Cola* (não é um link, não precisa clicar):\n';
@@ -87,6 +96,8 @@ let msgTelegram = '\u{1F4A0} <b>PIX GERADO</b>\n\n';
 msgTelegram += '\u{1F464} Cliente: ' + escapeHtml(d.cliente_nome) + '\n';
 if (itens) msgTelegram += '\u{1F4E6} ' + escapeHtml(itens) + '\n';
 msgTelegram += '\u{1F4DD} Rascunho: <code>' + escapeHtml(d.draft_numero) + '</code>\n';
+if (freteValor > 0) msgTelegram += '\u{1F69A} Frete: ' + escapeHtml(fr.titulo || 'Frete') + ' R$ ' + escapeHtml(brl(freteValor)) + (fr.origem === 'cotado' ? ' <i>(cotado pela ferramenta)</i>' : '') + '\n';
+else if (freteGratis) msgTelegram += '\u{1F69A} Frete grátis\n';
 if (temDesconto) msgTelegram += '\u{1F4B0} Valor: R$ ' + escapeHtml(total) + ' <i>(de R$ ' + escapeHtml(brl(cheio)) + ', -' + escapeHtml(pctTxt) + '%' + (cupom ? ' ' + escapeHtml(cupom) : '') + ')</i>\n';
 else msgTelegram += '\u{1F4B0} Valor: R$ ' + escapeHtml(total) + '\n';
 if (descontoFalhou) msgTelegram += '\u{26A0} <b>Desconto de ' + escapeHtml(String(pctPedido)) + '% foi pedido e a Shopify NAO aplicou.</b>\n';
@@ -99,6 +110,8 @@ msgTelegram += '\n<i>Aguardando pagamento. O pedido sera confirmado automaticame
 // Instrucao para a Serena. O trecho do cupom existe porque em 11/09 ela disse a um cliente que o
 // cupom "ja tinha sido usado" quando na verdade o gerador nunca aplicava cupom nenhum.
 let nota = 'Nao cite o numero do rascunho (' + String(d.draft_numero || '') + ') para o cliente: e interno e nao e o numero do pedido, que so sai depois do pagamento. Fale o produto e o valor. Repita o codigo do Pix exatamente como veio, em uma linha sozinha, e depois o link de pagina_pix.';
+if (freteValor > 0) nota += ' O valor de R$ ' + total + ' JA INCLUI o frete: produto R$ ' + brl(subtotal) + ' + frete ' + (fr.titulo || '') + ' R$ ' + brl(freteValor) + '. Diga isso ao cliente. Nunca diga que este Pix esta sem frete.';
+else if (freteGratis) nota += ' Este pedido saiu com frete gratis (acima de R$ 250): o valor e so o produto.';
 if (temDesconto) nota += ' O desconto de ' + pctTxt + '%' + (cupom ? ' (cupom ' + cupom + ')' : '') + ' JA esta aplicado neste valor: diga o valor com desconto, nao o cheio.';
 if (descontoFalhou || cupomSemPct) nota += ' ATENCAO: o desconto NAO foi aplicado neste Pix. NUNCA diga ao cliente que o cupom ja foi usado nem invente motivo: diga que vai confirmar com a equipe e escale. Voce nao tem como saber se ele usou o cupom.';
 
@@ -113,6 +126,10 @@ return [{ json: {
   desconto_aplicado: temDesconto,
   total_sem_desconto: temDesconto ? Number(cheio.toFixed(2)) : Number(d.total_reais || 0),
   aviso: (descontoFalhou || cupomSemPct) ? 'desconto nao aplicado' : null,
+  frete_valor: freteValor,
+  frete_titulo: fr.titulo || (freteGratis ? 'Frete grátis' : ''),
+  frete_origem: fr.origem || '',
+  subtotal_reais: subtotal,
   pagarme_order_id: d.pagarme_order_id,
   pagarme_charge_id: d.pagarme_charge_id,
   qr_code: d.qr_code,

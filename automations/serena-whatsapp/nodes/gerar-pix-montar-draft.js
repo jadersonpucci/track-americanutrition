@@ -56,6 +56,14 @@ if (pct > 0) {
   if (ctx.cupom) draftInput.tags.push('cupom:' + ctx.cupom);
 }
 
+// FRETE (13/09/2026): a linha de frete entra no draft, e o totalPrice que a Shopify devolve (e vira o
+// valor do Pix) ja sai com ela. Frete gratis entra como linha de R$ 0 para a equipe ver a escolha.
+if (ctx.frete && Number(ctx.frete.valor) > 0) {
+  draftInput.shippingLine = { title: ctx.frete.titulo || 'Frete', priceWithCurrency: { amount: Number(ctx.frete.valor).toFixed(2), currencyCode: 'BRL' } };
+} else if (ctx.frete && ctx.frete.origem === 'gratis') {
+  draftInput.shippingLine = { title: 'Frete grátis', priceWithCurrency: { amount: '0.00', currencyCode: 'BRL' } };
+}
+
 // lineItems na resposta: o cliente ve o PRODUTO na mensagem e na pagina do Pix, nao o numero do rascunho
 // (o numero do pedido de verdade, AN-xxxxx, so existe depois do pagamento).
 // appliedDiscount na resposta: confirma que o desconto entrou de fato, em vez de supor.
