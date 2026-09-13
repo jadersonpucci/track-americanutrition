@@ -46,7 +46,7 @@ if (venc) msg += '📅 Vence em: ' + venc + '\n';
 msg += '\nSeu pedido já está registrado, falta só o pagamento. Copie o código de barras abaixo e cole no app do seu banco, na opção de pagar boleto:\n';
 msg += d.linha_digitavel + '\n';
 if (pdf_final) {
-  msg += (ehPagina ? '\n📎 Seu boleto completo, para conferir, imprimir ou pagar pelo app:\n' : '\n📎 Se preferir, o boleto em PDF:\n') + pdf_final + '\n';
+  msg += (ehPagina ? '\n📎 Seu boleto em PDF (uma folha, para abrir ou imprimir):\n' : '\n📎 Se preferir, o boleto em PDF:\n') + pdf_final + '\n';
 }
 msg += '\n_Assim que o pagamento for confirmado, seu pedido entra em separação. O boleto pode levar até 1 dia útil para compensar._';
 
@@ -88,6 +88,8 @@ return [{ json: {
   pdf_url: pdf_final,
   pdf_url_original: d.pdf_url,
   pagina_boleto: d.pagina_url || '',
+  // O Core manda este arquivo como documento no WhatsApp, junto da mensagem padrao (cliente idoso abre direto no chat).
+  arquivo: d.pagina_url ? { url: d.pagina_url, tipo: 'document', nome: 'Boleto-America-Nutrition' + (d.draft_numero ? '-' + String(d.draft_numero).replace(/[^A-Za-z0-9-]/g, '') : '') + '.pdf' } : null,
   pdf_curto_usado: usou_dub,
   pdf_curto_id: pdf_curto_id,
   vencimento: d.vencimento,

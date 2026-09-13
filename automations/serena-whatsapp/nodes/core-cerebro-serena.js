@@ -317,6 +317,8 @@ let paginaPix = null;
 // resultado: produto, frete, valor, vencimento, codigo em linha propria, PDF/pagina). O Core manda ESSA mensagem
 // no lugar do texto do modelo, que reescrevia do jeito dele (boleto da Eliane, 13/09), e nem chama o modelo de novo.
 let mensagemPadrao = null;
+// Arquivo devolvido pela ferramenta (PDF do boleto): vai como documento no WhatsApp junto da mensagem padrao.
+let arquivoPadrao = null;
 let erro = null;
 
 for (let volta = 0; volta < (trivialOk ? 0 : 6); volta++) {
@@ -382,6 +384,8 @@ for (let volta = 0; volta < (trivialOk ? 0 : 6); volta++) {
         const ok = saida.sucesso === true || (saida.body && saida.body.sucesso === true);
         const padrao = String(saida.resultado || (saida.body && saida.body.resultado) || '').trim();
         if (ok && padrao && /\b\d{47,48}\b|0002010[0-9]/.test(padrao)) mensagemPadrao = padrao;
+        const arq = saida.arquivo || (saida.body && saida.body.arquivo) || null;
+        if (ok && arq && /^https?:\/\//i.test(String(arq.url || ''))) arquivoPadrao = arq;
       }
       resultados.push({ type: 'tool_result', tool_use_id: bloco.id, content: JSON.stringify(saida).slice(0, 6000) });
     }
@@ -478,6 +482,12 @@ if (resposta && docsLista.length) {
   } else if (ma) {
     respostaHist = resposta;
   }
+}
+
+// Boleto em PDF (13/09/2026): a ferramenta devolve arquivo {url, nome}; no WhatsApp ele segue como documento
+// depois da mensagem padrao, para o cliente abrir direto no chat sem precisar de link.
+if (!arquivo && arquivoPadrao && !sugerir && entrada.canal === 'whatsapp') {
+  arquivo = { chave: 'boleto-pdf', url: String(arquivoPadrao.url), tipo: arquivoPadrao.tipo || 'document', nome: arquivoPadrao.nome || 'boleto.pdf', legenda: '' };
 }
 
 // Link repetido: nao reenvia um link que a Serena ja mandou ha pouco (ultimas 8 mensagens dela), a menos que o cliente peca.

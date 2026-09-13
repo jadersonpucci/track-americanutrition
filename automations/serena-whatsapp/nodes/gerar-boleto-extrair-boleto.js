@@ -38,9 +38,9 @@ const linhaDigitavel = tx.line || tx.barcode || '';
 const pdfUrl = tx.pdf || tx.url || '';
 const vencimento = tx.due_at || '';
 
-// BOLETO PERSONALIZADO (13/09/2026): o cliente recebe a pagina com a identidade da marca (logo, itens, endereco,
-// ficha FEBRABAN e codigo de conferencia), gerada pelo workflow "AN - Boleto Personalizado" a partir da propria
-// linha digitavel. O PDF cru da Pagar.me fica so como reserva (pdf_url_original). O link e encurtado no no seguinte.
+// BOLETO PERSONALIZADO (13/09/2026): o cliente recebe o PDF de uma folha com a identidade da marca (logo, itens,
+// endereco, ficha FEBRABAN, codigo de barras grande e codigo de conferencia), gerado pelo workflow
+// "AN - Boleto Personalizado" a partir da propria linha digitavel. O PDF cru da Pagar.me fica so como reserva (pdf_url_original). O link e encurtado no no seguinte.
 let paginaUrl = '';
 try {
   const brl2 = v => Number(v || 0).toFixed(2).replace('.', ',');
@@ -58,7 +58,8 @@ try {
       + '&d=' + encodeURIComponent(String(cli.cpf || ''))
       + '&p=' + encodeURIComponent(String(dadosDraft.draft_numero || ''))
       + '&it=' + encodeURIComponent(itens.join('|').slice(0, 600))
-      + '&end=' + encodeURIComponent(endTxt.slice(0, 200));
+      + '&end=' + encodeURIComponent(endTxt.slice(0, 200))
+      + '&pdf=1';   // PDF de verdade, uma folha A4 (node "Gerar PDF" do AN - Boleto Personalizado)
   }
 } catch (e) { paginaUrl = ''; }
 

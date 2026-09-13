@@ -29,7 +29,8 @@ try {
       + '&d=' + encodeURIComponent(String(c.document || '').replace(/\D/g, ''))
       + '&p=' + encodeURIComponent(String(o.code || '').slice(0, 40))
       + '&it=' + encodeURIComponent(itens.join('|').slice(0, 600))
-      + '&end=' + encodeURIComponent(end.slice(0, 200));
+      + '&end=' + encodeURIComponent(end.slice(0, 200))
+      + '&pdf=1';
   }
 } catch (e) { boletoPagina = null; }
 

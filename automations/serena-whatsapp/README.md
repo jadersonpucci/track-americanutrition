@@ -1301,3 +1301,14 @@ Nutrition, itens com valor, frete, endereço do pagador, ficha de compensação 
 de conferência. O `Montar draft` passou a pedir o valor de cada item ao Shopify, o `Extrair draft` devolve
 `itens_lista`, o `Extrair boleto` monta `pagina_url`, o encurtador encurta essa página (o PDF cru da Pagar.me fica em
 `pdf_url_original`, só como reserva) e a mensagem diz "Seu boleto completo, para conferir, imprimir ou pagar pelo app".
+
+### PDF do boleto em uma folha (13/09, tarde)
+
+A impressão da página HTML saía em duas folhas com cabeçalho do navegador. Agora o workflow "AN - Boleto
+Personalizado" tem o nó `Gerar PDF` (`nodes/boleto-personalizado-gerar-pdf.js`): com `&pdf=1` na mesma URL ele
+devolve um PDF de verdade, uma folha A4, gerado sem biblioteca (fontes padrão do PDF, logo JPEG em
+`imagens/logos/logo-america-nutrition-branco.jpg`, código de barras I25 em retângulos). Layout pensado para cliente
+com pouca familiaridade: valor e vencimento grandes, três passos de como pagar, linha digitável grande, ficha de
+compensação compacta e código de barras grande. O Gerar Boleto, o checkout (Fluxo A) e o resgate de boleto não
+pago passaram a apontar para `&pdf=1`. Além do link, o Gerar Boleto devolve `arquivo` e o Core (`arquivoPadrao`)
+manda o PDF como documento no WhatsApp logo depois da mensagem padrão.
