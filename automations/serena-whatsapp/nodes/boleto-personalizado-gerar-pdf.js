@@ -3,8 +3,9 @@
 // Mesmos parametros da pagina HTML, mas devolve um PDF de verdade, UMA folha A4 (binario "data"). O "Responder PDF"
 // entrega com Content-Type application/pdf. Tudo sai da propria linha digitavel (valor, vencimento, nosso numero),
 // como na pagina; o codigo de conferencia e o mesmo (mesma funcao de hash) e o boleto e registrado em boletos_emitidos.
-// O gerador (gerarPdfBoleto) nao usa biblioteca nenhuma: fontes padrao do PDF, logo JPEG embutido, barras I25 em retangulos.
-function gerarPdfBoleto(d, logoJpg) {
+// O gerador (gerarPdfBoleto) nao usa biblioteca nenhuma: fontes padrao do PDF, logos JPEG embutidos (marca e Stone,
+// banco liquidante 197), barras I25 em retangulos.
+function gerarPdfBoleto(d, logoJpg, stoneJpg) {
   const W = 595.28, H = 841.89, M = 36;
   const AZ = [0.027, 0.22, 0.557], VM = [0.678, 0.016, 0.016], VERDE = [0.055, 0.478, 0.29], TINTA = [0.043, 0.07, 0.125], CINZA = [0.42, 0.46, 0.53], LINHA = [0.85, 0.87, 0.92];
   const ops = [];
@@ -14,7 +15,7 @@ function gerarPdfBoleto(d, logoJpg) {
   const Y = y => H - y;
   const col = (c, fill) => ops.push(c.map(num).join(' ') + (fill ? ' rg' : ' RG'));
   // largura aproximada Helvetica (AFM, /1000): so o que as caixas alinhadas a direita usam
-  const HW = { ' ': 278, ',': 278, '.': 278, '/': 278, ':': 278, '-': 333, '$': 556, 'R': 722, '#': 556, 'D': 722, 'A': 722, 'N': 722 };
+  const HW = { ' ': 278, ',': 278, '.': 278, '/': 278, ':': 278, '-': 333, '$': 556, 'R': 722, '#': 556, 'D': 722, 'A': 722, 'N': 722, 'B': 722, 'O': 778, 'L': 611, 'E': 667, 'T': 611, 'C': 722, 'I': 278, 'P': 667, 'S': 667, 'M': 833, 'F': 611, 'H': 722, 'V': 667, 'Q': 778, 'U': 722, 'G': 778, 'K': 722, 'J': 556, 'W': 944, 'X': 667, 'Y': 667, 'Z': 611, 'a': 556, 'e': 556, 'i': 278, 'o': 611, 'r': 389, 't': 333, 'd': 611, 'm': 889, 'n': 611, 'u': 611, 's': 556, 'c': 556, 'l': 278, 'p': 611, 'v': 556, 'f': 333, 'g': 611, 'h': 611, 'b': 611, 'q': 611, 'x': 556, 'z': 500, 'k': 556, 'j': 278, 'w': 778, 'y': 556 };
   const wHelv = (s, size, bold) => lat(s).split('').reduce((a, ch) => a + (HW[ch] || (/[0-9]/.test(ch) ? 556 : (bold ? 610 : 556))), 0) / 1000 * size;
   const text = (font, size, x, y, s, c, right) => {
     if (c) col(c, true);
@@ -25,77 +26,90 @@ function gerarPdfBoleto(d, logoJpg) {
   const rect = (x, y, w, h, c) => { col(c, true); ops.push(num(x) + ' ' + num(Y(y + h)) + ' ' + num(w) + ' ' + num(h) + ' re f'); };
   const box = (x, y, w, h, c, lw) => { col(c, false); ops.push(num(lw || 0.8) + ' w ' + num(x) + ' ' + num(Y(y + h)) + ' ' + num(w) + ' ' + num(h) + ' re S'); };
   const line = (x1, y1, x2, y2, c, lw, dash) => { col(c, false); ops.push((dash ? '[3 3] 0 d ' : '[] 0 d ') + num(lw || 0.8) + ' w ' + num(x1) + ' ' + num(Y(y1)) + ' m ' + num(x2) + ' ' + num(Y(y2)) + ' l S'); };
+  const img = (nome, x, y, w, h) => ops.push('q ' + num(w) + ' 0 0 ' + num(h) + ' ' + num(x) + ' ' + num(Y(y + h)) + ' cm /' + nome + ' Do Q');
   const brl = v => 'R$ ' + Number(v || 0).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
   const linha = String(d.linha || '').replace(/\D/g, '');
-  const linhaFmt = linha.length === 47 ? linha.slice(0, 5) + '.' + linha.slice(5, 10) + '  ' + linha.slice(10, 15) + '.' + linha.slice(15, 21) + '  ' + linha.slice(21, 26) + '.' + linha.slice(26, 32) + '  ' + linha.slice(32, 33) + '  ' + linha.slice(33) : linha;
+  const linhaFmt = linha.length === 47 ? linha.slice(0, 5) + '.' + linha.slice(5, 10) + ' ' + linha.slice(10, 15) + '.' + linha.slice(15, 21) + ' ' + linha.slice(21, 26) + '.' + linha.slice(26, 32) + ' ' + linha.slice(32, 33) + ' ' + linha.slice(33) : linha;
+  const fw = W - 2 * M;
 
-  // ---- cabecalho
-  const logoH = 36, logoW = logoH * (d.logoW && d.logoH ? d.logoW / d.logoH : 4.776);
-  if (logoJpg) ops.push('q ' + num(logoW) + ' 0 0 ' + num(logoH) + ' ' + num(M) + ' ' + num(Y(30 + logoH)) + ' cm /Im1 Do Q');
-  text('F2', 15, W - M, 46, 'BOLETO BANCÁRIO', TINTA, true);
-  text('F1', 9.5, W - M, 61, 'Pedido ' + (d.pedido || '-') + '   -   emitido em ' + (d.emissao || ''), CINZA, true);
-  rect(M, 78, (W - 2 * M) * 0.58, 3, AZ); rect(M + (W - 2 * M) * 0.58, 78, (W - 2 * M) * 0.42, 3, VM);
+  // ---- cabecalho: logo da marca, titulo, pedido e emissao
+  const logoH = 28, logoW = logoH * (d.logoW && d.logoH ? d.logoW / d.logoH : 4.776);
+  if (logoJpg) img('Im1', M, 34, logoW, logoH);
+  text('F2', 12.5, W - M, 46, 'BOLETO BANCÁRIO', TINTA, true);
+  text('F1', 9, W - M, 60, 'Pedido ' + (d.pedido || '-') + '   -   emitido em ' + (d.emissao || ''), CINZA, true);
+  rect(M, 74, fw * 0.58, 2.5, AZ); rect(M + fw * 0.58, 74, fw * 0.42, 2.5, VM);
 
-  // ---- valor e vencimento (grandes)
-  const bw = (W - 2 * M - 14) / 2;
-  rect(M, 94, bw, 74, [0.945, 0.98, 0.965]); box(M, 94, bw, 74, VERDE, 1.2);
-  text('F1', 9, M + 14, 112, 'VALOR A PAGAR', [0.09, 0.4, 0.26]);
-  text('F2', 30, M + 14, 150, brl(d.valor), VERDE);
-  rect(M + bw + 14, 94, bw, 74, [0.965, 0.975, 0.99]); box(M + bw + 14, 94, bw, 74, AZ, 1.2);
-  text('F1', 9, M + bw + 28, 112, 'PAGAR ATÉ O DIA', AZ);
-  text('F2', 30, M + bw + 28, 150, d.vencimento || '', AZ);
-
-  // ---- pagador
-  let y = 186;
-  text('F1', 8.5, M, y, 'PAGADOR', CINZA); y += 16;
-  text('F2', 13, M, y, d.nome || '', TINTA); y += 15;
-  if (d.doc) { text('F1', 10.5, M, y, 'CPF/CNPJ ' + d.doc, TINTA); y += 14; }
-  if (d.endereco) { text('F1', 10.5, M, y, d.endereco, TINTA); y += 14; }
-  line(M, y + 4, W - M, y + 4, LINHA, 0.8); y += 20;
-
-  // ---- itens
-  text('F1', 8.5, M, y, 'O QUE VOCÊ ESTÁ PAGANDO', CINZA); y += 8;
+  // ---- pagador, vencimento e valor (proporcoes da pagina HTML)
+  const wrap = (txt, size, maxW) => { const out = []; let cur = ''; for (const w of lat(txt).split(/\s+/)) { const t = cur ? cur + ' ' + w : w; if (wHelv(t, size) > maxW && cur) { out.push(cur); cur = w; } else cur = t; } if (cur) out.push(cur); return out; };
+  let y = 90;
+  const wVenc = 122, wVal = 150, wPag = fw - wVenc - wVal - 20;
+  const endLinhas = d.endereco ? wrap(d.endereco, 8.8, wPag - 20).slice(0, 2) : [];
+  const hCx = 58 + (endLinhas.length ? 12 * endLinhas.length : 0);
+  box(M, y, wPag, hCx, LINHA, 0.8);
+  text('F1', 7.5, M + 10, y + 15, 'PAGADOR', CINZA);
+  text('F2', 11.5, M + 10, y + 31, wrap(d.nome || '', 11.5, wPag - 20)[0] || '', TINTA);
+  text('F1', 8.8, M + 10, y + 44, d.doc ? 'CPF/CNPJ ' + d.doc : '', CINZA);
+  endLinhas.forEach((l, i) => text('F1', 8.8, M + 10, y + 56 + 12 * i, l, CINZA));
+  const xV = M + wPag + 10;
+  box(xV, y, wVenc, hCx, LINHA, 0.8);
+  text('F1', 7.5, xV + 10, y + 15, 'VENCIMENTO', CINZA);
+  text('F2', 15, xV + 10, y + 36, d.vencimento || '', TINTA);
+  text('F1', 8.5, xV + 10, y + 49, 'pague até esta data', CINZA);
+  const xVa = xV + wVenc + 10;
+  rect(xVa, y, wVal, hCx, [0.945, 0.98, 0.965]); box(xVa, y, wVal, hCx, VERDE, 1);
+  text('F1', 7.5, xVa + 10, y + 15, 'VALOR DO DOCUMENTO', [0.09, 0.4, 0.26]);
+  text('F2', 19, xVa + 10, y + 38, brl(d.valor), VERDE);
   const itens = Array.isArray(d.itens) ? d.itens : [];
-  for (const it of itens.slice(0, 6)) {
-    y += 16;
-    text('F1', 11.5, M, y, it.nome, TINTA);
-    if (it.valor != null && it.valor !== '') text('F2', 11.5, W - M, y, brl(it.valor), TINTA, true);
-    line(M, y + 5, W - M, y + 5, LINHA, 0.5, true);
-  }
-  y += 20;
-  text('F2', 12.5, M, y, 'TOTAL', TINTA);
-  text('F2', 14, W - M, y, brl(d.valor), TINTA, true);
-  y += 22;
+  text('F1', 8.5, xVa + 10, y + 50, itens.length > 1 ? itens.length + ' itens' : (itens[0] ? itens[0].nome.slice(0, 24) : ''), CINZA);
+  y += hCx + 16;
 
-  // ---- como pagar
-  const cy = y;
-  rect(M, cy, W - 2 * M, 96, [0.957, 0.973, 0.996]); box(M, cy, W - 2 * M, 96, [0.79, 0.85, 0.96], 0.8);
-  text('F2', 11, M + 14, cy + 20, 'COMO PAGAR (é fácil):', AZ);
-  text('F1', 11.5, M + 14, cy + 40, '1.  Abra o aplicativo do seu banco e toque em "Pagar boleto" ou "Código de barras".', TINTA);
-  text('F1', 11.5, M + 14, cy + 57, '2.  Aponte a câmera para o código de barras no fim desta folha, ou digite os números abaixo.', TINTA);
-  text('F1', 11.5, M + 14, cy + 74, '3.  Confirme o pagamento. Quando o banco avisar, seu pedido é separado e enviado.', TINTA);
-  text('F1', 9.5, M + 14, cy + 89, 'Também pode pagar em qualquer banco ou casa lotérica, até o vencimento.', CINZA);
-  y = cy + 96 + 18;
+  // ---- itens do pedido
+  box(M, y, fw, 24 + itens.slice(0, 6).length * 16 + 26, LINHA, 0.8);
+  text('F1', 7.5, M + 10, y + 15, 'ITENS DO PEDIDO', CINZA);
+  let yy = y + 18;
+  for (const it of itens.slice(0, 6)) {
+    yy += 16;
+    text('F1', 10.5, M + 10, yy, it.nome, TINTA);
+    if (it.valor != null && it.valor !== '') text('F2', 10.5, W - M - 10, yy, brl(it.valor), TINTA, true);
+    line(M + 10, yy + 4, W - M - 10, yy + 4, LINHA, 0.5, true);
+  }
+  yy += 19;
+  text('F2', 11, M + 10, yy, 'Total do documento', TINTA);
+  text('F2', 11.5, W - M - 10, yy, brl(d.valor), TINTA, true);
+  y = yy + 22;
+
+  // ---- como pagar (curto)
+  rect(M, y, fw, 62, [0.957, 0.973, 0.996]); box(M, y, fw, 62, [0.79, 0.85, 0.96], 0.8);
+  text('F2', 9.5, M + 10, y + 15, 'COMO PAGAR', AZ);
+  text('F1', 9.5, M + 10, y + 29, '1. No aplicativo do seu banco, toque em "Pagar boleto" e aponte a câmera para o código de barras, ou digite os números abaixo.', TINTA);
+  text('F1', 9.5, M + 10, y + 42, '2. Pode pagar também em qualquer banco ou casa lotérica, até o vencimento.', TINTA);
+  text('F1', 9.5, M + 10, y + 55, '3. Quando o banco confirmar (até 2 dias úteis), seu pedido é separado e o rastreio chega no WhatsApp.', TINTA);
+  y += 62 + 14;
 
   // ---- linha digitavel
-  text('F1', 8.5, M, y, 'NÚMEROS DO BOLETO (para digitar no aplicativo)', CINZA); y += 6;
-  rect(M, y, W - 2 * M, 34, [0.97, 0.97, 0.97]); box(M, y, W - 2 * M, 34, LINHA, 0.8);
-  text('F3', 13.2, M + 10, y + 22, linhaFmt, TINTA); y += 34 + 16;
+  text('F1', 7.5, M, y, 'LINHA DIGITÁVEL (para digitar no aplicativo do banco)', CINZA); y += 5;
+  rect(M, y, fw, 30, [0.97, 0.97, 0.97]); box(M, y, fw, 30, LINHA, 0.8);
+  text('F3', 12.4, M + (fw - linhaFmt.length * 0.6 * 12.4) / 2, y + 20, linhaFmt, TINTA); y += 30 + 14;
 
-  // ---- ficha de compensacao (compacta)
+  // ---- corte e ficha de compensacao
   line(M, y, W - M, y, [0.6, 0.65, 0.75], 0.8, true);
-  text('F1', 8, W - M, y - 3, 'corte aqui', CINZA, true); y += 12;
-  const fx = M, fw = W - 2 * M;
+  text('F1', 7.5, W - M, y - 3, 'corte aqui', CINZA, true); y += 10;
+  const fx = M;
   const cab = y;
-  text('F2', 15, fx, cab + 15, (d.banco || '197') + '-1', TINTA);
-  text('F3', 9.4, W - M, cab + 14, linhaFmt.replace(/  /g, ' '), TINTA, true);
-  line(fx, cab + 20, W - M, cab + 20, TINTA, 1.4);
-  y = cab + 20;
-  const rowH = 26;
-  const cell = (x, yy, w, rot, val, right, bold) => {
-    box(x, yy, w, rowH, [0.2, 0.2, 0.2], 0.5);
-    text('F1', 6.2, x + 3, yy + 8, rot, [0.25, 0.25, 0.25]);
-    text(bold === false ? 'F1' : 'F2', 9, right ? x + w - 4 : x + 3, yy + 20, val, TINTA, !!right);
+  const stH = 20, stW = stH * (d.stoneW && d.stoneH ? d.stoneW / d.stoneH : 3.59);
+  let xs = fx;
+  if (stoneJpg) { img('Im2', fx, cab + 2, stW, stH); xs = fx + stW + 8; }
+  line(xs, cab, xs, cab + 24, TINTA, 1.2);
+  text('F2', 14, xs + 6, cab + 18, (d.banco || '197') + '-1', TINTA);
+  line(xs + 6 + wHelv((d.banco || '197') + '-1', 14, true) + 6, cab, xs + 6 + wHelv((d.banco || '197') + '-1', 14, true) + 6, cab + 24, TINTA, 1.2);
+  text('F3', 9, W - M, cab + 17, linhaFmt, TINTA, true);
+  line(fx, cab + 26, W - M, cab + 26, TINTA, 1.4);
+  y = cab + 26;
+  const rowH = 25;
+  const cell = (x, yy2, w, rot, val, right, bold) => {
+    box(x, yy2, w, rowH, [0.2, 0.2, 0.2], 0.5);
+    text('F1', 6, x + 3, yy2 + 8, rot, [0.25, 0.25, 0.25]);
+    text(bold === false ? 'F1' : 'F2', 8.6, right ? x + w - 4 : x + 3, yy2 + 19, val, TINTA, !!right);
   };
   const c5 = fw * 0.28;
   cell(fx, y, fw - c5, 'Local de pagamento', 'Pagável em qualquer banco, aplicativo ou casa lotérica');
@@ -113,12 +127,19 @@ function gerarPdfBoleto(d, logoJpg) {
   cell(fx + 2 * c1, y, c1, 'Espécie', 'R$');
   cell(fx + 3 * c1, y, c1, 'Quantidade', '');
   cell(fx + fw - c5, y, c5, '(=) Valor do documento', Number(d.valor || 0).toFixed(2).replace('.', ','), true); y += rowH;
+  // instrucoes (2 linhas) + descontos / juros
+  box(fx, y, fw - c5, rowH * 2, [0.2, 0.2, 0.2], 0.5);
+  text('F1', 6, fx + 3, y + 8, 'Instruções (texto de responsabilidade do beneficiário)', [0.25, 0.25, 0.25]);
+  text('F1', 8.6, fx + 3, y + 21, 'Pedido ' + (d.pedido || '') + '  -  America Nutrition' + (itens.length ? '  -  ' + (itens.length > 1 ? itens.length + ' itens' : itens[0].nome.slice(0, 40)) : ''), TINTA);
+  text('F1', 8.6, fx + 3, y + 34, 'Confira este documento com o código ' + (d.codigo || '') + '. Não receber após o vencimento.', TINTA);
+  cell(fx + fw - c5, y, c5, '(-) Descontos / Abatimentos', '', true); 
+  cell(fx + fw - c5, y + rowH, c5, '(+) Juros / Multa', '', true); y += rowH * 2;
   cell(fx, y, fw - c5, 'Pagador', (d.nome || '') + (d.doc ? '  -  ' + d.doc : ''));
   cell(fx + fw - c5, y, c5, '(=) Valor cobrado', '', true); y += rowH;
   if (d.endereco) { cell(fx, y, fw, 'Endereço do pagador', d.endereco, false, false); y += rowH; }
   y += 10;
 
-  // ---- codigo de barras I25 (grande)
+  // ---- codigo de barras I25
   const barras = String(d.barras || '').replace(/\D/g, '');
   if (barras.length === 44) {
     const P = ['nnwwn', 'wnnnw', 'nwnnw', 'wwnnn', 'nnwnw', 'wnwnn', 'nwwnn', 'nnnww', 'wnnwn', 'nwnwn'];
@@ -130,15 +151,14 @@ function gerarPdfBoleto(d, logoJpg) {
     }
     seq.push([3, 1], [1, 0], [1, 1]);
     const mods = seq.reduce((s, e) => s + e[0], 0);
-    const bwid = Math.min(fw, 470), unit = bwid / mods, x0 = fx + (fw - bwid) / 2, bh = 58;
+    const bwid = Math.min(fw, 440), unit = bwid / mods, x0 = fx, bh = 54;
     let x = x0;
     col([0, 0, 0], true);
     for (const e of seq) { if (e[1]) ops.push(num(x) + ' ' + num(Y(y + bh)) + ' ' + num(e[0] * unit) + ' ' + num(bh) + ' re f'); x += e[0] * unit; }
     y += bh + 12;
   }
-  text('F1', 7.5, fx, y, 'Autenticação mecânica  -  código de conferência ' + (d.codigo || ''), CINZA);
-  text('F2', 7.5, W - M, y, 'FICHA DE COMPENSAÇÃO', TINTA, true);
-  if (d.urlConf) text('F1', 7.5, fx, y + 11, 'Confira se este boleto é mesmo nosso: ' + d.urlConf, CINZA);
+  text('F1', 7, fx, y, 'Autenticação mecânica  -  código de conferência ' + (d.codigo || '') + (d.urlConf ? '  -  confira em ' + d.urlConf : ''), CINZA);
+  text('F2', 7, W - M, y, 'FICHA DE COMPENSAÇÃO', TINTA, true);
 
   // ---- monta o PDF
   const content = Buffer.from(ops.join('\n'), 'latin1');
@@ -146,12 +166,17 @@ function gerarPdfBoleto(d, logoJpg) {
   const add = (s) => { objs.push(Buffer.isBuffer(s) ? s : Buffer.from(s, 'latin1')); return objs.length; };
   const catalog = add('<< /Type /Catalog /Pages 2 0 R >>');
   add('<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
-  add('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + num(W) + ' ' + num(H) + '] /Contents 4 0 R /Resources << /Font << /F1 5 0 R /F2 6 0 R /F3 7 0 R >>' + (logoJpg ? ' /XObject << /Im1 8 0 R >>' : '') + ' >> >>');
+  const xo = [];
+  if (logoJpg) xo.push('/Im1 8 0 R');
+  if (stoneJpg) xo.push('/Im2 ' + (logoJpg ? 9 : 8) + ' 0 R');
+  add('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + num(W) + ' ' + num(H) + '] /Contents 4 0 R /Resources << /Font << /F1 5 0 R /F2 6 0 R /F3 7 0 R >>' + (xo.length ? ' /XObject << ' + xo.join(' ') + ' >>' : '') + ' >> >>');
   add(Buffer.concat([Buffer.from('<< /Length ' + content.length + ' >>\nstream\n', 'latin1'), content, Buffer.from('\nendstream', 'latin1')]));
   add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
   add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
   add('<< /Type /Font /Subtype /Type1 /BaseFont /Courier-Bold /Encoding /WinAnsiEncoding >>');
-  if (logoJpg) add(Buffer.concat([Buffer.from('<< /Type /XObject /Subtype /Image /Width ' + (d.logoW || 1600) + ' /Height ' + (d.logoH || 335) + ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ' + logoJpg.length + ' >>\nstream\n', 'latin1'), logoJpg, Buffer.from('\nendstream', 'latin1')]));
+  const jpeg = (buf, w, h) => Buffer.concat([Buffer.from('<< /Type /XObject /Subtype /Image /Width ' + w + ' /Height ' + h + ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ' + buf.length + ' >>\nstream\n', 'latin1'), buf, Buffer.from('\nendstream', 'latin1')]);
+  if (logoJpg) add(jpeg(logoJpg, d.logoW || 1600, d.logoH || 335));
+  if (stoneJpg) add(jpeg(stoneJpg, d.stoneW || 140, d.stoneH || 39));
   const parts = [Buffer.from('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n', 'latin1')];
   const offsets = [];
   let pos = parts[0].length;
@@ -167,7 +192,6 @@ function gerarPdfBoleto(d, logoJpg) {
   parts.push(Buffer.from(x, 'latin1'));
   return Buffer.concat(parts);
 }
-
 if (typeof module !== 'undefined' && module.exports) module.exports = gerarPdfBoleto;
 
 // Parte que so roda dentro do n8n (Code node executa como funcao async; o return abaixo e valido la).
@@ -181,6 +205,7 @@ async function __n8n() {
   const SK = 'SUPABASE_SERVICE_KEY';
   const PG = 'https://supabase.americanutrition.com/pg/query';
   const LOGO_JPG = 'https://supabase.americanutrition.com/storage/v1/object/public/imagens/logos/logo-america-nutrition-branco.jpg';
+  const STONE_JPG = 'https://supabase.americanutrition.com/storage/v1/object/public/imagens/logos/banco-stone-197-branco.jpg';
   const BASE = 'https://n8n.americanutrition.com/webhook/boleto';
   const sql = async (texto) => { try { const r = await self.helpers.httpRequest({ method: 'POST', url: PG, headers: { apikey: SK, Authorization: 'Bearer ' + SK, 'Content-Type': 'application/json' }, body: { query: texto }, json: true, timeout: 8000 }); return Array.isArray(r) ? r : []; } catch (e) { return []; } };
 
@@ -219,10 +244,11 @@ async function __n8n() {
 
   await sql("INSERT INTO boletos_emitidos (codigo, linha, pedido, nome, documento, valor, vencimento, itens) VALUES ('" + esq(COD) + "','" + esq(linha) + "','" + esq(pedido) + "','" + esq(nome) + "','" + esq(docCli) + "'," + valorNum + ",'" + iso + "','" + esq(itensTxt) + "') ON CONFLICT (codigo) DO NOTHING;");
 
-  let logo = null;
-  try { const b = await self.helpers.httpRequest({ method: 'GET', url: LOGO_JPG, encoding: 'arraybuffer', returnFullResponse: false, timeout: 8000 }); logo = Buffer.from(b); } catch (e) { logo = null; }
+  const baixar = async (url) => { try { const b = await self.helpers.httpRequest({ method: 'GET', url, encoding: 'arraybuffer', returnFullResponse: false, timeout: 8000 }); return Buffer.from(b); } catch (e) { return null; } };
+  const logo = await baixar(LOGO_JPG);
+  const stone = await baixar(STONE_JPG);
 
-  const pdf = gerarPdfBoleto({ linha, barras, nome, doc: docFmt, endereco, pedido, itens, valor: valorNum, vencimento, emissao, codigo: COD, urlConf: BASE.replace('https://', '') + '?c=' + COD, beneficiario: 'Pagar.me Pagamentos S/A', cnpj: '18.727.053/0001-74', agencia: '0001 / 1617898', nossoNumero, banco, logoW: 1600, logoH: 335 }, logo);
+  const pdf = gerarPdfBoleto({ linha, barras, nome, doc: docFmt, endereco, pedido, itens, valor: valorNum, vencimento, emissao, codigo: COD, urlConf: BASE.replace('https://', '') + '?c=' + COD, beneficiario: 'Pagar.me Pagamentos S/A', cnpj: '18.727.053/0001-74', agencia: '0001 / 1617898', nossoNumero, banco, logoW: 1600, logoH: 335, stoneW: 140, stoneH: 39 }, logo, stone);
   const filename = 'Boleto-America-Nutrition' + (pedido ? '-' + pedido.replace(/[^A-Za-z0-9-]/g, '') : '') + '.pdf';
   return [{ json: { pdf: true, filename, codigo: COD, valor: valorNum, vencimento }, binary: { data: await self.helpers.prepareBinaryData(pdf, filename, 'application/pdf') } }];
 }
