@@ -1269,3 +1269,17 @@ O que mudou:
 Fica para depois: a mensagem transacional "Seu pedido AN-xxxx foi confirmado" (`pedido_pago_confirmado`)
 deveria dizer "sua assinatura renovou" quando o pedido tem a tag ASSINATURA, e a cobrança no cartão poderia
 avisar 3 dias antes, como o PIX já faz.
+
+### Confirmação de pedido pago diz que é assinatura (13/09/2026)
+
+`Pedido Pago - Confirmação Imediata` (`ZIjjSbycPOtiPTQp`, fonte `nodes/pedido-pago-preparar.js`): quando o pedido
+tem a tag `ASSINATURA`, consulta `assinaturas`/`assinatura_cobrancas` e grava em `template_params.custom_fields`
+`assinatura = primeira | renovacao | assinatura`, mais ciclo, desconto, método e próxima renovação. Primeira =
+assinatura criada há menos de 48h e sem cobrança com o `pagarme_order` deste pedido; senão renovação.
+
+`[Transacional] Dispatcher Samuel v3` (`WXncUehLXyuIMoSm`, fonte `nodes/dispatcher-montar-mensagem.js`):
+`pedido_pago_confirmado` com `cf.assinatura` usa `textoPagoAssinatura`: na primeira compra explica como a
+assinatura funciona (ciclo, desconto, cartão/Pix, data da primeira renovação, como pausar/cancelar); na renovação
+diz "sua assinatura renovou", que o pedido foi gerado automaticamente, a próxima data e como pausar/cancelar.
+Pedido comum continua com o texto de sempre. Testado com o pedido real do Carlos (renovação) e simulando a
+primeira compra.
