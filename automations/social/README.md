@@ -54,3 +54,15 @@ próxima execução, sem republicar.
 Backlog do Facebook: em 13/09 `social_catchup_desde` foi colocado em `2026-09-12T00:00:00Z` para a fila tratar os
 comentários que ficaram sem resposta desde 12/09 (os do Instagram desse período foram marcados `ignorar`, pois
 lá a moderação já vinha respondendo).
+
+### Botão no aviso do Telegram (13/09)
+
+Todo aviso no tópico 284 sai com botões: nas sugestões de ocultar, **🙈 Ocultar** e **👍 Deixar**; nos já
+ocultados, **👁 Reexibir**. O clique é um `callback_query` que chega ao webhook único do bot da Serena
+(`Serena | Telegram`), onde o node `Botao Social` (`serena-whatsapp/nodes/telegram-botao-social.js`) repassa
+os `soc:*` para `POST /webhook/serena-social-botao` no workflow de moderação. Lá o `Acao do Botao`
+(`botao-telegram.js`) responde o toque, busca o comentário no banco e segue para `Plataforma para Ocultar`
+(mesma credencial Graph do fluxo automático; `desocultar=true` manda `is_hidden`/`hide` = false). O
+`Marcar Oculto DB` (`moderacao-marcar-oculto.js`) fecha: grava `oculto`/`acao`/`motivo` com quem clicou e
+edita o aviso ("🙈 Ocultado por Fulano às 10:29", com botão Reexibir; se a Graph falhar, "❌ Não consegui
+ocultar: …" com Tentar de novo). Deixar só registra "mantido por Fulano" e tira os botões.
