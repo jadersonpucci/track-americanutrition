@@ -54,6 +54,7 @@ faz o n8n pular toda a cadeia de publicação.
 | `[Depoimentos] Audio -> Video` | Gera o MP4 e sobe no Hostinger. Aceita áudio do Telegram (`file_id`), binário pronto ou `audio_url`. Em `modo: curadoria` manda para aprovação e para; em `modo: publicar` segue o fluxo antigo. |
 | `[Depoimentos] Publicar Aprovado` | Webhook disparado pelo botão Aprovar. Publica no Shopify, no grupo do Telegram e no WhatsApp. |
 | `[Depoimentos] Trocar Voz` | Webhook disparado pelo botão Trocar voz. Regera a locução com a outra voz, remonta o vídeo e devolve o card. |
+| `[Depoimentos] Enviar Manual` | Webhook para depoimento que chegou por fora do sistema de reviews (WhatsApp, Instagram, e-mail): gera a locução, registra e manda para a mesma curadoria. |
 | `Depoimentos v14` (bot) | Trata os callbacks dos botões `depok:<id>` / `depno:<id>`. |
 | `ElevenLabs Bridge` / `Claude SQL Bridge` | Pontes HTTP autenticadas por header, usadas pelos nós Code. |
 
@@ -63,7 +64,8 @@ faz o n8n pular toda a cadeia de publicação.
 
 | coluna | uso |
 |---|---|
-| `review_id` | review de origem (índice único: não gera duas vezes) |
+| `review_id` | review de origem (índice único: não gera duas vezes); nulo quando o depoimento chegou por fora |
+| `origem` | `review` (veio do sistema) ou `manual` (enviado por fora) |
 | `texto_original` / `texto_limpo` | antes e depois da limpeza, para auditoria |
 | `voz`, `genero` | qual voz leu |
 | `video_url` | MP4 no Hostinger |
@@ -94,3 +96,19 @@ faz o n8n pular toda a cadeia de publicação.
 A busca roda a cada 8 horas e leva até 5 depoimentos por rodada. Na prática o volume é
 de cerca de uma review 5★ a cada três dias, então o limite nunca morde: o ritmo real é
 dado pela aprovação, não pela geração.
+
+## Depoimento que chega por fora
+
+Nem todo relato passa pelo sistema de reviews — muita coisa chega por WhatsApp,
+Instagram ou e-mail. Para esses, o webhook do `Enviar Manual` recebe:
+
+| campo | uso |
+|---|---|
+| `texto` | o relato, já limpo para leitura (até ~4500 caracteres, limite de uma chamada de TTS) |
+| `voz` | `Alexandre` ou `Leticia` — sem isso, assume masculina |
+| `cliente_nome` | como aparece no card de aprovação |
+| `primeiro_nome` | como a pessoa é chamada na locução; vazio faz a abertura dizer "escrito por um cliente" |
+| `alerta` | aviso que aparece destacado no card |
+
+Daí em diante é o mesmo caminho de sempre: card no Telegram, três botões, e nada
+vai ao ar sem aprovação.
