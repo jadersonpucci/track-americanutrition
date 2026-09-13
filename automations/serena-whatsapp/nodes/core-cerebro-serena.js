@@ -200,7 +200,7 @@ const cabecalho = [
   'FORMATO NO WHATSAPP: escreva como numa conversa de chat, curto. No maximo 3 paragrafos curtos e uns 500 caracteres; para duvida simples, 1 ou 2 frases. Responda so o que foi perguntado e termine com UMA pergunta que leve a conversa adiante. Na primeira mensagem, apresente-se em uma frase e va direto ao que a pessoa perguntou. No texto corrido, nao despeje todas as versoes e precos: cite no maximo 2 opcoes que fazem sentido para o caso. Quando o cliente precisar ESCOLHER a versao, use a LISTA CLICAVEL (abaixo) com TODAS as versoes do produto. Sem cabecalhos, sem listas longas e sem explicacao tecnica que nao foi pedida. Podem ser mais completos apenas: dados de pedido, rastreio, opcoes de frete e link de pagamento.',
   'MENSAGENS PICADAS: o cliente costuma escrever varias mensagens curtas em sequencia. Se a ultima mensagem so continua ou confirma o que voce acabou de responder ("quero pedir", "e so isso", "ok", "eu uso"), responda em uma frase, sem repetir explicacoes nem links. Nunca envie o mesmo link de pagamento duas vezes: se ja mandou, diga apenas que e so abrir o link acima. So reenvie se o cliente pedir o link de novo ou disser que nao abriu.',
   'LISTA CLICAVEL: quando precisar que o cliente ESCOLHA entre versoes, tamanhos ou opcoes (ate 8), termine a mensagem com uma linha no formato [[LISTA: Qual versão você prefere? | ImunoFosfo 90 cápsulas · R$ 327 | ImunoFosfo 60 cápsulas · R$ 247 | ImunoFosfo 42 cápsulas · R$ 197 | ImunoFosfo Vegano 90 cápsulas · R$ 327 | ImunoFosfo Plus 180 cápsulas · R$ 597 | ImunoFosfo Líquido (frasco) · R$ 137]]. A lista deve trazer TODAS as versoes atuais do produto com o preco da tabela de precos da base (para o ImunoFosfo: 90, 60, 42, Vegano 90, Plus 180 e Liquido; para outros produtos, todas as variacoes da tabela), nunca so as 2 ou 3 que voce citou no texto. Nao repita as opcoes no texto e NAO termine o texto com pergunta (nem "Qual versao voce prefere?"): o titulo da lista ja e a pergunta e ela apareceria duas vezes na tela. Use so em escolha real, nunca em pergunta aberta.',
-  'CODIGO DE PAGAMENTO (PIX copia e cola / linha digitavel do boleto): escreva o codigo EXATAMENTE como a ferramenta devolveu, em uma linha sozinha, sem quebrar, encurtar, reescrever nem colocar texto na mesma linha. O sistema envia esse codigo em uma mensagem separada para o cliente conseguir copiar de uma vez no WhatsApp e ja acrescenta a explicacao de colar no app do banco, entao nao repita essa explicacao. Antes do codigo, diga em uma frase que o pedido ja esta registrado e o valor. Se a ferramenta devolver pagina_pix, repita esse link DEPOIS do codigo, em uma linha propria: e a saida de quem nao consegue copiar o codigo no WhatsApp.',
+  'PIX E BOLETO: quando gerar_pix ou gerar_boleto der certo, o sistema envia ao cliente a mensagem padrao da ferramenta (campo resultado, com produto, valor, vencimento, codigo e link) no lugar do seu texto. Nao reescreva nem repita codigo, valores ou links: responda so com uma frase curta. Se a ferramenta falhar ou pedir dados, explique ao cliente e resolva (frete, dados) antes de tentar de novo. Se algum outro codigo de pagamento aparecer na conversa, escreva-o EXATAMENTE como veio, em uma linha sozinha.',
   'ANTES DE GERAR LINK DE PAGAMENTO: confirme produto, versao e tamanho (quantidade de capsulas ou frascos) quando o cliente nao tiver dito. Nao escolha por ele. Gere o link uma unica vez por pedido; se ele mudar o produto, gere outro e diga que o anterior nao vale mais.',
   fatos ? 'O que ja se sabe sobre este cliente:\n' + fatos : '',
   pedidosTxt,
@@ -313,6 +313,10 @@ const modeloNovo = /claude-(sonnet|opus|fable)-5|claude-(sonnet|opus)-4-[678]/.t
 const ferramentasUsadas = [];
 // Link da pagina de pagamento (Pix/boleto) devolvido pela ferramenta: o Core garante que ele va na resposta.
 let paginaPix = null;
+// MENSAGEM PADRAO (13/09/2026): Gerar PIX e Gerar Boleto ja devolvem a mensagem do cliente pronta (campo
+// resultado: produto, frete, valor, vencimento, codigo em linha propria, PDF/pagina). O Core manda ESSA mensagem
+// no lugar do texto do modelo, que reescrevia do jeito dele (boleto da Eliane, 13/09), e nem chama o modelo de novo.
+let mensagemPadrao = null;
 let erro = null;
 
 for (let volta = 0; volta < (trivialOk ? 0 : 6); volta++) {
@@ -375,10 +379,14 @@ for (let volta = 0; volta < (trivialOk ? 0 : 6); volta++) {
       if ((acao === 'gerar_pix' || acao === 'gerar_boleto') && saida) {
         const pp = saida.pagina_pix || (saida.body && saida.body.pagina_pix) || null;
         if (pp && /^https?:\/\//i.test(String(pp))) paginaPix = String(pp);
+        const ok = saida.sucesso === true || (saida.body && saida.body.sucesso === true);
+        const padrao = String(saida.resultado || (saida.body && saida.body.resultado) || '').trim();
+        if (ok && padrao && /\b\d{47,48}\b|0002010[0-9]/.test(padrao)) mensagemPadrao = padrao;
       }
       resultados.push({ type: 'tool_result', tool_use_id: bloco.id, content: JSON.stringify(saida).slice(0, 6000) });
     }
     messages.push({ role: 'user', content: resultados });
+    if (mensagemPadrao) { resposta = mensagemPadrao; break; }
     continue;
   }
 

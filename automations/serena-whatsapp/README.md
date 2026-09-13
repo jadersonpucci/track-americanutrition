@@ -1283,3 +1283,12 @@ assinatura funciona (ciclo, desconto, cartão/Pix, data da primeira renovação,
 diz "sua assinatura renovou", que o pedido foi gerado automaticamente, a próxima data e como pausar/cancelar.
 Pedido comum continua com o texto de sempre. Testado com o pedido real do Carlos (renovação) e simulando a
 primeira compra.
+
+### Mensagem padrão de PIX e boleto (13/09)
+
+Quando `gerar_pix` ou `gerar_boleto` dá certo, o Core envia ao cliente a mensagem padrão que a própria
+ferramenta devolve (campo `resultado`: produto, frete, valor, vencimento/validade, código em linha própria,
+PDF ou página) e nem chama o modelo de novo. Antes, a Serena recebia o JSON e reescrevia do jeito dela (boleto da
+Eliane em 13/09 saiu fora do padrão). A Entrada continua fatiando o código em mensagem separada e acrescenta só
+a dica de copiar, porque a mensagem padrão já explica como pagar. A regra do prompt "CODIGO DE PAGAMENTO" virou
+"PIX E BOLETO": a Serena responde só uma frase curta, sem repetir código, valores ou links.
