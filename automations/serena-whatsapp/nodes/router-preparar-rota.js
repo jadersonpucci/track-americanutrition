@@ -19,7 +19,8 @@ const ROTAS = {
   escalar_humano: 'serena-escalar',
   consultar_memoria: 'serena-memoria-consultar',
   gerar_boleto: 'serena-gerar-boleto',
-  gerar_pix: 'serena-gerar-pix'
+  gerar_pix: 'serena-gerar-pix',
+  gerenciar_assinatura: 'serena-assinatura'
 };
 
 const acao = (body.acao || '').toString().trim().toLowerCase();

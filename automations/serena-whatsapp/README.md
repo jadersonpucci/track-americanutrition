@@ -1237,3 +1237,35 @@ Correção (fontes em `nodes/gerar-pix-*.js` e `nodes/gerar-boleto-*.js`, `Valid
 Teste real (13/09, 01:16 UTC), dados da Eliane: `#D4108`, R$ 230,44 = 197,00 + J&T 33,44, `frete_origem: cotado`,
 página do Pix com o frete. Simulações locais: 2 unidades (R$ 394) → frete grátis; `frete_valor` informado → respeitado;
 CEP inválido → erro pedindo `calcular_frete`, sem gerar Pix.
+
+## Assinatura recorrente: a Serena passa a saber que ela existe (13/09/2026)
+
+Caso: 12/09, 09:00, a renovação mensal da assinatura do Carlos M. (feita em 14/07 pelo checkout, cartão Amex,
+10% off) gerou o pedido AN-15381. Às 12:14 ele escreveu "eu não fiz nenhum pedido". A Serena não sabia que
+existia assinatura: respondeu "pode ser o pedido que fechamos aqui pelo link" e escalou como possível fraude.
+O cliente ficou 11 horas na fila. Resolvido à mão: assinatura cancelada, pedido cancelado na Shopify,
+estorno pelo Pagar.me.
+
+O que mudou:
+
+- **Contexto** (`nodes/core-carregar-contexto.sql`): o Core carrega a assinatura do contato (`assinaturas` por
+  telefone tolerante ao 9 e ao 55, ou por email) com status, itens, valor, ciclo, cartão, próxima renovação,
+  renovações e as 4 últimas cobranças; também o `email` do contato.
+- **Prompt** (`nodes/core-cerebro-serena.js`, bloco `assinaturaTxt`): explica a assinatura à Serena e dita como
+  agir quando o cliente "não fez o pedido": é a renovação automática que ele mesmo ativou (nunca "o link que
+  te mandei", nunca "fraude"); pergunta se quer manter, pausar ou cancelar; **duas confirmações** antes de
+  mudar algo; estorno de renovação já paga vai para a equipe (`escalar_humano`); em modo proativo de pedido
+  pago, diz "sua assinatura renovou".
+- **Ferramenta nova** `gerenciar_assinatura` (`[Serena Tool] Assinatura`, n8n `WfxlFkDA9U9yYeR7`,
+  `POST /webhook/serena-assinatura`, fonte em `nodes/assinatura-tool.js`; rota no Router
+  `nodes/router-preparar-rota.js`): `consultar | pausar | cancelar | reativar`. O Core injeta telefone, email e
+  `contato_id`; pausar e cancelar só executam com `confirmado=true` (senão devolvem `precisa_confirmacao`).
+  Aviso no Telegram (tópico 98) em toda mudança.
+- **Estorno** (`AN - Pagar.me Estorno`, n8n `JYZw8b5uWvskhl28`): `POST /webhook/pagarme-estorno`
+  `{t:'an-estorno-9Kp2Wx', order_id|charge_id, amount_centavos?, motivo, pedido, cliente}` busca a order,
+  estorna a charge paga (`DELETE /core/v5/charges/{id}`) e avisa o Telegram 98. Os nós HTTP usam a credencial
+  "Pagar.me Secret Key" (anexada na UI; o MCP não anexa credencial em HTTP Request).
+
+Fica para depois: a mensagem transacional "Seu pedido AN-xxxx foi confirmado" (`pedido_pago_confirmado`)
+deveria dizer "sua assinatura renovou" quando o pedido tem a tag ASSINATURA, e a cobrança no cartão poderia
+avisar 3 dias antes, como o PIX já faz.

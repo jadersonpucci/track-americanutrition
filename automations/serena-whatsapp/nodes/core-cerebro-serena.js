@@ -18,11 +18,11 @@ if (proativo && entrada.tipo_proativo === 'carrinho' && String(ctx.carrinho_via_
   return [{ json: { pausada: false, desligado: true, contato_id: ctx.contato_id, resposta: null, payload: JSON.stringify({ msgs: [], handoff: false }) } }];
 }
 
-const ACOES = ['consultar_produto','calcular_frete','consultar_frete_regiao','buscar_pedido_numero','buscar_pedido_telefone','buscar_pedido_email','consultar_status_pedido','rastrear_pedido','gerar_checkout','gerar_pix','gerar_boleto','alterar_endereco','escalar_humano','consultar_memoria','gerar_cupom_ig','carrinho_cupom_ig','finalizar_cupom_ig','registrar_troca'].filter(a => !sugerir || (a !== 'escalar_humano' && a !== 'registrar_troca'));
+const ACOES = ['consultar_produto','calcular_frete','consultar_frete_regiao','buscar_pedido_numero','buscar_pedido_telefone','buscar_pedido_email','consultar_status_pedido','rastrear_pedido','gerar_checkout','gerar_pix','gerar_boleto','alterar_endereco','escalar_humano','consultar_memoria','gerar_cupom_ig','carrinho_cupom_ig','finalizar_cupom_ig','registrar_troca','gerenciar_assinatura'].filter(a => !sugerir || (a !== 'escalar_humano' && a !== 'registrar_troca'));
 
 const tools = [{
   name: 'consultar_sistema',
-  description: 'Unica ferramenta para interagir com o sistema da America Nutrition: produtos, precos, estoque, frete, pedidos, rastreio, checkout, PIX, boleto, endereco, escalonamento e abertura de troca/devolucao (registrar_troca). Sempre use esta ferramenta em vez de inventar dados.',
+  description: 'Unica ferramenta para interagir com o sistema da America Nutrition: produtos, precos, estoque, frete, pedidos, rastreio, checkout, PIX, boleto, endereco, escalonamento, abertura de troca/devolucao (registrar_troca) e assinatura recorrente (gerenciar_assinatura: consultar, pausar, cancelar, reativar). Sempre use esta ferramenta em vez de inventar dados.',
   input_schema: {
     type: 'object',
     properties: {
@@ -152,6 +152,33 @@ const correcoesTxt = cors.length
   : '';
 
 // Troca e devolucao guiada: a Serena coleta tudo e so entao registra (a equipe recebe o caso pronto)
+// ASSINATURA (13/09/2026). Caso Carlos M.: a renovacao mensal da assinatura gerou o pedido AN-15381, ele
+// escreveu "eu nao fiz nenhum pedido" e a Serena, sem saber que existia assinatura, respondeu "pode ser o
+// pedido que fechamos pelo link" e escalou como possivel fraude. Agora a assinatura do cliente entra no
+// contexto e a Serena explica a renovacao, confirma duas vezes e so entao pausa/cancela pela ferramenta.
+let assinaturaTxt = '';
+try {
+  const asn = (ctx.assinatura && typeof ctx.assinatura === 'object') ? ctx.assinatura : null;
+  const recente = asn && asn.atualizado_em && (Date.now() - new Date(asn.atualizado_em).getTime()) < 45 * 86400000;
+  if (asn && asn.id && (['ativa', 'pausada', 'inadimplente'].indexOf(String(asn.status)) !== -1 || recente)) {
+    const brlc = c => 'R$ ' + (Number(c || 0) / 100).toFixed(2).replace('.', ',');
+    const dt = v => { const s = String(v || '').slice(0, 10); return s ? s.split('-').reverse().join('/') : ''; };
+    let itens = '';
+    try { itens = (Array.isArray(asn.items) ? asn.items : JSON.parse(asn.items || '[]')).map(i => (i.quantity || 1) + 'x ' + String(i.title || '').replace(' - Tradicionais', '')).join(', '); } catch (e) { itens = ''; }
+    const cobr = Array.isArray(asn.cobrancas) ? asn.cobrancas : [];
+    const cobrTxt = cobr.map(c => dt(c.ciclo) + ' ' + String(c.status || '') + ' ' + brlc(c.valor_centavos)).join('; ');
+    const pagamento = asn.metodo === 'pix' ? 'por PIX (o codigo chega no WhatsApp 3 dias antes de cada ciclo)' : ('no cartao ' + String(asn.card_brand || '').toUpperCase() + ' final ' + (asn.card_last4 || '') + ', cobrado automaticamente');
+    assinaturaTxt = 'ASSINATURA RECORRENTE DESTE CLIENTE: status ' + String(asn.status).toUpperCase() + (asn.cancelar_no_fim && asn.status === 'ativa' ? ' (cancela no fim do ciclo)' : '')
+      + ', feita em ' + dt(asn.criado_em) + ' pelo nosso checkout (opcao "assinar e ganhar ' + (asn.desconto_pct || 10) + '% em toda renovacao").'
+      + (itens ? ' Itens: ' + itens + '.' : '') + ' Valor de cada ciclo: ' + brlc(asn.valor_centavos) + (asn.valor_cheio_centavos ? ' (de ' + brlc(asn.valor_cheio_centavos) + ')' : '') + ', a cada ' + (asn.ciclo_dias || 30) + ' dias, ' + pagamento + '.'
+      + (asn.proximo_ciclo && asn.status === 'ativa' ? ' Proxima renovacao: ' + dt(asn.proximo_ciclo) + '.' : '') + ' Renovacoes ja feitas: ' + (asn.renovacoes || 0) + (cobrTxt ? ' (cobrancas: ' + cobrTxt + ')' : '') + '.'
+      + ' Cada renovacao paga gera um pedido novo na loja no mesmo dia, com a tag ASSINATURA: um pedido na lista acima com a data e o valor de uma cobranca E a renovacao.'
+      + '\nCOMO AGIR: (1) Se o cliente disser que nao fez um pedido, nao reconhece uma cobranca ou perguntar por que foi cobrado, e a data/valor baterem com uma renovacao: explique com calma que e a renovacao automatica da assinatura que ele mesmo ativou em ' + dt(asn.criado_em) + ', com o desconto de assinante, e como ela funciona. NUNCA diga que foi "o link que te mandei", nunca fale em fraude nem em erro do sistema.'
+      + ' (2) Pergunte o que ele prefere: manter, pausar ou cancelar. (3) Pausar ou cancelar exige DUAS confirmacoes: primeiro explique o que muda (para de renovar; cancelar perde o desconto de assinante; pausar guarda tudo para reativar quando quiser) e pergunte se confirma; SO depois de um SIM explicito chame consultar_sistema com acao gerenciar_assinatura e dados {"acao":"cancelar"|"pausar"|"reativar","confirmado":true,"motivo":"o que o cliente disse"}. Sem o sim, nao chame. Nunca peca telefone, email ou dados do cartao para isso: a ferramenta ja sabe qual e a assinatura.'
+      + ' (4) Se ele contestar uma renovacao JA PAGA (pedido gerado hoje ou nos ultimos dias), depois de cancelar chame escalar_humano com motivo "estorno de renovacao de assinatura, pedido <numero>" e diga que a equipe confirma o estorno por aqui; nao prometa prazo do estorno. (5) Se ele so quer entender, explique e nao mude nada. (6) Em modo proativo de pedido pago, quando o pedido e uma renovacao, diga "sua assinatura renovou" em vez de "seu pedido foi confirmado".';
+  }
+} catch (e) { assinaturaTxt = ''; }
+
 const trocasAbertas = Array.isArray(ctx.trocas) ? ctx.trocas : [];
 const trocaTxt = sugerir ? '' : ('TROCAS E DEVOLUCOES: se o cliente quiser trocar, devolver, reclamar de produto errado, danificado, vencido ou pedir reembolso, conduza voce mesma a coleta, uma pergunta por vez: (1) numero do pedido (se nao souber, busque pelo telefone), (2) qual produto e a quantidade, (3) o motivo em detalhes (o que aconteceu, quando chegou, lacre/validade), (4) se houver dano ou produto errado, peca uma foto (se ja mandou imagem, use a descricao que veio na mensagem). Quando tiver pedido, produto e motivo, chame consultar_sistema com acao registrar_troca e dados {"tipo":"troca|devolucao|reembolso","numero_pedido":"...","produtos":"...","motivo":"...","detalhes":"...","fotos":"descricao das fotos recebidas ou vazio"}. Depois informe o protocolo devolvido e diga que a equipe analisa e responde por aqui em ate 1 dia util. Nao prometa reembolso, prazo de troca ou postagem gratis sem a base de treinamento dizer isso.'
   + (trocasAbertas.length ? ' Este cliente JA TEM caso aberto: ' + trocasAbertas.map(t => '#' + t.id + ' (' + t.tipo + ', pedido ' + (t.pedido || '?') + ', status ' + t.status + ')').join('; ') + '. Se ele perguntar do andamento, diga que esta em analise pela equipe e nao abra outro caso igual.' : ''));
@@ -180,6 +207,7 @@ const cabecalho = [
   cadastroTxt,
   documentosTxt,
   carrinhoTxt,
+  assinaturaTxt,
   correcoesTxt,
   trocaTxt,
   sugerirTxt,
@@ -330,10 +358,17 @@ for (let volta = 0; volta < (trivialOk ? 0 : 6); volta++) {
         try { saida = await this.helpers.httpRequest({ method: 'POST', url: TROCA, json: true, timeout: 30000, body: d }); }
         catch (e) { saida = { sucesso: false, resultado: 'Nao consegui registrar agora. Diga ao cliente que a equipe vai retornar por aqui.', erro: String(e.message) }; }
       } else {
+        let dadosEnvio = dados;
+        if (acao === 'gerenciar_assinatura') {
+          // a ferramenta acha a assinatura pelo telefone/email do contato: a Serena nao precisa (nem deve) pedir isso
+          let d = {}; try { d = JSON.parse(dados) || {}; } catch (e) { d = { acao: String(dados) }; }
+          d.telefone = telDigits; d.email = ctx.email || entrada.email || ''; d.contato_id = ctx.contato_id;
+          dadosEnvio = JSON.stringify(d);
+        }
         try {
           saida = await this.helpers.httpRequest({
             method: 'POST', url: ROUTER, json: true, timeout: 50000,
-            body: { acao: acao, dados: dados, canal: entrada.canal }
+            body: { acao: acao, dados: dadosEnvio, canal: entrada.canal }
           });
         } catch (e) { saida = { erro: String(e.message) }; }
       }
