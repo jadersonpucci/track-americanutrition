@@ -71,3 +71,13 @@ from grupo_bot_log order by criado_em desc limit 50;
 
 Fontes aqui têm as chaves substituídas por placeholders (`SUPABASE_SERVICE_KEY`, `EVO_API_KEY`,
 `<TOKEN_ALERTAS>`); as reais ficam só no n8n.
+
+## Ligado em 13/09/2026 (00:30 UTC)
+
+Teste no grupo QA com payload sintético, antes de liberar para todos:
+- "Oi pessoal, qual o valor do ImunoFosfo 90 cápsulas? Tem promoção?" → `preco_promocao / imunofosfo_90 / 97` →
+  3 min → postou "Oi, Teste! O *ImunoFosfo 90 cápsulas* está *R$ 327,00*. Link oficial: seguro.americanutrition.com/…"
+  e gravou `respondida`.
+- "Gostaria de saber a mesma coisa, qual o valor?" → confiança 40 → `ignorada`, nada postado (era exatamente o erro do bot antigo).
+
+Depois disso: `grupo_bot_ativo = on`, `grupo_bot_grupos = todos`.
