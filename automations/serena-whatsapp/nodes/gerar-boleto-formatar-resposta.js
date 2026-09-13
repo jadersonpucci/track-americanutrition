@@ -4,7 +4,9 @@
 const d = $('Extrair boleto').first().json;
 const respDub = $input.first().json;
 
-let pdf_final = d.pdf_url;
+// BOLETO PERSONALIZADO (13/09/2026): o link que vai ao cliente e a pagina com a identidade da marca
+// (pagina_url, encurtada no no anterior). O PDF cru da Pagar.me so entra se a pagina nao pode ser montada.
+let pdf_final = d.pagina_url || d.pdf_url;
 let pdf_curto_id = null;
 let usou_dub = false;
 if (respDub && respDub.shortLink && !respDub.error) {
@@ -12,6 +14,7 @@ if (respDub && respDub.shortLink && !respDub.error) {
   pdf_curto_id = respDub.id;
   usou_dub = true;
 }
+const ehPagina = !!d.pagina_url;
 
 const total = (d.total_reais || 0).toFixed(2).replace('.', ',');
 const itens = String(d.itens_texto || '').trim();
@@ -43,7 +46,7 @@ if (venc) msg += '📅 Vence em: ' + venc + '\n';
 msg += '\nSeu pedido já está registrado, falta só o pagamento. Copie o código de barras abaixo e cole no app do seu banco, na opção de pagar boleto:\n';
 msg += d.linha_digitavel + '\n';
 if (pdf_final) {
-  msg += '\n📎 Se preferir, o boleto em PDF:\n' + pdf_final + '\n';
+  msg += (ehPagina ? '\n📎 Seu boleto completo, para conferir, imprimir ou pagar pelo app:\n' : '\n📎 Se preferir, o boleto em PDF:\n') + pdf_final + '\n';
 }
 msg += '\n_Assim que o pagamento for confirmado, seu pedido entra em separação. O boleto pode levar até 1 dia útil para compensar._';
 
@@ -84,6 +87,7 @@ return [{ json: {
   linha_digitavel: d.linha_digitavel,
   pdf_url: pdf_final,
   pdf_url_original: d.pdf_url,
+  pagina_boleto: d.pagina_url || '',
   pdf_curto_usado: usou_dub,
   pdf_curto_id: pdf_curto_id,
   vencimento: d.vencimento,

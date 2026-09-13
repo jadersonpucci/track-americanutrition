@@ -1292,3 +1292,12 @@ PDF ou página) e nem chama o modelo de novo. Antes, a Serena recebia o JSON e r
 Eliane em 13/09 saiu fora do padrão). A Entrada continua fatiando o código em mensagem separada e acrescenta só
 a dica de copiar, porque a mensagem padrão já explica como pagar. A regra do prompt "CODIGO DE PAGAMENTO" virou
 "PIX E BOLETO": a Serena responde só uma frase curta, sem repetir código, valores ou links.
+
+### Boleto no modelo da marca (13/09)
+
+O link do boleto que a Serena manda passou a ser a página do workflow "AN - Boleto Personalizado"
+(`GET /webhook/boleto?l=<linha>&n=<nome>&d=<cpf>&p=<rascunho>&it=<itens>&end=<endereço>`): logo da America
+Nutrition, itens com valor, frete, endereço do pagador, ficha de compensação FEBRABAN com código de barras e código
+de conferência. O `Montar draft` passou a pedir o valor de cada item ao Shopify, o `Extrair draft` devolve
+`itens_lista`, o `Extrair boleto` monta `pagina_url`, o encurtador encurta essa página (o PDF cru da Pagar.me fica em
+`pdf_url_original`, só como reserva) e a mensagem diz "Seu boleto completo, para conferir, imprimir ou pagar pelo app".

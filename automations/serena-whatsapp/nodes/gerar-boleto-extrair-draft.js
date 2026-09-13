@@ -47,6 +47,18 @@ try {
     return (n.quantity || 1) + 'x ' + (titulo + (extra ? ' ' + extra : '')).trim();
   }).filter(Boolean).join(', ').slice(0, 200);
 } catch (e) { itensTxt = ''; }
+// BOLETO PERSONALIZADO (13/09/2026): itens com valor para a pagina com a identidade da marca (AN - Boleto Personalizado).
+let itensLista = [];
+try {
+  const eds = (draftNode.lineItems && draftNode.lineItems.edges) || [];
+  itensLista = eds.map(e => {
+    const n = e.node || {};
+    const titulo = String(n.title || '').trim();
+    const extra = String(n.variantTitle || '').split('/').map(x => x.trim()).filter(x => x && !GENERICO.test(x) && titulo.toLowerCase().indexOf(x.toLowerCase()) < 0).join(' ');
+    const tot = (n.discountedTotalSet && n.discountedTotalSet.shopMoney && n.discountedTotalSet.shopMoney.amount) || (n.originalTotalSet && n.originalTotalSet.shopMoney && n.originalTotalSet.shopMoney.amount) || '';
+    return { qtd: n.quantity || 1, nome: (titulo + (extra ? ' ' + extra : '')).trim(), valor: tot === '' ? null : Number(tot) };
+  }).filter(i => i.nome);
+} catch (e) { itensLista = []; }
 
 return [{ json: {
   erro: false,
@@ -55,6 +67,7 @@ return [{ json: {
   draft_numero: draftNode.name,
   invoice_url: draftNode.invoiceUrl || '',
   itens_texto: itensTxt,
+  itens_lista: itensLista,
   total_reais: totalReais,
   total_cents: totalCents,
   frete: (ctx.frete && typeof ctx.frete === 'object') ? ctx.frete : { valor: 0, titulo: '', origem: '', prazo: '' },
