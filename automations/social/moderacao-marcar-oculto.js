@@ -41,7 +41,7 @@ if (botao) {
     linha = '❌ Não consegui ' + (botao.desocultar ? 'reexibir' : 'ocultar') + ': ' + err;
     teclado = [[{ text: '🔁 Tentar de novo', callback_data: 'soc:' + (botao.desocultar ? 're' : 'oc') + ':' + cid }]];
   }
-  if (botao.chat_id && botao.message_id) await tg('editMessageText', { chat_id: botao.chat_id, message_id: botao.message_id, text: String(botao.texto_msg || '') + NL + NL + linha, entities: botao.entities || [], reply_markup: { inline_keyboard: teclado }, disable_web_page_preview: true });
+  if (botao.chat_id && botao.message_id) await tg('editMessageText', { chat_id: botao.chat_id, message_id: botao.message_id, text: String(botao.texto_msg || '') + NL + NL + linha, entities: botao.entities || [], reply_markup: { inline_keyboard: (Array.isArray(botao.teclado_outros) ? botao.teclado_outros : []).concat(teclado) }, disable_web_page_preview: true });
   return [];
 }
 

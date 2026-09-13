@@ -23,6 +23,9 @@ const chatId = cq.message && cq.message.chat ? cq.message.chat.id : null;
 const msgId = cq.message ? cq.message.message_id : null;
 const textoMsg = String((cq.message && cq.message.text) || '');
 const entities = (cq.message && cq.message.entities) || [];
+// linhas de botao de OUTROS comentarios na mesma mensagem (aviso consolidado) ficam como estao
+const kbAtual = (cq.message && cq.message.reply_markup && cq.message.reply_markup.inline_keyboard) || [];
+const outros = kbAtual.filter((linha) => !(linha || []).some((b) => String((b && b.callback_data) || '').slice(-cid.length - 1) === ':' + cid));
 const req = async (o) => { try { return await self.helpers.httpRequest(o); } catch (e) { return null; } };
 const tg = async (metodo, corpo) => await req({ method: 'POST', url: BOT + metodo, json: true, timeout: 15000, body: corpo });
 const sql = async (query) => { const r = await req({ method: 'POST', url: PG, headers: { apikey: SK, Authorization: 'Bearer ' + SK, 'Content-Type': 'application/json' }, body: { query }, json: true, timeout: 15000 }); return Array.isArray(r) ? r : []; };
@@ -34,7 +37,7 @@ const row = rows[0] || {};
 const plataforma = row.rede || (cid.indexOf('_') > 0 ? 'facebook' : 'instagram');
 if (acao === 'ok') {
   await sql("update fb_comentarios set motivo = left(coalesce(motivo, '') || " + E(' | mantido por ' + quem + ' (botao)') + ", 900), atualizado_em = now() where comment_id = " + E(cid));
-  if (chatId && msgId) await tg('editMessageText', { chat_id: chatId, message_id: msgId, text: textoMsg + NL + NL + '👍 Mantido por ' + quem + ' às ' + hora, entities, reply_markup: { inline_keyboard: [] }, disable_web_page_preview: true });
+  if (chatId && msgId) await tg('editMessageText', { chat_id: chatId, message_id: msgId, text: textoMsg + NL + NL + '👍 Mantido por ' + quem + ' às ' + hora, entities, reply_markup: { inline_keyboard: outros }, disable_web_page_preview: true });
   return [];
 }
-return [{ json: { botao: true, acao_botao: acao, desocultar: acao === 're', plataforma, comment_id: cid, from_name: row.autor || '', message: row.texto || '', categoria: row.categoria || '', quem, hora, chat_id: chatId, message_id: msgId, texto_msg: textoMsg, entities } }];
+return [{ json: { botao: true, acao_botao: acao, desocultar: acao === 're', plataforma, comment_id: cid, from_name: row.autor || '', message: row.texto || '', categoria: row.categoria || '', quem, hora, chat_id: chatId, message_id: msgId, texto_msg: textoMsg, entities, teclado_outros: outros } }];
