@@ -56,6 +56,7 @@ faz o n8n pular toda a cadeia de publicação.
 | `[Depoimentos] Trocar Voz` | Webhook disparado pelo botão Trocar voz. Regera a locução com a outra voz, remonta o vídeo e devolve o card. |
 | `[Depoimentos] Enviar Manual` | Webhook para depoimento que chegou por fora do sistema de reviews (WhatsApp, Instagram, e-mail): gera a locução, registra e manda para a mesma curadoria. |
 | `[Depoimentos] Enviar Card` | Manda o card ao revisor por upload no bot local, o que funciona com vídeo acima de 20 MB. |
+| `[Depoimentos] Enviar Audio` | Recebe áudio já gravado pelo próprio cliente (voz real, sem TTS) e o leva para a mesma curadoria. |
 | `Depoimentos v14` (bot) | Trata os callbacks dos botões `depok:<id>` / `depno:<id>`. |
 | `ElevenLabs Bridge` / `Claude SQL Bridge` | Pontes HTTP autenticadas por header, usadas pelos nós Code. |
 
@@ -66,7 +67,8 @@ faz o n8n pular toda a cadeia de publicação.
 | coluna | uso |
 |---|---|
 | `review_id` | review de origem (índice único: não gera duas vezes); nulo quando o depoimento chegou por fora |
-| `origem` | `review` (veio do sistema) ou `manual` (enviado por fora) |
+| `origem` | `review` (do sistema), `manual` (texto enviado por fora) ou `audio` (voz real do cliente) |
+| `destinos` | onde publicar: `site,grupo,whatsapp` (padrão) ou só `site` |
 | `texto_original` / `texto_limpo` | antes e depois da limpeza, para auditoria |
 | `voz`, `genero` | qual voz leu |
 | `video_url` | MP4 no Hostinger |
@@ -123,3 +125,24 @@ Instagram ou e-mail. Para esses, o webhook do `Enviar Manual` recebe:
 
 Daí em diante é o mesmo caminho de sempre: card no Telegram, três botões, e nada
 vai ao ar sem aprovação.
+
+## Escolhendo o formato por canal
+
+O mesmo relato não serve igual em todo lugar, e o limite de tamanho decide junto
+com o conteúdo:
+
+| Canal | Teto | O que publicar |
+|---|---|---|
+| WhatsApp | 16 MB | uma peça só, até ~2 min |
+| Telegram | 2 GB pelo bot local | a mesma peça |
+| Site | sem limite prático | o relato completo |
+
+Um depoimento longo **não vira série numerada**. Quem recebe a parte 3 não viu a
+apresentação, e o vídeo reencaminhado perde a legenda que diria "parte 3 de 4" —
+o card do vídeo não numera nada. Em vez disso: uma peça única com começo, meio e
+fim para os grupos, e o relato inteiro no site, marcado com `destinos = 'site'`.
+
+Cortar um áudio longo em peça única é **seleção de trechos, nunca reescrita**: os
+cortes caem em pausas reais da fala, achadas por energia do sinal (o
+`silencedetect` do ffmpeg não enxerga pausa em gravação de celular, onde o ruído
+de fundo as preenche), e de preferência em mudança de assunto.
