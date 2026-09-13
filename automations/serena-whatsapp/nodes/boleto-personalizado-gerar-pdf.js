@@ -26,6 +26,21 @@ function gerarPdfBoleto(d, logoJpg, stoneJpg) {
   const rect = (x, y, w, h, c) => { col(c, true); ops.push(num(x) + ' ' + num(Y(y + h)) + ' ' + num(w) + ' ' + num(h) + ' re f'); };
   const box = (x, y, w, h, c, lw) => { col(c, false); ops.push(num(lw || 0.8) + ' w ' + num(x) + ' ' + num(Y(y + h)) + ' ' + num(w) + ' ' + num(h) + ' re S'); };
   const line = (x1, y1, x2, y2, c, lw, dash) => { col(c, false); ops.push((dash ? '[3 3] 0 d ' : '[] 0 d ') + num(lw || 0.8) + ' w ' + num(x1) + ' ' + num(Y(y1)) + ' m ' + num(x2) + ' ' + num(Y(y2)) + ' l S'); };
+  // retangulo de cantos arredondados (Bezier, kappa 0.5523); fill e/ou stroke
+  const rrect = (x, y, w, h, r, fill, stroke, lw) => {
+    const k = 0.5523 * r, x2 = x + w, yb = Y(y + h), yt = Y(y);
+    const path = num(x + r) + ' ' + num(yb) + ' m ' + num(x2 - r) + ' ' + num(yb) + ' l '
+      + num(x2 - r + k) + ' ' + num(yb) + ' ' + num(x2) + ' ' + num(yb + r - k) + ' ' + num(x2) + ' ' + num(yb + r) + ' c '
+      + num(x2) + ' ' + num(yt - r) + ' l ' + num(x2) + ' ' + num(yt - r + k) + ' ' + num(x2 - r + k) + ' ' + num(yt) + ' ' + num(x2 - r) + ' ' + num(yt) + ' c '
+      + num(x + r) + ' ' + num(yt) + ' l ' + num(x + r - k) + ' ' + num(yt) + ' ' + num(x) + ' ' + num(yt - r + k) + ' ' + num(x) + ' ' + num(yt - r) + ' c '
+      + num(x) + ' ' + num(yb + r) + ' l ' + num(x) + ' ' + num(yb + r - k) + ' ' + num(x + r - k) + ' ' + num(yb) + ' ' + num(x + r) + ' ' + num(yb) + ' c h';
+    if (fill) col(fill, true);
+    if (stroke) { col(stroke, false); ops.push(num(lw || 0.8) + ' w'); }
+    ops.push(path + ' ' + (fill && stroke ? 'B' : (fill ? 'f' : 'S')));
+  };
+  // corta o texto para caber na largura (nada estoura a caixa)
+  const larg = (s, font, size) => font === 'F3' ? lat(s).length * 0.6 * size : wHelv(s, size, font === 'F2');
+  const fit = (s, font, size, maxW) => { let t = lat(s); if (larg(t, font, size) <= maxW) return t; while (t.length > 1 && larg(t + '...', font, size) > maxW) t = t.slice(0, -1); return t.trim() + '...'; };
   const img = (nome, x, y, w, h) => ops.push('q ' + num(w) + ' 0 0 ' + num(h) + ' ' + num(x) + ' ' + num(Y(y + h)) + ' cm /' + nome + ' Do Q');
   const brl = v => 'R$ ' + Number(v || 0).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
   const linha = String(d.linha || '').replace(/\D/g, '');
@@ -36,7 +51,7 @@ function gerarPdfBoleto(d, logoJpg, stoneJpg) {
   const logoH = 28, logoW = logoH * (d.logoW && d.logoH ? d.logoW / d.logoH : 4.776);
   if (logoJpg) img('Im1', M, 34, logoW, logoH);
   text('F2', 12.5, W - M, 46, 'BOLETO BANCÁRIO', TINTA, true);
-  text('F1', 9, W - M, 60, 'Pedido ' + (d.pedido || '-') + '   -   emitido em ' + (d.emissao || ''), CINZA, true);
+  text('F1', 9, W - M, 60, fit('Pedido ' + (d.pedido || '-') + '   -   emitido em ' + (d.emissao || ''), 'F1', 9, fw - 170), CINZA, true);
   rect(M, 74, fw * 0.58, 2.5, AZ); rect(M + fw * 0.58, 74, fw * 0.42, 2.5, VM);
 
   // ---- pagador, vencimento e valor (proporcoes da pagina HTML)
@@ -45,32 +60,34 @@ function gerarPdfBoleto(d, logoJpg, stoneJpg) {
   const wVenc = 122, wVal = 150, wPag = fw - wVenc - wVal - 20;
   const endLinhas = d.endereco ? wrap(d.endereco, 8.8, wPag - 20).slice(0, 2) : [];
   const hCx = 58 + (endLinhas.length ? 12 * endLinhas.length : 0);
-  box(M, y, wPag, hCx, LINHA, 0.8);
+  rrect(M, y, wPag, hCx, 8, null, LINHA, 0.8);
   text('F1', 7.5, M + 10, y + 15, 'PAGADOR', CINZA);
-  text('F2', 11.5, M + 10, y + 31, wrap(d.nome || '', 11.5, wPag - 20)[0] || '', TINTA);
-  text('F1', 8.8, M + 10, y + 44, d.doc ? 'CPF/CNPJ ' + d.doc : '', CINZA);
-  endLinhas.forEach((l, i) => text('F1', 8.8, M + 10, y + 56 + 12 * i, l, CINZA));
+  text('F2', 11.5, M + 10, y + 31, fit(d.nome || '', 'F2', 11.5, wPag - 20), TINTA);
+  text('F1', 8.8, M + 10, y + 44, fit(d.doc ? 'CPF/CNPJ ' + d.doc : '', 'F1', 8.8, wPag - 20), CINZA);
+  endLinhas.forEach((l, i) => text('F1', 8.8, M + 10, y + 56 + 12 * i, fit(l, 'F1', 8.8, wPag - 20), CINZA));
   const xV = M + wPag + 10;
-  box(xV, y, wVenc, hCx, LINHA, 0.8);
+  rrect(xV, y, wVenc, hCx, 8, null, LINHA, 0.8);
   text('F1', 7.5, xV + 10, y + 15, 'VENCIMENTO', CINZA);
   text('F2', 15, xV + 10, y + 36, d.vencimento || '', TINTA);
   text('F1', 8.5, xV + 10, y + 49, 'pague até esta data', CINZA);
   const xVa = xV + wVenc + 10;
-  rect(xVa, y, wVal, hCx, [0.945, 0.98, 0.965]); box(xVa, y, wVal, hCx, VERDE, 1);
+  rrect(xVa, y, wVal, hCx, 8, [0.945, 0.98, 0.965], VERDE, 1);
   text('F1', 7.5, xVa + 10, y + 15, 'VALOR DO DOCUMENTO', [0.09, 0.4, 0.26]);
-  text('F2', 19, xVa + 10, y + 38, brl(d.valor), VERDE);
-  const itens = Array.isArray(d.itens) ? d.itens : [];
-  text('F1', 8.5, xVa + 10, y + 50, itens.length > 1 ? itens.length + ' itens' : (itens[0] ? itens[0].nome.slice(0, 24) : ''), CINZA);
+  text('F2', larg(brl(d.valor), 'F2', 19) > wVal - 20 ? 15 : 19, xVa + 10, y + 38, brl(d.valor), VERDE);
+  const itensTodos = Array.isArray(d.itens) ? d.itens : [];
+  const itens = itensTodos.length > 6 ? itensTodos.slice(0, 5).concat([{ nome: 'e mais ' + (itensTodos.length - 5) + ' itens', valor: null }]) : itensTodos;
+  text('F1', 8.5, xVa + 10, y + 50, fit(itensTodos.length > 1 ? itensTodos.length + ' itens' : (itensTodos[0] ? itensTodos[0].nome : ''), 'F1', 8.5, wVal - 20), CINZA);
   y += hCx + 16;
 
   // ---- itens do pedido
-  box(M, y, fw, 24 + itens.slice(0, 6).length * 16 + 26, LINHA, 0.8);
+  rrect(M, y, fw, 24 + itens.length * 16 + 26, 8, null, LINHA, 0.8);
   text('F1', 7.5, M + 10, y + 15, 'ITENS DO PEDIDO', CINZA);
   let yy = y + 18;
-  for (const it of itens.slice(0, 6)) {
+  for (const it of itens) {
     yy += 16;
-    text('F1', 10.5, M + 10, yy, it.nome, TINTA);
-    if (it.valor != null && it.valor !== '') text('F2', 10.5, W - M - 10, yy, brl(it.valor), TINTA, true);
+    const temValor = it.valor != null && it.valor !== '';
+    text('F1', 10.5, M + 10, yy, fit(it.nome, 'F1', 10.5, fw - 20 - (temValor ? larg(brl(it.valor), 'F2', 10.5) + 14 : 0)), TINTA);
+    if (temValor) text('F2', 10.5, W - M - 10, yy, brl(it.valor), TINTA, true);
     line(M + 10, yy + 4, W - M - 10, yy + 4, LINHA, 0.5, true);
   }
   yy += 19;
@@ -79,16 +96,16 @@ function gerarPdfBoleto(d, logoJpg, stoneJpg) {
   y = yy + 22;
 
   // ---- como pagar (curto)
-  rect(M, y, fw, 62, [0.957, 0.973, 0.996]); box(M, y, fw, 62, [0.79, 0.85, 0.96], 0.8);
+  rrect(M, y, fw, 62, 8, [0.957, 0.973, 0.996], [0.79, 0.85, 0.96], 0.8);
   text('F2', 9.5, M + 10, y + 15, 'COMO PAGAR', AZ);
-  text('F1', 9.5, M + 10, y + 29, '1. No aplicativo do seu banco, toque em "Pagar boleto" e aponte a câmera para o código de barras, ou digite os números abaixo.', TINTA);
-  text('F1', 9.5, M + 10, y + 42, '2. Pode pagar também em qualquer banco ou casa lotérica, até o vencimento.', TINTA);
-  text('F1', 9.5, M + 10, y + 55, '3. Quando o banco confirmar (até 2 dias úteis), seu pedido é separado e o rastreio chega no WhatsApp.', TINTA);
+  text('F1', 9.5, M + 10, y + 29, fit('1. No aplicativo do seu banco, toque em "Pagar boleto" e aponte a câmera para o código de barras, ou digite os números abaixo.', 'F1', 9.5, fw - 20), TINTA);
+  text('F1', 9.5, M + 10, y + 42, fit('2. Pode pagar também em qualquer banco ou casa lotérica, até o vencimento.', 'F1', 9.5, fw - 20), TINTA);
+  text('F1', 9.5, M + 10, y + 55, fit('3. Quando o banco confirmar (até 2 dias úteis), seu pedido é separado e o rastreio chega no WhatsApp.', 'F1', 9.5, fw - 20), TINTA);
   y += 62 + 14;
 
   // ---- linha digitavel
   text('F1', 7.5, M, y, 'LINHA DIGITÁVEL (para digitar no aplicativo do banco)', CINZA); y += 5;
-  rect(M, y, fw, 30, [0.97, 0.97, 0.97]); box(M, y, fw, 30, LINHA, 0.8);
+  rrect(M, y, fw, 30, 8, [0.97, 0.97, 0.97], LINHA, 0.8);
   text('F3', 12.4, M + (fw - linhaFmt.length * 0.6 * 12.4) / 2, y + 20, linhaFmt, TINTA); y += 30 + 14;
 
   // ---- corte e ficha de compensacao
@@ -109,7 +126,8 @@ function gerarPdfBoleto(d, logoJpg, stoneJpg) {
   const cell = (x, yy2, w, rot, val, right, bold) => {
     box(x, yy2, w, rowH, [0.2, 0.2, 0.2], 0.5);
     text('F1', 6, x + 3, yy2 + 8, rot, [0.25, 0.25, 0.25]);
-    text(bold === false ? 'F1' : 'F2', 8.6, right ? x + w - 4 : x + 3, yy2 + 19, val, TINTA, !!right);
+    const f = bold === false ? 'F1' : 'F2';
+    text(f, 8.6, right ? x + w - 4 : x + 3, yy2 + 19, fit(val, f, 8.6, w - 7), TINTA, !!right);
   };
   const c5 = fw * 0.28;
   cell(fx, y, fw - c5, 'Local de pagamento', 'Pagável em qualquer banco, aplicativo ou casa lotérica');
@@ -130,8 +148,8 @@ function gerarPdfBoleto(d, logoJpg, stoneJpg) {
   // instrucoes (2 linhas) + descontos / juros
   box(fx, y, fw - c5, rowH * 2, [0.2, 0.2, 0.2], 0.5);
   text('F1', 6, fx + 3, y + 8, 'Instruções (texto de responsabilidade do beneficiário)', [0.25, 0.25, 0.25]);
-  text('F1', 8.6, fx + 3, y + 21, 'Pedido ' + (d.pedido || '') + '  -  America Nutrition' + (itens.length ? '  -  ' + (itens.length > 1 ? itens.length + ' itens' : itens[0].nome.slice(0, 40)) : ''), TINTA);
-  text('F1', 8.6, fx + 3, y + 34, 'Confira este documento com o código ' + (d.codigo || '') + '. Não receber após o vencimento.', TINTA);
+  text('F1', 8.6, fx + 3, y + 21, fit('Pedido ' + (d.pedido || '') + '  -  America Nutrition' + (itensTodos.length ? '  -  ' + (itensTodos.length > 1 ? itensTodos.length + ' itens' : itensTodos[0].nome) : ''), 'F1', 8.6, fw - c5 - 7), TINTA);
+  text('F1', 8.6, fx + 3, y + 34, fit('Confira este documento com o código ' + (d.codigo || '') + '. Não receber após o vencimento.', 'F1', 8.6, fw - c5 - 7), TINTA);
   cell(fx + fw - c5, y, c5, '(-) Descontos / Abatimentos', '', true); 
   cell(fx + fw - c5, y + rowH, c5, '(+) Juros / Multa', '', true); y += rowH * 2;
   cell(fx, y, fw - c5, 'Pagador', (d.nome || '') + (d.doc ? '  -  ' + d.doc : ''));
@@ -157,7 +175,7 @@ function gerarPdfBoleto(d, logoJpg, stoneJpg) {
     for (const e of seq) { if (e[1]) ops.push(num(x) + ' ' + num(Y(y + bh)) + ' ' + num(e[0] * unit) + ' ' + num(bh) + ' re f'); x += e[0] * unit; }
     y += bh + 12;
   }
-  text('F1', 7, fx, y, 'Autenticação mecânica  -  código de conferência ' + (d.codigo || '') + (d.urlConf ? '  -  confira em ' + d.urlConf : ''), CINZA);
+  text('F1', 7, fx, y, fit('Código de conferência ' + (d.codigo || '') + (d.urlConf ? '  -  confira se este boleto é nosso em ' + d.urlConf : ''), 'F1', 7, fw - 110), CINZA);
   text('F2', 7, W - M, y, 'FICHA DE COMPENSAÇÃO', TINTA, true);
 
   // ---- monta o PDF
