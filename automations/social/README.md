@@ -42,3 +42,15 @@ escondido, aviso no Telegram.
 
 Fica para depois: resposta privada ao comentário (Graph `private_replies` no FB, `recipient.comment_id` no IG)
 e Serena no Direct/Messenger (`meta_ativo`), que dependem do app da Meta; painel de comentários mostrar `acao`.
+
+### Regras extras do classificador (`serena_config.social_prompt_extra`)
+
+Texto livre carregado pela Deduplicação e enviado como segundo bloco de `system` na chamada ao Claude (o prompt
+principal fica intacto e em cache). Hoje contém: link do grupo (`grupo.americanutrition.com`) quando o comentário
+pede para entrar; link do produto (`americanutrition.com/products/imunofosfo`) quando pergunta o site; dirigir-se ao
+autor pelo nome; continuar a thread quando é resposta a um comentário nosso. Editar direto na tabela; vale na
+próxima execução, sem republicar.
+
+Backlog do Facebook: em 13/09 `social_catchup_desde` foi colocado em `2026-09-12T00:00:00Z` para a fila tratar os
+comentários que ficaram sem resposta desde 12/09 (os do Instagram desse período foram marcados `ignorar`, pois
+lá a moderação já vinha respondendo).

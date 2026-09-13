@@ -22,6 +22,10 @@ const sql = async (q) => { try { const r = await self.helpers.httpRequest({ meth
 const E = (v) => "'" + String(v == null ? '' : v).replace(/'/g, "''").slice(0, 300) + "'";
 const NL = String.fromCharCode(10);
 
+// Regras extras editaveis em serena_config.social_prompt_extra (grupo, site, nome do autor, thread): vao como
+// segundo bloco do system, sem mexer no prompt principal de 18 KB.
+let promptExtra = '';
+try { const x = await sql("select valor from serena_config where chave = 'social_prompt_extra'"); if (x[0] && x[0].valor) promptExtra = String(x[0].valor); } catch (e) { promptExtra = ''; }
 let postTexto = '';
 let ehAnuncio = d.is_published === false;
 let pai = null;        // comentario pai de outra pessoa
@@ -49,4 +53,4 @@ else if (d.parent_id) ctx += 'Este comentario e uma resposta a outro comentario 
 ctx += 'Se responder, dirija-se a ' + String(d.from_name || 'quem escreveu').split(' ')[0] + ' (o autor), nunca a pessoas citadas no texto.' + NL + NL;
 ctx += 'COMENTARIO:' + NL + String(d.message || '');
 
-return [{ json: Object.assign({}, d, { post_texto: postTexto, eh_anuncio: ehAnuncio, prompt_user: ctx }) }];
+return [{ json: Object.assign({}, d, { post_texto: postTexto, eh_anuncio: ehAnuncio, prompt_user: ctx, prompt_extra: promptExtra }) }];
