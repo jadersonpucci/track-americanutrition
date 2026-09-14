@@ -1,7 +1,11 @@
 {
   "cleanUrls": true,
+  "redirects": [
+    { "source": "/stories.php", "destination": "/", "permanent": false },
+    { "source": "/stories", "destination": "/", "permanent": false }
+  ],
   "rewrites": [
-    { "source": "/:code([A-Za-z0-9]{8,})", "destination": "/index.html" }
+    { "source": "/:code([A-Za-z0-9]+)", "destination": "/index.html" }
   ],
   "headers": [
     {
