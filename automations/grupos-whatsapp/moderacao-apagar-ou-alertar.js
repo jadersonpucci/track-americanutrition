@@ -6,11 +6,12 @@ const TG = 'http://telegram-bot-api:8081/bot<TOKEN>/sendMessage';
 const TG_CHAT = '-1003766435449';
 const TG_TOPICO = 1630;
 const NL = String.fromCharCode(10);
-// 11/09/2026: volta a apagar sozinho so a resposta automatica de ausencia, agora que a bolha vazia
-// foi corrigida (ver o comentario do autor da revogacao mais abaixo). As outras categorias continuam
-// so avisando: spam, golpe e concorrente exigem leitura humana e nao valem o risco depois do
-// banimento de 08/09. Para voltar a apagar alguma delas, basta acrescentar aqui.
-const MODO_AUTO = ['ausencia_automatica'];
+// 14/09/2026: NADA e apagado sozinho por enquanto. A correcao de 11/09 (autor no telefone) so tinha
+// sido testada apagando mensagens NOSSAS no grupo QA; apagando mensagem de terceiro (as 3 ausencias
+// automaticas de 13/09 as 22:33) a bolha vazia voltou. Ate o teste com mensagem de terceiro no QA
+// (ver README, "A bolha vazia nos grupos"), tudo vira aviso no Telegram com o link de limpeza, e quem
+// apaga e um humano pelo celular, que sai limpo. Para voltar a apagar sozinho: ['ausencia_automatica'].
+const MODO_AUTO = [];
 const CONF_MIN = 90;
 // Teto de seguranca: apagar em massa e comportamento de conta comprometida. Em rajada acima
 // disso o Samuel para de apagar e passa a so alertar, mesmo com confianca alta. Um grupo
@@ -55,8 +56,9 @@ if (podeApagar) {
 let acao = podeApagar ? 'apagada' : 'alertada';
 await sql('insert into grupo_moderacao (grupo_jid,grupo_nome,autor,telefone,push_name,msg_id,texto,categoria,confianca,motivo,acao,erro) values (' + E(ctx.jid) + ',' + E(ctx.grupo_nome) + ',' + E(ctx.autor_num) + ',' + E(ctx.telefone) + ',' + E(ctx.push_name) + ',' + E(ctx.msg_id) + ',' + E(ctx.texto) + ',' + E(cat) + ',' + (confOk ? conf : 0) + ',' + E(motivo) + ',' + E(acao) + ',' + E(confOk ? null : 'confianca ausente na resposta da IA') + ') on conflict (msg_id) do nothing;');
 if (podeApagar) {
-  // AUTOR NA REVOGACAO (11/09/2026): telefone primeiro, @lid so como reserva. Revogacao com autor
-  // que a Evolution nao resolve nao casa com a original e deixa uma bolha vazia nossa no grupo.
+  // AUTOR NA REVOGACAO: sem autor a revogacao nao casa com a original e deixa uma bolha vazia nossa
+  // (teste 1 no QA, 11/09). Com autor (telefone ou @lid) apagando mensagem NOSSA sai limpo, mas apagando
+  // mensagem de TERCEIRO a bolha ainda aparece (13/09, ver README). Com MODO_AUTO vazio isto nao roda.
   const autorJid = ctx.telefone ? (ctx.telefone + '@s.whatsapp.net') : ctx.participant;
   const r = await req({ method: 'DELETE', url: EVO + '/chat/deleteMessageForEveryone/Samuel', headers: { apikey: EVO_KEY, 'Content-Type': 'application/json' }, body: { id: ctx.msg_id, remoteJid: ctx.jid, fromMe: false, participant: autorJid }, json: true, timeout: 30000 });
   if (!r) { acao = 'falha_ao_apagar'; await sql("update grupo_moderacao set acao = 'falha_ao_apagar', erro = 'delete recusado pela Evolution' where msg_id = " + E(ctx.msg_id) + ';'); }

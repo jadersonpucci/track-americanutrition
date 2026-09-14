@@ -345,3 +345,44 @@ Com isso a moderação voltou a apagar sozinha a resposta automática de ausênc
 seguem só avisando, e o aviso agora traz um link pronto (em modo teste) para conferir o que aquele
 número postou nas últimas 6 horas. Reclamação e menção a concorrente nunca recebem essa sugestão:
 é fala legítima de cliente.
+
+## A bolha vazia voltou — o teste de 11/09 era incompleto (14/09/2026)
+
+Em 13/09 às 22:33 a moderação apagou sozinha três respostas automáticas de ausência (#1 ImunoFosfo
+e ImunoFosfo Connect), já mandando o autor como telefone, do jeito corrigido em 11/09. No celular
+do Samuel apareceu, logo abaixo do "Mensagem apagada por um admin (você)", **uma bolha verde vazia
+por exclusão**, com um ✓ só. O Jaderson mandou a foto: "ainda está enviando mensagem vazia".
+
+O que ficou claro relendo os testes de 11/09: **os três testes (1, A e B) revogaram mensagens do
+próprio Samuel.** O grupo QA Teste Evolution só tem o Samuel como membro, então nunca houve uma
+mensagem de terceiro para apagar lá. A revogação de admin sobre mensagem *nossa* sai limpa com
+autor no telefone ou no `@lid`; sobre mensagem *de outra pessoa* a bolha aparece, e apareceu tanto
+com `@lid` (antes de 11/09) quanto com telefone (13/09). Ou seja, o formato do autor não é a causa.
+
+O que a Evolution guardou daquela hora, via o workflow de diagnóstico `sAxu8r5jlVx6wq1f`
+(`GET /webhook/evo-debug?t=<token>&jid=<grupo>&horas=3&so_minhas=1`): nenhum texto vazio nosso, nenhuma
+`conversation` em branco. A bolha não é um `sendText` disparado por engano; é a própria mensagem de
+protocolo `REVOKE` que o aparelho desenha. No código (Evolution 2.3.7 sobre Baileys 7.0.0-rc.9)
+`deleteMessage` faz um único `sendMessage(jid, { delete })`, e o Baileys marca o stanza com
+`edit="8"` (revogação de admin) sempre que `fromMe` é falso em grupo. Nada de errado visível ali, e
+nenhuma issue pública da Evolution ou do Baileys descreve a bolha com solução.
+
+**Mitigação aplicada agora:** `MODO_AUTO = []` em `moderacao-apagar-ou-alertar.js` (live e repo).
+A moderação continua classificando e avisando no Telegram (tópico 1630) com o link de limpeza em
+modo teste; apagar passa a ser gesto humano, pelo celular, que sai limpo. Para religar depois do
+teste: `MODO_AUTO = ['ausencia_automatica']`.
+
+**Teste que falta, e que só dá para fazer com uma pessoa de fora no grupo QA.** O workflow de
+diagnóstico ganhou dois modos, ambos travados no grupo QA (`120363429298095918@g.us`), fonte em
+`evolution-debug.js`:
+
+- `&convidar=<numero>` adiciona o número ao grupo QA (o Jaderson entra com o dele).
+- `&apagar=1&modo=lid` ou `&modo=fone` apaga a mensagem mais recente de terceiro no QA mandando o
+  autor no formato escolhido, e devolve a chave original e o corpo exato enviado.
+
+Roteiro: o Jaderson posta "teste 1" no QA pelo celular dele; abre o link com `modo=lid`; olha o
+celular do Samuel e o dele. Posta "teste 2"; abre com `modo=fone`; olha de novo. Se um dos dois sair
+limpo, é só usar aquele formato nos dois nós (`limpar-numero.js` e `moderacao-apagar-ou-alertar.js`).
+Se os dois deixarem bolha, o problema está entre Baileys e o aparelho: aí o caminho é subir a
+Evolution (a 2.4.0-rc traz "LID → phone-number mapping and caching") e repetir o teste, mantendo
+enquanto isso o modo aviso.
