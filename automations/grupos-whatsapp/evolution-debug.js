@@ -1,5 +1,5 @@
 // Diagnostico: lista o que a Evolution guardou de um grupo numa janela (inclui as nossas, fromMe), com a chave e o corpo.
-// GET /webhook/evo-debug?t=<TOKEN_DEBUG>&jid=<grupo>&horas=3&so_minhas=1   |   &info=1 versao   |   &inst=1 instancias   |   &part=1&jid= participantes   |   &convidar=<numero> (so QA)   |   &apagar=1&modo=lid|fone (so QA)   |   &espera=<seg> testa o setTimeout do Code node
+// GET /webhook/evo-debug?t=<TOKEN_DEBUG>&jid=<grupo>&horas=3&so_minhas=1   |   &info=1 versao   |   &inst=1 instancias   |   &part=1&jid= participantes   |   &convidar=<numero> (so QA)   |   &apagar=1&modo=lid|fone (so QA)   |   &espera=<seg> testa o setTimeout   |   &remover=<numero> tira dos grupos oficiais
 const q = $json.query || {};
 if (String(q.t || '') !== '<TOKEN_DEBUG>') return [{ json: { erro: 'token' } }];
 if (String(q.espera || '')) {
@@ -64,6 +64,28 @@ if (String(q.apagar || '') === '1') {
     const r = await this.helpers.httpRequest({ method: 'DELETE', url: EVO + '/chat/deleteMessageForEveryone/Samuel', headers: { apikey: EVO_KEY, 'Content-Type': 'application/json' }, body, json: true, timeout: 30000 });
     return [{ json: { modo, texto: String((alvo.message && (alvo.message.conversation || (alvo.message.extendedTextMessage && alvo.message.extendedTextMessage.text))) || '').slice(0, 80), chave_original: k, enviado: body, resposta: r } }];
   } catch (e) { return [{ json: { modo, enviado: body, erro: String(e.message) } }]; }
+}
+// &remover=<numero>: varre os grupos oficiais, acha o numero (pelo telefone ou pelo @lid do roster) e
+// remove de cada um onde ainda estiver. Nunca toca em admin nem em numero da equipe.
+if (String(q.remover || '')) {
+  const num = String(q.remover).replace(/[^0-9]/g, '');
+  const EQUIPE = ['5513981885555', '16464270203', '13472225493', '18583083916', '5511959275555'];
+  if (num.length < 10 || EQUIPE.indexOf(num) !== -1) return [{ json: { erro: 'numero invalido ou da equipe' } }];
+  const GRUPOS = { '120363233277583685@g.us': 'Fosfoetanolamina (ImunoFosfo)', '120363246659395526@g.us': '#1 ImunoFosfo', '120363353982971871@g.us': 'ImunoFosfo Connect Oncologicas', '120363307265095030@g.us': '#2 ImunoFosfo', '120363423321725793@g.us': 'Fosfoetanolamina (ImunoFosfo) #2', '120363407686844370@g.us': '#3 ImunoFosfo', '120363426145445382@g.us': 'Depoimentos sobre ImunoFosfo', '120363404254700593@g.us': 'ImunoFosfo Diabetes Oficial', '120363407289053552@g.us': '#1 ImunoFosfo Diabetes', '120363425146226301@g.us': '#4 ImunoFosfo' };
+  const estava = [], removido = [], falhou = [], erros = [];
+  for (const gj of Object.keys(GRUPOS)) {
+    let ps = [];
+    try { const g = await get('/group/participants/Samuel?groupJid=' + encodeURIComponent(gj)); ps = (g && (g.participants || g)) || []; } catch (e) { erros.push(GRUPOS[gj] + ': ' + String(e.message).slice(0, 80)); continue; }
+    const p = ps.find((x) => String((x && x.phoneNumber) || '').split('@')[0] === num || String((x && x.id) || '').split('@')[0] === num);
+    if (!p) continue;
+    estava.push(GRUPOS[gj]);
+    if (p.admin) { falhou.push(GRUPOS[gj] + ' (e admin)'); continue; }
+    try {
+      const r = await this.helpers.httpRequest({ method: 'POST', url: EVO + '/group/updateParticipant/Samuel?groupJid=' + encodeURIComponent(gj), headers: { apikey: EVO_KEY, 'Content-Type': 'application/json' }, body: { action: 'remove', participants: [String(p.id)] }, json: true, timeout: 30000 });
+      removido.push(GRUPOS[gj]);
+    } catch (e) { falhou.push(GRUPOS[gj] + ': ' + String(e.message).slice(0, 80)); }
+  }
+  return [{ json: { numero: num, estava_em: estava, removido_de: removido, falhou, erros } }];
 }
 const jid = String(q.jid || '');
 const horas = Math.max(1, Math.min(72, Number(q.horas || 3)));

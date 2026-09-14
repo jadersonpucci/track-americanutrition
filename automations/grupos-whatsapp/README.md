@@ -410,3 +410,11 @@ pré-filtro passou a carregar `ts`, o `messageTimestamp` da mensagem). O webhook
 a espera acontece, então segurar a execução não represa nada. O `setTimeout` dentro do Code node foi
 testado pelo `evo-debug?espera=5`. Se a próxima exclusão automática vier sem bolha, está resolvido.
 Se vier com bolha, o teste no grupo QA (seção anterior) continua sendo o próximo passo.
+
+### Remover um número de todos os grupos oficiais
+
+O `grupo-limpar&remover=1` só tira a pessoa dos grupos onde ainda há mensagem dela na janela; depois
+de limpo, não tem de onde partir. Para isso o diagnóstico ganhou `&remover=<numero ou lid>`: varre
+os 10 grupos oficiais, procura pelo telefone ou pelo `@lid` do roster, remove onde estiver e devolve
+`estava_em`, `removido_de`, `falhou`. Não toca em admin nem em número da equipe. Usado em 14/09 para
+o +55 86 92002-8427 depois da limpeza: já não estava em nenhum grupo.
