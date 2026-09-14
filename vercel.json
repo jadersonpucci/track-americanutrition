@@ -5,7 +5,7 @@
     { "source": "/stories", "destination": "/", "permanent": false }
   ],
   "rewrites": [
-    { "source": "/:code([A-Za-z0-9]+)", "destination": "/index.html" }
+    { "source": "/:code([A-Za-z0-9]+)", "destination": "/" }
   ],
   "headers": [
     {
