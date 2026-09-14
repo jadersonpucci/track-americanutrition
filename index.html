@@ -148,7 +148,7 @@ button,input{font-family:inherit}
   <div class="etapa" id="etapa"></div>
 
   <section id="v-busca">
-    <div class="hero"><h1>Onde está<br><em>seu pedido</em></h1><p>Digite o código dos Correios ou o número do pedido pra ver tudo em tempo real.</p></div>
+    <div class="hero"><h1>Onde está<br><em>seu pedido</em></h1><p>Digite o código de rastreio ou o número do pedido pra ver tudo em tempo real.</p></div>
     <div class="form">
       <div class="seg" role="tablist"><button class="on" data-m="codigo" type="button">Código</button><button data-m="pedido" type="button">Nº do pedido</button></div>
       <div id="f-codigo"><div class="fld"><label for="i-cod">Código de rastreio</label><input id="i-cod" placeholder="AD123456789BR" autocomplete="off" autocapitalize="characters" spellcheck="false"></div></div>
@@ -161,7 +161,7 @@ button,input{font-family:inherit}
   <section id="v-load" class="hidden" aria-live="polite">
     <div class="hero"><div class="sk" style="height:44px;width:60%"></div><div class="sk" style="height:44px;width:82%;margin-top:8px"></div><div class="sk" style="height:18px;width:92%;margin-top:18px"></div></div>
     <div class="sk" style="height:250px;border-radius:32px;margin-top:40px"></div>
-    <div class="msgload"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i><span id="msgload">Chamando os Correios…</span></div>
+    <div class="msgload"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i><span id="msgload">Chamando a transportadora…</span></div>
   </section>
 
   <section id="v-res" class="hidden">
@@ -236,7 +236,7 @@ function enviar(){
 function setBars(n,cur,err){[...$('bars').children].forEach((s,i)=>{s.className=i<n?'on':(i===n&&cur?'cur':'');if(err&&i===n)s.className='cur err'})}
 function view(v){['v-busca','v-load','v-res'].forEach(x=>$(x).classList.toggle('hidden',x!==v));$('dock').classList.toggle('hidden',v!=='v-res')}
 
-const MSGS=['Chamando os Correios…','Conferindo cada parada…','Quase lá…'];
+const MSGS=['Chamando a transportadora…','Conferindo cada parada…','Quase lá…'];
 async function buscar(payload){
   view('v-load');setBars(0,true);$('etapa').textContent='';let i=0;$('msgload').textContent=MSGS[0];clearInterval(loadTimer);loadTimer=setInterval(()=>{i=(i+1)%MSGS.length;$('msgload').textContent=MSGS[i]},1600);
   try{
@@ -250,7 +250,7 @@ async function buscar(payload){
     // espera o catálogo (já em carregamento desde o início) por no máximo alguns instantes pra pintar a foto real de primeira
     if(!CAT.pronto)await Promise.race([catalogoP,new Promise(res=>setTimeout(res,CONFIG.CATALOGO_TIMEOUT))]);
     render(d);
-  }catch(e){clearInterval(loadTimer);erro('Não conseguimos falar com os Correios agora. Tente de novo em instantes.')}
+  }catch(e){clearInterval(loadTimer);erro('Não conseguimos falar com a transportadora agora. Tente de novo em instantes.')}
 }
 function erro(m){view('v-busca');setBars(0,false);$('ferr').textContent=m;$('hdr-dir').textContent=''}
 
@@ -264,6 +264,9 @@ function render(d){
   const prod1=prods[0]?prods[0].nome:'pedido';
   const dest=R.destino||{},cidade=titulo((dest.cidade||'').split('/')[0]),uf=((dest.cidade||'').split('/')[1]||'').toUpperCase();
   const numPed=P.numero?'AN-'+P.numero+'-BR':'';
+  const transp=R.transportadora||'Correios',ehCorreios=/correios/i.test(transp);
+  const transpCurto=ehCorreios?'Correios':/j&t|jt/i.test(transp)?'J&T':/loggi/i.test(transp)?'Loggi':transp;
+  const artTransp=ehCorreios?'os Correios':'a '+transpCurto;
   ultimoCodigo=R.codigo||'';
   const evs=(R.eventos||[]).slice().sort((a,b)=>(parseData(b.data)||0)-(parseData(a.data)||0));
   const ult=evs[0]||{};
@@ -273,12 +276,12 @@ function render(d){
 
   const T={
     created:[['Preparando','seu pedido'],'Estamos separando e embalando com cuidado. O rastreio começa assim que postarmos.'],
-    picked_up:[['Já está','nos Correios'],`Seu ${esc(prod1)} foi postado e logo começa a viagem ${esc(alvo)}.`],
+    picked_up:[['Já está',ehCorreios?'nos Correios':'com a '+esc(transpCurto)],`Seu ${esc(prod1)} foi postado e logo começa a viagem ${esc(alvo)}.`],
     in_transit:[['Tá','chegando'],`Seu ${esc(prod1)} está em trânsito e segue ${esc(alvo)}.`],
     out_for_delivery:[['Hoje é','o dia'],'Saiu para entrega. Deixe alguém no endereço pra receber o carteiro.'],
     delivered:[['Pedido','entregue'],`Seu ${esc(prod1)} chegou. Aproveite e conte pra gente como foi.`],
     exception:[['Precisa de','atenção'],esc(limpaStatus(R.status_atual)||'Aconteceu algo com a entrega.')+(detalhe?' '+linkify(detalhe):'')+' Fale com a gente que resolvemos.'],
-    waiting:[['Aguardando','os Correios'],'Esse código ainda não teve movimentação. Pode levar até 24h depois da postagem pra aparecer. Confira se digitou igual ao que recebeu.'],
+    waiting:[['Aguardando',esc(artTransp)],`Esse código ainda não teve movimentação. Pode levar até 24h depois da postagem pra aparecer ${esc(ehCorreios?'nos Correios':'na '+transpCurto)}. Confira se digitou igual ao que recebeu.`],
     returned:[['Voltou','pra gente'],'O pacote retornou ao remetente. Fale com a gente pra combinar o reenvio.']
   }[st]||[['Acompanhe','seu pedido'],esc(R.status_atual||'Atualizado agora.')];
   const vermelho=st==='exception'||st==='returned';
@@ -321,7 +324,7 @@ function render(d){
     else if(e.unidade)loc=titulo(e.unidade);
     const det=e.detalhe&&!String(e.detalhe).startsWith('[AVALIACAO_CARD]')?linkify(e.detalhe):'';
     return `<div class="ev ${i===0?'first'+(ok?' ok':''):'past'}"><span class="d"></span><div><p>${esc(limpaStatus(e.status))}</p>${loc||det?`<div class="s">${esc(loc)}${loc&&det?' · ':''}${det}</div>`:''}<small>${quando(e.data)}</small></div></div>`}).join('')
-    :'<p style="color:var(--muted);font-size:14.5px">Assim que os Correios registrarem a primeira movimentação, ela aparece aqui.</p>';
+    :`<p style="color:var(--muted);font-size:14.5px">Assim que ${esc(artTransp)} registrar${ehCorreios?'em':''} a primeira movimentação, ela aparece aqui.</p>`;
 
   $('b-wpp').href=wpp(`Olá Serena! Preciso de ajuda com o pedido ${numPed} (rastreio ${R.codigo||''}).`);
   const pth=location.pathname.replace(/^\/+|\/+$/g,'');if(R.codigo&&pth!==R.codigo&&(pth===''||/^index/.test(pth)||/^[A-Za-z0-9]{8,}$/.test(pth)))history.replaceState(null,'','/'+R.codigo+location.search.replace(/([?&])(codigo|pedido|v|email|cep)=[^&]*/g,'').replace(/^&/,'?'));
