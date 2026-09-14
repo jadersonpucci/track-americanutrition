@@ -51,7 +51,9 @@ try {
   }
 } catch (e) { }
 if (ehAdmin) return [];
-const base = { jid: jid, grupo_nome: GRUPOS[jid], msg_id: msgId, participant: autor, autor_num: autorNum, telefone: telefone, push_name: String(d.pushName || ''), texto: texto };
+// ts: segundos do WhatsApp em que a mensagem foi enviada. Serve para a revogacao esperar a mensagem
+// envelhecer antes de apagar (ver o comentario em Apagar ou Alertar).
+const base = { jid: jid, grupo_nome: GRUPOS[jid], msg_id: msgId, participant: autor, autor_num: autorNum, telefone: telefone, push_name: String(d.pushName || ''), texto: texto, ts: Number(d.messageTimestamp || 0) || Math.floor(Date.now() / 1000) };
 
 // LINK DE GRUPO DE WHATSAPP (set/2026): so os grupos oficiais da lista GRUPOS podem ser divulgados.
 // Convite para qualquer outro grupo e apagado na hora, sem passar pela IA. O codigo do convite e resolvido na

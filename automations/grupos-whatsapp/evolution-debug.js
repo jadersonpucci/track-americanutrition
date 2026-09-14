@@ -1,7 +1,13 @@
 // Diagnostico: lista o que a Evolution guardou de um grupo numa janela (inclui as nossas, fromMe), com a chave e o corpo.
-// GET /webhook/evo-debug?t=<TOKEN_DEBUG>&jid=<grupo>&horas=3&so_minhas=1   |   &info=1 versao   |   &inst=1 instancias   |   &part=1&jid= participantes   |   &convidar=<numero> (so QA)   |   &apagar=1&modo=lid|fone (so QA)
+// GET /webhook/evo-debug?t=<TOKEN_DEBUG>&jid=<grupo>&horas=3&so_minhas=1   |   &info=1 versao   |   &inst=1 instancias   |   &part=1&jid= participantes   |   &convidar=<numero> (so QA)   |   &apagar=1&modo=lid|fone (so QA)   |   &espera=<seg> testa o setTimeout do Code node
 const q = $json.query || {};
 if (String(q.t || '') !== '<TOKEN_DEBUG>') return [{ json: { erro: 'token' } }];
+if (String(q.espera || '')) {
+  const s = Math.max(1, Math.min(200, Number(q.espera)));
+  const t0 = Date.now();
+  await new Promise((ok) => setTimeout(ok, s * 1000));
+  return [{ json: { pedido_seg: s, esperou_ms: Date.now() - t0 } }];
+}
 const EVO = 'http://evolution-api-aru6-api-1:8080';
 const EVO_KEY = 'EVO_API_KEY';
 const get = async (path) => this.helpers.httpRequest({ method: 'GET', url: EVO + path, headers: { apikey: EVO_KEY }, json: true, timeout: 20000 });

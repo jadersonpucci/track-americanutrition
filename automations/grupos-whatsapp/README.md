@@ -386,3 +386,27 @@ limpo, é só usar aquele formato nos dois nós (`limpar-numero.js` e `moderacao
 Se os dois deixarem bolha, o problema está entre Baileys e o aparelho: aí o caminho é subir a
 Evolution (a 2.4.0-rc traz "LID → phone-number mapping and caching") e repetir o teste, mantendo
 enquanto isso o modo aviso.
+
+### A pista da limpeza manual (14/09/2026, mais tarde)
+
+Na mesma noite o Jaderson pediu para limpar tudo o que o +55 86 92002-8427 tinha postado: 26
+mensagens em três grupos, apagadas pelo `grupo-limpar` mandando o autor como telefone
+(`participantAlt`). **Nenhuma bolha.** As três exclusões automáticas de 13/09 mandaram o mesmo
+autor, no mesmo formato, e deixaram bolha. Conferido na Evolution: o `participantAlt` daquelas
+mensagens é exatamente o telefone que a moderação usou. A única diferença entre os dois casos é a
+**idade da mensagem na hora da revogação**: a limpeza apagou mensagens com horas ou dias; a
+moderação apagou 3, 4 e 32 segundos depois de a mensagem chegar. Os testes limpos do QA (11/09)
+apagaram mensagens com uns 2 minutos.
+
+A leitura: se a revogação chega ao celular do Samuel antes de ele ter processado a original (o
+Samuel roda como aparelho ligado à Evolution, e o app do celular fica atrás em segundos quando está
+em segundo plano), ela não casa com nada, vira bolha, e quando a original chega é marcada como
+apagada. Bate com os dois sintomas da foto: "Mensagem apagada por um admin (você)" e a bolha logo
+abaixo.
+
+**Aplicado:** a moderação voltou a apagar sozinha a ausência automática, mas só depois de a
+mensagem ter pelo menos 3 minutos (`ESPERA_MIN = 180` em `moderacao-apagar-ou-alertar.js`; o
+pré-filtro passou a carregar `ts`, o `messageTimestamp` da mensagem). O webhook já respondeu quando
+a espera acontece, então segurar a execução não represa nada. O `setTimeout` dentro do Code node foi
+testado pelo `evo-debug?espera=5`. Se a próxima exclusão automática vier sem bolha, está resolvido.
+Se vier com bolha, o teste no grupo QA (seção anterior) continua sendo o próximo passo.
