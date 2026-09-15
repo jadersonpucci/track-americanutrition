@@ -1334,3 +1334,23 @@ Testado no sandbox, sem telefone, pedido AN-15304:
 | "Preciso cancelar o pedido AN-15304" | "Poxa, tudo bem! Só pra te ajudar melhor: o que aconteceu, foi demora na entrega, comprou por engano, ou mudou de ideia?" | nenhuma |
 | "Demorou muito pra chegar, já não preciso mais" | "Boa notícia: seu pedido já está em São José dos Pinhais/PR e a previsão é chegar amanhã, 16/09 (...) vale a pena esperar mais esse pouquinho. Quer que eu mantenha assim ou ainda prefere cancelar?" | buscar_pedido_numero, consultar_status_pedido |
 | "Não, quero cancelar mesmo" | "Entendi, já encaminhei (...) como o pedido já está em trânsito, dá pra recusar a entrega ou recebê-lo e solicitar a devolução em até 7 dias." | escalar_humano (handoff) |
+
+### Aviso automático de cancelamento para a logística (15/09/2026)
+
+Pedido do Jaderson: em caso de cancelamento, avisar automaticamente a Cris (+1 646 427-0203,
+responsável pela logística). Entrou no `[Serena Tool] Escalar Humano` (`pENiiK4JvuowUEqn`, nó
+"Montar card", fonte `nodes/escalar-montar-card.js`): quando o escalonamento tem `tipo=cancelamento`
+ou o motivo contém "cancel", além do card no Telegram (tópico 94) e do push, o Samuel manda um
+WhatsApp para a Cris com cliente, link wa.me, número do pedido (do campo ou extraído do motivo),
+motivo, o resumo da conversa e o link da conversa no Inbox. O card do Telegram ganha a linha
+"📣 Logística (Cris) avisada no WhatsApp" (ou "NÃO foi avisada" se o envio falhar). Callback/retorno
+não dispara. Testado com um escalonamento marcado como TESTE: mensagem `3EB0110DAF3BADF1FE9D8D`
+entregue à Cris às 22:41.
+
+Como a Serena só escala cancelamento depois de tentar contornar (adendo acima), a Cris recebe o
+aviso já com o motivo do cliente.
+
+Caso Rozani: a equipe já tinha perguntado o motivo pelo celular às 22:31 e ela respondeu só "Cancelar
+o pedido". Às 22:39 foi enviada pelo Inbox (autor Jaderson, entregue pelo Samuel) uma resposta com o
+rastreio (base em São José dos Pinhais/PR, previsão 16/09), a pergunta do motivo e as duas saídas
+(recusar a entrega, ou receber e devolver em até 7 dias). A Serena ficou pausada nessa conversa.

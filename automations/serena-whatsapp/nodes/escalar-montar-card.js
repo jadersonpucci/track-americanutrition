@@ -4,6 +4,11 @@ const body = $input.first().json.body || $input.first().json;
 const API = 'https://n8n.americanutrition.com/webhook/painel-serena-api';
 const CLAUDE = 'https://n8n.americanutrition.com/webhook/claude-call';
 const TOKEN = 'an-serena-9Kx4Lm2Q';
+// CANCELAMENTO (15/09/2026): quando o motivo do escalonamento e cancelamento de pedido, alem do card no
+// Telegram a Cris (logistica) recebe um WhatsApp na hora, para segurar ou interceptar o envio.
+const EVO = 'http://evolution-api-aru6-api-1:8080';
+const EVO_KEY = 'EVO_API_KEY';
+const CRIS = '16464270203';
 
 function escapeHtml(t) {
   if (t == null) return '';
@@ -64,6 +69,24 @@ if (contatoId) {
   }
 }
 
+// Aviso de cancelamento para a logistica (WhatsApp da Cris). Vai antes do card para o card dizer se chegou.
+const ehCancelamento = !ehCallback && (tipo === 'cancelamento' || /cancel/i.test(motivo));
+let avisoLogistica = null;
+if (ehCancelamento) {
+  const ped = numeroPedido || ((motivo.match(/\b(AN-?\d{4,6}|D\d{3,6})\b/i) || [])[1] || '');
+  let w = '*CANCELAMENTO DE PEDIDO*\n\n';
+  w += 'Cliente: ' + nomeCliente + '\n';
+  w += 'WhatsApp: ' + (whatsappLink || telefoneFmt) + '\n';
+  if (ped) w += 'Pedido: ' + ped + '\n';
+  w += '\nMotivo: ' + motivo + '\n';
+  if (resumo) w += '\n' + resumo + '\n';
+  w += '\nConversa no Inbox: ' + inboxLink;
+  try {
+    await this.helpers.httpRequest({ method: 'POST', url: EVO + '/message/sendText/Samuel', headers: { apikey: EVO_KEY, 'Content-Type': 'application/json' }, body: { number: CRIS, text: w, delay: 800, linkPreview: false }, json: true, timeout: 20000 });
+    avisoLogistica = { ok: true };
+  } catch (e) { avisoLogistica = { ok: false, erro: String(e.message) }; }
+}
+
 const agora = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
 
 let msg = emoji + ' <b>' + escapeHtml(titulo) + '</b>\n\n';
@@ -88,6 +111,9 @@ if (whatsappLink) {
 if (contatoId && !ehCallback) {
   msg += '\n⏸ A Serena ficou pausada nessa conversa: quem assumir responde pelo Inbox (ou pelo celular do Samuel).\n';
 }
+if (ehCancelamento) {
+  msg += '\n📣 <b>Logistica (Cris) ' + (avisoLogistica && avisoLogistica.ok ? 'avisada no WhatsApp.' : 'NAO foi avisada: falhou o envio no WhatsApp.') + '</b>\n';
+}
 msg += '\n🕒 ' + escapeHtml(agora) + ' (BRT)';
 
 // Push para os atendentes com o Inbox instalado no celular (nao bloqueia o fluxo)
@@ -103,5 +129,6 @@ return [{ json: {
   tem_whatsapp: !!whatsappLink,
   contato_id: contatoId || null,
   resumo: resumo || null,
-  push: push
+  push: push,
+  aviso_logistica: avisoLogistica
 }}];
