@@ -280,7 +280,7 @@ function render(d){
     in_transit:[['Tá','chegando'],`Seu ${esc(prod1)} está em trânsito e segue ${esc(alvo)}.`],
     out_for_delivery:[['Hoje é','o dia'],'Saiu para entrega. Deixe alguém no endereço pra receber o carteiro.'],
     delivered:[['Pedido','entregue'],`Seu ${esc(prod1)} chegou. Aproveite e conte pra gente como foi.`],
-    exception:[['Precisa de','atenção'],esc(limpaStatus(R.status_atual)||'Aconteceu algo com a entrega.')+(detalhe?' '+linkify(detalhe):'')+' Fale com a gente que resolvemos.'],
+    exception:[['Precisa de','atenção'],[esc(limpaStatus(R.status_atual)||'Aconteceu algo com a entrega'),detalhe?linkify(detalhe):'','Fale com a gente que resolvemos'].filter(Boolean).map(t=>/[.!?]$/.test(t.trim())?t.trim():t.trim()+'.').join(' ')],
     waiting:[['Aguardando',esc(artTransp)],`Esse código ainda não teve movimentação. Pode levar até 24h depois da postagem pra aparecer ${esc(ehCorreios?'nos Correios':'na '+transpCurto)}. Confira se digitou igual ao que recebeu.`],
     returned:[['Voltou','pra gente'],'O pacote retornou ao remetente. Fale com a gente pra combinar o reenvio.']
   }[st]||[['Acompanhe','seu pedido'],esc(R.status_atual||'Atualizado agora.')];
