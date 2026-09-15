@@ -1,6 +1,16 @@
 const o = $('Triagem').first().json;
-const r = $input.first().json || {};
-const t = String(r.text || '').trim();
+// ACENTOS (15/09/2026): cerca de 20% das transcricoes chegavam com "茅", "n茫o" (bytes UTF-8 lidos como
+// GBK pelo no HTTP, que adivinhava o charset). O no Transcrever agora devolve a resposta como ARQUIVO
+// (binario "data") e aqui os bytes sao lidos em UTF-8 de verdade. Se vier JSON normal, segue como antes.
+let r = $input.first().json || {};
+try {
+  const bin = $input.first().binary;
+  if (bin && bin.data) {
+    const buf = await this.helpers.getBinaryDataBuffer(0, 'data');
+    r = JSON.parse(buf.toString('utf8'));
+  }
+} catch (e) { r = $input.first().json || {}; }
+const t = String((r && r.text) || '').trim();
 const ehVideo = o.tipo === 'video';
 const legenda = String(o.legenda || '').trim();
 let texto;

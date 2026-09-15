@@ -1395,5 +1395,19 @@ O que foi feito:
 - O rascunho do PIX errado (R$ 327, expirado às 10:01) ficou aberto na Shopify; é só apagar se
   incomodar no relatório.
 
-Observação vista de passagem: as transcrições de áudio dessa conversa vieram com acentos quebrados
-("茅", "n茫o"), o que indica um problema de codificação na transcrição. Fica registrado para corrigir.
+### Acentos quebrados na transcrição de áudio (15/09/2026)
+
+Os áudios da Claudia chegaram como "茅茅茅, n茫o vai ter o desconto": bytes UTF-8 lidos como GBK.
+Medido em `serena_mensagens`: de 10/09 a 15/09, 13 de 60 transcrições (cerca de 20%) vieram assim,
+de forma intermitente, o que aponta para o nó HTTP adivinhando o charset da resposta da ElevenLabs.
+Correção na Entrada: o nó `Transcrever (ElevenLabs)` passou a devolver a resposta como arquivo
+(`responseFormat: file`, binário `data`) e o `Montar Texto do Audio` lê os bytes em UTF-8 e faz o
+`JSON.parse` (fonte em `nodes/entrada-montar-texto-audio.js`; se vier JSON normal, segue como antes).
+Conferir nos próximos áudios se a coluna `quebrados` da consulta abaixo zera:
+
+```sql
+select to_char(criado_em at time zone 'America/Sao_Paulo','DD/MM') as dia, count(*) as audios,
+       sum(case when texto ~ '[茅茫谩贸锚玫莽脿]' then 1 else 0 end) as quebrados
+  from serena_mensagens where papel='cliente' and texto like '[Audio do cliente, transcrito]%'
+   and criado_em > now() - interval '7 days' group by 1 order by 1;
+```
