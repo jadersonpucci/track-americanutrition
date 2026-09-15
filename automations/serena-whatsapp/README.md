@@ -1354,3 +1354,21 @@ Caso Rozani: a equipe já tinha perguntado o motivo pelo celular às 22:31 e ela
 o pedido". Às 22:39 foi enviada pelo Inbox (autor Jaderson, entregue pelo Samuel) uma resposta com o
 rastreio (base em São José dos Pinhais/PR, previsão 16/09), a pergunta do motivo e as duas saídas
 (recusar a entrega, ou receber e devolver em até 7 dias). A Serena ficou pausada nessa conversa.
+
+## Cliente sem resposta por 7 minutos: segunda tentativa na Entrada (15/09/2026)
+
+Marizel (+55 41 8888-9371) perguntou "E o de 90" às 22:43 e só foi respondida às 22:50, pelo
+`Reprocessar sem resposta`. O que aconteceu: a Entrada (execução 1826350) chamou o Core, o Core
+terminou em 3 s **sem texto** (sem erro de API: nada em `serena_alertas`), e o `Chamar Serena Core`
+parou com "Serena Core sem resposta". Foi 1 falha em 40 execuções da Entrada naquela meia hora.
+Sem os dados da execução (o MCP não expõe), a causa provável é o modelo encerrar a rodada sem bloco
+de texto.
+
+Dois ajustes, ambos no ar:
+
+- **Segunda tentativa na hora** (`entrada-chamar-serena-core.js`): se o Core voltar ok mas sem
+  `resposta`, a Entrada espera 1,5 s e chama de novo em `modo: reprocessar` (não regrava a pergunta e
+  responde a tudo o que ficou pendente). Só depois disso desiste e deixa para o reprocessamento.
+- **Reprocessamento a cada 3 min em vez de 10** (`wXN30aD4YloMV2NN`), e a consulta passou a exigir
+  que a última mensagem do cliente tenha mais de 90 s, para nunca disputar com uma resposta que
+  ainda está saindo.

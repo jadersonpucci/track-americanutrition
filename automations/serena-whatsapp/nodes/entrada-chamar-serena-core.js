@@ -25,6 +25,18 @@ try {
   throw new Error('Serena Core indisponivel: ' + e.message);
 }
 
+// SEGUNDA TENTATIVA (15/09/2026): de vez em quando o Core responde ok sem texto (o modelo encerrou sem
+// escrever; caso Marizel, 14/09 22:43, atendida so pelo reprocessamento 7 min depois). Antes de desistir,
+// pede de novo em modo reprocessar: nao regrava a pergunta e responde a tudo o que ficou pendente.
+if (r && !r.resposta && r.pausada !== true) {
+  await new Promise((ok) => setTimeout(ok, 1500));
+  try {
+    const r2 = await this.helpers.httpRequest({ method: 'POST', url: 'https://n8n.americanutrition.com/webhook/serena-core', json: true, timeout: 180000, body: Object.assign({}, corpo, { modo: 'reprocessar' }) });
+    if (r2 && (r2.resposta || r2.pausada === true)) { r = r2; }
+    else if (r2 && r2.erro && !r.erro) { r.erro = r2.erro; }
+  } catch (e) { if (!r.erro) r.erro = 'segunda tentativa: ' + e.message; }
+}
+
 // pausada = um humano assumiu essa conversa no painel; sem resposta = erro no Core (fica no log)
 if (!r || r.pausada === true) { await soltar(); return []; }
 if (!r.resposta) { await soltar(); throw new Error('Serena Core sem resposta: ' + (r.erro || 'desconhecido')); }
