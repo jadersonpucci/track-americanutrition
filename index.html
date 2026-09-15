@@ -317,7 +317,7 @@ function render(d){
   const qt=$('carousel').children.length;$('dots').innerHTML=qt>1?Array.from({length:qt},(_,i)=>`<span class="${i?'':'on'}"></span>`).join(''):'';
 
   $('timeline').innerHTML=evs.length?evs.map((e,i)=>{
-    const ok=e.status_chave==='delivered'||/entregue/i.test(e.status||'');
+    const st=String(e.status||'');const ok=e.status_chave==='delivered'||(!e.status_chave&&/entregue/i.test(st)&&!/n[ãa]o (foi )?entregue|remetente/i.test(st));
     let loc='';
     if(e.eh_importacao)loc='Chegou dos EUA';
     else if(e.eh_transferencia&&e.local_destino)loc='A caminho de '+titulo(e.local_destino);
