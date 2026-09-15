@@ -1372,3 +1372,28 @@ Dois ajustes, ambos no ar:
 - **Reprocessamento a cada 3 min em vez de 10** (`wXN30aD4YloMV2NN`), e a consulta passou a exigir
   que a última mensagem do cliente tenha mais de 90 s, para nunca disputar com uma resposta que
   ainda está saindo.
+
+## Assinante antecipando a renovação: PIX saiu no valor cheio (15/09/2026)
+
+Claudia Bandeira (+55 34 9995-9242), assinante do ImunoFosfo 90 (R$ 294,30 com 10%), pediu para
+adiantar a renovação de 26/09. A Serena prometeu "com o desconto de assinante (R$ 294,30)" e gerou
+o PIX de **R$ 327,00**. A cliente percebeu por áudio às 10:21 e a Serena pediu desculpas e "encaminhou
+ao setor responsável".
+
+Causa: `gerar_pix`/`gerar_boleto` aceitam `desconto_pct` desde 11/09, mas nem a base de treinamento
+nem os adendos falavam disso. A Serena não tinha como saber que precisava passar o percentual.
+
+O que foi feito:
+
+- PIX correto gerado pelo router (`gerar_pix` com `desconto_pct=10`, cupom `ASSINANTE`,
+  `frete_gratis=true`): rascunho #D4119, R$ 294,30, válido até 10:56. Enviado pelo Inbox (autor
+  Jaderson, entregue pelo Samuel às 10:27) com um pedido de desculpas e "desconsidere o anterior".
+  A Serena foi religada na conversa e a atribuição fechada, para ela acompanhar o pagamento.
+- Adendo novo em `serena_config.system_prompt` (texto em `nodes/serena-config-adendos-prompt.md`):
+  documenta `desconto_pct`/`cupom` e a regra do assinante que antecipa (mesmos itens, mesmo
+  percentual da assinatura, cupom ASSINANTE, frete grátis, dizer o valor com desconto).
+- O rascunho do PIX errado (R$ 327, expirado às 10:01) ficou aberto na Shopify; é só apagar se
+  incomodar no relatório.
+
+Observação vista de passagem: as transcrições de áudio dessa conversa vieram com acentos quebrados
+("茅", "n茫o"), o que indica um problema de codificação na transcrição. Fica registrado para corrigir.
