@@ -1312,3 +1312,25 @@ com pouca familiaridade: valor e vencimento grandes, três passos de como pagar,
 compensação compacta e código de barras grande. O Gerar Boleto, o checkout (Fluxo A) e o resgate de boleto não
 pago passaram a apontar para `&pdf=1`. Além do link, o Gerar Boleto devolve `arquivo` e o Core (`arquivoPadrao`)
 manda o PDF como documento no WhatsApp logo depois da mensagem padrão.
+
+## Cancelamento de pedido: entender o motivo antes de escalar (15/09/2026)
+
+Caso Rozani (AN-15304): ela escreveu "Preciso cancelar o pedido" e a Serena respondeu na hora
+"já encaminhei seu pedido de cancelamento para a nossa equipe", sem perguntar nada. O Jaderson
+pediu para não ser tão direta: tentar contornar e, no mínimo, saber o motivo.
+
+Entrou como adendo em `serena_config.system_prompt` (texto em `nodes/serena-config-adendos-prompt.md`),
+sem mexer no Core. A regra: acolher e perguntar o motivo (uma vez só); com o motivo, oferecer UMA
+alternativa sem insistir (atraso → rastreio e previsão; comprou errado → ajuste ou troca;
+arrependimento → valor de manter o tratamento, adiar ou pausar; medo de golpe → dados reais do
+pedido); pedido já postado → explicar que pode recusar a entrega ou devolver em até 7 dias; se o
+cliente mantiver, `escalar_humano` com motivo "cancelamento do pedido N: <motivo dito>". Nunca
+prometer que está cancelado nem prazo de estorno.
+
+Testado no sandbox, sem telefone, pedido AN-15304:
+
+| Cliente | Serena | Ferramentas |
+|---|---|---|
+| "Preciso cancelar o pedido AN-15304" | "Poxa, tudo bem! Só pra te ajudar melhor: o que aconteceu, foi demora na entrega, comprou por engano, ou mudou de ideia?" | nenhuma |
+| "Demorou muito pra chegar, já não preciso mais" | "Boa notícia: seu pedido já está em São José dos Pinhais/PR e a previsão é chegar amanhã, 16/09 (...) vale a pena esperar mais esse pouquinho. Quer que eu mantenha assim ou ainda prefere cancelar?" | buscar_pedido_numero, consultar_status_pedido |
+| "Não, quero cancelar mesmo" | "Entendi, já encaminhei (...) como o pedido já está em trânsito, dá pra recusar a entrega ou recebê-lo e solicitar a devolução em até 7 dias." | escalar_humano (handoff) |
