@@ -1411,3 +1411,38 @@ select to_char(criado_em at time zone 'America/Sao_Paulo','DD/MM') as dia, count
   from serena_mensagens where papel='cliente' and texto like '[Audio do cliente, transcrito]%'
    and criado_em > now() - interval '7 days' group by 1 order by 1;
 ```
+
+## Assinatura: troca e upgrade do item antes de cancelar (15/09/2026)
+
+Caso Luzia (+55 14 99650-5597): assinante do 90 cápsulas, quis passar para o Plus 180. A Serena só
+sabia consultar, pausar, cancelar e reativar, então cancelou a assinatura (perdendo os 10%) e depois
+descobriu que o 180 estava sem estoque. O Jaderson pediu a feature: oferecer a troca/upgrade da
+assinatura antes de cancelar.
+
+**Ferramenta.** `[Serena Tool] Assinatura` (`WfxlFkDA9U9yYeR7`, fonte `nodes/assinatura-tool.js`)
+ganhou a ação `trocar`:
+
+- Entrada: `{"acao":"trocar","variant_id":"...","quantidade":1}` ou `itens_str: "vid:qtd,vid:qtd"`,
+  mais `confirmado`.
+- Busca cada variante na Shopify pelo `shopify-admin` (`variants/{id}.json` + `products/{id}.json`):
+  nome, preço, estoque, produto ativo. Sem estoque (`inventory_policy: deny` e quantidade 0) devolve
+  `sem_estoque: true` com a nota para oferecer a quantidade equivalente em outro tamanho.
+- Sem `confirmado` devolve a `proposta`: itens novos, valor cheio, valor com o `desconto_pct` da
+  assinatura, frete (grátis a partir de R$ 250), próxima renovação, e se vai reativar.
+- Com `confirmado` grava `items` e `shopify_items` (mesmo formato do checkout: price, quantity,
+  variant_id), `valor_cheio_centavos`, `valor_centavos`; se estava pausada ou cancelada, reativa
+  (`status ativa`, `cancelar_no_fim false`, `proximo_ciclo` no mínimo amanhã). Avisa o Telegram 98.
+- Bônus: `consultar` agora mostra o nome dos itens. Os `items` gravados pelo checkout não têm
+  `title`, então o nome vem da Shopify.
+
+Os dois crons de renovação (cartão `bhm7az355bAhIoUf` e PIX `VxyloA6hZtppGEja`) cobram
+`valor_centavos` e criam o pedido pelo `shopify_items`, então a troca vale já na próxima renovação.
+
+**Prompt.** Adendo "Assinatura: oferecer troca ou upgrade antes de cancelar": assinante que quer
+outro produto, tamanho ou quantidade nunca é levado ao cancelamento; a Serena propõe a troca com o
+valor já com desconto, e só cancela se o cliente não quiser assinar mais nada.
+
+Testado na assinatura da Luzia sem confirmar: `consultar` (nome do item resolvido), `trocar` para o
+180 (sem estoque, com a nota da alternativa) e `trocar` para 2x 90 (proposta R$ 588,60 de R$ 654,00,
+reativa, frete grátis). Depois foi enviada a ela pelo Inbox a oferta de reativar com 2x 90; a Serena
+ficou ativa na conversa para fechar com a ferramenta nova quando ela responder.
