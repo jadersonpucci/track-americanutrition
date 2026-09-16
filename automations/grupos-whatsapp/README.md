@@ -442,3 +442,24 @@ do número). O que a Evolution 2.3.7 (Baileys 7.0.0-rc.9) faz com grupos em modo
 correção de verdade é subir a Evolution (2.4.0-rc2 traz o mapeamento lid → telefone) e, se as
 bolhas voltarem ao reconectar, reiniciar o container antes de conectar. Ideal: tirar as automações
 de grupo do número de vendas e usar um segundo número só para grupos.
+
+### Correção do diagnóstico e sentinela (16/09/2026, mais tarde)
+
+Olhando o registro cru da Evolution, as 27 bolhas **estão** gravadas: mensagens nossas
+(`fromMe`, `source: web`, ids `3EB0…` gerados pelo Baileys) com `messageType: conversation` e
+`conversation: ""`, para 3 grupos (12 no Connect, 11 no #1, 4 no #2), de 11:06:15 a 11:07:53, a
+cada 1-2 s. Ou seja, a sessão de fato **enviou** mensagens de texto vazias, não foi só o celular
+desenhando protocolo. Nenhuma execução do n8n cobre esse intervalo (consulta por janela em
+`search_executions`: só fan-outs de 100 ms e a resposta ao Reginaldo), e revogações não ficam
+gravadas assim (as 26 da limpeza de 14/09 não aparecem). Quem mandou foi a sessão do Baileys por
+conta própria. Outro sintoma antes da rajada: de 10:24 até a queda, cada envio nosso aparecia em
+dobro, uma cópia para o número e outra para o `@lid`; depois da reconexão (11:16) sumiu.
+
+**Sentinela** (`Grupos | Sentinela de Bolhas`, fonte `sentinela-bolhas.js`): a cada 2 min lê as
+últimas 100 mensagens da Evolution; 4 ou mais mensagens nossas vazias em grupo nos últimos 6 min
+disparam aviso no Telegram (tópicos 289 e 1630) e `PUT /instance/restart/Samuel` (sessão nova,
+sem QR); 6 ou mais envios duplicados para `@lid` só avisam. Dedupe de 20 min. Desligar o restart
+automático: `serena_config.sentinela_reiniciar = off` (sem a linha, fica ligado).
+
+Reginaldo (+55 62 8137-9595): a resposta das 11:08 ficou marcada como entregue mas não saiu (a
+Evolution já estava caindo). Reenviada pelo Inbox às 11:24 e a Serena religada na conversa.
