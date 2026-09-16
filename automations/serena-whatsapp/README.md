@@ -528,7 +528,7 @@ Pedido: "faça o 1, 2, 3, 4, 5, 6 (verificar) e 8" da lista de melhorias.
 
 **3. Follow-up de link não aberto** (`link-followup.workflow.js`, id oL5sdxV2bQWGzUeC, cron 15 min). Link de checkout da Serena com mais de `link_followup_horas` (2) sem clique no AN Links (`anl_clicks`) e sem o cliente falar depois recebe uma mensagem única (8h-20h BRT, uma por contato a cada 7 dias); respeita fila humana, pausa, bloqueio e conversa pausada. Config `link_followup` on/off. Registro em `serena_link_followups`; a mensagem entra no histórico como `proativo:link_followup`.
 
-**4. Relatório diário de vendas** (`relatorio-vendas.workflow.js`, id zwchhPYGzK73hFPd, 20h BRT, Telegram tópico 289). Primeiro relatório (03/09): 59 conversas, 28 links para 17 clientes, 24 abertos (86%), 10 pedidos WPP = R$ 5.209,24 (43% da receita do dia), conversão link→pedido 36%. Config `relatorio_vendas`.
+**4. Relatório diário de vendas** (`relatorio-vendas.workflow.js`, id zwchhPYGzK73hFPd, 00h05 BRT fechando o dia anterior, Telegram tópico 289; até 16/09 rodava às 20h com o dia pela metade). Primeiro relatório (03/09): 59 conversas, 28 links para 17 clientes, 24 abertos (86%), 10 pedidos WPP = R$ 5.209,24 (43% da receita do dia), conversão link→pedido 36%. Config `relatorio_vendas`.
 
 **5. Escolha de versão.** A Serena marca `[[LISTA: título | opção | opção]]`. O plano era menu nativo (sendList), mas a Evolution atual devolve 400 `this.isZero is not a function`. Então o Core (`LISTA_NATIVA = false`) converte em opções numeradas no próprio texto ("Responde só com o número"). O caminho nativo está pronto (Envio Samuel aceita `{ number, lista }`, Entrada tem o nó `Enviar Lista`, `nodes/entrada-enviar-lista.js`); basta ligar quando a Evolution for atualizada.
 
@@ -1446,3 +1446,7 @@ Testado na assinatura da Luzia sem confirmar: `consultar` (nome do item resolvid
 180 (sem estoque, com a nota da alternativa) e `trocar` para 2x 90 (proposta R$ 588,60 de R$ 654,00,
 reativa, frete grátis). Depois foi enviada a ela pelo Inbox a oferta de reativar com 2x 90; a Serena
 ficou ativa na conversa para fechar com a ferramenta nova quando ela responder.
+
+## Relatório diário passa a fechar o dia (16/09)
+
+O relatório de vendas caía às 20h BRT com o dia ainda aberto. Agora o cron é `5 0 * * *` (00h05, fuso America/Sao_Paulo) e o dia de referência é **ontem** (`::date - 1`), comparado com o mesmo dia da semana anterior (`::date - 8`). O título continua "vendas de DD/MM" do dia fechado. Só mudaram o trigger e a consulta de datas no node "Calcular e Enviar".

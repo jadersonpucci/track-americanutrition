@@ -4,7 +4,7 @@
 // conversao link -> pedido e comparacao com o mesmo dia da semana anterior. Envia no Telegram (topico 289).
 import { workflow, node, trigger, sticky } from '@n8n/workflow-sdk';
 
-const cron = trigger({ type: 'n8n-nodes-base.scheduleTrigger', version: 1.3, config: { name: 'Todo dia 20h', parameters: { rule: { interval: [{ field: 'cronExpression', expression: '0 20 * * *' }] } } }, output: [{ timestamp: '2026-01-01T00:00:00Z' }] });
+const cron = trigger({ type: 'n8n-nodes-base.scheduleTrigger', version: 1.3, config: { name: 'Todo dia 00h05', parameters: { rule: { interval: [{ field: 'cronExpression', expression: '5 0 * * *' }] } } }, output: [{ timestamp: '2026-01-01T00:00:00Z' }] });
 
 const montar = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Calcular e Enviar', parameters: { jsCode: `const SK = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIiwiaXNzIjoic3VwYWJhc2UiLCJpYXQiOjE3Nzk5MzQ2MDEsImV4cCI6MjA5NTI5NDYwMX0.-unrUEZisjdJ_Pjje72_ccV4qwLB3S0mAjjpndUhOhQ';
 const SB = 'https://supabase.americanutrition.com/pg/query';
@@ -14,8 +14,9 @@ const self = this;
 async function sql(q) { return await self.helpers.httpRequest({ method: 'POST', url: SB, headers: { apikey: SK, Authorization: 'Bearer ' + SK, 'Content-Type': 'application/json' }, body: { query: q }, json: true, timeout: 30000 }); }
 async function shop(body) { return await self.helpers.httpRequest({ method: 'POST', url: SHOP, headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0' }, body: body, json: true, timeout: 60000 }); }
 
-// dia de referencia: hoje (BRT); comparacao: mesmo dia da semana passada
-const cfg = await sql("select coalesce((select valor from serena_config where chave='relatorio_vendas'),'on') as ativo, to_char((now() at time zone 'America/Sao_Paulo')::date, 'YYYY-MM-DD') as hoje, to_char(((now() at time zone 'America/Sao_Paulo')::date - 7), 'YYYY-MM-DD') as semana");
+// dia de referencia: ONTEM (BRT). Roda 00h05 para o dia estar fechado (ate 15/09 rodava as 20h com o dia
+// pela metade). Comparacao: mesmo dia da semana anterior.
+const cfg = await sql("select coalesce((select valor from serena_config where chave='relatorio_vendas'),'on') as ativo, to_char(((now() at time zone 'America/Sao_Paulo')::date - 1), 'YYYY-MM-DD') as hoje, to_char(((now() at time zone 'America/Sao_Paulo')::date - 8), 'YYYY-MM-DD') as semana");
 const c = (Array.isArray(cfg) && cfg[0]) || {};
 if (c.ativo !== 'on') return [{ json: { ok: true, pulado: 'relatorio_vendas=off' } }];
 const HOJE = c.hoje, SEM = c.semana;
@@ -55,7 +56,7 @@ try {
 } catch (e) { return [{ json: { ok: false, etapa: 'telegram', erro: String(e.message || e), texto: t } }]; }
 return [{ json: { ok: true, hoje: hoje, semana_passada: sem, shopify_hoje: sh, shopify_semana: ss, texto: t } }];` } }, output: [{ ok: true }] });
 
-const nota = sticky('## Relatorio diario de vendas da Serena\n\nTodo dia as 20h (BRT): conversas, links de pagamento gerados, links abertos (cliques no AN Links), follow-ups, pedidos com tag WPP e receita (Shopify), conversao link->pedido, e comparacao com o mesmo dia da semana anterior. Vai para o Telegram, topico 289. Desligar: serena_config relatorio_vendas = off.', [cron, montar], { color: 4 });
+const nota = sticky('## Relatorio diario de vendas da Serena\n\nTodo dia as 00h05 (BRT), fechando o dia anterior: conversas, links de pagamento gerados, links abertos (cliques no AN Links), follow-ups, pedidos com tag WPP e receita (Shopify), conversao link->pedido, e comparacao com o mesmo dia da semana anterior. Vai para o Telegram, topico 289. Desligar: serena_config relatorio_vendas = off.', [cron, montar], { color: 4 });
 
 export default workflow('serena-relatorio-vendas', '[Serena] Relatorio Diario de Vendas', { settings: { executionOrder: 'v1', timezone: 'America/Sao_Paulo' } })
   .add(cron).to(montar).add(nota);
