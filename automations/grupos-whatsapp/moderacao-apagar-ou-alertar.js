@@ -11,7 +11,11 @@ const NL = String.fromCharCode(10);
 // exatamente o mesmo autor (telefone). A unica diferenca e a idade da mensagem na hora da revogacao.
 // Por isso a revogacao automatica agora espera a mensagem ter pelo menos ESPERA_MIN segundos
 // (ver abaixo). Se a bolha voltar mesmo assim, zere MODO_AUTO e faca o teste do README no grupo QA.
-const MODO_AUTO = ['ausencia_automatica'];
+// 16/09/2026: desligado de novo. As 11:06 apareceram ~27 bolhas vazias em todos os grupos sem nenhuma exclusao
+// nossa (grupo_moderacao vazio, limpeza nao rodou): trafego de protocolo da sessao do Baileys. Ate a Evolution
+// ser atualizada, o Samuel nao revoga nada em grupo por conta propria: cada revogacao e mais trafego de protocolo
+// saindo do numero, e o banimento de 09/09 veio depois de uma sessao nesse estado.
+const MODO_AUTO = [];
 // Idade minima da mensagem (segundos) antes de revogar. A limpeza manual sem bolha apagou mensagens
 // com horas de vida; os testes limpos no QA (11/09) tinham ~2 min. Tres minutos e o meio-termo.
 const ESPERA_MIN = 180;

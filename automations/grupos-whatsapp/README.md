@@ -418,3 +418,27 @@ de limpo, não tem de onde partir. Para isso o diagnóstico ganhou `&remover=<nu
 os 10 grupos oficiais, procura pelo telefone ou pelo `@lid` do roster, remove onde estiver e devolve
 `estava_em`, `removido_de`, `falhou`. Não toca em admin nem em número da equipe. Usado em 14/09 para
 o +55 86 92002-8427 depois da limpeza: já não estava em nenhum grupo.
+
+## Bolhas vazias em todos os grupos de uma vez, sem nenhuma exclusão nossa (16/09/2026)
+
+Às 11:06-11:07 apareceram ~27 bolhas vazias do Samuel (12 no Connect, 11 no #1, 4 no #2), um ✓
+só. O Jaderson desconectou a Evolution na hora achando que era disparo de mensagem.
+
+Não foi. Conferido:
+
+- A Evolution não tem nenhum envio nosso a grupo nesse horário (último: Receita do Dia às 10:01).
+- `grupo_moderacao` sem nenhuma exclusão em 26 h; `grupo-limpar` sem execução; teste do QA não usado.
+- Volume de envios normal (217 em 16 h, máximo 18 por 10 min), nenhum contato em loop.
+- O watchdog registrou `Samuel desconectado, estado close` às 11:10.
+
+Mesmo padrão de 09/09 ("a sessão do Baileys travou... o aparelho principal encheu de bolhas vazias,
+tráfego de protocolo de uma sessão quebrada, e o número acabou banido"): mensagens de protocolo da
+sessão (troca de chaves de grupo, retransmissões), que o celular principal desenha como bolha e a
+Evolution nem armazena. Aparecem em todos os grupos no mesmo minuto porque a sessão faz isso para
+cada grupo em que o número está.
+
+**Feito:** `MODO_AUTO = []` de novo na moderação (revogar em grupo é mais tráfego de protocolo saindo
+do número). O que a Evolution 2.3.7 (Baileys 7.0.0-rc.9) faz com grupos em modo lid é instável; a
+correção de verdade é subir a Evolution (2.4.0-rc2 traz o mapeamento lid → telefone) e, se as
+bolhas voltarem ao reconectar, reiniciar o container antes de conectar. Ideal: tirar as automações
+de grupo do número de vendas e usar um segundo número só para grupos.
