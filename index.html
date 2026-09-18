@@ -35,6 +35,7 @@ button,input{font-family:inherit}
 .bars .on i{transform:scaleX(1)}
 .bars .cur i{animation:fillbar 3.2s linear infinite}
 .bars .err i{background:var(--live)}
+.bars .ok i{background:#17924A}
 @keyframes fillbar{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 .hdr{display:flex;justify-content:space-between;align-items:center;margin-top:14px;font-size:13px;color:var(--muted)}
 .hdr img{height:17px;display:block}
@@ -247,7 +248,7 @@ function enviar(){
   else{const p=$('i-ped').value.replace(/\D/g,''),v=$('i-val').value.trim();if(!p){$('ferr').textContent='Digite o número do pedido.';return}if(!v){$('ferr').textContent='Digite o email ou CEP usado na compra.';return}buscar({modo:'pedido',pedido:p,validacao:v})}
 }
 
-function setBars(n,cur,err){[...$('bars').children].forEach((s,i)=>{s.className=i<n?'on':(i===n&&cur?'cur':'');if(err&&i===n)s.className='cur err'})}
+function setBars(n,cur,err,ok){[...$('bars').children].forEach((s,i)=>{s.className=i<n?'on':(i===n&&cur?'cur':'');if(err&&i===n)s.className='cur err';if(ok&&i===4)s.className='on ok'})}
 function view(v){['v-busca','v-load','v-res'].forEach(x=>$(x).classList.toggle('hidden',x!==v));$('dock').classList.toggle('hidden',v!=='v-res')}
 
 const MSGS=['Chamando a transportadora…','Conferindo cada parada…','Quase lá…'];
@@ -307,7 +308,7 @@ function render(d){
   if(evs.some(e=>e.eh_importacao))tags+='<span class="tag usa"><i class="ti ti-plane"></i>Importado dos EUA</span>';
   $('r-tags').innerHTML=tags;
 
-  const n=ETAPA[st]??2;setBars(Math.min(n,5),st!=='delivered',vermelho);
+  const n=ETAPA[st]??2;setBars(Math.min(n,5),st!=='delivered',vermelho,st==='delivered');
   $('etapa').textContent=st==='delivered'?'Todas as etapas concluídas':`Etapa ${Math.min(n+1,5)} de 5 · ${vermelho?(st==='returned'?'Devolvido':'Atenção'):st==='waiting'?'Aguardando postagem':NOMES[n]}`;
   $('hdr-dir').textContent=P.numero?'#'+P.numero:'';
 
