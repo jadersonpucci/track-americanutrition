@@ -1,4 +1,4 @@
-// Painel de 1 clique: GET /webhook/pix-provedor?t=TOKEN[&set=inter|pagarme]
+// Painel de 1 clique: GET /webhook/pix-provedor?t=TOKEN[&set=inter|pagarme][&nibo=on|off]
 const BASE = 'https://n8n.americanutrition.com';
 const cfg = ($input.first().json || {}).cfg || {};
 const q = $('Provedor: Requisição').first().json.query || {};
@@ -13,13 +13,19 @@ const CSS = '*{box-sizing:border-box}body{margin:0;background:#F3F6FB;font-famil
 const pagina = (titulo, corpo) => '<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>' + esc(titulo) + '</title><style>' + CSS + '</style></head><body><div class="wrap">' + corpo + '</div></body></html>';
 
 if (!cfg.pix_admin_token || t !== cfg.pix_admin_token) {
-  return [{ json: { html: pagina('Acesso negado', '<div class="card"><h1>Acesso negado</h1><p class="sub">Link invalido. Pegue o link em checkout_config (pix_admin_token).</p></div>'), mudar: '', novo: '', atual: '', aviso: '', chat: '', thread: '' } }];
+  return [{ json: { html: pagina('Acesso negado', '<div class="card"><h1>Acesso negado</h1><p class="sub">Link invalido. Pegue o link em checkout_config (pix_admin_token).</p></div>'), mudar: '', novo: '', atual: '', nibo_mudar: '', nibo_novo: '', aviso: '', chat: '', thread: '' } }];
 }
 const atual = String(cfg.pix_provider || 'pagarme') === 'inter' ? 'inter' : 'pagarme';
 const set = String(q.set || '').toLowerCase();
 const mudar = ((set === 'inter' || set === 'pagarme') && set !== atual) ? set : '';
 const novo = mudar || atual;
 const link = (p) => BASE + '/webhook/pix-provedor?t=' + encodeURIComponent(t) + '&set=' + p;
+const niboAtual = String(cfg.nibo_lancar || 'off') === 'on' ? 'on' : 'off';
+const niboSet = String(q.nibo || '').toLowerCase();
+const niboMudar = ((niboSet === 'on' || niboSet === 'off') && niboSet !== niboAtual) ? niboSet : '';
+const niboNovo = niboMudar || niboAtual;
+const linkNibo = (v) => BASE + '/webhook/pix-provedor?t=' + encodeURIComponent(t) + '&nibo=' + v;
+const niboPronto = !!(cfg.nibo_conta_inter_id && cfg.nibo_cliente_id && cfg.nibo_categoria_id);
 const temCred = !!(cfg.inter_client_id && cfg.inter_client_secret);
 const temChave = !!cfg.inter_chave_pix;
 const nome = p => p === 'inter' ? 'Banco Inter' : 'Pagar.me';
@@ -38,9 +44,19 @@ corpo += '<div class="card"><b>Banco Inter</b><ul>'
   + '<li>Certificado mTLS: credencial "Banco Inter mTLS" no n8n</li></ul>'
   + '<a class="btn" style="background:#2F6BE0" href="' + esc(BASE + '/webhook/pix-inter-setup?t=' + encodeURIComponent(t)) + '">Registrar webhook no Inter</a>'
   + '<small>Webhook: ' + esc(BASE + '/webhook/pix-inter-webhook') + '</small></div>';
+if (niboMudar) corpo += '<div class="card"><b>Feito:</b> lancamento no Nibo <b>' + (niboNovo === 'on' ? 'ligado' : 'desligado') + '</b>.</div>';
+corpo += '<div class="card"><div class="atual">Nibo (1 recebimento por PIX): <span class="pill ' + (niboNovo === 'on' ? 'pagarme' : 'inter') + '">' + (niboNovo === 'on' ? 'ligado' : 'desligado') + '</span></div>'
+  + (niboNovo === 'on'
+    ? '<a class="btn red" href="' + esc(linkNibo('off')) + '">Desligar Nibo (1 clique)</a>'
+    : '<a class="btn' + (niboPronto ? '' : ' off') + '" href="' + esc(linkNibo('on')) + '">Ligar Nibo</a>')
+  + '<ul><li>Conta/cliente/categoria no Nibo: <b class="' + (niboPronto ? 'ok">ok' : 'no">rode o setup') + '</b></li>'
+  + '<li>Cada PIX confirmado no Inter vira um recebimento no Nibo (descricao "Pedido AN-...").</li>'
+  + '<li>Extrato do Inter a cada 10 min (precisa da permissao Extrato na API do Inter).</li></ul>'
+  + '<a class="btn" style="background:#2F6BE0" href="' + esc(BASE + '/webhook/inter-nibo-setup?t=' + encodeURIComponent(t)) + '">Setup Nibo (conta + cliente)</a></div>';
 corpo += '<div class="card"><b>Como funciona</b><ul><li>Com o Inter ligado, qualquer falha (token, certificado, API) cai automaticamente no Pagar.me.</li><li>Cartao e boleto continuam no Pagar.me.</li><li>A confirmacao do PIX Inter cria o pedido na Shopify pelo mesmo fluxo de sempre.</li></ul></div>';
 
-const aviso = mudar
+let aviso = mudar
   ? ('\u{1F501} <b>PIX do checkout</b> mudou para <b>' + nome(novo) + '</b>.' + (novo === 'inter' ? '\nVoltar ao Pagar.me a 1 clique: <a href="' + link('pagarme') + '">clique aqui</a>' : '\nLigar o Inter de novo: <a href="' + link('inter') + '">clique aqui</a>'))
   : '';
-return [{ json: { html: pagina('PIX do checkout', corpo), mudar: mudar, novo: novo, atual: atual, aviso: aviso, chat: String(cfg.telegram_chat_id || ''), thread: String(cfg.telegram_thread_id || '') } }];
+if (niboMudar) aviso += (aviso ? '\n\n' : '') + '\u{1F4D2} <b>Nibo</b>: lancamento automatico dos PIX do Inter <b>' + (niboNovo === 'on' ? 'ligado' : 'desligado') + '</b>. Trocar: <a href="' + linkNibo(niboNovo === 'on' ? 'off' : 'on') + '">clique aqui</a>';
+return [{ json: { html: pagina('PIX do checkout', corpo), mudar: mudar, novo: novo, atual: atual, nibo_mudar: niboMudar, nibo_novo: niboNovo, aviso: aviso, chat: String(cfg.telegram_chat_id || ''), thread: String(cfg.telegram_thread_id || '') } }];

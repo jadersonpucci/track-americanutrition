@@ -36,7 +36,7 @@ Inter ─────POST /webhook/pix-inter-webhook {pix:[{txid,…}]}─┐
 | `POST /webhook/pix-inter-confirmar {txid[, force]}` | verifica no Inter e cria o pedido (idempotente) |
 | `POST /webhook/pix-inter-webhook` | callback do Inter (cada txid é re-verificado no banco) |
 | `POST /webhook/pix-inter-token {k}` | interno: token OAuth2 com cache (exige `pix_admin_token`) |
-| `GET /webhook/pix-provedor?t=TOKEN[&set=inter|pagarme]` | painel/troca de provedor |
+| `GET /webhook/pix-provedor?t=TOKEN[&set=inter|pagarme][&nibo=on|off]` | painel: troca de provedor e liga/desliga o lançamento no Nibo |
 | `GET /webhook/pix-inter-setup?t=TOKEN` | registra o webhook no Inter (`PUT /pix/v2/webhook/{chave}`) |
 
 ## Tabelas (criadas pelo nó UTIL)
@@ -82,6 +82,6 @@ Workflows e endpoints:
 | `GET /webhook/inter-nibo-setup?t=TOKEN` | garante a conta bancária do Inter e o cliente padrão no Nibo e grava os ids em `checkout_config` |
 | `GET /webhook/inter-nibo-varrer?t=TOKEN&dias=N` | varredura manual do extrato (últimos N dias) |
 
-Config em `checkout_config`: `nibo_lancar` (`on`|`off`, nasce `off`), `nibo_extrato` (`on`|`off`, liga/desliga o poller), `nibo_conta_inter_id`, `nibo_cliente_id`, `nibo_categoria_id` (preenchidos pelo setup), `nibo_tipos_lancar` (regex dos tipos do extrato que entram, padrão `PIX|TED|DOC|BOLETO|TRANSFER|DEPOSITO`).
+Config em `checkout_config`: `nibo_lancar` (`on`|`off`, nasce `off`; botão "Ligar Nibo" no painel `pix-provedor`), `nibo_extrato` (`on`|`off`, liga/desliga o poller), `nibo_conta_inter_id`, `nibo_cliente_id`, `nibo_categoria_id` (preenchidos pelo setup), `nibo_tipos_lancar` (regex dos tipos do extrato que entram, padrão `PIX|TED|DOC|BOLETO|TRANSFER|DEPOSITO`).
 
 Comportamento com `nibo_lancar=off`: o evento é descartado (não fica marcado como visto), então ao ligar, a varredura do extrato lança o histórico dos últimos dias. Erros do Nibo ficam em `inter_nibo_lancamentos.erro` (status `erro`) e podem ser reenviados repetindo a chamada após apagar a linha.

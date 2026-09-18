@@ -127,11 +127,12 @@ code += hook('whReq', 'Inter Webhook: Requisição', 'POST', 'pix-inter-webhook'
 
 code += js('whProc', 'Inter Webhook: Processar', N('webhook_processar.js'), [260, 1820], { recebidos: 1, resultados: [] });
 
+const APLICAR_SQL = "update checkout_config set valor = v.valor, atualizado_em = now() from (values ('pix_provider', $1), ('nibo_lancar', $2)) as v(chave, valor) where checkout_config.chave = v.chave and v.valor <> '' returning checkout_config.chave, checkout_config.valor";
 code += hook('provReq', 'Provedor: Requisição', 'GET', 'pix-provedor', [0, 2250]);
 code += pg('provCfg', 'Provedor: Config', CFG_SQL, null, [260, 2250], { cfg: {} });
 code += js('provDecidir', 'Provedor: Validar e decidir', N('provedor_decidir.js'), [520, 2250], { html: '<html>', mudar: '', novo: 'pagarme', atual: 'pagarme', aviso: '', chat: '', thread: '' });
-code += pg('provAplicar', 'Provedor: Aplicar', "update checkout_config set valor = $1, atualizado_em = now() where chave = 'pix_provider' and $1 in ('inter', 'pagarme') returning valor", { queryReplacement: '{{ [$json.mudar] }}' }, [780, 2250], { valor: 'inter' }, 'alwaysOutputData: true');
-code += cond('provAvisar', 'Provedor: Avisar Telegram?', [1040, 2250], "{{ String($('Provedor: Validar e decidir').first().json.mudar || '') !== '' }}");
+code += pg('provAplicar', 'Provedor: Aplicar', APLICAR_SQL, { queryReplacement: '{{ [$json.mudar, $json.nibo_mudar] }}' }, [780, 2250], { valor: 'inter' }, 'alwaysOutputData: true');
+code += cond('provAvisar', 'Provedor: Avisar Telegram?', [1040, 2250], "{{ String($('Provedor: Validar e decidir').first().json.mudar || '') !== '' || String($('Provedor: Validar e decidir').first().json.nibo_mudar || '') !== '' }}");
 code += telegram('provTg', 'Provedor: Telegram', [1300, 2150], "{{ $('Provedor: Validar e decidir').first().json.chat }}", "{{ $('Provedor: Validar e decidir').first().json.aviso }}", "{{ Number($('Provedor: Validar e decidir').first().json.thread || 0) }}");
 code += `const provRespond = node({\n  type: 'n8n-nodes-base.respondToWebhook', version: 1.5,\n  config: { name: 'Provedor: Responder', position: [1560, 2250], parameters: { respondWith: 'text', responseBody: expr("{{ $('Provedor: Validar e decidir').first().json.html }}"), options: { responseHeaders: { entries: [{ name: 'Content-Type', value: 'text/html; charset=utf-8' }, { name: 'Cache-Control', value: 'no-store' }] } } } }\n});\n`;
 
