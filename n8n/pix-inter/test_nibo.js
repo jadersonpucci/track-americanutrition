@@ -48,7 +48,7 @@ const cfg = { pix_admin_token: 'tok', inter_client_id: 'id', inter_client_secret
   let m = r.out[0].json;
   console.assert(m.status === 'lancado' && m.nibo_receipt_id === 'bbb490d6-0555-4f7c-a369-0e0420f54287' && m.resposta.lancado, 'montar lancado ' + JSON.stringify(m));
   console.assert(posted.method === 'POST' && posted.path === 'receipts' && posted.body.accountId === 'ACC' && posted.body.stakeholderId === 'CLI' && posted.body.categories[0].categoryId === 'CAT' && posted.body.categories[0].value === 346.9 && posted.body.date === '2026-09-17', 'corpo receipts ' + JSON.stringify(posted.body));
-  console.assert(/PIX recebido · Maria Silva · \*\*\*456789\*\* · pedido AN-9999-BR/.test(posted.body.description), 'descricao ' + posted.body.description);
+  console.assert(posted.body.description === 'Pedido AN-9999-BR', 'descricao ' + posted.body.description);
   console.assert(posted.body.reference === 'E1', 'reference');
   r = await run(N('nibo_lancar_montar.js'), { input: { cfg, nova: null }, nodes: { 'Nibo Lançar: Validar': ev }, http: async () => { throw new Error('nao chamar'); } });
   console.assert(r.out[0].json.status === 'duplicado' && r.out[0].json.resposta.duplicado, 'montar duplicado');

@@ -65,7 +65,7 @@ Inter ─────POST /webhook/pix-inter-webhook {pix:[{txid,…}]}─┐
 
 ## Inter → Nibo (cada recebimento vira um lançamento, em tempo real)
 
-Cada PIX recebido no Inter vira **um recebimento** (`POST /empresas/v1/receipts`) no Nibo, na conta bancária do Inter, cliente "BANCO INTER - PIX", categoria Vendas, com descrição `PIX recebido · Nome · CPF mascarado · pedido AN-…` e `reference = endToEndId`.
+Cada PIX recebido no Inter vira **um recebimento** (`POST /empresas/v1/receipts`) no Nibo, na conta bancária do Inter, cliente "BANCO INTER - PIX", categoria Vendas, com descrição `Pedido AN-…` (sem pedido: tipo + nome do pagador) e `reference = endToEndId`.
 
 Três origens alimentam o mesmo funil e a tabela `inter_nibo_lancamentos` (chave única = `pix:<endToEndId>`) garante que cada transação entra uma única vez:
 

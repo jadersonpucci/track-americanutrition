@@ -14,15 +14,16 @@ if (!tiposRe.test(ev.tipo)) return [{ json: Object.assign(base, { erro: 'tipo fo
 if (!cfg.nibo_conta_inter_id || !cfg.nibo_cliente_id || !cfg.nibo_categoria_id) return [{ json: Object.assign(base, { status: 'erro', erro: 'config Nibo incompleta (nibo_conta_inter_id, nibo_cliente_id, nibo_categoria_id) - rode /webhook/inter-nibo-setup', resposta: { ok: false, erro: 'config Nibo incompleta' } }) }];
 
 const nome = ev.nome || (cob && cob.nome) || '';
-const doc = ev.documento || (cob && cob.documento) || '';
 const pedido = (cob && (cob.pedido_shopify || cob.order_code)) || '';
-const mask = d => d.length === 11 ? '***' + d.slice(3, 9) + '**' : (d.length === 14 ? d.slice(0, 2) + '.***.***/' + d.slice(8, 12) + '-**' : '');
-const partes = [ev.tipo === 'PIX' ? 'PIX recebido' : (ev.tipo + ' recebido')];
-if (nome) partes.push(nome);
-if (doc) partes.push(mask(doc));
-if (pedido) partes.push('pedido ' + pedido);
-if (!nome && ev.descricao) partes.push(ev.descricao);
-const descricao = partes.join(' · ').slice(0, 200);
+// Descricao: so "Pedido AN-...". Sem pedido (PIX fora do checkout, TED etc.): tipo + nome do pagador.
+let descricao;
+if (pedido) descricao = 'Pedido ' + pedido;
+else {
+  const partes = [ev.tipo === 'PIX' ? 'PIX recebido' : (ev.tipo + ' recebido')];
+  if (nome) partes.push(nome); else if (ev.descricao) partes.push(ev.descricao);
+  descricao = partes.join(' · ');
+}
+descricao = descricao.slice(0, 200);
 const referencia = (ev.end_to_end_id || ev.id_transacao || ev.chave).slice(0, 100);
 const corpo = {
   accountId: cfg.nibo_conta_inter_id,
