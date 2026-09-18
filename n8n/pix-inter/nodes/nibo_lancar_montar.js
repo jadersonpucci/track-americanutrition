@@ -32,7 +32,7 @@ const corpo = {
   accrualDate: ev.data,
   description: descricao,
   reference: referencia,
-  categories: [{ categoryId: cfg.nibo_categoria_id, value: ev.valor }]
+  categories: [{ categoryid: cfg.nibo_categoria_id, value: ev.valor, description: (ev.tipo + ' ' + referencia).slice(0, 100) }]
 };
 let r = null;
 try {

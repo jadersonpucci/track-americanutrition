@@ -1,5 +1,6 @@
 // Normaliza um recebimento do Inter para lancar no Nibo. Exige k = pix_admin_token (chamado so por nos internos).
-// body: { k, chave (unica), origem, tipo, valor (reais), data (ISO/YYYY-MM-DD), nome, documento, descricao, referencia, txid, end_to_end_id, id_transacao, detalhes }
+// body: { k, chave (unica), origem, tipo, valor (reais), data (ISO/YYYY-MM-DD), nome, documento, descricao, referencia, txid, end_to_end_id, id_transacao, detalhes, forcar }
+// forcar: true relanca mesmo que a chave ja esteja registrada (uso administrativo, ex.: apos apagar um lancamento errado no Nibo).
 const cfg = ($input.first().json || {}).cfg || {};
 const root = $('Nibo Lançar: Requisição').first().json;
 const b = root.body || root || {};
@@ -28,5 +29,6 @@ return [{ json: {
   txid: String(b.txid || '').replace(/[^a-zA-Z0-9]/g, '').slice(0, 35),
   end_to_end_id: String(b.end_to_end_id || '').trim().slice(0, 40),
   id_transacao: String(b.id_transacao || '').trim().slice(0, 80),
-  detalhes: JSON.stringify(b.detalhes && typeof b.detalhes === 'object' ? b.detalhes : {})
+  detalhes: JSON.stringify(b.detalhes && typeof b.detalhes === 'object' ? b.detalhes : {}),
+  forcar: b.forcar === true || String(b.forcar) === 'true'
 } }];

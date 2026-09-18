@@ -84,4 +84,8 @@ Workflows e endpoints:
 
 Config em `checkout_config`: `nibo_lancar` (`on`|`off`, nasce `off`; botão "Ligar Nibo" no painel `pix-provedor`), `nibo_extrato` (`on`|`off`, liga/desliga o poller), `nibo_conta_inter_id`, `nibo_cliente_id`, `nibo_categoria_id` (preenchidos pelo setup), `nibo_tipos_lancar` (regex dos tipos do extrato que entram, padrão `PIX|TED|DOC|BOLETO|TRANSFER|DEPOSITO`).
 
+Reenviar um lançamento (ex.: depois de apagar um errado no Nibo): `POST /webhook/inter-nibo-lancar` com os mesmos dados e `"forcar": true`. Linhas com status `erro` são reenviadas automaticamente na próxima chamada com a mesma chave.
+
+Peculiaridades do Nibo/n8n que o proxy contorna: o `$filter` de `customers` é ignorado (o setup filtra do lado de cá); o POST devolve só um UUID entre aspas (quebra o modo JSON do nó HTTP) e o modo texto serializa o stream gzip, por isso a resposta é baixada como arquivo e lida por um Code node; `sendBody`/`sendQuery` do nó HTTP precisam ser `true` literal (com expressão o n8n esconde o campo do corpo e manda vazio).
+
 Comportamento com `nibo_lancar=off`: o evento é descartado (não fica marcado como visto), então ao ligar, a varredura do extrato lança o histórico dos últimos dias. Erros do Nibo ficam em `inter_nibo_lancamentos.erro` (status `erro`) e podem ser reenviados repetindo a chamada após apagar a linha.

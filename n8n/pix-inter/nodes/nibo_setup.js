@@ -35,21 +35,23 @@ try {
   else { out.ok = false; out.passos.push({ passo: 'conta Inter', ok: false, erro: 'nao encontrada nem criada' }); }
 } catch (e) { out.ok = false; out.passos.push({ passo: 'conta Inter', ok: false, erro: String(e && e.message || e) }); }
 
-// 2) cliente padrao (stakeholder) dos recebimentos
+// 2) cliente padrao (stakeholder) dos recebimentos. O $filter de customers e ignorado pelo Nibo: filtra aqui.
 let clienteId = String(cfg.nibo_cliente_id || '');
 try {
-  if (!clienteId) {
-    const r = await api('GET', 'customers', null, { '$filter': "name eq '" + NOME_CLIENTE.replace(/'/g, "''") + "'", '$top': '5' });
-    let cli = ((r.body && r.body.items) || []).find(c => !c.isDeleted && !c.isArchived) || null;
-    if (!cli) {
-      const c = await api('POST', 'customers', { name: NOME_CLIENTE });
-      out.passos.push({ passo: 'criar cliente', ok: c.ok, http: c.statusCode, resposta: c.body });
-      if (c.ok && c.body && c.body.id) cli = c.body;
-      else { const r2 = await api('GET', 'customers', null, { '$filter': "name eq '" + NOME_CLIENTE.replace(/'/g, "''") + "'", '$top': '5' }); cli = ((r2.body && r2.body.items) || [])[0] || null; }
-    }
-    if (cli && cli.id) clienteId = cli.id;
+  const norm = s => String(s || '').replace(/\s+/g, ' ').trim().toUpperCase();
+  const listar = async () => { const r = await api('GET', 'customers', null, { '$top': '500' }); return ((r.body && r.body.items) || []).filter(c => !c.isDeleted && !c.isArchived); };
+  let lista = await listar();
+  let cli = clienteId ? lista.find(c => c.id === clienteId && norm(c.name) === norm(NOME_CLIENTE)) : null;
+  if (!cli) cli = lista.find(c => norm(c.name) === norm(NOME_CLIENTE)) || null;
+  if (!cli) {
+    const c = await api('POST', 'customers', { name: NOME_CLIENTE, communication: { contactName: 'Banco Inter' }, address: { country: 'Brasil' } });
+    out.passos.push({ passo: 'criar cliente', ok: c.ok, http: c.statusCode, resposta: c.body });
+    if (c.ok && c.body && typeof c.body === 'object' && c.body.id) cli = c.body;
+    else if (c.ok && typeof c.body === 'string' && c.body.length > 10) cli = { id: c.body.replace(/"/g, '') };
+    else { lista = await listar(); cli = lista.find(x => norm(x.name) === norm(NOME_CLIENTE)) || null; }
   }
-  if (clienteId) out.passos.push({ passo: 'cliente padrao', ok: true, id: clienteId });
+  clienteId = (cli && cli.id) ? cli.id : '';
+  if (clienteId) out.passos.push({ passo: 'cliente padrao', ok: true, id: clienteId, nome: NOME_CLIENTE });
   else { out.ok = false; out.passos.push({ passo: 'cliente padrao', ok: false, erro: 'crie no Nibo um cliente "' + NOME_CLIENTE + '" e grave o id em checkout_config.nibo_cliente_id' }); }
 } catch (e) { out.ok = false; out.passos.push({ passo: 'cliente padrao', ok: false, erro: String(e && e.message || e) }); }
 

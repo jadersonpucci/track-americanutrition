@@ -52,13 +52,13 @@ add(cond('Nibo Lançar: Ok?', [780, Y2], '={{ $json.ok }}'));
 add(pg('Nibo Lançar: Registrar', `with ins as (
   insert into inter_nibo_lancamentos (chave, origem, tipo, valor, data, nome, documento, descricao, referencia, txid, end_to_end_id, id_transacao, status, detalhes)
   values ($1, $2, $3, $4::numeric, $5::date, $6, $7, $8, $9, $10, $11, $12, 'novo', $13::jsonb)
-  on conflict (chave) do nothing
+  on conflict (chave) do update set atualizado_em = now() where inter_nibo_lancamentos.status = 'erro' or $14::boolean
   returning chave
 )
 select (select coalesce(json_object_agg(chave, valor), '{}'::json) from checkout_config) as cfg,
        (select chave from ins) as nova,
        (select row_to_json(c) from checkout_pix_inter c where c.txid = nullif($10, '')) as cobranca`, [1040, Y2 - 100],
-  '={{ [$json.chave, $json.origem, $json.tipo, $json.valor, $json.data, $json.nome, $json.documento, $json.descricao, $json.referencia, $json.txid, $json.end_to_end_id, $json.id_transacao, $json.detalhes] }}'));
+  '={{ [$json.chave, $json.origem, $json.tipo, $json.valor, $json.data, $json.nome, $json.documento, $json.descricao, $json.referencia, $json.txid, $json.end_to_end_id, $json.id_transacao, $json.detalhes, $json.forcar === true] }}'));
 add(js('Nibo Lançar: Montar', N('nibo_lancar_montar.js'), [1300, Y2 - 100]));
 add(pg('Nibo Lançar: Atualizar', "with del as (\n  delete from inter_nibo_lancamentos where chave = $1 and $2 = 'descartar' returning chave\n), upd as (\n  update inter_nibo_lancamentos set status = $2, nibo_receipt_id = nullif($3, ''), erro = nullif($4, ''), descricao = coalesce(nullif($5, ''), descricao), atualizado_em = now()\n  where chave = $1 and $2 not in ('duplicado', 'descartar') returning chave\n)\nselect coalesce((select chave from del), (select chave from upd)) as chave", [1560, Y2 - 100],
   '={{ [$json.chave, $json.status, $json.nibo_receipt_id, $json.erro, $json.descricao] }}'));
