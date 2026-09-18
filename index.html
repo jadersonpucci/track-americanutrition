@@ -136,7 +136,22 @@ button,input{font-family:inherit}
 .lb{position:fixed;inset:0;background:rgba(10,27,61,.92);display:none;align-items:center;justify-content:center;z-index:80;padding:24px}
 .lb.on{display:flex}
 .lb img{max-width:100%;max-height:85vh;border-radius:18px}
-#confete{position:fixed;inset:0;pointer-events:none;z-index:70}
+/* comemoracao de entrega (uma vez, entrega nas ultimas 24h): frasco pousa + brilho + carimbo */
+.selo{position:absolute;right:22px;top:20px;padding:8px 12px;border:2.5px solid #fff;border-radius:10px;font-family:Unbounded;font-weight:700;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#fff;opacity:0;transform:rotate(-10deg) scale(1.6);pointer-events:none}
+.selo:after{content:'';position:absolute;inset:3px;border:1px solid rgba(255,255,255,.5);border-radius:7px}
+.sweep{position:absolute;top:-30%;bottom:-30%;left:-40%;width:35%;background:linear-gradient(100deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.22) 50%,rgba(255,255,255,0) 100%);transform:skewX(-18deg);pointer-events:none;opacity:0}
+.cele .sweep{animation:sweep 1.1s ease-in-out .3s forwards}
+.cele .selo{animation:stamp .5s cubic-bezier(.2,.9,.3,1.1) .95s forwards}
+.cele.card.main{animation:shake .32s ease 1.25s}
+.cele .bottle.photo{animation:landp .8s cubic-bezier(.2,.9,.3,1.25) both,floatp 5s ease-in-out .8s infinite}
+.cele .bottle:not(.photo){animation:land .8s cubic-bezier(.2,.9,.3,1.25) both,float 5s ease-in-out .8s infinite}
+.hero h1 em.shine{background:linear-gradient(90deg,var(--blue) 0%,var(--blue) 40%,#2F6BE0 50%,var(--blue) 60%,var(--blue) 100%);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 1.4s ease .2s both}
+@keyframes sweep{from{left:-40%;opacity:1}to{left:130%;opacity:1}}
+@keyframes stamp{0%{opacity:0;transform:rotate(-10deg) scale(1.8)}70%{opacity:1;transform:rotate(-12deg) scale(.92)}100%{opacity:.92;transform:rotate(-12deg) scale(1)}}
+@keyframes shake{0%,100%{transform:translate(0,0)}30%{transform:translate(0,2px)}60%{transform:translate(0,-1px)}}
+@keyframes landp{from{transform:translateY(-70px) rotate(-6deg);opacity:0}60%{transform:translateY(6px) rotate(5deg);opacity:1}to{transform:translateY(0) rotate(4deg);opacity:1}}
+@keyframes land{from{transform:translateY(-70px) rotate(-2deg);opacity:0}60%{transform:translateY(6px) rotate(9deg);opacity:1}to{transform:translateY(0) rotate(8deg);opacity:1}}
+@keyframes shine{from{background-position:120% 0}to{background-position:-30% 0}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 @media (min-width:560px){.app{padding-top:40px}}
 </style>
@@ -179,7 +194,6 @@ button,input{font-family:inherit}
 </nav>
 <div class="toast" id="toast"></div>
 <div class="lb" id="lb"><img alt="Comprovante de entrega"></div>
-<canvas id="confete"></canvas>
 <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
 <script>
@@ -286,6 +300,7 @@ function render(d){
   }[st]||[['Acompanhe','seu pedido'],esc(R.status_atual||'Atualizado agora.')];
   const vermelho=st==='exception'||st==='returned';
   $('r-titulo').innerHTML=`${T[0][0]}<br><em class="${vermelho?'r':''}">${T[0][1]}</em>${st==='delivered'?'':'<span class="dt"></span>'}`;
+  {const e24=parseData(R.entregue_em);if(st==='delivered'&&e24&&(Date.now()-e24)/36e5<=24)$('r-titulo').querySelector('em').classList.add('shine');}
   $('r-sub').innerHTML=T[1];
   let tags='';
   if(R.atrasado&&st!=='delivered')tags+='<span class="tag warn"><i class="ti ti-clock"></i>Um pouco atrasado</span>';
@@ -298,9 +313,10 @@ function render(d){
 
   const serv=/SEDEX/i.test(R.servico||'')?'Sedex':/PAC/i.test(R.servico||'')?'PAC':(R.transportadora||'Correios');
   const ent=parseData(R.entregue_em);
+  const celebrar=st==='delivered'&&ent&&(Date.now()-ent)/36e5<=24;
   const bigTxt=st==='delivered'&&ent?(ent.getDate()+' de '+MESES[ent.getMonth()]+',<br>às '+hhmm(ent)):(dataLonga(R.previsao_entrega)||(st==='waiting'?'Assim que<br>postarem':'Em breve'));
   const nomeGarrafa=nomeGarrafaDe(prod1);
-  let cards=`<div class="card main ${vermelho?'alert':''}">
+  let cards=`<div class="card main ${vermelho?'alert':''}${celebrar?' cele':''}">${celebrar?'<div class="sweep"></div><div class="selo">Entregue</div>':''}
     <small>${st==='delivered'?'Entregue em':'Previsão de entrega'}</small><div class="big">${bigTxt}</div>
     <div class="meta"><span>${esc(serv)}${cidade?' · '+esc(cidade)+(uf?', '+esc(uf):''):''}</span>${R.codigo?`<button class="code" onclick="copiar()"><i class="ti ti-copy"></i>${esc(R.codigo)}</button>`:''}</div>
     ${(()=>{const rod=prods.length>1?'+'+(prods.length-1)+' item'+(prods.length>2?'s':''):'America';const foto=prods[0]&&prods[0].img;
@@ -329,7 +345,6 @@ function render(d){
   $('b-wpp').href=wpp(`Olá Serena! Preciso de ajuda com o pedido ${numPed} (rastreio ${R.codigo||''}).`);
   const pth=location.pathname.replace(/^\/+|\/+$/g,'');if(R.codigo&&pth!==R.codigo&&(pth===''||/^index/.test(pth)||/^[A-Za-z0-9]{8,}$/.test(pth)))history.replaceState(null,'','/'+R.codigo+location.search.replace(/([?&])(codigo|pedido|v|email|cep)=[^&]*/g,'').replace(/^&/,'?'));
   view('v-res');window.scrollTo({top:0,behavior:'smooth'});
-  if(st==='delivered'&&ent&&(Date.now()-ent)/36e5<=24)setTimeout(confete,500);
 }
 
 $('carousel').addEventListener('scroll',()=>{const c=$('carousel'),w=c.children[0]?c.children[0].offsetWidth+12:1,i=Math.round(c.scrollLeft/w);[...$('dots').children].forEach((d,j)=>d.classList.toggle('on',j===i))},{passive:true});
@@ -338,8 +353,6 @@ $('b-hist').onclick=()=>$('caminho').scrollIntoView({behavior:'smooth',block:'st
 $('b-share').onclick=async()=>{const url=location.origin+'/'+ultimoCodigo;try{if(navigator.share)await navigator.share({title:'Rastreio America Nutrition',text:'Acompanhe a entrega:',url});else{await navigator.clipboard.writeText(url);toast('Link copiado')}}catch(e){}};
 function abrirFoto(u){const l=$('lb');l.querySelector('img').src=u;l.classList.add('on')}
 $('lb').onclick=()=>$('lb').classList.remove('on');
-
-function confete(){if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;const cv=$('confete'),x=cv.getContext('2d');cv.width=innerWidth;cv.height=innerHeight;const cor=['#07388E','#AD0404','#2F6BE0','#ffffff','#E8262C'];const ps=Array.from({length:120},()=>({x:Math.random()*cv.width,y:-20-Math.random()*cv.height*.5,w:6+Math.random()*6,h:8+Math.random()*8,c:cor[Math.random()*5|0],vy:2+Math.random()*3,vx:-1+Math.random()*2,r:Math.random()*6,vr:-.1+Math.random()*.2}));let t=0;(function f(){x.clearRect(0,0,cv.width,cv.height);ps.forEach(p=>{p.y+=p.vy;p.x+=p.vx;p.r+=p.vr;x.save();x.translate(p.x,p.y);x.rotate(p.r);x.fillStyle=p.c;x.fillRect(-p.w/2,-p.h/2,p.w,p.h);x.restore()});if(++t<220)requestAnimationFrame(f);else x.clearRect(0,0,cv.width,cv.height)})()}
 
 (function auto(){const q=new URLSearchParams(location.search);let c=q.get('codigo');const p=q.get('pedido'),v=q.get('v')||q.get('email')||q.get('cep');if(!c){const path=location.pathname.replace(/^\/+|\/+$/g,'').replace(/\.(php|html)$/,'');if(/^[A-Za-z0-9]{8,}$/.test(path)&&!/^index$/i.test(path))c=path.toUpperCase()}
 if(c){$('i-cod').value=c;buscar({modo:'codigo',codigo:c})}else if(p&&v){buscar({modo:'pedido',pedido:p,validacao:v})}else view('v-busca')})();
