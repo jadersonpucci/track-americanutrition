@@ -1464,3 +1464,7 @@ Varredura em todos os workflows do n8n que mandam mensagem ao cliente pelo núme
 | `Clube — Crédito de Estrelas` (LXCfUsXUhLB5cPB4) | Avisar Marcos | aviso de recompensa e aviso America Black |
 
 Já falavam como Serena ou sem nome (nada a fazer): Dispatcher transacional (pago/enviado/entregue), carrinho abandonado, assinaturas (cobrança, PIX, dunning, fidelidade), afiliados, rastreio proativo, follow-up de link, Telegram, chat do site.
+
+## Objecao de confianca: verificacao da Meta (18/09)
+
+Adendo no `serena_config.system_prompt` (fonte em `nodes/serena-config-adendos-prompt.md`): quando o cliente duvida da empresa ou do produto (golpe, confiavel, numero oficial, medo de pagar), a Serena cita que a America Nutrition e verificada pela Meta, com o selo azul no WhatsApp e no Instagram, concedido so depois de conferencia de documentos e autenticidade, e convida a conferir o selo ao lado do nome. Soma aos fatos que ja existiam na base (15+ anos, Reclame Aqui verificado, laudo por lote). Uma vez por conversa, nunca com quem nao demonstrou duvida.
