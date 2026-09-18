@@ -3,7 +3,7 @@
 //
 // Roda 3 minutos depois da pergunta. Antes de falar, reconfere duas coisas: alguem da equipe ja
 // respondeu nesse meio tempo? e as travas continuam dentro do limite? So entao monta a resposta,
-// no numero da empresa, em primeira pessoa; no privado se apresenta como Serena (primeira pessoa, curta, sem assinar como robo), cita a mensagem da pessoa e
+// na voz do Samuel (primeira pessoa, curta, sem assinar como robo), cita a mensagem da pessoa e
 // posta. Pedido que nao chegou vai em duas partes: no grupo o status sem dado pessoal, no privado
 // o rastreio. Tudo fica em grupo_bot_log e a equipe ve no Telegram o que ele disse.
 const d = $input.first().json || {};
@@ -145,7 +145,7 @@ if (cat === 'link_compra') {
     const dataPedido = String(achou.created_at || '').slice(0, 10).split('-').reverse().slice(0, 2).join('/');
     if (!f || !f.tracking_number) {
       grupoTxt = oi + 'Olhei aqui: seu pedido do *' + item + '*, feito em ' + dataPedido + ', está pago e em separação. A gente posta até as 12h dos dias úteis, e assim que sair você recebe o rastreio no privado.';
-      privadoTxt = oi + 'Aqui é a Serena, da America Nutrition. Seu pedido *' + numero + '* está pago e em separação. Assim que for postado eu te mando o código de rastreio por aqui.';
+      privadoTxt = oi + 'Aqui é o Samuel, da America Nutrition. Seu pedido *' + numero + '* está pago e em separação. Assim que for postado eu te mando o código de rastreio por aqui.';
       detalhe += ' | ' + numero + ' sem postagem';
     } else {
       const cod = String(f.tracking_number);
@@ -162,7 +162,7 @@ if (cat === 'link_compra') {
       } else {
         grupoTxt = oi + 'Olhei aqui: seu pedido *não está perdido*' + (x && x.atrasado ? ', mas está atrasado na transportadora' : ' e está dentro do prazo') + '.' + NL + '• Postado em ' + (x && x.postado_em ? String(x.postado_em).slice(0, 10).split('-').reverse().slice(0, 2).join('/') : dataPedido) + (onde ? NL + '• Último registro' + (quando ? ' (' + quando + ')' : '') + ': ' + onde : '') + (previsao ? NL + '• Previsão: até ' + previsao : '') + NL + NL + 'Te mandei o link de rastreio no privado. Se passar da previsão, me avisa que eu abro a reclamação com a transportadora.';
       }
-      privadoTxt = oi + 'Aqui é a Serena, da America Nutrition. Vi sua mensagem no grupo e conferi o pedido *' + numero + '*.' + NL + NL + '\u{1F4E6} ' + item + NL + '\u{1F69A} ' + (x && x.transportadora ? String(x.transportadora).replace('jtexpress', 'J&T Express') : 'transportadora') + ', código ' + cod + (previsao ? NL + '\u{1F5D3} Previsão: até ' + previsao : '') + NL + NL + 'Acompanhe aqui, atualiza sozinho:' + NL + 'https://track.americanutrition.com/' + cod;
+      privadoTxt = oi + 'Aqui é o Samuel, da America Nutrition. Vi sua mensagem no grupo e conferi o pedido *' + numero + '*.' + NL + NL + '\u{1F4E6} ' + item + NL + '\u{1F69A} ' + (x && x.transportadora ? String(x.transportadora).replace('jtexpress', 'J&T Express') : 'transportadora') + ', código ' + cod + (previsao ? NL + '\u{1F5D3} Previsão: até ' + previsao : '') + NL + NL + 'Acompanhe aqui, atualiza sozinho:' + NL + 'https://track.americanutrition.com/' + cod;
       detalhe += ' | ' + numero + ' ' + cod + ' ' + String((x && x.status_chave) || '');
     }
   }

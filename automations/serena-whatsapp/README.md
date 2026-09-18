@@ -1453,11 +1453,10 @@ O relatório de vendas caía às 20h BRT com o dia ainda aberto. Agora o cron é
 
 ## Automações que se apresentavam como "Samuel" agora falam como Serena (18/09)
 
-Varredura em todos os workflows do n8n que mandam mensagem ao cliente pelo número da empresa. Seis ainda se apresentavam como "Samuel" no texto; todos passaram a "Serena" (e "Obrigado" virou "Obrigada" onde a Serena assina). Nome da instância na Evolution, nomes de workflow/nó e alertas internos no Telegram não mudaram.
+Varredura em todos os workflows do n8n que mandam mensagem ao cliente pelo número da empresa. Seis ainda se apresentavam como "Samuel" no texto; cinco passaram a "Serena" (e "Obrigado" virou "Obrigada" onde a Serena assina). Nome da instância na Evolution, nomes de workflow/nó e alertas internos no Telegram não mudaram. **Exceção, por decisão do Jaderson: os grupos continuam como Samuel** (`Grupos | Samuel Responde`, 0OwXSCNKh3zpvyFG, inclusive o privado de rastreio "Aqui é o Samuel").
 
 | Workflow | Nó | O que mudou |
 |---|---|---|
-| `Grupos \| Samuel Responde` (0OwXSCNKh3zpvyFG) | Reconferir e Responder | privado do rastreio: "Aqui é a Serena, da America Nutrition" |
 | `AN - Clube Indicou Ganhou (Samuel)` (VSrRalderq7PjzI1) | Indicou Ganhou | "Serena aqui, da America Nutrition" |
 | `AN - Reviews Convite Pos-Entrega (Samuel)` (QWB9Gw8e7DTH4bP5) | Montar Convites | as 5 variações de apresentação (Aqui é a Serena / Sou a Serena / Serena aqui / Aqui quem fala é a Serena / Serena falando) |
 | `AN - Reviews Cupom 5 Estrelas (Samuel)` (3XLDAqp7C4e7BaR0) | Cupom 5 Estrelas | "Serena aqui, da America Nutrition"; "Obrigada por fazer parte da nossa história" |

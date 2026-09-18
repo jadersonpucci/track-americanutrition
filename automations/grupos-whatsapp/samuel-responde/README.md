@@ -81,7 +81,3 @@ Teste no grupo QA com payload sintético, antes de liberar para todos:
 - "Gostaria de saber a mesma coisa, qual o valor?" → confiança 40 → `ignorada`, nada postado (era exatamente o erro do bot antigo).
 
 Depois disso: `grupo_bot_ativo = on`, `grupo_bot_grupos = todos`.
-
-## Apresentação como Serena (18/09/2026)
-
-A mensagem privada de rastreio ("pedido não chegou") se apresentava como "Aqui é o Samuel, da America Nutrition". Passou a "Aqui é a Serena, da America Nutrition", igual ao restante do atendimento. No grupo o texto continua em primeira pessoa, sem nome. Fonte: `responder.js`.
