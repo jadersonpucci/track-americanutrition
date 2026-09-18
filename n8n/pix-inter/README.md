@@ -65,7 +65,7 @@ Inter ─────POST /webhook/pix-inter-webhook {pix:[{txid,…}]}─┐
 
 ## Inter → Nibo (cada recebimento vira um lançamento, em tempo real)
 
-Cada PIX recebido no Inter vira **um recebimento** (`POST /empresas/v1/receipts`) no Nibo, na conta bancária do Inter, cliente "BANCO INTER - PIX", categoria Vendas, com descrição `Pedido AN-…` (sem pedido: tipo + nome do pagador) e `reference = endToEndId`.
+Cada PIX recebido no Inter vira **um recebimento** (`POST /empresas/v1/receipts`) no Nibo, na conta bancária do Inter, cliente "BANCO INTER - PIX", categoria Vendas, com descrição `Pedido AN-15527` (o número do pedido Shopify; sem pedido, ex. PIX avulso ou TED: tipo + nome do pagador). Se o pedido Shopify ainda não existe na hora, o lançamento espera até ~20 s e, se preciso, fica em `erro` e é reenviado pelo job "Nibo Retry" (a cada 10 min).
 
 Três origens alimentam o mesmo funil e a tabela `inter_nibo_lancamentos` (chave única = `pix:<endToEndId>`) garante que cada transação entra uma única vez:
 

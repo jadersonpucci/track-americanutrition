@@ -60,8 +60,8 @@ select (select coalesce(json_object_agg(chave, valor), '{}'::json) from checkout
        (select row_to_json(c) from checkout_pix_inter c where c.txid = nullif($10, '')) as cobranca`, [1040, Y2 - 100],
   '={{ [$json.chave, $json.origem, $json.tipo, $json.valor, $json.data, $json.nome, $json.documento, $json.descricao, $json.referencia, $json.txid, $json.end_to_end_id, $json.id_transacao, $json.detalhes, $json.forcar === true] }}'));
 add(js('Nibo Lançar: Montar', N('nibo_lancar_montar.js'), [1300, Y2 - 100]));
-add(pg('Nibo Lançar: Atualizar', "with del as (\n  delete from inter_nibo_lancamentos where chave = $1 and $2 = 'descartar' returning chave\n), upd as (\n  update inter_nibo_lancamentos set status = $2, nibo_receipt_id = nullif($3, ''), erro = nullif($4, ''), descricao = coalesce(nullif($5, ''), descricao), atualizado_em = now()\n  where chave = $1 and $2 not in ('duplicado', 'descartar') returning chave\n)\nselect coalesce((select chave from del), (select chave from upd)) as chave", [1560, Y2 - 100],
-  '={{ [$json.chave, $json.status, $json.nibo_receipt_id, $json.erro, $json.descricao] }}'));
+add(pg('Nibo Lançar: Atualizar', "with del as (\n  delete from inter_nibo_lancamentos where chave = $1 and $2 = 'descartar' returning chave\n), upd as (\n  update inter_nibo_lancamentos set status = $2, nibo_receipt_id = nullif($3, ''), erro = nullif($4, ''), descricao = coalesce(nullif($5, ''), descricao), atualizado_em = now()\n  where chave = $1 and $2 not in ('duplicado', 'descartar') returning chave\n), ped as (\n  update checkout_pix_inter set pedido_shopify = coalesce(pedido_shopify, nullif($6, '')) where txid = nullif($7, '') and nullif($6, '') is not null returning txid\n)\nselect coalesce((select chave from del), (select chave from upd)) as chave, (select txid from ped) as pedido_salvo", [1560, Y2 - 100],
+  '={{ [$json.chave, $json.status, $json.nibo_receipt_id, $json.erro, $json.descricao, $json.pedido_shopify, $json.txid] }}'));
 add(respond('Nibo Lançar: Responder', [1820, Y2 - 100], "={{ JSON.stringify($('Nibo Lançar: Montar').first().json.resposta) }}"));
 add(respond('Nibo Lançar: Responder (negado)', [1040, Y2 + 100]));
 conn('Nibo Lançar: Requisição', 'Nibo Lançar: Config'); conn('Nibo Lançar: Config', 'Nibo Lançar: Validar'); conn('Nibo Lançar: Validar', 'Nibo Lançar: Ok?');
@@ -96,6 +96,15 @@ conn('Nibo Extrato: Config', 'Nibo Extrato: Preparar'); conn('Nibo Extrato: Prep
 conn('Nibo Extrato: Consultar?', 'Nibo Extrato: GET extrato Inter', 0); conn('Nibo Extrato: GET extrato Inter', 'Nibo Extrato: Processar');
 add(js('Nibo Extrato: Pulado', "// Varredura nao executada (config desligada, token indisponivel ou nao autorizado): devolve o motivo como resposta.\nreturn [{ json: $input.first().json }];\n", [1040, Y4 + 100]));
 conn('Nibo Extrato: Consultar?', 'Nibo Extrato: Pulado', 1);
+
+// ---------- Nibo Retry: reenvia linhas em 'erro' a cada 10 min ----------
+const Y5 = Y4 + 400;
+add({ name: 'Nibo Retry: A cada 10 min', type: 'n8n-nodes-base.scheduleTrigger', typeVersion: 1.3, position: [0, Y5], parameters: { rule: { interval: [{ field: 'minutes', minutesInterval: 10 }] } } });
+add(pg('Nibo Retry: Config', CFG_SQL, [260, Y5]));
+add(pg('Nibo Retry: Pendentes', "select chave, tipo, valor, data, nome, documento, descricao, referencia, txid, end_to_end_id, id_transacao, detalhes from inter_nibo_lancamentos where status = 'erro' and coalesce(atualizado_em, criado_em) < now() - interval '3 minutes' and criado_em > now() - interval '30 days' order by criado_em limit 25", [520, Y5]));
+add(js('Nibo Retry: Reenviar', N('nibo_retry.js'), [780, Y5]));
+conn('Nibo Retry: A cada 10 min', 'Nibo Retry: Config'); conn('Nibo Retry: Config', 'Nibo Retry: Pendentes'); conn('Nibo Retry: Pendentes', 'Nibo Retry: Reenviar');
+settings('Nibo Retry: Pendentes', { alwaysOutputData: true });
 
 // ---------- Inter Webhook: passa a ler config (para chamar o Nibo) ----------
 add(pg('Inter Webhook: Config', CFG_SQL, [130, 1820]));

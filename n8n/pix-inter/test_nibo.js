@@ -49,7 +49,7 @@ const cfg = { pix_admin_token: 'tok', inter_client_id: 'id', inter_client_secret
   console.assert(m.status === 'lancado' && m.nibo_receipt_id === 'bbb490d6-0555-4f7c-a369-0e0420f54287' && m.resposta.lancado, 'montar lancado ' + JSON.stringify(m));
   console.assert(posted.method === 'POST' && posted.path === 'receipts' && posted.body.accountId === 'ACC' && posted.body.stakeholderId === 'CLI' && posted.body.categories[0].categoryid === 'CAT' && posted.body.categories[0].value === 346.9 && posted.body.date === '2026-09-17', 'corpo receipts ' + JSON.stringify(posted.body));
   console.assert(posted.body.description === 'Pedido AN-9999-BR', 'descricao ' + posted.body.description);
-  console.assert(posted.body.reference === 'E1', 'reference');
+  console.assert(posted.body.reference === undefined && posted.body.categories[0].description === 'Pedido AN-9999-BR', 'sem reference');
   r = await run(N('nibo_lancar_montar.js'), { input: { cfg, nova: null }, nodes: { 'Nibo Lançar: Validar': ev }, http: async () => { throw new Error('nao chamar'); } });
   console.assert(r.out[0].json.status === 'duplicado' && r.out[0].json.resposta.duplicado, 'montar duplicado');
   r = await run(N('nibo_lancar_montar.js'), { input: { cfg: Object.assign({}, cfg, { nibo_lancar: 'off' }), nova: 'pix:E1' }, nodes: { 'Nibo Lançar: Validar': ev }, http: async () => { throw new Error('nao chamar'); } });
