@@ -3,7 +3,9 @@
 const BASE = 'https://n8n.americanutrition.com';
 const self = this;
 const claimed = ($input.first().json || {}).txid;
-const cob = $('Confirmar: Config + cobrança').first().json.cobranca || {};
+const cfgCob = $('Confirmar: Config + cobrança').first().json || {};
+const cob = cfgCob.cobranca || {};
+const cfg = cfgCob.cfg || {};
 const av = $('Confirmar: Avaliar pagamento').first().json || {};
 const oid = 'inter_' + cob.txid;
 if (!claimed) return [{ json: { paid: true, status: 'paid', ja_confirmado: true, order_id: oid, erro: '' } }];
@@ -38,4 +40,17 @@ let erro = '';
 try {
   await self.helpers.httpRequest({ method: 'POST', url: BASE + '/webhook/pagarme-pago', json: true, timeout: 30000, body: payload });
 } catch (e) { erro = String(e && e.message || e).slice(0, 300); }
-return [{ json: { paid: true, status: 'paid', confirmado_agora: true, order_id: oid, txid: cob.txid, valor: total / 100, erro: erro } }];
+
+// Nibo: um recebimento por PIX (dedupe por endToEndId; o webhook do Inter tambem tenta, so um entra)
+let nibo = '';
+if (cfg.pix_admin_token) {
+  try {
+    const l = await self.helpers.httpRequest({ method: 'POST', url: BASE + '/webhook/inter-nibo-lancar', json: true, timeout: 45000, body: {
+      k: cfg.pix_admin_token, chave: av.e2e ? ('pix:' + av.e2e) : ('txid:' + cob.txid), origem: 'pix_confirmar', tipo: 'PIX',
+      valor: Number(av.valor || total / 100), data: av.horario || '', nome: cob.nome || c.name || '', documento: cob.documento || doc,
+      descricao: '', referencia: av.e2e || cob.txid, txid: cob.txid, end_to_end_id: av.e2e || '', detalhes: { order_code: cob.order_code || '' }
+    } });
+    nibo = (l && (l.lancado ? 'lancado' : l.duplicado ? 'duplicado' : l.ignorado ? 'ignorado' : ('erro: ' + (l.erro || '')))) || 'sem resposta';
+  } catch (e) { nibo = 'erro: ' + String(e && e.message || e).slice(0, 150); }
+}
+return [{ json: { paid: true, status: 'paid', confirmado_agora: true, order_id: oid, txid: cob.txid, valor: total / 100, erro: erro, nibo: nibo } }];

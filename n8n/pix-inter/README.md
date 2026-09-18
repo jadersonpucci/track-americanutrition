@@ -59,3 +59,29 @@ Inter ─────POST /webhook/pix-inter-webhook {pix:[{txid,…}]}─┐
 - `nodes/_qrcode_lib.min.js`: qrcode-generator 1.4.4 (Kazuhiko Arase, MIT) minificado; gera a imagem do QR sem depender de serviço externo.
 - `build.js`: monta o código SDK do workflow (`node build.js` → `workflow.sdk.js`; `NOLIB=1` omite a lib de QR).
 - `test.js`: testes locais dos Code nodes com mocks (`node test.js`).
+- `patch_nibo.js`: gera as operações (`update_workflow` do MCP do n8n) que adicionaram a integração Inter → Nibo ao mesmo workflow (`node patch_nibo.js` → `ops_nibo.json`).
+- `nibo_api_proxy.sdk.js`: código SDK do workflow separado "AN - Nibo API (proxy interno)".
+- `test_nibo.js`: testes locais dos nós do Nibo (`node test_nibo.js`).
+
+## Inter → Nibo (cada recebimento vira um lançamento, em tempo real)
+
+Cada PIX recebido no Inter vira **um recebimento** (`POST /empresas/v1/receipts`) no Nibo, na conta bancária do Inter, cliente "BANCO INTER - PIX", categoria Vendas, com descrição `PIX recebido · Nome · CPF mascarado · pedido AN-…` e `reference = endToEndId`.
+
+Três origens alimentam o mesmo funil e a tabela `inter_nibo_lancamentos` (chave única = `pix:<endToEndId>`) garante que cada transação entra uma única vez:
+
+1. **Webhook do Inter** (`pix-inter-webhook`): o mais rápido; lança na hora em que o banco avisa.
+2. **Confirmação do pedido** (`pix-inter-confirmar`): cobre o caso de o webhook falhar/atrasar.
+3. **Varredura do extrato** (a cada 10 min, Banking API `GET /banking/v2/extrato/completo?tipoOperacao=C`): pega também PIX fora do checkout, TED, boleto etc. Exige a permissão **Extrato** (escopo `extrato.read`) na aplicação da API do Inter; sem ela, o poller só registra o erro e o resto continua funcionando.
+
+Workflows e endpoints:
+
+| Rota | Uso |
+|---|---|
+| `POST /webhook/inter-nibo-lancar {k, chave, tipo, valor, data, nome, documento, ...}` | interno: registra + lança 1 recebimento (idempotente por `chave`) |
+| `POST /webhook/nibo-api {k, method, path, query, body}` | interno: proxy da API Empresas do Nibo (workflow "AN - Nibo API (proxy interno)", credencial "Nibo API") |
+| `GET /webhook/inter-nibo-setup?t=TOKEN` | garante a conta bancária do Inter e o cliente padrão no Nibo e grava os ids em `checkout_config` |
+| `GET /webhook/inter-nibo-varrer?t=TOKEN&dias=N` | varredura manual do extrato (últimos N dias) |
+
+Config em `checkout_config`: `nibo_lancar` (`on`|`off`, nasce `off`), `nibo_extrato` (`on`|`off`, liga/desliga o poller), `nibo_conta_inter_id`, `nibo_cliente_id`, `nibo_categoria_id` (preenchidos pelo setup), `nibo_tipos_lancar` (regex dos tipos do extrato que entram, padrão `PIX|TED|DOC|BOLETO|TRANSFER|DEPOSITO`).
+
+Comportamento com `nibo_lancar=off`: o evento é descartado (não fica marcado como visto), então ao ligar, a varredura do extrato lança o histórico dos últimos dias. Erros do Nibo ficam em `inter_nibo_lancamentos.erro` (status `erro`) e podem ser reenviados repetindo a chamada após apagar a linha.

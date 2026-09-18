@@ -22,7 +22,7 @@ const cfg = { pix_provider: 'inter', inter_client_id: 'id', inter_client_secret:
   console.assert(r.out[0].json.precisa === true && r.out[0].json.base.includes('cdpj.partners'), 'token checar precisa');
   r = await run(N('token_checar.js'), { input: { cfg }, nodes: { 'Token: Requisição': { body: { k: 'errado' } } } });
   console.assert(r.out[0].json.ok === false, 'token checar nao autorizado');
-  r = await run(N('token_guardar.js'), { input: { statusCode: 200, body: { access_token: 'ABC', expires_in: 3600 } }, nodes: { 'Token: Checar cache': { base: 'https://cdpj.partners.bancointer.com.br' } } });
+  r = await run(N('token_guardar.js'), { input: { statusCode: 200, body: { access_token: 'ABC', expires_in: 3600 } }, nodes: { 'Token: Checar cache': { escopo: 'cob', base: 'https://cdpj.partners.bancointer.com.br' } } });
   console.assert(r.out[0].json.token === 'ABC', 'token guardar');
   r = await run(N('token_checar.js'), { input: { cfg }, nodes: { 'Token: Requisição': { body: { k: 'tok123' } } } });
   console.assert(r.out[0].json.precisa === false && r.out[0].json.token === 'ABC', 'token cache hit');
@@ -68,8 +68,8 @@ const cfg = { pix_provider: 'inter', inter_client_id: 'id', inter_client_secret:
   const av = r.out[0].json;
   console.assert(av.paid === true && av.fim === false && av.e2e === 'E123' && av.valor === 346.9, 'avaliar concluida');
   let posted = null;
-  r = await run(N('confirmar_pedido.js'), { input: { txid: prep.txid }, nodes: { 'Confirmar: Config + cobrança': { cfg, cobranca: cob }, 'Confirmar: Avaliar pagamento': av }, http: async (o) => { posted = o.body; return {}; } });
-  console.assert(r.out[0].json.paid === true && r.out[0].json.erro === '', 'pedido ok');
+  r = await run(N('confirmar_pedido.js'), { input: { txid: prep.txid }, nodes: { 'Confirmar: Config + cobrança': { cfg, cobranca: cob }, 'Confirmar: Avaliar pagamento': av }, http: async (o) => { if (String(o.url).endsWith('/pagarme-pago')) posted = o.body; return { ok: true, lancado: true }; } });
+  console.assert(r.out[0].json.paid === true && r.out[0].json.erro === '' && r.out[0].json.nibo === 'lancado', 'pedido ok + nibo');
   console.assert(posted.type === 'order.paid' && posted.data.id === 'inter_' + prep.txid, 'payload tipo/id');
   console.assert(posted.data.charges[0].amount === 34690 && posted.data.amount === 34690, 'payload total');
   const somaItens = posted.data.items.reduce((a, it) => a + it.amount * it.quantity, 0);
@@ -89,9 +89,9 @@ const cfg = { pix_provider: 'inter', inter_client_id: 'id', inter_client_secret:
   console.assert(r.out[0].json.status === 'not_found', 'status not found');
 
   // webhook
-  r = await run(N('webhook_processar.js'), { input: { body: { pix: [{ txid: prep.txid, endToEndId: 'E1' }, { txid: '' }] } }, http: async () => ({ paid: true, status: 'paid' }) });
-  console.assert(r.out[0].json.recebidos === 2 && r.out[0].json.resultados.length === 1 && r.calls[0].body.force === true, 'webhook pix[]');
-  r = await run(N('webhook_processar.js'), { input: { body: [{ txid: prep.txid }] }, http: async () => ({ paid: false }) });
+  r = await run(N('webhook_processar.js'), { input: { cfg }, nodes: { 'Inter Webhook: Requisição': { body: { pix: [{ txid: prep.txid, endToEndId: 'E1', valor: '10.00' }, { txid: '' }] } } }, http: async (o) => o.url.endsWith('/inter-nibo-lancar') ? { ok: true, lancado: true } : { paid: true, status: 'paid' } });
+  console.assert(r.out[0].json.recebidos === 2 && r.out[0].json.resultados.length === 2 && r.calls[0].body.force === true && r.out[0].json.resultados[0].nibo === 'lancado', 'webhook pix[] + nibo');
+  r = await run(N('webhook_processar.js'), { input: { cfg }, nodes: { 'Inter Webhook: Requisição': { body: [{ txid: prep.txid }] } }, http: async () => ({ paid: false }) });
   console.assert(r.out[0].json.resultados.length === 1, 'webhook array');
 
   // provedor
