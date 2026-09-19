@@ -17,12 +17,13 @@ const det = { cobranca: { situacao: 'A_RECEBER' }, boleto: { nossoNumero: '1', c
 (async () => {
   // criar: fluxo feliz
   let posted = [];
-  let r = await run(N('boleto_criar.js'), { input: { cfg }, nodes: { 'Boleto: Requisição': { body: checkout } }, http: async (o) => { posted.push(o.body); return o.body.method === 'POST' ? { ok: true, body: { codigoSolicitacao: 'COD1' } } : { ok: true, body: det }; } });
+  let r = await run(N('boleto_criar.js'), { input: { cfg }, nodes: { 'Boleto: Requisição': { body: checkout } }, http: async (o) => { if (o.url.endsWith('/encurtar-url')) return { shortLink: 'https://seguro.americanutrition.com/abc123' }; posted.push(o.body); return o.body.method === 'POST' ? { ok: true, body: { codigoSolicitacao: 'COD1' } } : { ok: true, body: det }; } });
   let j = r.out[0].json;
   console.assert(j.ok && j.gravar === 'COD1' && j.valor === 325 && j.resposta.via_inter && j.resposta.order_id === 'interb_COD1' && j.resposta.boleto_line === det.boleto.linhaDigitavel && j.resposta.pix_qr_code === '000201...', 'criar ok ' + JSON.stringify(j.resposta));
   const corpo = posted[0].body;
   console.assert(corpo.valorNominal === 325 && corpo.pagador.cpfCnpj === '11144477735' && corpo.pagador.tipoPessoa === 'FISICA' && corpo.pagador.cep === '01001000' && corpo.formasRecebimento.length === 2 && corpo.mensagem.linha1 === 'Pague ate o vencimento.' && corpo.numDiasAgenda === 0, 'corpo inter ' + JSON.stringify(corpo));
-  console.assert(/\/webhook\/boleto\?l=0779/.test(j.resposta.boleto_url) && /inter-boleto-pdf\?c=COD1/.test(j.resposta.boleto_pdf), 'urls');
+  console.assert(j.resposta.boleto_url === 'https://seguro.americanutrition.com/abc123' && /\/webhook\/boleto\?l=0779.*&b=inter&pdf=1$/.test(j.resposta.boleto_pdf) && /inter-boleto-pdf\?c=COD1$/.test(j.resposta.boleto_pdf_inter), 'urls ' + JSON.stringify(j.resposta));
+  console.assert(r.calls.some(c => c.url.endsWith('/encurtar-url') && /\/webhook\/boleto\?l=0779.*&n=Maria%20da%20Silva&d=11144477735&p=AN-1&it=.*&end=.*&b=inter$/.test(c.body.url) && !/pdf=1/.test(c.body.url)), 'encurta a pagina personalizada: ' + JSON.stringify(r.calls.filter(c => c.url.endsWith('/encurtar-url')).map(c => c.body.url)));
   console.assert(JSON.parse(j.checkout).k === undefined, 'checkout gravado sem k');
   // criar: provider pagarme => fail-open
   r = await run(N('boleto_criar.js'), { input: { cfg: Object.assign({}, cfg, { boleto_provider: 'pagarme' }) }, nodes: { 'Boleto: Requisição': { body: checkout } } });

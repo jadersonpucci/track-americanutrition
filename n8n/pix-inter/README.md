@@ -96,7 +96,7 @@ Comportamento com `nibo_lancar=off`: o evento é descartado (não fica marcado c
 
 Com `boleto_provider = inter` no `checkout_config` (painel `pix-provedor`, botão "Boleto: usar Banco Inter"), o boleto do checkout sai pela **Cobrança v3** do Inter: um boleto registrado que também traz o QR Code PIX (o cliente paga pela linha digitável ou pelo PIX). Volta ao Pagar.me a 1 clique no mesmo painel. Fail-open: qualquer falha (token, API, endereço incompleto, valor abaixo de R$ 2,50) devolve `via_inter=false` e o Fluxo A segue no Pagar.me.
 
-Contrato para o checkout (igual ao do Pagar.me): `order_id = interb_<codigoSolicitacao>`, `boleto_url` (a mesma página personalizada, montada da linha digitável), `boleto_pdf` (PDF do Inter com o QR PIX, via `GET /webhook/inter-boleto-pdf?c=<codigo>`), `boleto_line`, `boleto_barcode`, `pix_qr_code` (copia-e-cola).
+Contrato para o checkout (igual ao do Pagar.me): `order_id = interb_<codigoSolicitacao>`, `boleto_url` (a página personalizada da America Nutrition em modo Inter, logo/beneficiário do Inter + QR PIX, encurtada pelo AN Links `seguro.americanutrition.com/...`), `boleto_pdf` (a mesma página com `&pdf=1`, uma folha A4), `boleto_pdf_inter` (PDF original do Inter, `GET /webhook/inter-boleto-pdf?c=<codigo>`), `boleto_line`, `boleto_barcode`, `pix_qr_code` (copia-e-cola). Detalhes da página em `../boleto-personalizado/README.md`.
 
 | Rota | Uso |
 |---|---|
@@ -105,7 +105,7 @@ Contrato para o checkout (igual ao do Pagar.me): `order_id = interb_<codigoSolic
 | `POST /webhook/boleto-inter-confirmar {codigo[, force]}` | verifica no Inter (`situacao` RECEBIDO), cria o pedido pelo `pagarme-pago` (payment_method `pix` ou `boleto` conforme a origem) e lança no Nibo. Throttle de 15 s sem `force` |
 | `POST /webhook/boleto-inter-webhook` | callback do Inter (Cobrança v3); cada código é re-verificado |
 | `GET /webhook/boleto-inter-setup?t=TOKEN` | registra o webhook (`PUT /cobranca/v3/cobrancas/webhook`) |
-| `GET /webhook/inter-boleto-pdf?c=<codigo>` | PDF do boleto híbrido |
+| `GET /webhook/inter-boleto-pdf?c=<codigo>` | PDF original do Inter (o cliente recebe o personalizado; este fica para conferência) |
 | `POST /webhook/inter-api {k, escopo, method, path, query, body}` | proxy interno da API do Inter (mTLS), qualquer escopo liberado no app |
 
 Tabela `checkout_boleto_inter` (uma linha por boleto: código, seuNumero, valor, cliente, checkout, linha digitável, código de barras, txid/copia-e-cola do PIX, vencimento, situação, origem do recebimento, confirmado_em, pedido_shopify). Config: `boleto_provider` (`pagarme`|`inter`), `inter_boleto_dias_vencimento` (3), `inter_boleto_dias_agenda` (0 = cancela no vencimento; até 60 dias de tolerância), `inter_boleto_mensagem`.

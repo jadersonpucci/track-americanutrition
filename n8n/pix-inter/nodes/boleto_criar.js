@@ -65,18 +65,27 @@ if (!det) {
   try { await api('POST', 'cobranca/v3/cobrancas/' + cod + '/cancelar', { motivoCancelamento: 'Boleto nao ficou pronto a tempo' }); } catch (e) { }
   return falha('cobranca ' + cod + ' sem linha digitavel apos espera (cancelada)');
 }
-// boleto_url: mesma pagina personalizada usada com o Pagar.me (montada a partir da linha digitavel)
-const brl = cents => (cents / 100).toFixed(2).replace('.', ',');
-const limpa = x => String(x == null ? '' : x).replace(/[|=]/g, ' ').trim();
-const itens = items.map(i => (i.quantity > 1 ? i.quantity + 'x ' : '') + limpa(i.description) + '=' + brl(i.amount * i.quantity));
-const end = [[[s.street, s.number].filter(Boolean).join(', '), s.complement, s.neighborhood].filter(Boolean).join(', '), [s.city, s.state].filter(Boolean).join('/'), 'CEP ' + cep.replace(/^(\d{5})(\d{3})$/, '$1-$2')].filter(Boolean).join(', ');
-const linha = String(det.boleto.linhaDigitavel).replace(/\D/g, '');
-const boletoUrl = BASE + '/webhook/boleto?l=' + linha + '&n=' + encodeURIComponent(nome.slice(0, 80)) + '&d=' + encodeURIComponent(doc) + '&p=' + encodeURIComponent(orderCode) + '&it=' + encodeURIComponent(itens.join('|').slice(0, 600)) + '&end=' + encodeURIComponent(end.slice(0, 200)) + '&pdf=1';
+// boleto_url: a pagina personalizada da America Nutrition (visual AN, logo/beneficiario do Inter, QR Code PIX),
+// encurtada pelo AN Links (seguro.americanutrition.com); se o encurtador falhar, vai o link longo.
+// boleto_pdf: a mesma pagina em PDF (uma folha A4). O PDF original do Inter segue em /webhook/inter-boleto-pdf?c=<cod>.
 const pix = (det.pix && det.pix.pixCopiaECola) || '';
+const enc = encodeURIComponent;
+const brlItem = cents => (cents / 100).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+const limpa = t => String(t || '').replace(/[|=]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 70);
+const itensPag = items.map(it => (it.quantity > 1 ? it.quantity + 'x ' : '') + limpa(it.description) + '=' + brlItem(it.amount * it.quantity));
+const endPag = [String(s.street || '').trim() + (s.number ? ', ' + String(s.number).trim() : ''), String(s.complement || '').trim(), String(s.neighborhood || '').trim(),
+  String(s.city || '').trim() + (s.state ? '/' + String(s.state).toUpperCase() : ''), 'CEP ' + cep.replace(/(\d{5})(\d{3})/, '$1-$2')].filter(Boolean).join(' - ').slice(0, 160);
+const paginaUrl = BASE + '/webhook/boleto?l=' + det.boleto.linhaDigitavel + '&n=' + enc(nome) + '&d=' + enc(doc) + '&p=' + enc(orderCode) + '&it=' + enc(itensPag.join('|')) + '&end=' + enc(endPag) + '&b=inter';
+const pdfUrl = paginaUrl + '&pdf=1';
+let boletoUrl = paginaUrl;
+try {
+  const r = await self.helpers.httpRequest({ method: 'POST', url: BASE + '/webhook/encurtar-url', json: true, timeout: 8000, body: { url: paginaUrl } });
+  if (r && r.shortLink && /^https?:\/\//.test(String(r.shortLink))) boletoUrl = String(r.shortLink);
+} catch (e) { }
 const resposta = {
   via_inter: true, order_id: 'interb_' + cod, status: 'pending', payment_method: 'boleto',
   pix_qr_code: pix || null, pix_qr_code_url: null,
-  boleto_url: boletoUrl, boleto_pdf: BASE + '/webhook/inter-boleto-pdf?c=' + cod,
+  boleto_url: boletoUrl, boleto_pdf: pdfUrl, boleto_pdf_inter: BASE + '/webhook/inter-boleto-pdf?c=' + cod,
   boleto_line: det.boleto.linhaDigitavel, boleto_barcode: det.boleto.codigoBarras, boleto_due: venc,
   acquirer_message: null, acquirer_return_code: null, gateway_message: null, tx_status: (det.cobranca && det.cobranca.situacao) || 'A_RECEBER', gateway: 'Banco Inter'
 };
