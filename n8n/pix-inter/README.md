@@ -111,3 +111,9 @@ Contrato para o checkout (igual ao do Pagar.me): `order_id = interb_<codigoSolic
 Tabela `checkout_boleto_inter` (uma linha por boleto: código, seuNumero, valor, cliente, checkout, linha digitável, código de barras, txid/copia-e-cola do PIX, vencimento, situação, origem do recebimento, confirmado_em, pedido_shopify). Config: `boleto_provider` (`pagarme`|`inter`), `inter_boleto_dias_vencimento` (3), `inter_boleto_dias_agenda` (0 = cancela no vencimento; até 60 dias de tolerância), `inter_boleto_mensagem`.
 
 Regras do Inter observadas na API: valor mínimo R$ 2,50; `seuNumero` até 15 caracteres; pagador exige CPF/CNPJ, nome, endereço, cidade, UF e CEP; a linha digitável fica disponível 1 a 3 s após a emissão (o nó espera e, se não vier, cancela a cobrança e cai no Pagar.me); cancelamento por `POST /cobranca/v3/cobrancas/{codigo}/cancelar`.
+
+## Checkout (HTML servido pelo n8n)
+
+O HTML do checkout vive no staticData do workflow "Deploy / Servir Checkout" (`GET /webhook/checkout`); publica-se com `POST /webhook/checkout-deploy` (header `x-deploy-key`, corpo `{html}`; `{"action":"get"}` devolve o publicado, `{"action":"rollback"}` volta a versão anterior). Cópia de referência em `n8n/checkout/checkout.html`.
+
+Correção de 19/09/2026: o modal "Boleto gerado!" usava `anBoletoUrl` sem declarar (erro "Can't find variable: anBoletoUrl" ao finalizar com boleto, qualquer provedor). Agora `var anBoletoUrl = res.boleto_url || res.boleto_pdf` é definido no início do ramo do boleto.

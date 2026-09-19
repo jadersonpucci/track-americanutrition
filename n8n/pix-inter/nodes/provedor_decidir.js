@@ -67,7 +67,7 @@ corpo += '<div class="card"><div class="atual">Nibo (1 recebimento por PIX): <sp
   + '<li>Cada PIX confirmado no Inter vira um recebimento no Nibo (descricao "Pedido AN-...").</li>'
   + '<li>Extrato do Inter a cada 10 min (precisa da permissao Extrato na API do Inter).</li></ul>'
   + '<a class="btn" style="background:#2F6BE0" href="' + esc(BASE + '/webhook/inter-nibo-setup?t=' + encodeURIComponent(t)) + '">Setup Nibo (conta + cliente)</a></div>';
-corpo += '<div class="card"><b>Como funciona</b><ul><li>Com o Inter ligado, qualquer falha (token, certificado, API) cai automaticamente no Pagar.me.</li><li>Cartao e boleto continuam no Pagar.me.</li><li>A confirmacao do PIX Inter cria o pedido na Shopify pelo mesmo fluxo de sempre.</li></ul></div>';
+corpo += '<div class="card"><b>Como funciona</b><ul><li>Com o Inter ligado (PIX ou boleto), qualquer falha (token, certificado, API, endereco incompleto) cai automaticamente no Pagar.me.</li><li>Cartao continua no Pagar.me.</li><li>A confirmacao (PIX ou boleto do Inter) cria o pedido na Shopify pelo mesmo fluxo de sempre e lanca no Nibo.</li></ul></div>';
 
 let aviso = mudar
   ? ('\u{1F501} <b>PIX do checkout</b> mudou para <b>' + nome(novo) + '</b>.' + (novo === 'inter' ? '\nVoltar ao Pagar.me a 1 clique: <a href="' + link('pagarme') + '">clique aqui</a>' : '\nLigar o Inter de novo: <a href="' + link('inter') + '">clique aqui</a>'))
