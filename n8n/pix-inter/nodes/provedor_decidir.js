@@ -1,4 +1,4 @@
-// Painel de 1 clique: GET /webhook/pix-provedor?t=TOKEN[&set=inter|pagarme][&nibo=on|off]
+// Painel de 1 clique: GET /webhook/pix-provedor?t=TOKEN[&set=inter|pagarme][&nibo=on|off][&boleto=inter|pagarme]
 const BASE = 'https://n8n.americanutrition.com';
 const cfg = ($input.first().json || {}).cfg || {};
 const q = $('Provedor: Requisição').first().json.query || {};
@@ -13,7 +13,7 @@ const CSS = '*{box-sizing:border-box}body{margin:0;background:#F3F6FB;font-famil
 const pagina = (titulo, corpo) => '<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>' + esc(titulo) + '</title><style>' + CSS + '</style></head><body><div class="wrap">' + corpo + '</div></body></html>';
 
 if (!cfg.pix_admin_token || t !== cfg.pix_admin_token) {
-  return [{ json: { html: pagina('Acesso negado', '<div class="card"><h1>Acesso negado</h1><p class="sub">Link invalido. Pegue o link em checkout_config (pix_admin_token).</p></div>'), mudar: '', novo: '', atual: '', nibo_mudar: '', nibo_novo: '', aviso: '', chat: '', thread: '' } }];
+  return [{ json: { html: pagina('Acesso negado', '<div class="card"><h1>Acesso negado</h1><p class="sub">Link invalido. Pegue o link em checkout_config (pix_admin_token).</p></div>'), mudar: '', novo: '', atual: '', nibo_mudar: '', nibo_novo: '', boleto_mudar: '', boleto_novo: '', aviso: '', chat: '', thread: '' } }];
 }
 const atual = String(cfg.pix_provider || 'pagarme') === 'inter' ? 'inter' : 'pagarme';
 const set = String(q.set || '').toLowerCase();
@@ -26,6 +26,11 @@ const niboMudar = ((niboSet === 'on' || niboSet === 'off') && niboSet !== niboAt
 const niboNovo = niboMudar || niboAtual;
 const linkNibo = (v) => BASE + '/webhook/pix-provedor?t=' + encodeURIComponent(t) + '&nibo=' + v;
 const niboPronto = !!(cfg.nibo_conta_inter_id && cfg.nibo_cliente_id && cfg.nibo_categoria_id);
+const boletoAtual = String(cfg.boleto_provider || 'pagarme') === 'inter' ? 'inter' : 'pagarme';
+const boletoSet = String(q.boleto || '').toLowerCase();
+const boletoMudar = ((boletoSet === 'inter' || boletoSet === 'pagarme') && boletoSet !== boletoAtual) ? boletoSet : '';
+const boletoNovo = boletoMudar || boletoAtual;
+const linkBoleto = (v) => BASE + '/webhook/pix-provedor?t=' + encodeURIComponent(t) + '&boleto=' + v;
 const temCred = !!(cfg.inter_client_id && cfg.inter_client_secret);
 const temChave = !!cfg.inter_chave_pix;
 const nome = p => p === 'inter' ? 'Banco Inter' : 'Pagar.me';
@@ -44,6 +49,15 @@ corpo += '<div class="card"><b>Banco Inter</b><ul>'
   + '<li>Certificado mTLS: credencial "Banco Inter mTLS" no n8n</li></ul>'
   + '<a class="btn" style="background:#2F6BE0" href="' + esc(BASE + '/webhook/pix-inter-setup?t=' + encodeURIComponent(t)) + '">Registrar webhook no Inter</a>'
   + '<small>Webhook: ' + esc(BASE + '/webhook/pix-inter-webhook') + '</small></div>';
+if (boletoMudar) corpo += '<div class="card"><b>Feito:</b> o boleto do checkout agora sai pelo <b>' + nome(boletoNovo) + '</b>.</div>';
+corpo += '<div class="card"><div class="atual">Boleto atual: <span class="pill ' + boletoNovo + '">' + nome(boletoNovo) + (boletoNovo === 'inter' ? ' (boleto + PIX)' : '') + '</span></div>'
+  + (boletoNovo === 'inter'
+    ? '<a class="btn red" href="' + esc(linkBoleto('pagarme')) + '">Boleto: voltar ao Pagar.me (1 clique)</a>'
+    : '<a class="btn' + ((temCred) ? '' : ' off') + '" href="' + esc(linkBoleto('inter')) + '">Boleto: usar Banco Inter (boleto + PIX)</a>')
+  + '<ul><li>Boleto hibrido do Inter: o cliente paga pela linha digitavel ou pelo QR Code PIX impresso no boleto.</li>'
+  + '<li>Vencimento em <b>' + esc(cfg.inter_boleto_dias_vencimento || '3') + '</b> dias | valor minimo R$ 2,50 | exige endereco.</li></ul>'
+  + '<a class="btn" style="background:#2F6BE0" href="' + esc(BASE + '/webhook/boleto-inter-setup?t=' + encodeURIComponent(t)) + '">Registrar webhook de boleto no Inter</a>'
+  + '<small>Webhook: ' + esc(BASE + '/webhook/boleto-inter-webhook') + '</small></div>';
 if (niboMudar) corpo += '<div class="card"><b>Feito:</b> lancamento no Nibo <b>' + (niboNovo === 'on' ? 'ligado' : 'desligado') + '</b>.</div>';
 corpo += '<div class="card"><div class="atual">Nibo (1 recebimento por PIX): <span class="pill ' + (niboNovo === 'on' ? 'pagarme' : 'inter') + '">' + (niboNovo === 'on' ? 'ligado' : 'desligado') + '</span></div>'
   + (niboNovo === 'on'
@@ -58,5 +72,6 @@ corpo += '<div class="card"><b>Como funciona</b><ul><li>Com o Inter ligado, qual
 let aviso = mudar
   ? ('\u{1F501} <b>PIX do checkout</b> mudou para <b>' + nome(novo) + '</b>.' + (novo === 'inter' ? '\nVoltar ao Pagar.me a 1 clique: <a href="' + link('pagarme') + '">clique aqui</a>' : '\nLigar o Inter de novo: <a href="' + link('inter') + '">clique aqui</a>'))
   : '';
+if (boletoMudar) aviso += (aviso ? '\n\n' : '') + '\u{1F9FE} <b>Boleto do checkout</b> mudou para <b>' + nome(boletoNovo) + '</b>. Trocar: <a href="' + linkBoleto(boletoNovo === 'inter' ? 'pagarme' : 'inter') + '">clique aqui</a>';
 if (niboMudar) aviso += (aviso ? '\n\n' : '') + '\u{1F4D2} <b>Nibo</b>: lancamento automatico dos PIX do Inter <b>' + (niboNovo === 'on' ? 'ligado' : 'desligado') + '</b>. Trocar: <a href="' + linkNibo(niboNovo === 'on' ? 'off' : 'on') + '">clique aqui</a>';
-return [{ json: { html: pagina('PIX do checkout', corpo), mudar: mudar, novo: novo, atual: atual, nibo_mudar: niboMudar, nibo_novo: niboNovo, aviso: aviso, chat: String(cfg.telegram_chat_id || ''), thread: String(cfg.telegram_thread_id || '') } }];
+return [{ json: { html: pagina('PIX do checkout', corpo), mudar: mudar, novo: novo, atual: atual, nibo_mudar: niboMudar, nibo_novo: niboNovo, boleto_mudar: boletoMudar, boleto_novo: boletoNovo, aviso: aviso, chat: String(cfg.telegram_chat_id || ''), thread: String(cfg.telegram_thread_id || '') } }];

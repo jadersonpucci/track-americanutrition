@@ -5,7 +5,7 @@ const self = this;
 const reg = $input.first().json || {};
 const cfg = reg.cfg || {};
 const ev = $('Nibo Lançar: Validar').first().json;
-const cob = reg.cobranca || null;
+const cob = reg.cobranca || reg.cobranca_boleto || null; // PIX do checkout (checkout_pix_inter) ou boleto hibrido (checkout_boleto_inter)
 const base = { chave: ev.chave, status: 'ignorado', nibo_receipt_id: '', erro: '', descricao: ev.descricao, pedido_shopify: '', txid: ev.txid };
 if (!reg.nova) return [{ json: Object.assign(base, { status: 'duplicado', resposta: { ok: true, duplicado: true, chave: ev.chave } }) }];
 if (String(cfg.nibo_lancar || 'off') !== 'on') return [{ json: Object.assign(base, { status: 'descartar', erro: 'nibo_lancar=off', resposta: { ok: true, ignorado: true, motivo: 'nibo_lancar=off' } }) }];
@@ -27,7 +27,8 @@ if (cob && !pedido) {
     try {
       const r = await self.helpers.httpRequest({ method: 'POST', url: BASE + '/webhook/shopify-admin', json: true, timeout: 15000, body: { acao: 'atualizar_pedido', endpoint: 'graphql.json', metodo: 'POST', payload: { query: query } } });
       const nodes = (r && r.dados && r.dados.data && r.dados.data.orders && r.dados.data.orders.nodes) || [];
-      const hit = nodes.find(o => (o.customAttributes || []).some(a => a.key === 'pagarme_order' && a.value === 'inter_' + cob.txid));
+      const ref = cob.codigo_solicitacao ? ('interb_' + cob.codigo_solicitacao) : ('inter_' + cob.txid);
+      const hit = nodes.find(o => (o.customAttributes || []).some(a => a.key === 'pagarme_order' && a.value === ref));
       if (hit && hit.name) pedido = String(hit.name);
     } catch (e) { }
   }

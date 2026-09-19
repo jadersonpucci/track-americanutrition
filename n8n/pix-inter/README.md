@@ -62,6 +62,8 @@ Inter ─────POST /webhook/pix-inter-webhook {pix:[{txid,…}]}─┐
 - `patch_nibo.js`: gera as operações (`update_workflow` do MCP do n8n) que adicionaram a integração Inter → Nibo ao mesmo workflow (`node patch_nibo.js` → `ops_nibo.json`).
 - `nibo_api_proxy.sdk.js`: código SDK do workflow separado "AN - Nibo API (proxy interno)".
 - `test_nibo.js`: testes locais dos nós do Nibo (`node test_nibo.js`).
+- `patch_boleto.js` / `test_boleto.js`: operações e testes do boleto híbrido (`node patch_boleto.js` → `ops_boleto.json`; `node test_boleto.js`).
+- `nodes/inter_api_validar.js`: proxy interno da API do Inter (`POST /webhook/inter-api`, mTLS + token por escopo), usado pelo boleto, setup e testes.
 
 ## Inter → Nibo (cada recebimento vira um lançamento, em tempo real)
 
@@ -89,3 +91,23 @@ Reenviar um lançamento (ex.: depois de apagar um errado no Nibo): `POST /webhoo
 Peculiaridades do Nibo/n8n que o proxy contorna: o `$filter` de `customers` é ignorado (o setup filtra do lado de cá); o POST devolve só um UUID entre aspas (quebra o modo JSON do nó HTTP) e o modo texto serializa o stream gzip, por isso a resposta é baixada como arquivo e lida por um Code node; `sendBody`/`sendQuery` do nó HTTP precisam ser `true` literal (com expressão o n8n esconde o campo do corpo e manda vazio).
 
 Comportamento com `nibo_lancar=off`: o evento é descartado (não fica marcado como visto), então ao ligar, a varredura do extrato lança o histórico dos últimos dias. Erros do Nibo ficam em `inter_nibo_lancamentos.erro` (status `erro`) e podem ser reenviados repetindo a chamada após apagar a linha.
+
+## Boleto híbrido (boleto + PIX) via Banco Inter
+
+Com `boleto_provider = inter` no `checkout_config` (painel `pix-provedor`, botão "Boleto: usar Banco Inter"), o boleto do checkout sai pela **Cobrança v3** do Inter: um boleto registrado que também traz o QR Code PIX (o cliente paga pela linha digitável ou pelo PIX). Volta ao Pagar.me a 1 clique no mesmo painel. Fail-open: qualquer falha (token, API, endereço incompleto, valor abaixo de R$ 2,50) devolve `via_inter=false` e o Fluxo A segue no Pagar.me.
+
+Contrato para o checkout (igual ao do Pagar.me): `order_id = interb_<codigoSolicitacao>`, `boleto_url` (a mesma página personalizada, montada da linha digitável), `boleto_pdf` (PDF do Inter com o QR PIX, via `GET /webhook/inter-boleto-pdf?c=<codigo>`), `boleto_line`, `boleto_barcode`, `pix_qr_code` (copia-e-cola).
+
+| Rota | Uso |
+|---|---|
+| `POST /webhook/checkout-boleto-inter-criar` | chamado pelo Fluxo A (roteador trata pix e boleto); corpo = payload do checkout. Com `k` + `forcar_inter: true` emite mesmo com o provedor em Pagar.me (teste) |
+| `GET /webhook/boleto-inter-status?order_id=interb_<codigo>` | polling do checkout (roteador do `pagarme-status`) |
+| `POST /webhook/boleto-inter-confirmar {codigo[, force]}` | verifica no Inter (`situacao` RECEBIDO), cria o pedido pelo `pagarme-pago` (payment_method `pix` ou `boleto` conforme a origem) e lança no Nibo. Throttle de 15 s sem `force` |
+| `POST /webhook/boleto-inter-webhook` | callback do Inter (Cobrança v3); cada código é re-verificado |
+| `GET /webhook/boleto-inter-setup?t=TOKEN` | registra o webhook (`PUT /cobranca/v3/cobrancas/webhook`) |
+| `GET /webhook/inter-boleto-pdf?c=<codigo>` | PDF do boleto híbrido |
+| `POST /webhook/inter-api {k, escopo, method, path, query, body}` | proxy interno da API do Inter (mTLS), qualquer escopo liberado no app |
+
+Tabela `checkout_boleto_inter` (uma linha por boleto: código, seuNumero, valor, cliente, checkout, linha digitável, código de barras, txid/copia-e-cola do PIX, vencimento, situação, origem do recebimento, confirmado_em, pedido_shopify). Config: `boleto_provider` (`pagarme`|`inter`), `inter_boleto_dias_vencimento` (3), `inter_boleto_dias_agenda` (0 = cancela no vencimento; até 60 dias de tolerância), `inter_boleto_mensagem`.
+
+Regras do Inter observadas na API: valor mínimo R$ 2,50; `seuNumero` até 15 caracteres; pagador exige CPF/CNPJ, nome, endereço, cidade, UF e CEP; a linha digitável fica disponível 1 a 3 s após a emissão (o nó espera e, se não vier, cancela a cobrança e cai no Pagar.me); cancelamento por `POST /cobranca/v3/cobrancas/{codigo}/cancelar`.

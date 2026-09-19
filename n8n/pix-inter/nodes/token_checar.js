@@ -10,7 +10,7 @@ if (!cfg.pix_admin_token || k !== cfg.pix_admin_token) {
 if (!cfg.inter_client_id || !cfg.inter_client_secret) {
   return [{ json: { ok: false, precisa: false, erro: 'inter_client_id / inter_client_secret nao configurados em checkout_config' } }];
 }
-const ESCOPOS = { cob: 'cob.write cob.read pix.read webhook.write webhook.read', extrato: 'extrato.read', pagamento: 'pagamento-pix.write pagamento-pix.read' };
+const ESCOPOS = { cob: 'cob.write cob.read pix.read webhook.write webhook.read', extrato: 'extrato.read', pagamento: 'pagamento-pix.write pagamento-pix.read', boleto: 'boleto-cobranca.write boleto-cobranca.read' };
 const escopo = ESCOPOS[String(body.escopo || 'cob')] ? String(body.escopo || 'cob') : 'cob';
 const base = String(cfg.inter_ambiente || 'producao') === 'sandbox'
   ? 'https://cdpj-sandbox.partners.uatinter.co'
