@@ -14,7 +14,8 @@ const montar = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: '
 const SB = 'https://supabase.americanutrition.com/pg/query';
 const LOGO = 'https://cdn.shopify.com/s/files/1/0643/9000/4908/files/LOGOTIPO_BRANCO_FUNDO_TRANSPARENTE.png?v=1739472401&width=400';
 // Imagem do preview no WhatsApp (1200x630, feita para o link): sem ela o WhatsApp recorta o logo transparente.
-const OG_IMG = 'https://supabase.americanutrition.com/storage/v1/object/public/imagens/pagamento/og-pix-america.png';
+// 19/09/2026: arte no mesmo padrao das previas de checkout e rastreio (fundo azul-marinho, frasco, botao vermelho).
+const OG_IMG = 'https://cdn.americanutrition.com/imagens/og/og-pix-america.jpg';
 let ogTitulo = 'Pague com Pix - America Nutrition';
 let ogDesc = 'Copie o codigo com um toque ou escaneie o QR Code. Seu pedido ja esta reservado.';
 const self = this;
@@ -61,7 +62,7 @@ function pagina(titulo, corpo, extra) {
     + '<meta property="og:type" content="website"><meta property="og:site_name" content="America Nutrition">'
     + '<meta property="og:title" content="' + esc(ogTitulo) + '">'
     + '<meta property="og:description" content="' + esc(ogDesc) + '">'
-    + '<meta property="og:image" content="' + OG_IMG + '"><meta property="og:image:type" content="image/png">'
+    + '<meta property="og:image" content="' + OG_IMG + '"><meta property="og:image:type" content="image/jpeg">'
     + '<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">'
     + '<meta property="og:image:alt" content="Pague com Pix na America Nutrition">'
     + '<meta name="twitter:card" content="summary_large_image">'

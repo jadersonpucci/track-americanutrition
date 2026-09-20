@@ -1478,3 +1478,13 @@ Corrigido em producao as 21h09 (Gerar Boleto `gBgvM4y3bYzbnrE5` e Gerar PIX `SkE
 - Se ainda assim a Shopify recusar por CPF/CNPJ, o "Extrair draft" devolve a mesma instrucao em vez do erro generico.
 
 Sandbox (19/09 21h40), mesmo CPF: a Serena chamou gerar_boleto e respondeu "Esse CPF nao fechou, parece ter algum numero trocado. Pode conferir e me mandar de novo, por favor?", sem escalar.
+
+## Previa do link no WhatsApp: PIX e boleto no padrao da marca (19/09)
+
+Os links de checkout (`seguro.americanutrition.com/...`) e de rastreio ja tinham a arte padrao na previa do WhatsApp (fundo azul-marinho, frasco, titulo em Barlow Condensed, botao vermelho, faixa "Ciencia a favor da sua vida"). Dois fugiam disso: a pagina do Pix usava uma arte em outro estilo (verde, outra fonte) e o link do boleto nao tinha imagem nenhuma.
+
+- Artes novas, 1200x630, no mesmo padrao do checkout: `og/og-pix-america.html` e `og/og-boleto-america.html` (renderizadas com Chromium headless, fontes Barlow/Barlow Condensed e o frasco da arte do checkout). Publicadas em `cdn.americanutrition.com/imagens/og/og-pix-america.jpg` e `og-boleto-america.jpg` (bucket `imagens`, pasta `og`).
+- Pagina do Pix (`pagina-pix.workflow.js`, d8xacawAcoWtppWh): `OG_IMG` aponta para a arte nova; titulo e descricao continuam dinamicos (valor, pago, expirado).
+- Gerar Boleto (gBgvM4y3bYzbnrE5, no "Encurtar PDF via AN Links"): o encurtador passa a receber `acao: 'og'` com titulo "Seu boleto esta pronto · America Nutrition", descricao e a imagem, entao o link curto serve a previa com a arte (a pagina do boleto em si nao tem og:image).
+
+Para refazer uma arte: editar o HTML em `og/`, renderizar com `headless_shell --window-size=1200,630 --screenshot`, subir no bucket `imagens/og/`.
