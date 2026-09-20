@@ -20,6 +20,17 @@ if (!draftNode || !draftNode.id) {
   let motivo = '';
   if (userErrors.length) motivo = userErrors.map(e => e.message).join('; ');
   else if (topErrors.length) motivo = topErrors.map(e => e.message).join('; ');
+  // CPF/CNPJ recusado pela Shopify (19/09/2026): nao e instabilidade, e dado errado. A Serena precisa pedir o CPF de novo.
+  if (/cpf|cnpj/i.test(motivo)) {
+    const cf = String((ctx && ctx.cliente && ctx.cliente.cpf_formatado) || '');
+    return [{ json: {
+      erro: true,
+      motivo: 'cpf_invalido',
+      mensagem: 'A Shopify recusou o CPF ' + cf + ' ("' + motivo + '"). NAO fale em instabilidade: diga ao cliente que o CPF parece ter um numero trocado e peca para ele conferir e mandar de novo. Quando vier o CPF correto, chame gerar_pix outra vez com os mesmos dados.',
+      motivo_tecnico: motivo,
+      resposta_shopify: resp
+    }}];
+  }
   return [{ json: {
     erro: true,
     mensagem: 'Tive um problema pra registrar seu pedido agora. Vou pedir ajuda da equipe.',

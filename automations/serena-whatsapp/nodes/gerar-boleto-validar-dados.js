@@ -29,6 +29,20 @@ const estado = (body.estado || body.uf || '').toString().trim().toUpperCase();
 const cepRaw = (body.cep || '').toString().replace(/\D/g, '');
 const complemento = (body.complemento || '').toString().trim();
 
+
+// CPF (19/09/2026). So contar 11 digitos deixava passar CPF com digito trocado: em 19/09 o Emerson mandou
+// 116.485.317-54 (digito verificador errado), a Shopify recusou o draft com "Enter a valid CPF/CNPJ" e a
+// Serena respondeu "instabilidade" em vez de pedir o CPF de novo. Agora o digito e conferido aqui e a
+// mensagem diz exatamente o que a Serena deve pedir ao cliente.
+function cpfValido(c) {
+  c = String(c || '').replace(/\D/g, '');
+  if (c.length !== 11 || /^(\d)\1{10}$/.test(c)) return false;
+  for (const n of [9, 10]) {
+    let s = 0; for (let i = 0; i < n; i++) s += parseInt(c[i], 10) * (n + 1 - i);
+    if (((s * 10) % 11) % 10 !== parseInt(c[n], 10)) return false;
+  }
+  return true;
+}
 const faltando = [];
 if (!nome || nome.split(' ').length < 2) faltando.push('nome completo');
 if (cpfRaw.length !== 11) faltando.push('CPF valido');
@@ -44,6 +58,15 @@ if (faltando.length) {
   return [{ json: {
     erro: true,
     mensagem: 'Para gerar o boleto preciso de: ' + faltando.join(', ') + '.'
+  }}];
+}
+if (!cpfValido(cpfRaw)) {
+  const cf = cpfRaw.slice(0,3) + '.' + cpfRaw.slice(3,6) + '.' + cpfRaw.slice(6,9) + '-' + cpfRaw.slice(9,11);
+  return [{ json: {
+    erro: true,
+    motivo: 'cpf_invalido',
+    cpf_recebido: cf,
+    mensagem: 'O CPF ' + cf + ' nao e valido (o digito verificador nao confere), entao o boleto nao pode ser gerado com ele. NAO fale em instabilidade: diga ao cliente que o CPF parece ter um numero trocado e peca para ele conferir e mandar de novo. Quando vier o CPF correto, chame gerar_boleto outra vez com os mesmos dados.'
   }}];
 }
 

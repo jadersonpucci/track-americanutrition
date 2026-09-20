@@ -1468,3 +1468,13 @@ Já falavam como Serena ou sem nome (nada a fazer): Dispatcher transacional (pag
 ## Objecao de confianca: verificacao da Meta (18/09)
 
 Adendo no `serena_config.system_prompt` (fonte em `nodes/serena-config-adendos-prompt.md`): quando o cliente duvida da empresa ou do produto (golpe, confiavel, numero oficial, medo de pagar), a Serena cita que a America Nutrition e verificada pela Meta, com o selo azul no WhatsApp e no Instagram, concedido so depois de conferencia de documentos e autenticidade, e convida a conferir o selo ao lado do nome. Soma aos fatos que ja existiam na base (15+ anos, Reclame Aqui verificado, laudo por lote). Uma vez por conversa, nunca com quem nao demonstrou duvida.
+
+## CPF invalido no boleto/PIX nao e "instabilidade" (19/09)
+
+Emerson (+55 19 99760-4850) pediu boleto do ImunoFosfo 90 e mandou o CPF 116.485.317-54, com digito verificador errado. O "Validar dados" so contava 11 digitos, a Shopify recusou o rascunho ("Enter a valid CPF/CNPJ"), a ferramenta devolveu um erro generico e a Serena disse ao cliente que "teve uma instabilidade" e escalou. Ele ficou esperando das 19h00 as 21h05, quando a equipe explicou o CPF e pediu confirmacao (sem resposta ate 21h35).
+
+Corrigido em producao as 21h09 (Gerar Boleto `gBgvM4y3bYzbnrE5` e Gerar PIX `SkETGTmcqtlTR0Lp`), fontes em `nodes/gerar-*-validar-dados.js` e `nodes/gerar-*-extrair-draft.js`:
+- `cpfValido()` confere os dois digitos verificadores antes de chamar a Shopify; CPF errado devolve `motivo: cpf_invalido` com a instrucao "NAO fale em instabilidade: peca ao cliente para conferir e mandar de novo".
+- Se ainda assim a Shopify recusar por CPF/CNPJ, o "Extrair draft" devolve a mesma instrucao em vez do erro generico.
+
+Sandbox (19/09 21h40), mesmo CPF: a Serena chamou gerar_boleto e respondeu "Esse CPF nao fechou, parece ter algum numero trocado. Pode conferir e me mandar de novo, por favor?", sem escalar.
