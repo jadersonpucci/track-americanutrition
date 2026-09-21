@@ -1496,3 +1496,23 @@ Joel (+55 41 99983-2815) pediu boleto do ImunoFosfo 90 as 09h03. A Serena confir
 Correcao no `Cerebro Serena` (`nodes/core-cerebro-serena.js`): qualquer "?" na ultima fala da Serena, ou frase de acao pendente ("se sim", "confirma", "posso", "ja gero", "vou gerar"...), tira o "ok/certo/beleza" do atalho e manda para o modelo completo com ferramentas. O prompt do atalho tambem passou a proibir dizer que fez, enviou, gerou ou que algo esta a caminho.
 
 Joel: boleto gerado pela equipe (rascunho #D4130, R$ 327,00, frete gratis, vence 24/09) e entregue no WhatsApp as 09h12.
+
+## Boleto da Serena pelo Banco Inter (21/09)
+
+O checkout do site ja emitia boleto pelo Inter (`checkout_config.boleto_provider = inter`, desde 18/09), mas a ferramenta
+`[Serena Tool] Gerar Boleto` (gBgvM4y3bYzbnrE5) ainda ia direto ao Pagar.me: o boleto do Joel (21/09, 09h12) saiu pela Stone.
+
+Agora, depois do `Validar dados`, o no **Boleto Inter** (`nodes/gerar-boleto-inter.js`) le `boleto_provider`; se for `inter`,
+monta o mesmo corpo do checkout do site (itens com preco do `catalogo_precos`/`produtos`, cliente, endereco, frete,
+`shopify_items`, `ref=serena` ou `serena-ig`/`serena-msg` conforme o canal) e chama `POST /webhook/checkout-boleto-inter-criar`.
+O Inter devolve boleto hibrido: linha digitavel + Pix copia e cola do mesmo boleto. A resposta para a Serena tem o mesmo
+formato de antes (`resultado`, `arquivo` com o PDF da pagina personalizada, `nota_serena`, `msg_telegram`), mais
+`pix_copia_cola`, `inter_codigo` e `via_inter`. O no `Via Inter?` manda direto para `Resposta`; se o Inter falhar por
+qualquer motivo (config, preco, credencial, erro do banco), segue o caminho antigo: rascunho na Shopify + boleto Pagar.me.
+
+Diferenca importante: no caminho Inter **nao existe rascunho na Shopify**. Quando o Inter confirma o pagamento (webhook ou
+consulta de status), o proprio fluxo do Inter cria o pedido pela Confirmacao de Pagamento (`/webhook/pagarme-pago`) com
+`ref=serena`, que vira as tags `AF: Serena` + `WPP`. O Telegram (topico 98) mostra "Banco Inter (boleto + Pix)" e o codigo AN-.
+
+Teste (21/09 09h45): cliente de teste, ImunoFosfo 90, frete gratis -> boleto Inter 077..., Pix copia e cola, PDF da pagina
+com `b=inter`, link curto; cobranca cancelada em seguida pelo proxy `inter-api`.
