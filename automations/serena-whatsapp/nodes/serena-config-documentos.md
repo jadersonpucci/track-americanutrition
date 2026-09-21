@@ -22,3 +22,20 @@ update serena_config set valor = '<json>' where chave = 'documentos';
 ```
 
 Nenhum workflow precisa mudar — o Core le a lista a cada mensagem.
+
+## Fotos dos produtos (21/09/2026)
+
+Alem do laudo, a lista tem 14 fotos de frasco, uma por produto/variante (`foto_imunofosfo_90`,
+`foto_imunofosfo_180`, `foto_imunofosfo_60`, `foto_imunofosfo_42`, `foto_imunofosfo_vegano`,
+`foto_imunofosfo_liquid`, `foto_imunofosfo_kids`, `foto_imunofosfo_diabetes`, `foto_healing`,
+`foto_imunopet`, `foto_omega3`, `foto_creatina`, `foto_life_protein`, `foto_d3_k2_a`), todas com
+`tipo: image`.
+
+As URLs sao as proprias imagens da Shopify (CDN publico), com `&width=900` para chegar leve no WhatsApp.
+Cada variante do ImunoFosfo tem imagem propria na Shopify, entao a foto do 180 e do vegano sao diferentes
+da do 90. Para atualizar uma foto: troque a imagem na Shopify, pegue a nova `src` em
+`products.json` e atualize a `url` deste arquivo + o `serena_config`.
+
+Os `gatilhos` das fotos sao nomes de produto ("180 capsulas", "liquid", "vegano", "pet"...). Eles so valem
+junto com pedido de foto na mensagem do cliente: a rede de seguranca de foto no Core exige as duas coisas,
+senao qualquer "quero o imunofosfo 90" mandaria uma foto sem ninguem pedir.

@@ -1516,3 +1516,23 @@ consulta de status), o proprio fluxo do Inter cria o pedido pela Confirmacao de 
 
 Teste (21/09 09h45): cliente de teste, ImunoFosfo 90, frete gratis -> boleto Inter 077..., Pix copia e cola, PDF da pagina
 com `b=inter`, link curto; cobranca cancelada em seguida pelo proxy `inter-api`.
+
+## Serena manda a foto do frasco (21/09)
+
+Cliente (+55 41 99780-2861) pediu "Tem foto do produto" e a Serena respondeu "Não tenho como enviar foto por aqui"
+e mandou o link da página. Ela tinha o mecanismo de envio de arquivo desde 05/09 (`[[ARQUIVO: chave]]` →
+`[Serena] Enviar Arquivo` → `sendMedia`, que já aceita `tipo: image`), mas a lista `serena_config.documentos`
+só tinha o laudo em PDF. Sem foto cadastrada, ela improvisou a recusa.
+
+- `serena_config.documentos` ganhou **14 fotos de frasco** (uma por produto e por variante do ImunoFosfo),
+  com as imagens da própria Shopify em `&width=900`. Fonte: `nodes/serena-config-documentos.json`.
+- `Cerebro Serena` (`nodes/core-cerebro-serena.js`): quando a lista tem foto, o prompt ganha uma linha dizendo
+  que ela **tem** foto dos produtos, que pedido de foto se responde com a foto pelo marcador e que nunca se
+  troca a foto por um link do site.
+- Terceira rede de segurança, só para foto: se o cliente pediu foto ("foto", "imagem", "me mostra",
+  "como é o frasco") e o modelo esqueceu o marcador, o Core acha o produto pelos gatilhos na pergunta, na
+  resposta ou nas 6 últimas falas e anexa a foto; sem nada disso, manda o frasco de 90. Se a resposta tiver
+  saído negando a foto, ela é trocada por "Claro! 💙 Aqui está a foto do *produto*:", porque o cliente não pode
+  ler que não dá para mandar foto e receber a foto em seguida.
+
+Um arquivo por mensagem, como antes. O laudo em PDF continua funcionando igual.

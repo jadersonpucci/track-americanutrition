@@ -1,18 +1,203 @@
 [
-  {
-    "chave": "laudo",
-    "nome": "Laudo Toxicologico - ImunoFosfo (NuLab Inc.).pdf",
-    "tipo": "document",
-    "url": "https://supabase.americanutrition.com/storage/v1/object/public/AmericaNutrition/ImunoFosfo_Toxicology_Report_NuLab_Inc.pdf",
-    "legenda": "Laudo toxicologico do ImunoFosfo, feito pelo laboratorio NuLab Inc.",
-    "quando": "o cliente pedir o laudo, laudo toxicologico, analise laboratorial, certificado de analise, teste de metais pesados/pureza, ou perguntar se o produto e testado / se o lote tem laudo",
-    "gatilhos": [
-      "laudo",
-      "laudos",
-      "toxicologic",
-      "certificado de analise",
-      "analise laboratorial",
-      "metais pesados"
-    ]
-  }
+ {
+  "chave": "laudo",
+  "nome": "Laudo Toxicologico - ImunoFosfo (NuLab Inc.).pdf",
+  "tipo": "document",
+  "url": "https://supabase.americanutrition.com/storage/v1/object/public/AmericaNutrition/ImunoFosfo_Toxicology_Report_NuLab_Inc.pdf",
+  "legenda": "Laudo toxicologico do ImunoFosfo, feito pelo laboratorio NuLab Inc.",
+  "quando": "o cliente pedir o laudo, laudo toxicologico, analise laboratorial, certificado de analise, teste de metais pesados/pureza, ou perguntar se o produto e testado / se o lote tem laudo",
+  "gatilhos": [
+   "laudo",
+   "laudos",
+   "toxicologic",
+   "certificado de analise",
+   "analise laboratorial",
+   "metais pesados"
+  ]
+ },
+ {
+  "chave": "foto_imunofosfo_90",
+  "nome": "ImunoFosfo 90 capsulas.jpg",
+  "tipo": "image",
+  "url": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/ImunoFosfo_90_C_psulas.jpg?v=1771893996&width=900",
+  "legenda": "ImunoFosfo 90 cápsulas · fosfoetanolamina sintética bioidêntica 650mg",
+  "quando": "o cliente pedir foto, imagem ou quiser ver como e o frasco do ImunoFosfo 90 capsulas",
+  "gatilhos": [
+   "imunofosfo 90",
+   "imuno fosfo 90",
+   "90 capsulas",
+   "90 caps",
+   "frasco de 90"
+  ]
+ },
+ {
+  "chave": "foto_imunofosfo_180",
+  "nome": "ImunoFosfo Plus 180 capsulas.jpg",
+  "tipo": "image",
+  "url": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/ImunoFosfo_Phosphoetanolamine_Plus.jpg?v=1776822521&width=900",
+  "legenda": "ImunoFosfo Plus 180 cápsulas · frasco maior, mesma fórmula",
+  "quando": "o cliente pedir foto, imagem ou quiser ver como e o frasco do ImunoFosfo Plus 180 capsulas",
+  "gatilhos": [
+   "imunofosfo plus",
+   "imuno plus",
+   "plus 180",
+   "180 capsulas",
+   "180 caps"
+  ]
+ },
+ {
+  "chave": "foto_imunofosfo_60",
+  "nome": "ImunoFosfo 60 capsulas.jpg",
+  "tipo": "image",
+  "url": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/60cap_88c73db9-c420-40c5-af20-54153a2a0cb0.jpg?v=1771894049&width=900",
+  "legenda": "ImunoFosfo 60 cápsulas",
+  "quando": "o cliente pedir foto, imagem ou quiser ver como e o frasco do ImunoFosfo 60 capsulas",
+  "gatilhos": [
+   "imunofosfo 60",
+   "60 capsulas",
+   "60 caps"
+  ]
+ },
+ {
+  "chave": "foto_imunofosfo_42",
+  "nome": "ImunoFosfo 42 capsulas.jpg",
+  "tipo": "image",
+  "url": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/42caps.jpg?v=1771894049&width=900",
+  "legenda": "ImunoFosfo 42 cápsulas",
+  "quando": "o cliente pedir foto, imagem ou quiser ver como e o frasco do ImunoFosfo 42 capsulas",
+  "gatilhos": [
+   "imunofosfo 42",
+   "42 capsulas",
+   "42 caps",
+   "phase one"
+  ]
+ },
+ {
+  "chave": "foto_imunofosfo_vegano",
+  "nome": "ImunoFosfo Vegano 90 capsulas.jpg",
+  "tipo": "image",
+  "url": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/Vegan_Frente.jpg?v=1771894049&width=900",
+  "legenda": "ImunoFosfo Vegano 90 cápsulas · cápsula vegetal",
+  "quando": "o cliente pedir foto, imagem ou quiser ver como e o frasco do ImunoFosfo Vegano 90 capsulas",
+  "gatilhos": [
+   "vegano",
+   "vegana",
+   "vegetal"
+  ]
+ },
+ {
+  "chave": "foto_imunofosfo_liquid",
+  "nome": "ImunoFosfo Liquid.jpg",
+  "tipo": "image",
+  "url": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/Mockup_Liquid_201fcff5-5e85-48ff-a71f-3eb38443d47c.jpg?v=1771378027&width=900",
+  "legenda": "ImunoFosfo Liquid · em gotas",
+  "quando": "o cliente pedir foto, imagem ou quiser ver como e o frasco do ImunoFosfo Liquid",
+  "gatilhos": [
+   "liquid",
+   "liquido",
+   "em gotas",
+   "gotinha"
+  ]
+ },
+ {
+  "chave": "foto_imunofosfo_kids",
+  "nome": "ImunoFosfo Kids.jpg",
+  "tipo": "image",
+  "url": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/ImunoFosfo_Kids_fosfoetanolamina.jpg?v=1771511298&width=900",
+  "legenda": "ImunoFosfo Kids · em gotas, a partir de 3 anos",
+  "quando": "o cliente pedir foto, imagem ou quiser ver como e o frasco do ImunoFosfo Kids",
+  "gatilhos": [
+   "kids",
+   "infantil",
+   "crianca"
+  ]
+ },
+ {
+  "chave": "foto_imunofosfo_diabetes",
+  "nome": "ImunoFosfo Diabetes.jpg",
+  "tipo": "image",
+  "url": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/diabetes_mocup.jpg?v=1769434468&width=900",
+  "legenda": "ImunoFosfo Diabetes",
+  "quando": "o cliente pedir foto, imagem ou quiser ver como e o frasco do ImunoFosfo Diabetes",
+  "gatilhos": [
+   "diabetes",
+   "diabetico"
+  ]
+ },
+ {
+  "chave": "foto_healing",
+  "nome": "ImunoFosfo Healing.jpg",
+  "tipo": "image",
+  "url": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/IMUNOHEALING.jpg?v=1736989270&width=900",
+  "legenda": "ImunoFosfo Healing · spray de uso tópico",
+  "quando": "o cliente pedir foto, imagem ou quiser ver como e o frasco do ImunoFosfo Healing",
+  "gatilhos": [
+   "healing",
+   "spray"
+  ]
+ },
+ {
+  "chave": "foto_imunopet",
+  "nome": "ImunoPet.jpg",
+  "tipo": "image",
+  "url": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/mockup-imunopet.jpg?v=1774835522&width=900",
+  "legenda": "ImunoPet · fosfoetanolamina para cães e gatos",
+  "quando": "o cliente pedir foto, imagem ou quiser ver como e o frasco do ImunoPet",
+  "gatilhos": [
+   "imunopet",
+   "pet",
+   "cachorro",
+   "gato"
+  ]
+ },
+ {
+  "chave": "foto_omega3",
+  "nome": "Omega 3 Ultra Pure.jpg",
+  "tipo": "image",
+  "url": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/Mockup---Omega3-2025.jpg?v=1750164299&width=900",
+  "legenda": "Ômega 3 Ultra Pure · óleo de peixe com selo MEG-3",
+  "quando": "o cliente pedir foto, imagem ou quiser ver como e o frasco do Omega 3 Ultra Pure",
+  "gatilhos": [
+   "omega 3",
+   "omega3",
+   "oleo de peixe"
+  ]
+ },
+ {
+  "chave": "foto_creatina",
+  "nome": "Creatina Ultra Micronizada.jpg",
+  "tipo": "image",
+  "url": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/Mockup---Creatina-em-Po-frente.jpg?v=1744047926&width=900",
+  "legenda": "Creatina Ultra Micronizada",
+  "quando": "o cliente pedir foto, imagem ou quiser ver como e o frasco do Creatina Ultra Micronizada",
+  "gatilhos": [
+   "creatina",
+   "creatine"
+  ]
+ },
+ {
+  "chave": "foto_life_protein",
+  "nome": "Life Protein.jpg",
+  "tipo": "image",
+  "url": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/Mockup---Life-Protein.jpg?v=1763741133&width=900",
+  "legenda": "Life Protein · proteína vegetal",
+  "quando": "o cliente pedir foto, imagem ou quiser ver como e o frasco do Life Protein",
+  "gatilhos": [
+   "life protein",
+   "proteina"
+  ]
+ },
+ {
+  "chave": "foto_d3_k2_a",
+  "nome": "Vitamina D3 + K2 + A.jpg",
+  "tipo": "image",
+  "url": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/Mockup---Vitamin-D3.jpg?v=1757015071&width=900",
+  "legenda": "Vitamina D3 com K2 e A",
+  "quando": "o cliente pedir foto, imagem ou quiser ver como e o frasco do Vitamina D3 + K2 + A",
+  "gatilhos": [
+   "vitamina d3",
+   "d3 k2",
+   "vitamina d"
+  ]
+ }
 ]
