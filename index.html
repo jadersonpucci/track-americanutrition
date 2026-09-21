@@ -155,6 +155,38 @@ button,input{font-family:inherit}
 @keyframes shine{from{background-position:120% 0}to{background-position:-30% 0}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 @media (min-width:560px){.app{padding-top:40px}}
+/* ---- desktop: duas colunas (hero + cards | caminho todo) ---- */
+@media (min-width:960px){
+  .app{max-width:1120px;padding:48px 48px 120px}
+  .hdr{margin-top:18px}
+  .hero{margin-top:36px}
+  .hero h1{font-size:56px;letter-spacing:-1.8px}
+  .hero p{font-size:17px;max-width:46ch}
+  #v-busca{display:grid;grid-template-columns:1.1fr .9fr;gap:64px;align-items:center;min-height:60vh}
+  #v-busca .hero{margin-top:0}
+  #v-busca .form{margin-top:0;padding:14px}
+  #v-load{max-width:560px}
+  #v-res{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:72px;row-gap:0;align-items:start}
+  #v-res .hero{grid-column:1}
+  #v-res .carousel{grid-column:1;display:flex;flex-direction:column;gap:16px;overflow:visible;margin:28px 0 0;padding:0;scroll-snap-type:none}
+  #v-res .card{flex:none;width:100%;min-height:260px}
+  #v-res .dots{display:none}
+  #v-res .sec{grid-column:2;grid-row:1 / span 3;margin-top:36px;padding-top:6px}
+  #v-res .sec h2{font-size:22px;margin-bottom:22px}
+  .ev{padding-bottom:26px}
+  .ev p{font-size:16px}
+  .ev .s{font-size:14px}
+  .dock{left:auto;right:48px;transform:none;width:auto;max-width:none;bottom:32px}
+  .dock .go{margin-left:4px}
+  #b-hist{display:none}
+  #v-res .card.white,#v-res .card.review{min-height:0}
+  #v-res .sec{padding-bottom:96px}
+  .toast{bottom:112px}
+}
+@media (min-width:1280px){
+  .app{max-width:1200px}
+  #v-res{column-gap:96px}
+}
 </style>
 </head>
 <body>
