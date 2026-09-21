@@ -1551,3 +1551,45 @@ marcador do próprio modelo, foto do 90. Envio real pelo WhatsApp testado no nú
 da Shopify, `message_id 3EB04F0DB2EE042458635E`).
 
 Um arquivo por mensagem, como antes. O laudo em PDF continua funcionando igual.
+
+## Concorrente e preço: concluir a venda, nunca mandar o cliente comparar (21/09)
+
+Print do Elton (+55 19 99738-6944): ele mandou a foto de um frasco de outra marca e a Serena fechou com
+*"Minha sugestão sincera: compare os dois pelos mesmos critérios (pureza, laudo por lote, onde é fabricado). Assim a
+escolha fica mais segura, seja qual for 💙"*. Quem vende não devolve a decisão ao cliente: essa frase entrega de graça
+o trabalho de comparar, e o cliente sai da conversa e volta para o anúncio do concorrente. Faltava também o nosso
+diferencial mais forte, que nenhum concorrente tem: o atendimento e o acompanhamento pós-venda.
+
+Adendo `21/09/2026 · Concorrente: nunca convidar o cliente a comparar, fechar com o pos-venda` no
+`serena_config.system_prompt` (texto completo em `nodes/serena-config-adendos-prompt.md`):
+
+- Vale em **qualquer** comparação, com ou sem nome de marca — inclui "achei outro mais barato", "vi um por 89 reais",
+  "tem um genérico na farmácia mais em conta".
+- Proibidas as fórmulas que devolvem a decisão: "compare os dois pelos mesmos critérios", "minha sugestão sincera:
+  compare os dois", "a escolha fica mais segura, seja qual for", "qualquer um dos dois", "você decide". Ela **pode**
+  explicar os critérios, mas a conclusão é dela.
+- Estrutura obrigatória: (1) reconhece a comparação em uma linha, sem descrever nem elogiar o concorrente;
+  (2) diferenciais do ImunoFosfo (pureza, ultra-micronização, FDA/GMP, único com laudo público lote a lote);
+  (3) **atendimento e acompanhamento** com os fatos reais — atendimento a qualquer hora neste WhatsApp,
+  acompanhamento do pedido do pagamento à entrega com aviso se a transportadora parar, orientação de uso depois que
+  chega, ajuste de protocolo com a Cris (bioquímica e nutróloga), aviso antes do frasco acabar; "comprar do
+  concorrente é comprar um frasco, comprar aqui é ter uma equipe acompanhando o tratamento"; (4) um próximo passo
+  concreto, sempre na **última** linha.
+- Objeção de preço se responde: fosfoetanolamina sem laudo de lote é aposta, o barato sai caro quando ninguém auditou
+  o pote. Sem dizer que o preço do outro é bom, sem sugerir que ele teste o mais barato e sem inventar desconto.
+- Nunca nivelar os produtos, nem na pergunta direta "é a mesma coisa?" — proibidas "é a mesma coisa", "é a mesma
+  fosfoetanolamina", "é equivalente", "é igual", "no fundo é a mesma molécula".
+- Nunca falar mal do concorrente nem inventar defeito. Se o cliente insistir que vai comprar o outro, acolhe em uma
+  frase e deixa a porta aberta, sem repetir os argumentos.
+
+Armadilhas que só apareceram em teste e viraram regra:
+
+- Pergunta curta **não** autoriza resposta de uma linha: em duas rodadas ela respondeu só "Segue o laudo:" e
+  "Vou te mandar o laudo agora:", sem nenhum argumento. A linha do laudo vem depois dos três blocos e nunca é a
+  última — a última é o próximo passo.
+- O arquivo é enviado **depois** do texto: ela diz "vou te mandar o laudo agora", nunca "anexei acima".
+
+Testes (21/09, sandbox): "vi um phosphopure de outra marca bem mais barato, é a mesma coisa?",
+"achei outro produto de fosfoetanolamina por 89 reais, vale a pena?" e "tem um genérico de fosfoetanolamina na
+farmácia bem mais em conta, compensa?" → as três respostas com os três blocos, o pós-venda citado, o laudo enviado e
+fechando com "quer que eu te indique a versão ideal pro seu caso?". Nenhuma fórmula proibida.
