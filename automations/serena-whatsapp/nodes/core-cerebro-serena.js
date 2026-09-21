@@ -48,7 +48,7 @@ const regraPedidos = telDigits
 
 // Pedidos do cliente na loja (cache de 6h em serena_pedidos_cache; consulta a Shopify quando vencido). Cliente recorrente e tratado como conhecido.
 const SB = 'https://supabase.americanutrition.com/pg/query';
-const SK = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIiwiaXNzIjoic3VwYWJhc2UiLCJpYXQiOjE3Nzk5MzQ2MDEsImV4cCI6MjA5NTI5NDYwMX0.-unrUEZisjdJ_Pjje72_ccV4qwLB3S0mAjjpndUhOhQ';
+const SK = 'SUPABASE_SERVICE_KEY';
 let pedidos = (ctx.pedidos_cache && typeof ctx.pedidos_cache === 'object') ? ctx.pedidos_cache : null;
 const cacheVelho = !pedidos || !pedidos.atualizado_em || (Date.now() - new Date(pedidos.atualizado_em).getTime()) > 6 * 3600000;
 if (telDigits && cacheVelho && !sugerir) {
