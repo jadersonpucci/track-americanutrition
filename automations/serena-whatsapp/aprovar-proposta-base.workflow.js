@@ -6,7 +6,7 @@ import { workflow, node, trigger, sticky } from '@n8n/workflow-sdk';
 
 const entrada = trigger({ type: 'n8n-nodes-base.webhook', version: 2.1, config: { name: 'Link do Telegram', parameters: { httpMethod: 'GET', path: 'serena-base-proposta', responseMode: 'responseNode', options: {} } }, output: [{ query: { t: 'x', id: '1', acao: 'ver' } }] });
 
-const agir = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Aplicar ou Mostrar', parameters: { jsCode: `const SK = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIiwiaXNzIjoic3VwYWJhc2UiLCJpYXQiOjE3Nzk5MzQ2MDEsImV4cCI6MjA5NTI5NDYwMX0.-unrUEZisjdJ_Pjje72_ccV4qwLB3S0mAjjpndUhOhQ';
+const agir = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Aplicar ou Mostrar', parameters: { jsCode: `const SK = 'SUPABASE_SERVICE_KEY';
 const SB = 'https://supabase.americanutrition.com/pg/query';
 const TG = 'https://api.telegram.org/bot8872435172:AAGA-EmIy8MKA8e0p3DhtIAtqRQfcFCI7vk/sendMessage';
 const APROVAR = 'https://n8n.americanutrition.com/webhook/serena-base-proposta';
