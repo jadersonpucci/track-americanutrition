@@ -1488,3 +1488,11 @@ Os links de checkout (`seguro.americanutrition.com/...`) e de rastreio ja tinham
 - Gerar Boleto (gBgvM4y3bYzbnrE5, no "Encurtar PDF via AN Links"): o encurtador passa a receber `acao: 'og'` com titulo "Seu boleto esta pronto · America Nutrition", descricao e a imagem, entao o link curto serve a previa com a arte (a pagina do boleto em si nao tem og:image).
 
 Para refazer uma arte: editar o HTML em `og/`, renderizar com `headless_shell --window-size=1200,630 --screenshot`, subir no bucket `imagens/og/`.
+
+## "Ok" depois de uma pergunta nao e mensagem trivial (21/09)
+
+Joel (+55 41 99983-2815) pediu boleto do ImunoFosfo 90 as 09h03. A Serena confirmou os dados e perguntou "Continua tudo certo assim? Se sim, ja gero o boleto pra voce! 🧬". Ele respondeu "Ok" e o atalho de mensagem trivial (Haiku, sem ferramentas) pegou a vez: o teste de "a ultima fala da Serena foi pergunta?" exigia o "?" no FIM do texto, e aqui ele estava no meio. O Haiku respondeu "Seu boleto ja esta a caminho" sem nada ter sido gerado.
+
+Correcao no `Cerebro Serena` (`nodes/core-cerebro-serena.js`): qualquer "?" na ultima fala da Serena, ou frase de acao pendente ("se sim", "confirma", "posso", "ja gero", "vou gerar"...), tira o "ok/certo/beleza" do atalho e manda para o modelo completo com ferramentas. O prompt do atalho tambem passou a proibir dizer que fez, enviou, gerou ou que algo esta a caminho.
+
+Joel: boleto gerado pela equipe (rascunho #D4130, R$ 327,00, frete gratis, vence 24/09) e entregue no WhatsApp as 09h12.

@@ -290,7 +290,11 @@ const ehTrivial = (() => {
   const consentimento = /^(ok|okay|oks|okk+|blz|beleza|show|certo|ta|ta bom|tudo bem|tudo certo|perfeito|combinado|entendi|entendido|otimo|legal|top|joia)( (entao|serena|obrigad[oa]))*$/;
   if (!consentimento.test(t)) return false;
   const ultSerena = historico.find(h => h.papel === 'serena');
-  const perguntou = !!(ultSerena && /\?\s*[^a-zA-Z0-9]*$/.test(String(ultSerena.texto || '').trim()));
+  // 21/09/2026 (Joel): a pergunta era "Continua tudo certo assim? Se sim, ja gero o boleto pra voce! \u{1F9EC}", o "?"
+  // ficou no meio e o "Ok" caiu aqui: o Haiku respondeu "seu boleto ja esta a caminho" sem chamar ferramenta nenhuma.
+  // Agora qualquer "?" na ultima fala da Serena, ou frase de acao pendente, tira o "ok" do atalho.
+  const txtUlt = String((ultSerena && ultSerena.texto) || '');
+  const perguntou = !!(ultSerena && (/\?/.test(txtUlt) || /\b(se sim|confirma|posso |quer que|pode ser|me diz|me avisa|me confirma|ja gero|vou gerar|gero o|gero pra)\b/i.test(txtUlt)));
   return !perguntou;
 })();
 let trivialOk = false;
@@ -299,7 +303,7 @@ if (ehTrivial) {
     const ult = messages.slice(-6);
     while (ult.length && ult[0].role !== 'user') ult.shift();
     const hr = await this.helpers.httpRequest({ method: 'POST', url: CLAUDE, json: true, timeout: 20000, body: { model: 'claude-haiku-4-5-20251001', max_tokens: 80,
-      system: 'Voce e a Serena, do atendimento da America Nutrition no WhatsApp. O cliente acabou de mandar uma mensagem curta de cortesia (agradecimento, ok, saudacao ou emoji). Responda em UMA frase curta e calorosa, no tom da conversa, sem link, sem lista, sem nova pergunta, sem repetir o que ja foi dito, com no maximo um emoji. Se nao houver o que acrescentar, responda so com o emoji 💙.',
+      system: 'Voce e a Serena, do atendimento da America Nutrition no WhatsApp. O cliente acabou de mandar uma mensagem curta de cortesia (agradecimento, ok, saudacao ou emoji). Responda em UMA frase curta e calorosa, no tom da conversa, sem link, sem lista, sem nova pergunta, sem repetir o que ja foi dito, com no maximo um emoji. NUNCA diga que fez, vai fazer, enviou, gerou ou que algo esta a caminho (boleto, Pix, link, pedido, rastreio): voce nao tem ferramentas aqui. Se a mensagem do cliente puder ser resposta a uma pergunta ou pedido, responda so com o emoji 💙. Se nao houver o que acrescentar, responda so com o emoji 💙.',
       messages: ult } });
     const txt = (hr && Array.isArray(hr.content)) ? hr.content.filter(c => c.type === 'text').map(c => c.text).join('').trim() : '';
     if (txt && txt.length <= 300) {
