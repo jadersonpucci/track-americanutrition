@@ -36,6 +36,8 @@ Cada variante do ImunoFosfo tem imagem propria na Shopify, entao a foto do 180 e
 da do 90. Para atualizar uma foto: troque a imagem na Shopify, pegue a nova `src` em
 `products.json` e atualize a `url` deste arquivo + o `serena_config`.
 
-Os `gatilhos` das fotos sao nomes de produto ("180 capsulas", "liquid", "vegano", "pet"...). Eles so valem
-junto com pedido de foto na mensagem do cliente: a rede de seguranca de foto no Core exige as duas coisas,
-senao qualquer "quero o imunofosfo 90" mandaria uma foto sem ninguem pedir.
+As fotos NAO usam `gatilhos`, e sim **`termos`** (nomes de produto: "180 capsulas", "liquid", "vegano", "pet"...).
+O motivo: `gatilhos` e lido pela rede de seguranca antiga, no `Cerebro Serena`, que dispara so com a palavra na
+mensagem do cliente. Com `gatilhos` nas fotos, "quanto custa o imunofosfo 90" mandava foto sem ninguem pedir
+(visto em teste em 21/09). `termos` e lido apenas pela rede de foto do `Montar Resposta`, que exige tambem um
+pedido de foto na mensagem ("foto", "imagem", "me mostra", "como e o frasco").

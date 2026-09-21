@@ -48,7 +48,7 @@ const regraPedidos = telDigits
 
 // Pedidos do cliente na loja (cache de 6h em serena_pedidos_cache; consulta a Shopify quando vencido). Cliente recorrente e tratado como conhecido.
 const SB = 'https://supabase.americanutrition.com/pg/query';
-const SK = 'SUPABASE_SERVICE_KEY';
+const SK = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIiwiaXNzIjoic3VwYWJhc2UiLCJpYXQiOjE3Nzk5MzQ2MDEsImV4cCI6MjA5NTI5NDYwMX0.-unrUEZisjdJ_Pjje72_ccV4qwLB3S0mAjjpndUhOhQ';
 let pedidos = (ctx.pedidos_cache && typeof ctx.pedidos_cache === 'object') ? ctx.pedidos_cache : null;
 const cacheVelho = !pedidos || !pedidos.atualizado_em || (Date.now() - new Date(pedidos.atualizado_em).getTime()) > 6 * 3600000;
 if (telDigits && cacheVelho && !sugerir) {
@@ -62,7 +62,7 @@ if (telDigits && cacheVelho && !sugerir) {
         const ro = await this.helpers.httpRequest({ method: 'POST', url: 'https://n8n.americanutrition.com/webhook/shopify-admin', json: true, timeout: 15000, body: { acao: 'consultar', endpoint: 'customers/' + rp.customer_id + '/orders.json', params: { status: 'any', limit: 1, fields: 'id,name,created_at,email,phone,shipping_address,billing_address,note_attributes' } } });
         const o = (ro && ro.ok && ro.dados && Array.isArray(ro.dados.orders)) ? ro.dados.orders[0] : null;
         if (o) {
-          const lp = t => String(t == null ? '' : t).replace(/[​-‏⁠﻿]/g, '').trim();
+          const lp = t => String(t == null ? '' : t).replace(/[\u200B-\u200F\u2060\uFEFF]/g, '').trim();
           const ad = o.shipping_address || o.billing_address || {};
           const na = {};
           (o.note_attributes || []).forEach(x => { if (x && x.name) na[String(x.name).toLowerCase()] = x.value; });
@@ -121,12 +121,10 @@ if (cadC && (cadC.cpf || (cadC.endereco && cadC.endereco.cep))) {
 let docsLista = [];
 try { docsLista = Array.isArray(ctx.documentos) ? ctx.documentos : JSON.parse(ctx.documentos || '[]'); } catch (e) { docsLista = []; }
 docsLista = docsLista.filter(d => d && d.chave && d.url);
-const temFoto = docsLista.some(d => String(d.tipo) === 'image');
 const documentosTxt = docsLista.length
   ? 'ARQUIVOS QUE VOCE PODE ENVIAR (o sistema envia o arquivo; voce so marca):\n'
-    + docsLista.map(d => '- ' + d.chave + ': ' + (d.nome || d.chave) + (d.quando ? ' — mande quando ' + d.quando : '')).join('\n')
-    + '\nPara mandar, termine a mensagem com uma linha exatamente assim: [[ARQUIVO: ' + docsLista[0].chave + ']] (colchetes duplos, a palavra ARQUIVO em maiusculo e a chave da lista acima). Antes dela, escreva UMA frase curta dizendo que esta enviando o arquivo. Essa linha e a UNICA forma de mandar o arquivo: sem ela nada e enviado. NUNCA escreva no lugar dela algo como (arquivo enviado: ...) nem descreva o anexo em texto — isso aparece no historico so como registro do sistema, nao envia nada. Se o cliente pedir de novo, repita o marcador. Marque no maximo um arquivo por mensagem e so quando fizer sentido. NUNCA invente outro arquivo nem afirme resultados ou numeros que estejam dentro do documento e nao na base: se o cliente perguntar detalhes, diga que esta tudo no arquivo que voce mandou.'
-    + (temFoto ? ' VOCE TEM FOTO DOS PRODUTOS na lista acima (as chaves que comecam com foto_). Cliente pedindo foto, imagem, "como e o frasco" ou "me mostra o produto" recebe a FOTO pelo marcador, do produto que voces estao falando. NUNCA diga que nao consegue enviar foto por aqui e NUNCA troque a foto por um link do site: a foto vai como imagem no WhatsApp.' : '')
+    + docsLista.map(d => '- ' + d.chave + ': ' + (d.nome || d.chave) + (d.quando ? ' \u2014 mande quando ' + d.quando : '')).join('\n')
+    + '\nPara mandar, termine a mensagem com uma linha exatamente assim: [[ARQUIVO: ' + docsLista[0].chave + ']] (colchetes duplos, a palavra ARQUIVO em maiusculo e a chave da lista acima). Antes dela, escreva UMA frase curta dizendo que esta enviando o arquivo. Essa linha e a UNICA forma de mandar o arquivo: sem ela nada e enviado. NUNCA escreva no lugar dela algo como (arquivo enviado: ...) nem descreva o anexo em texto \u2014 isso aparece no historico so como registro do sistema, nao envia nada. Se o cliente pedir de novo, repita o marcador. Marque no maximo um arquivo por mensagem e so quando fizer sentido. NUNCA invente outro arquivo nem afirme resultados ou numeros que estejam dentro do documento e nao na base: se o cliente perguntar detalhes, diga que esta tudo no arquivo que voce mandou.'
   : '';
 
 const nomeCliente = ctx.nome || (pedidos && pedidos.nome ? String(pedidos.nome).split(' ')[0] : '');
@@ -285,7 +283,7 @@ const ehTrivial = (() => {
   const bruto = String(entrada.texto || '').trim();
   if (!bruto || bruto.length > 40) return false;
   if (/^[\s\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{200D}\u{2764}\u{1F44D}\u{1F64F}]+$/u.test(bruto)) return true;
-  const t = bruto.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z\s]/g, ' ').replace(/\s+/g, ' ').trim();
+  const t = bruto.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z\s]/g, ' ').replace(/\s+/g, ' ').trim();
   if (!t || t.length > 30) return false;
   const seguro = /^(valeu|vlw|obrigad[oa]s?|obg|brigad[oa]|muito obrigad[oa]|obrigad[oa] viu|de nada|amem|bom dia|boa tarde|boa noite|ate mais|tchau|abraco|abracos|bjs|beijos|deus abencoe|deus te abencoe)( (viu|entao|serena|querida|obrigad[oa]|tudo bem|tudo bom))*$/;
   if (seguro.test(t)) return true;
@@ -429,7 +427,7 @@ if (resposta) {
       const linhas = resposta.split('\n');
       const ultima = (linhas[linhas.length - 1] || '').trim();
       if (linhas.length > 1 && /\?\s*[^\w\s]*\s*$/.test(ultima) && !/https?:\/\//i.test(ultima)) {
-        const corte = ultima.replace(/(^|[.!?…]\s+)([^.!?…]{0,90}\?)\s*[^\w\s]*\s*$/, '$1').trim();
+        const corte = ultima.replace(/(^|[.!?\u2026]\s+)([^.!?\u2026]{0,90}\?)\s*[^\w\s]*\s*$/, '$1').trim();
         if (corte) linhas[linhas.length - 1] = corte; else linhas.pop();
         resposta = linhas.join('\n').trim();
       }
@@ -442,7 +440,7 @@ if (resposta) {
 // Arquivo: [[ARQUIVO: chave]] vira um envio de PDF/imagem pela Entrada (webhook serena-samuel-arquivo).
 let arquivo = null;
 if (resposta && docsLista.length) {
-  const norm = t => String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  const norm = t => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   const acha = chave => docsLista.find(d => norm(d.chave) === norm(chave));
   let doc = null;
   const ma = resposta.match(/\[\[\s*ARQUIVO\s*:\s*([^\]]+)\]\]/i);
@@ -476,26 +474,8 @@ if (resposta && docsLista.length) {
       if (cand) {
         const marca = '[[arquivo: ' + String(cand.chave).toLowerCase();
         const jaMandou = historico.filter(h => h.papel === 'serena').slice(0, 4).some(h => String(h.texto || '').toLowerCase().indexOf(marca) >= 0);
-        const pediuDeNovo = /(de novo|novamente|outra vez|reenvi|mais uma vez|nao (chegou|recebi|veio|abriu)|n[ãa]o (chegou|recebi|veio|abriu))/i.test(String(entrada.texto || ''));
+        const pediuDeNovo = /(de novo|novamente|outra vez|reenvi|mais uma vez|nao (chegou|recebi|veio|abriu)|n[\u00e3a]o (chegou|recebi|veio|abriu))/i.test(String(entrada.texto || ''));
         if (!jaMandou || pediuDeNovo) doc = cand;
-      }
-    }
-  }
-  // Terceira rede, so para FOTO de produto (21/09/2026): o cliente perguntou "tem foto do produto?" e a Serena
-  // respondeu que nao conseguia enviar foto e mandou o link do site. Pedido de foto tem que virar foto: acha o
-  // produto pelos gatilhos na pergunta, na resposta ou no historico recente; sem nada disso, manda o frasco de 90.
-  if (!doc && !proativo && !sugerir) {
-    const pediuFoto = /(foto|fotos|imagem|imagens|me mostra|mostra o produto|ver o produto|como e o (frasco|produto|pote|vidro))/.test(norm(entrada.texto));
-    const fotos = docsLista.filter(d => String(d.tipo) === 'image');
-    if (pediuFoto && fotos.length) {
-      const bate = txt => { const t = norm(txt); return t ? fotos.find(d => (Array.isArray(d.gatilhos) ? d.gatilhos : []).map(norm).filter(g => g.length >= 3).some(g => t.indexOf(g) >= 0)) : null; };
-      doc = bate(entrada.texto) || bate(resposta) || null;
-      if (!doc) { for (const h of historico.slice(0, 6)) { const c = bate(h.texto); if (c) { doc = c; break; } } }
-      if (!doc) doc = fotos.find(d => /_90$/.test(String(d.chave))) || fotos[0];
-      // se a resposta saiu negando a foto ("nao tenho como enviar foto por aqui"), ela e trocada por uma frase
-      // curta: o cliente nao pode ler que nao da para mandar foto e receber a foto na mensagem seguinte.
-      if (doc && /n[ao\u00e3]o\s+(tenho|consigo|posso|d[a\u00e1])\s+(como\s+)?(te\s+)?(enviar|mandar|passar)/i.test(resposta)) {
-        resposta = 'Claro! \u{1F499} Aqui esta a foto do *' + String(doc.nome || 'produto').replace(/\.(jpe?g|png)$/i, '').trim() + '*:';
       }
     }
   }
@@ -544,7 +524,7 @@ if (resposta && !proativo && !sugerir) {
 // Pagina de pagamento: o modelo as vezes resume a mensagem e corta o link. Como ele e a saida para quem nao
 // consegue copiar o codigo no WhatsApp, o Core garante que ele esteja na resposta.
 if (paginaPix && resposta && !sugerir && resposta.indexOf(paginaPix) < 0) {
-  resposta += '\n\nSe preferir, abra esta página para copiar o código com um toque ou pagar pelo QR Code:\n' + paginaPix;
+  resposta += '\n\nSe preferir, abra esta p\u00e1gina para copiar o c\u00f3digo com um toque ou pagar pelo QR Code:\n' + paginaPix;
   respostaHist = resposta;
 }
 
@@ -628,4 +608,3 @@ return [{ json: {
   uso: uso,
   payload: JSON.stringify(sugerir ? { msgs: [], handoff: false, tags: [], contato_id: ctx.contato_id } : { msgs: msgs, handoff: handoff, motivo_handoff: motivoHandoff, tags: tags, lacuna: lacuna, contato_id: ctx.contato_id, telefone: telDigits, canal: entrada.canal, pausa_min: Number(motivoHandoff === 'irritado' ? (ctx.pausa_irritado_min || 60) : (ctx.pausa_handoff_min || 720)) })
 } }];
-

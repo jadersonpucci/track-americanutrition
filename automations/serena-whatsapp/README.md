@@ -1524,15 +1524,30 @@ e mandou o link da página. Ela tinha o mecanismo de envio de arquivo desde 05/0
 `[Serena] Enviar Arquivo` → `sendMedia`, que já aceita `tipo: image`), mas a lista `serena_config.documentos`
 só tinha o laudo em PDF. Sem foto cadastrada, ela improvisou a recusa.
 
-- `serena_config.documentos` ganhou **14 fotos de frasco** (uma por produto e por variante do ImunoFosfo),
-  com as imagens da própria Shopify em `&width=900`. Fonte: `nodes/serena-config-documentos.json`.
-- `Cerebro Serena` (`nodes/core-cerebro-serena.js`): quando a lista tem foto, o prompt ganha uma linha dizendo
-  que ela **tem** foto dos produtos, que pedido de foto se responde com a foto pelo marcador e que nunca se
-  troca a foto por um link do site.
-- Terceira rede de segurança, só para foto: se o cliente pediu foto ("foto", "imagem", "me mostra",
-  "como é o frasco") e o modelo esqueceu o marcador, o Core acha o produto pelos gatilhos na pergunta, na
-  resposta ou nas 6 últimas falas e anexa a foto; sem nada disso, manda o frasco de 90. Se a resposta tiver
-  saído negando a foto, ela é trocada por "Claro! 💙 Aqui está a foto do *produto*:", porque o cliente não pode
-  ler que não dá para mandar foto e receber a foto em seguida.
+**O que resolveu, sem uma linha de código:** `serena_config.documentos` ganhou **14 fotos de frasco**, uma por
+produto e por variante do ImunoFosfo (o 180 e o vegano têm imagem própria na Shopify). As URLs são as imagens da
+própria Shopify com `&width=900`. Fonte: `nodes/serena-config-documentos.json`. Como o Core já lista os arquivos
+no prompt com o campo `quando`, ela passou a marcar `[[ARQUIVO: foto_...]]` sozinha.
+
+**Rede de segurança, no `Montar Resposta`** (`nodes/core-montar-resposta.js`): se o cliente pediu foto ("foto",
+"imagem", "me mostra", "como é o frasco") e o modelo esqueceu o marcador, o nó anexa a foto. Acha o produto pelos
+`termos` na pergunta, na resposta ou nas 6 últimas falas; sem nada disso, manda o frasco de 90. Se a resposta tiver
+saído negando a foto, ela é trocada por "Claro! 💙 Aqui está a foto do *produto*:", porque o cliente não pode ler
+que não dá para mandar foto e receber a foto em seguida.
+
+Duas decisões que valem registro:
+
+- A rede mora no `Montar Resposta`, não no `Cerebro Serena`. O nó do Cérebro tem a chave `service_role` do Supabase
+  embutida em texto, e reenviar 52 KB com a chave dentro é barrado pelo classificador de segurança. O `Montar
+  Resposta` tem acesso a tudo que a rede precisa (`$('Carregar Contexto')` para `documentos` e `historico`,
+  `$('Normalizar')` para a mensagem do cliente) e não tem credencial nenhuma.
+- As fotos usam o campo `termos`, não `gatilhos`. Com `gatilhos`, a rede antiga do Cérebro disparava só pela palavra
+  na mensagem: em teste, "quanto custa o imunofosfo 90" e "quero saber do imunofosfo liquid" mandaram foto sem
+  ninguém pedir. `termos` só é lido pela rede nova, que exige o pedido de foto.
+
+Testes (21/09, sandbox): "quanto custa o imunofosfo 90" → sem foto. "Quero saber do imunofosfo liquid" → sem foto.
+"tem foto?" na sequência → foto do Liquid. "e do kids, tem foto" → foto do Kids. "Tem foto do imunofosfo 90?" →
+marcador do próprio modelo, foto do 90. Envio real pelo WhatsApp testado no número da empresa (`sendMedia` com a URL
+da Shopify, `message_id 3EB04F0DB2EE042458635E`).
 
 Um arquivo por mensagem, como antes. O laudo em PDF continua funcionando igual.
