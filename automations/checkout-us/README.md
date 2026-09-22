@@ -68,9 +68,28 @@ primeiro envio internacional; a rede de segurança só preenche o padrão de sup
 Emitida em 22/09/2026 depois da correção. Saiu pela **UPS** (`1Z212B906703820225`), com o
 formulário alfandegário anexo — a Shopify gerou os dois PDFs (etiqueta + customs form).
 
-Ponto aberto: o cliente pagou *USPS First Class Package International Service* no checkout,
-mas a compra não informa preferência de transportadora, então a Shopify escolheu a UPS. O
-`ShippingLabelPurchaseInput` aceita `preferredRateSelection { carrierCode, serviceCode }`
-(`usps`, `ups_shipping`, `dhl_express`...). Passar `carrierCode` derivado do serviço pago
-alinharia o custo com o que o cliente pagou — não foi implementado ainda porque, sem o
-`serviceCode` exato, preferir a USPS pode cair numa modalidade mais cara dela.
+A cliente pagou *USPS First Class Package International Service* no checkout e a etiqueta
+saiu **UPS**: a compra não informava preferência de transportadora, então a Shopify escolheu
+a tarifa dela. Corrigido abaixo.
+
+## Etiqueta na transportadora que o cliente escolheu (22/09/2026)
+
+`ShippingLabelPurchaseInput` aceita `preferredRateSelection { carrierCode, serviceCode }`.
+O nó `Etiqueta US` agora deriva a transportadora do título do frete que o cliente pagou
+(`shipping_lines[0].title`, que o `Build Row` já monta com o nome do serviço do checkout):
+
+| Serviço pago contém | `carrierCode` |
+| --- | --- |
+| `usps`, `first class`, `priority mail`, `parcel select`, `ground advantage`, `media mail`, `retail ground` | `usps` |
+| `dhl` | `dhl_express` |
+| `fedex` | `fedex` |
+| `ups` (palavra isolada) | `ups_shipping` |
+
+A compra e o polling viraram a função `comprar(carrier)`. Se a tarifa da transportadora
+pedida não existir para o pacote, a função é chamada de novo **sem preferência** — a etiqueta
+nunca deixa de sair por causa da preferência — e o aviso do Paulo ganha a linha
+`🚚 sem tarifa <carrier> para este pacote (...); comprei a tarifa padrão da Shopify - confira o custo`.
+
+Não passamos `serviceCode`: os códigos exatos de serviço não estão documentados na API e um
+código inválido só apareceria como falha na compra. Com o `carrierCode` a Shopify já escolhe
+dentro da transportadora certa.

@@ -32,7 +32,7 @@ const gql = async (query, variables) => {
 };
 
 const noUS = function(n){ return !!(n && n.assignedLocation && n.assignedLocation.location && n.assignedLocation.location.id === US_LOC); };
-const out = { etiqueta_ok: false, motivo: '', label_url: '', tracking_number: '', tracking_company: '', tracking_url: '', customs_aviso: '' };
+const out = { etiqueta_ok: false, motivo: '', label_url: '', tracking_number: '', tracking_company: '', tracking_url: '', customs_aviso: '', carrier_aviso: '', transportadora_pedida: '' };
 try {
   const oid = 'gid://shopify/Order/' + o.id;
   const q1 = await gql('query($id:ID!){ order(id:$id){ fulfillmentOrders(first:10){ nodes{ id status assignedLocation{ location{ id name } } } } } }', { id: oid });
@@ -81,22 +81,53 @@ try {
     packageInfo: { customPackage: { type: CX.tipo, weight: { value: CX.vazio, unit: CX.unitPeso }, dimensions: { length: CX.length, width: CX.width, height: CX.height, unit: CX.unitLen } } },
     totalWeight: { value: totalKg, unit: 'KILOGRAMS' }
   };
-  const mut = await gql('mutation($input:ShippingLabelPurchaseInput!){ shippingLabelPurchase(shippingLabelPurchase:$input){ shippingLabelPurchaseResult{ id status } userErrors{ field message } } }', { input: input });
-  const pay = (mut || {}).shippingLabelPurchase || {};
-  if (pay.userErrors && pay.userErrors.length) throw new Error(pay.userErrors.map(function(e){ return e.message; }).join(' | '));
-  const jobId = (pay.shippingLabelPurchaseResult || {}).id;
-  if (!jobId) throw new Error('mutation nao retornou job id');
+  // TRANSPORTADORA: comprar o que o cliente escolheu e pagou no checkout.
+  // Sem preferredRateSelection a Shopify compra a tarifa que ela escolher: no AN-15573 o
+  // cliente pagou USPS First Class Package International e a etiqueta saiu UPS, mais caro.
+  // Se a transportadora pedida nao tiver tarifa para o pacote, compra a padrao para nao
+  // perder a etiqueta, e o aviso do Paulo diz que caiu no plano B.
+  const shipTitulo = (function () {
+    try { const sl = (((br.order_payload || {}).order || {}).shipping_lines || [])[0] || {}; return String(sl.title || ''); } catch (e) { return ''; }
+  })();
+  let carrierPref = '';
+  if (/usps|first class|priority mail|parcel select|ground advantage|media mail|retail ground/i.test(shipTitulo)) carrierPref = 'usps';
+  else if (/dhl/i.test(shipTitulo)) carrierPref = 'dhl_express';
+  else if (/fedex/i.test(shipTitulo)) carrierPref = 'fedex';
+  else if (/\bups\b/i.test(shipTitulo)) carrierPref = 'ups_shipping';
+
+  const MUT = 'mutation($input:ShippingLabelPurchaseInput!){ shippingLabelPurchase(shippingLabelPurchase:$input){ shippingLabelPurchaseResult{ id status } userErrors{ field message } } }';
+  const Q_JOB = 'query($id:ID!){ node(id:$id){ ... on ShippingLabelPurchaseResult { status done errors{ code message } shippingLabels{ id trackingInfo{ number company url } shippingDocuments{ url format documentType } } } } }';
+  const comprar = async function (carrier) {
+    const inp = Object.assign({}, input);
+    if (carrier) inp.preferredRateSelection = { carrierCode: carrier };
+    const mut = await gql(MUT, { input: inp });
+    const pay = (mut || {}).shippingLabelPurchase || {};
+    if (pay.userErrors && pay.userErrors.length) throw new Error(pay.userErrors.map(function (e) { return e.message; }).join(' | '));
+    const jobId = (pay.shippingLabelPurchaseResult || {}).id;
+    if (!jobId) throw new Error('mutation nao retornou job id');
+    let r = null;
+    for (let i = 0; i < 20; i++) {
+      await new Promise(function (ok) { setTimeout(ok, 3000); });
+      const q2 = await gql(Q_JOB, { id: jobId });
+      r = (q2 || {}).node || null;
+      if (r && (r.status === 'PURCHASED' || r.status === 'PURCHASE_FAILED')) break;
+    }
+    if (!r) throw new Error('sem retorno do polling');
+    if (r.status !== 'PURCHASED') throw new Error('compra falhou: ' + ((r.errors || []).map(function (e) { return e.message; }).join(' | ') || r.status));
+    return r;
+  };
 
   let res = null;
-  for (let i = 0; i < 20; i++) {
-    await new Promise(function(r){ setTimeout(r, 3000); });
-    const q2 = await gql('query($id:ID!){ node(id:$id){ ... on ShippingLabelPurchaseResult { status done errors{ code message } shippingLabels{ id trackingInfo{ number company url } shippingDocuments{ url format documentType } } } } }', { id: jobId });
-    res = (q2 || {}).node || null;
-    if (res && (res.status === 'PURCHASED' || res.status === 'PURCHASE_FAILED')) break;
-  }
-  if (!res) throw new Error('sem retorno do polling');
-  if (res.status !== 'PURCHASED') {
-    throw new Error('compra falhou: ' + ((res.errors || []).map(function(e){ return e.message; }).join(' | ') || res.status));
+  if (carrierPref) {
+    try {
+      res = await comprar(carrierPref);
+      out.transportadora_pedida = carrierPref;
+    } catch (e1) {
+      out.carrier_aviso = 'sem tarifa ' + carrierPref + ' para este pacote (' + String((e1 && e1.message) || e1).slice(0, 120) + '); comprei a tarifa padrao da Shopify - confira o custo';
+      res = await comprar('');
+    }
+  } else {
+    res = await comprar('');
   }
   const lbl = (res.shippingLabels || [])[0] || {};
   const doc = (lbl.shippingDocuments || []).filter(function(d){ return d.url; })[0] || {};

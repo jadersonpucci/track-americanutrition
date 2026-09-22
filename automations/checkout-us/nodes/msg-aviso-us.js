@@ -47,6 +47,10 @@ if (et.tracking_number) {
   L.push('⚠️ Etiqueta não emitida automaticamente: '+et.motivo);
   L.push('_Gerar manualmente no painel da Shopify._');
 }
+if (et.carrier_aviso) {
+  L.push('');
+  L.push('🚚 '+et.carrier_aviso);
+}
 if (et.customs_aviso) {
   L.push('');
   L.push('🛃 '+et.customs_aviso);
