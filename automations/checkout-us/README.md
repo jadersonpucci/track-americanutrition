@@ -47,3 +47,30 @@ O que foi feito:
 Classificação fiscal é responsabilidade do exportador: 2106.90 é o código padrão do setor
 para suplemento, mas produto novo com outra natureza precisa do código próprio
 (ex.: suplemento para pets é 2309.90, proteína em pó é 2106.10).
+
+### Preenchimento de todos os produtos (22/09/2026)
+
+Para não depender da rede de segurança, os 24 `inventoryItem` da loja receberam código SH e
+origem `US` (todos são fabricados nos EUA; as fichas do Green Propolis e do Carvão Vegetal
+dizem "produzido/encapsulado nos Estados Unidos"):
+
+| Produtos | Código SH |
+| --- | --- |
+| Suplementos humanos (ImunoFosfo e linha, Ômega 3, D3, Propólis, Creatina, Life Gummy, Vitamins, Life Hair, Carvão) | `210690` |
+| ImunoPet (líquida e cápsulas) | `230990` — preparações para alimentação animal |
+| Life Protein | `210610` — concentrados de proteína |
+
+Se algum produto novo tiver natureza diferente, cadastre o código dele na ficha antes do
+primeiro envio internacional; a rede de segurança só preenche o padrão de suplemento.
+
+### Etiqueta do AN-15573
+
+Emitida em 22/09/2026 depois da correção. Saiu pela **UPS** (`1Z212B906703820225`), com o
+formulário alfandegário anexo — a Shopify gerou os dois PDFs (etiqueta + customs form).
+
+Ponto aberto: o cliente pagou *USPS First Class Package International Service* no checkout,
+mas a compra não informa preferência de transportadora, então a Shopify escolheu a UPS. O
+`ShippingLabelPurchaseInput` aceita `preferredRateSelection { carrierCode, serviceCode }`
+(`usps`, `ups_shipping`, `dhl_express`...). Passar `carrierCode` derivado do serviço pago
+alinharia o custo com o que o cliente pagou — não foi implementado ainda porque, sem o
+`serviceCode` exato, preferir a USPS pode cair numa modalidade mais cara dela.
