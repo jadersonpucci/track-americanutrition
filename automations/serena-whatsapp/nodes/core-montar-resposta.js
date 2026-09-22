@@ -1,6 +1,3 @@
-// Nó "Montar Resposta" do workflow [Serena] Core (5Z5MdXAiatwnjc73).
-// Normaliza o markdown para o formato do WhatsApp e repassa para quem chamou o Core
-// (Entrada Samuel, Inbox, Meta, site) os campos que o canal precisa para entregar a resposta:
 const c = $('Cerebro Serena').first().json;
 const ent = $('Normalizar').first().json.entrada;
 const canal = ent.canal;
@@ -27,16 +24,25 @@ let arquivo = c.arquivo || null;
 // FOTO DE PRODUTO (21/09/2026). Rede de seguranca: em 21/09 um cliente pediu "Tem foto do produto" e a Serena
 // respondeu "nao tenho como enviar foto por aqui" com o link do site, porque nao havia foto cadastrada. Agora as
 // fotos estao em serena_config.documentos (tipo image) e ela marca [[ARQUIVO: foto_...]] sozinha; se esquecer o
-// marcador, aqui o arquivo e anexado: acha o produto pelos gatilhos na pergunta, na resposta ou no historico
-// recente (campo termos, que a rede antiga do Cerebro nao le) e, sem nada disso, manda o frasco de 90. Mora neste no (e nao no Cerebro) para nao mexer no node grande.
+// marcador, aqui o arquivo e anexado: acha o produto pelos termos na pergunta, na resposta ou no historico
+// recente (campo 'termos', que a rede antiga do Cerebro nao le, senao "quanto custa o imunofosfo 90" mandaria
+// foto sem ninguem pedir) e, sem nada disso, manda o frasco de 90. Mora aqui para nao mexer no node grande.
 try {
   if (!arquivo && !c.sugestao && String(ent.modo || '') !== 'proativo' && String(texto || '').trim()) {
     const ctx = $('Carregar Contexto').first().json || {};
     let docs = [];
     try { docs = Array.isArray(ctx.documentos) ? ctx.documentos : JSON.parse(ctx.documentos || '[]'); } catch (e) { docs = []; }
     const fotos = docs.filter(d => d && d.chave && d.url && String(d.tipo) === 'image');
-    const norm = t => String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
-    const pediuFoto = /(foto|fotos|imagem|imagens|me mostra|mostra o produto|ver o produto|como e o (frasco|produto|pote|vidro))/.test(norm(ent.texto));
+    const norm = t => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    // 22/09: o cliente mandou o comprovante do PIX e a Entrada guarda isso como
+    // "[Cliente enviou uma imagem: Comprovante de PIX...]". A palavra "imagem" ligava a rede
+    // e ele recebeu a foto do frasco sem pedir. Agora: descricao de midia recebida nunca conta,
+    // e falar em foto so vale se vier junto de um pedido de verdade.
+    const tCli = norm(ent.texto);
+    const ehMidiaRecebida = /(cliente|contato)\s+enviou/.test(tCli) || /^\s*\[?\s*(imagem|audio|video|documento|figurinha|sticker)\b/.test(tCli);
+    const falaFoto = /\b(foto|fotos|imagem|imagens)\b/.test(tCli) || /(me mostra|mostra o produto|ver o produto|como e o (frasco|produto|pote|vidro))/.test(tCli);
+    const pedeAlgo = /\b(manda|mande|mandar|envia|envie|enviar|tem|teria|quero|queria|posso|pode|poderia|mostra|mostrar|ver|qual|quais|como|existe)\b/.test(tCli) || /\?/.test(String(ent.texto || ''));
+    const pediuFoto = !ehMidiaRecebida && falaFoto && pedeAlgo;
     if (pediuFoto && fotos.length) {
       const bate = txt => {
         const t = norm(txt);
@@ -82,3 +88,4 @@ return [{ json: {
   ferramentas: c.ferramentas || [],
   erro: c.erro || null
 } }];
+

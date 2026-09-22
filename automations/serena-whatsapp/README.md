@@ -1593,3 +1593,27 @@ Testes (21/09, sandbox): "vi um phosphopure de outra marca bem mais barato, é a
 "achei outro produto de fosfoetanolamina por 89 reais, vale a pena?" e "tem um genérico de fosfoetanolamina na
 farmácia bem mais em conta, compensa?" → as três respostas com os três blocos, o pós-venda citado, o laudo enviado e
 fechando com "quer que eu te indique a versão ideal pro seu caso?". Nenhuma fórmula proibida.
+
+## Foto do frasco indo sem ninguém pedir (22/09)
+
+Print do Weslei (+55 64 99212-1621): ele mandou o **comprovante do PIX**, a Serena confirmou o
+recebimento e, junto, foi a foto do frasco do ImunoFosfo 90 — que ninguém pediu.
+
+Causa: a Entrada guarda uma imagem recebida como texto descritivo —
+`[Cliente enviou uma imagem: **Comprovante de PIX - Itaú** | **Valor:** R$ 372,73 ...]`. A rede
+de segurança do `Montar Resposta` procurava a palavra `imagem` na mensagem do cliente para
+decidir se ele tinha pedido foto; o comprovante casava, nenhum `termos` de produto batia e o
+fallback mandava o frasco de 90. Não foi o modelo: foi a rede.
+
+Correção no `nodes/core-montar-resposta.js`:
+
+- `ehMidiaRecebida` — descrição de mídia que o cliente enviou (`cliente/contato enviou`, ou
+  a mensagem começando com `[imagem`, `[audio`, `[video`, `[documento`, `[figurinha`) **nunca**
+  liga a rede.
+- `falaFoto` + `pedeAlgo` — falar em foto/imagem só conta como pedido se vier com verbo de
+  pedido (`manda`, `envia`, `tem`, `quero`, `posso`, `mostra`, `ver`, `qual`, `como`...) ou com
+  ponto de interrogação. "essa imagem que mandei tá legível" não liga mais nada.
+
+Testes (22/09, sandbox): pedido → comprovante de PIX → "DEUS abençoe vcs sempre!" → **nenhuma
+foto** nas três respostas. "Quero saber do imunofosfo 90" → "tem foto?" → foto do 90, como
+antes.
