@@ -1617,3 +1617,31 @@ Correção no `nodes/core-montar-resposta.js`:
 Testes (22/09, sandbox): pedido → comprovante de PIX → "DEUS abençoe vcs sempre!" → **nenhuma
 foto** nas três respostas. "Quero saber do imunofosfo 90" → "tem foto?" → foto do 90, como
 antes.
+
+## Duração do frasco: um pote por mês, não dois (23/09)
+
+Num orçamento de dois casos, a Serena escreveu que o Green Propolis *"rende 15 dias na dose de
+2/dia, então também é bom considerar 2 potes pro mês"* e fechou o mês em **R$ 481,00** em vez de
+**R$ 404,00**. O pote tem 60 cápsulas: na dose de 2/dia dura 30 dias.
+
+A base já trazia o dado certo — "porção de 2 cápsulas, **rende 30 porções**" — mas ela deduziu a
+duração por conta própria em vez de ler. Inflar o orçamento sozinha é o pior erro possível numa
+resposta de preço.
+
+Adendo `23/09/2026 · Duracao de cada frasco: usar a tabela, nunca estimar` no
+`serena_config.system_prompt`, com a regra e a tabela completa:
+
+- A duração sai do campo "rende N porções" da informação nutricional: o frasco rende N dias
+  quando a dose diária é uma porção. Fora o ImunoFosfo, a linha inteira vem com 30 porções —
+  **um frasco cobre um mês**.
+- Tabela explícita de todos os produtos (ImunoFosfo 90/180/60/42/Vegano/Diabetes/Liquid/Kids,
+  ImunoPet, Vitamins & Minerals, Ômega 3, Green Propolis, Propolis Extract, Life Hair, as duas
+  D3, Creatina, Life Gummy, Life Protein).
+- Orçamento mensal usa **um frasco por produto**, exceto onde a tabela diz outra coisa
+  (ImunoFosfo 60 rende 20 dias, Liquid rende ~10 dias na manutenção) ou o cliente pedir mais.
+- Proibido sugerir "2 potes por mês" de produto que rende 30 dias e somar valor sem conferir.
+
+Testes (23/09, sandbox): "quanto tempo dura um pote do green propolis tomando 2 cápsulas por
+dia?" → "60 cápsulas, 2 por dia, rende exatos 30 dias". "quanto fica por mês o imunofosfo 90
+junto com o green propolis?" → **R$ 404,00**. "quanto dura o ômega 3 e o propolis extract?" →
+30 dias cada.
