@@ -32,8 +32,10 @@ const VIEWS = { '': 'dashboard', pagar: 'lancamentos', receber: 'lancamentos', e
 async function boot() {
   app.applyTheme(); document.documentElement.dataset.dens = prefs.get('densidade', 'normal');
   await db.init();
-  if (db.loadError && db.backend.name === 'supabase') { toast('Não consegui carregar do Supabase: ' + db.loadError.message, 'err', 8000); }
   document.getElementById('splash')?.remove();
+  if (db.needsLogin) { await telaLogin(); }
+  if (db.loadError && db.backend.name === 'supabase') { toast('Não consegui carregar do servidor: ' + db.loadError.message, 'err', 8000); }
+  app.userName = prefs.get('nome', '') || (db.backend.user?.nome || '');
   let emp = db.all('empresas').find(e => e.id === prefs.get('empresa')) || db.all('empresas')[0];
   if (!emp) { emp = await onboarding(); }
   app.empresaId = emp.id; prefs.set('empresa', emp.id);
