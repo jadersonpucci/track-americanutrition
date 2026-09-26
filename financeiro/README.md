@@ -19,16 +19,15 @@ Sistema financeiro completo para substituir o Nibo: contas a pagar e a receber, 
 
 Atalhos: `⌘K` busca e comandos · `N` despesa · `R` receita · `T` transferência · `G` + `H/P/R/E/F/D` navega.
 
-## Onde os dados ficam
+## Produção
 
-**Modo local (padrão):** tudo no `localStorage` do navegador. Funciona na hora, sem servidor. Faça backup em Configurações → Dados.
+- App: **https://financeiro.americanutrition.com** (Vercel, projeto `financeiro-americanutrition`, root `financeiro/`). Também responde em `financeiro-americanutrition.vercel.app`.
+- Dados: Postgres do Supabase self-hosted, acessado só pelo n8n. O navegador fala com `POST https://n8n.americanutrition.com/webhook/financeiro-api` (workflow **Financeiro · API**), que chama a função `fin_api` no banco. Nenhuma chave do Supabase vai pro navegador.
+- Login: usuários e sessões próprios (`fin_usuarios`, `fin_sessoes`, bcrypt). Sessão vale 30 dias e renova a cada uso.
+- Schema: `supabase/schema.sql`, aplicado pelo workflow **Financeiro · Setup (schema)** no n8n (gatilho manual, idempotente). Rode de novo sempre que o schema mudar.
+- Novo usuário: no SQL Editor do Supabase rode `select fin_criar_usuario('email', 'Nome', 'senha');`.
 
-**Supabase (recomendado para uso real):** multiusuário, Mac + iPhone, integrações via n8n.
-
-1. No Supabase self-hosted (`supabase.americanutrition.com`), abra o SQL Editor e rode `supabase/schema.sql`.
-2. Crie os usuários em Authentication → Users (e-mail + senha).
-3. No app: Configurações → Conexão → Supabase, informe URL, `anon key`, e-mail e senha. Salvar e conectar.
-4. Se já usava o modo local, clique em "Enviar dados locais pro Supabase".
+**Modo local (alternativo):** em Configurações → Conexão dá pra usar só o navegador (`localStorage`), sem servidor. Útil pra testes; faça backup em Configurações → Dados.
 
 ## Migrar do Nibo
 
@@ -42,7 +41,7 @@ Depois: Configurações → Dados → **Importar arquivo do Nibo**. Contas, cate
 
 ## Lançamentos automáticos (n8n)
 
-Com o Supabase conectado, os workflows (Shopify pedido pago, Pagar.me, Mercado Livre) inserem direto na tabela `lancamentos` via REST com a `service_role` key. Payloads de exemplo com os ids certos ficam em Configurações → Integrações. O índice único `(empresa_id, origem, origem_ref)` impede duplicatas.
+Os workflows (Shopify pedido pago, Pagar.me, Mercado Livre, PIX do Inter) gravam direto no banco com o nó Postgres (credencial "Postgres account"): `select fin_api('{"op":"upsert", ...}'::jsonb)` ou um `insert into lancamentos …`. Payloads de exemplo com os ids certos ficam em Configurações → Integrações. O índice único `(empresa_id, origem, origem_ref)` impede duplicatas. O workflow atual **AN - Pagar.me → Nibo** pode ser apontado pra cá trocando a chamada ao Nibo por esse insert.
 
 ## Estrutura
 
@@ -65,4 +64,4 @@ scripts/importar-nibo.py
 
 ## Deploy
 
-Está dentro do projeto `track.americanutrition.com`, em `/financeiro`. O `vercel.json` já exclui esse caminho da reescrita de códigos de rastreio. Para domínio próprio (ex.: `financeiro.americanutrition.com`), crie um projeto na Vercel apontando a **Root Directory** para `financeiro`.
+Projeto próprio na Vercel (`financeiro-americanutrition`, Root Directory `financeiro`), ligado a este repositório. O domínio `financeiro.americanutrition.com` aponta por CNAME para `cname.vercel-dns.com` na Cloudflare (registro DNS-only, sem proxy). O `vercel.json` da raiz também exclui `/financeiro` da reescrita de códigos de rastreio.
