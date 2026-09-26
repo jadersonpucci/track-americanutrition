@@ -74,11 +74,17 @@ export function donut(container, items, { size = 150, thickness = 16, center = '
   const tip = tooltip(container);
 }
 
-export function sparkline(values, { w = 90, h = 28, cls = '' } = {}) {
+export function sparkline(values, { w = 90, h = 28, cls = '', smooth = false, area = false, stretch = false } = {}) {
   if (!values.length) return '';
   const min = Math.min(...values), max = Math.max(...values); const rg = max - min || 1;
-  const pts = values.map((v, i) => `${(i / (values.length - 1 || 1) * w).toFixed(1)},${(h - 2 - (v - min) / rg * (h - 4)).toFixed(1)}`).join(' ');
-  return `<svg class="spark ${cls}" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}"><polyline points="${pts}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+  const P = values.map((v, i) => [i / (values.length - 1 || 1) * w, h - 3 - (v - min) / rg * (h - 6)]);
+  let d;
+  if (smooth && P.length > 2) {
+    d = `M${P[0][0].toFixed(1)},${P[0][1].toFixed(1)}`;
+    for (let i = 1; i < P.length; i++) { const [x0, y0] = P[i - 1], [x1, y1] = P[i]; const cx = ((x0 + x1) / 2).toFixed(1); d += ` C${cx},${y0.toFixed(1)} ${cx},${y1.toFixed(1)} ${x1.toFixed(1)},${y1.toFixed(1)}`; }
+  } else d = 'M' + P.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' L');
+  const fill = area ? `<path d="${d} L${w},${h} L0,${h} Z" fill="currentColor" opacity=".18" stroke="none"/>` : '';
+  return `<svg class="spark ${cls}" viewBox="0 0 ${w} ${h}" ${stretch ? 'preserveAspectRatio="none" width="100%"' : `width="${w}"`} height="${h}">${fill}<path d="${d}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>`;
 }
 
 function legend(items) { const d = document.createElement('div'); d.className = 'legend'; d.innerHTML = items.map(([c, l]) => `<span><i class="dot ${c}"></i>${l}</span>`).join(''); return d; }

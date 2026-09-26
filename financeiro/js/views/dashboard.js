@@ -22,6 +22,7 @@ export function render(root) {
   const varPct = (a, b) => b ? Math.round((a - b) / b * 100) : null;
   const hora = new Date().getHours(); const sauda = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';
   const nomeUser = (db_user() || '').split(' ')[0];
+  const vencRow = (titulo, ic, n, v, href, cls = '') => `<a class="venc-r ${n ? cls : ''}" href="${href}"><span class="vi">${icon(ic)}</span><div class="vt"><b>${titulo}</b><small>${n ? `${n} lançamento${n > 1 ? 's' : ''}` : 'Nada por aqui'}</small></div><div class="vv">${v.pagar ? `<b class="neg">${money(v.pagar)}</b><small>a pagar</small>` : ''}${v.receber ? `<b class="pos">${money(v.receber)}</b><small>a receber</small>` : ''}${!v.pagar && !v.receber ? `<b class="muted">—</b>` : ''}</div></a>`;
 
   root.innerHTML = `
   <div class="page dash">
@@ -29,10 +30,12 @@ export function render(root) {
       <div class="ph-a"><button class="btn secondary" data-go="#/receber/novo">${icon('ti-arrow-down-left')}Receita</button><button class="btn primary" data-go="#/pagar/novo">${icon('ti-arrow-up-right')}Despesa</button></div></header>
 
     <section class="hero-cards">
-      <div class="card hero-saldo"><div class="hc-l">Saldo em contas</div><div class="hc-v">${money(saldo)}</div><div class="hc-s">Projetado em 30 dias <b class="${proj30 >= saldo ? 'pos' : 'neg'}">${money(proj30)}</b></div><div class="hc-spark" data-spark></div></div>
-      <div class="card kpi ${sAtr.pagar || sAtr.receber ? 'warn' : ''}"><div class="kpi-h">${icon('ti-alert-triangle')}Atrasados</div><div class="kpi-r"><span>A pagar</span><b class="neg">${money(sAtr.pagar)}</b></div><div class="kpi-r"><span>A receber</span><b class="pos">${money(sAtr.receber)}</b></div><a href="#/pagar?status=atrasado" class="kpi-link">${atras.length} lançamentos ${icon('ti-arrow-right')}</a></div>
-      <div class="card kpi"><div class="kpi-h">${icon('ti-calendar-event')}Hoje</div><div class="kpi-r"><span>A pagar</span><b class="neg">${money(sHoje.pagar)}</b></div><div class="kpi-r"><span>A receber</span><b class="pos">${money(sHoje.receber)}</b></div><a href="#/pagar?periodo=hoje" class="kpi-link">${hoje.length} lançamentos ${icon('ti-arrow-right')}</a></div>
-      <div class="card kpi"><div class="kpi-h">${icon('ti-calendar-week')}Próximos 7 dias</div><div class="kpi-r"><span>A pagar</span><b class="neg">${money(sProx.pagar)}</b></div><div class="kpi-r"><span>A receber</span><b class="pos">${money(sProx.receber)}</b></div><a href="#/pagar?periodo=7d" class="kpi-link">${prox7.length} lançamentos ${icon('ti-arrow-right')}</a></div>
+      <div class="card hero-saldo"><div class="hc-l">Saldo em contas</div><div class="hc-v">${money(saldo)}</div><div class="hc-s"><span class="hc-pill ${proj30 >= saldo ? 'pos' : 'neg'}">${icon(proj30 >= saldo ? 'ti-trending-up' : 'ti-trending-down')}${money(proj30)} em 30 dias</span></div><div class="hc-spark" data-spark></div></div>
+      <div class="card venc-card"><div class="card-h"><h3>Vencimentos</h3><a href="#/pagar" class="lnk">Ver todos ${icon('ti-arrow-right')}</a></div>
+        ${vencRow('Atrasados', 'ti-alert-triangle', atras.length, sAtr, '#/pagar?status=atrasado', 'warn')}
+        ${vencRow('Hoje', 'ti-calendar-event', hoje.length, sHoje, '#/pagar?periodo=hoje')}
+        ${vencRow('Próximos 7 dias', 'ti-calendar-week', prox7.length, sProx, '#/pagar?periodo=7d')}
+      </div>
     </section>
 
     <section class="contas-strip" data-contas></section>
@@ -59,7 +62,7 @@ export function render(root) {
   const box = root.querySelector('[data-fluxo]');
   const pts = fx.rows.map((r, i) => ({ label: i % 5 === 0 ? fmtDate(r.key, { short: true }) : '', title: fmtDate(r.key, { weekday: true }), value: r.saldoFinal, projected: true }));
   pts.unshift({ label: 'Hoje', title: 'Saldo atual', value: fx.saldoInicial, projected: false });
-  requestAnimationFrame(() => { lineSaldo(box, pts, { height: 170 }); const sp = root.querySelector('[data-spark]'); const hist = []; for (let i = 29; i >= 0; i--) hist.push(saldoTotal(E, { ate: addDays(t, -i) })); sp.innerHTML = sparkline(hist, { w: 140, h: 34 }); });
+  requestAnimationFrame(() => { lineSaldo(box, pts, { height: 170 }); const sp = root.querySelector('[data-spark]'); const hist = []; for (let i = 29; i >= 0; i--) hist.push(saldoTotal(E, { ate: addDays(t, -i) })); sp.innerHTML = sparkline(hist, { w: 320, h: 56, smooth: true, area: true, stretch: true }); });
   const min = Math.min(...fx.rows.map(r => r.saldoFinal)); const minRow = fx.rows.find(r => r.saldoFinal === min);
   if (min < 0) box.insertAdjacentHTML('afterend', `<div class="alert red">${icon('ti-alert-circle')}Caixa fica negativo em ${fmtDate(minRow.key)} (${money(min)}) se tudo vencer como previsto.</div>`);
   else box.insertAdjacentHTML('afterend', `<div class="alert soft">${icon('ti-shield-check')}Menor saldo previsto: <b>${money(min)}</b> em ${fmtDate(minRow.key)}.</div>`);
