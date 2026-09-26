@@ -94,5 +94,5 @@ function db_user() { return app.userName || ''; }
 
 export function rowLanc(l, C) {
   const st = statusOf(l); const cat = C.cat(l.categoria_id); const ct = C.contato(l.contato_id);
-  return `<div class="li lanc ${st}" data-id="${l.id}">${ct ? avatar(ct.nome, 34) : catIcon(cat, 34)}<div class="li-b"><div class="li-t">${esc(l.descricao)}</div><div class="li-s">${ct ? esc(ct.nome) + ' · ' : ''}${esc(cat?.nome || '')} · <span class="${st === 'atrasado' ? 'neg' : ''}">${relDate(l.vencimento)}</span></div></div><div class="li-r"><span class="amt ${l.tipo === 'receber' ? 'pos' : 'neg'}">${money(emAberto(l))}</span>${statusPill(l)}</div><button class="ibtn pay" data-pay="${l.id}" title="${l.tipo === 'receber' ? 'Receber' : 'Pagar'}">${icon('ti-check')}</button></div>`;
+  return `<div class="li lanc ${st}" data-id="${l.id}">${catIcon(cat, 32)}<div class="li-b"><div class="li-t">${esc(l.descricao)}</div><div class="li-s">${ct ? esc(ct.nome) + ' · ' : ''}${esc(cat?.nome || '')} · <span class="${st === 'atrasado' ? 'neg' : ''}">${relDate(l.vencimento)}</span></div></div><div class="li-r"><span class="amt ${l.tipo === 'receber' ? 'pos' : 'neg'}">${money(emAberto(l))}</span>${statusPill(l)}</div><button class="ibtn pay" data-pay="${l.id}" title="${l.tipo === 'receber' ? 'Receber' : 'Pagar'}">${icon('ti-check')}</button></div>`;
 }

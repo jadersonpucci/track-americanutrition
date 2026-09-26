@@ -59,7 +59,7 @@ function paintExtrato(body, conta, C, E) {
   for (const [d, arr] of grupos) {
     html += `<div class="grp-h"><span>${relDate(d)} <small>${fmtDate(d)}</small></span><span class="grp-t muted">saldo ${money(arr[0].saldo)}</span></div>`;
     html += arr.map(r => { const l = r.lancamento; const isTr = r.tipo === 'transferencia'; const cat = C.cat(l.categoria_id); const ct = C.contato(l.contato_id); const contra = isTr ? C.conta(r.contra) : null;
-      return `<div class="row mov" data-id="${l.id}">${isTr ? bankIcon(contra, 36) : ct ? avatar(ct.nome, 36) : catIcon(cat, 36)}<div class="r-b"><div class="r-t">${esc(r.descricao)}${l.conciliado_fitid ? icon('ti-checks', 'rep ok') : ''}</div><div class="r-s">${isTr ? `<span>${r.valor < 0 ? 'para' : 'de'} ${esc(contra?.nome || '')}</span>` : `${ct ? `<span>${esc(ct.nome)}</span>` : ''}${cat ? `<span class="r-cat">${catIcon(cat, 14)}${esc(cat.nome)}</span>` : ''}`}</div></div><div class="r-v">${moneyEl(r.valor)}</div><div class="r-saldo muted">${money(r.saldo)}</div></div>`; }).join('');
+      return `<div class="row mov" data-id="${l.id}">${isTr ? bankIcon(contra, 34) : catIcon(cat, 34)}<div class="r-b"><div class="r-t">${esc(r.descricao)}${l.conciliado_fitid ? icon('ti-checks', 'rep ok') : ''}</div><div class="r-s">${isTr ? `<span>${r.valor < 0 ? 'para' : 'de'} ${esc(contra?.nome || '')}</span>` : `${ct ? `<span>${esc(ct.nome)}</span>` : ''}${cat ? `<span class="r-cat">${catIcon(cat, 14)}${esc(cat.nome)}</span>` : ''}`}</div></div><div class="r-v">${moneyEl(r.valor)}</div><div class="r-saldo muted">${money(r.saldo)}</div></div>`; }).join('');
   }
   lw.innerHTML = html;
   on(lw, 'click', '.row', (e, r) => abrirDetalhe(app.lanc(r.dataset.id)));
@@ -73,7 +73,7 @@ function paintPrevisto(body, conta, C, E) {
   const lw = body.querySelector('[data-list]');
   if (!abertos.length) { lw.appendChild(emptyState({ icon: 'ti-calendar-check', title: 'Nada previsto', text: 'Nenhum lançamento em aberto nesta conta nos próximos 60 dias.' })); return; }
   lw.innerHTML = abertos.map(l => { const v = (l.tipo === 'receber' ? 1 : -1) * emAberto(l); s = round2(s + v); const cat = C.cat(l.categoria_id); const ct = C.contato(l.contato_id); const st = statusOf(l);
-    return `<div class="row mov ${st}" data-id="${l.id}">${ct ? avatar(ct.nome, 36) : catIcon(cat, 36)}<div class="r-b"><div class="r-t">${esc(l.descricao)}</div><div class="r-s"><span class="${st === 'atrasado' ? 'neg' : ''}">${relDate(l.vencimento)}</span>${cat ? `<span class="r-cat">${catIcon(cat, 14)}${esc(cat.nome)}</span>` : ''}</div></div><div class="r-v">${moneyEl(v)}</div><div class="r-saldo ${s < 0 ? 'neg' : 'muted'}">${money(s)}</div><div class="r-a"><button class="ibtn pay" data-pay="${l.id}">${icon('ti-check')}</button></div></div>`; }).join('');
+    return `<div class="row mov ${st}" data-id="${l.id}">${catIcon(cat, 34)}<div class="r-b"><div class="r-t">${esc(l.descricao)}</div><div class="r-s"><span class="${st === 'atrasado' ? 'neg' : ''}">${relDate(l.vencimento)}</span>${cat ? `<span class="r-cat">${catIcon(cat, 14)}${esc(cat.nome)}</span>` : ''}</div></div><div class="r-v">${moneyEl(v)}</div><div class="r-saldo ${s < 0 ? 'neg' : 'muted'}">${money(s)}</div><div class="r-a"><button class="ibtn pay" data-pay="${l.id}">${icon('ti-check')}</button></div></div>`; }).join('');
   on(lw, 'click', '[data-pay]', (e, b) => { e.stopPropagation(); abrirBaixa(app.lanc(b.dataset.pay)); });
   on(lw, 'click', '.row', (e, r) => { if (e.target.closest('button')) return; abrirDetalhe(app.lanc(r.dataset.id)); });
 }

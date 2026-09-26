@@ -112,7 +112,7 @@ function linha(l, C, S) {
   const ab = emAberto(l); const pago = st === 'pago';
   return `<div class="row ${st} ${S.sel.has(l.id) ? 'sel' : ''}" data-id="${l.id}">
     <label class="chk"><input type="checkbox" data-sel="${l.id}" ${S.sel.has(l.id) ? 'checked' : ''} ${pago ? 'disabled' : ''}></label>
-    ${ct ? avatar(ct.nome, 36) : catIcon(cat, 36)}
+    ${catIcon(cat, 34)}
     <div class="r-b"><div class="r-t">${esc(l.descricao)}${l.parcela_total ? `<span class="parc">${l.parcela_num}/${l.parcela_total}</span>` : ''}${l.recorrencia_id ? icon('ti-repeat', 'rep') : ''}${l.anexos?.length ? icon('ti-paperclip', 'rep') : ''}</div>
       <div class="r-s">${ct ? `<span>${esc(ct.nome)}</span>` : ''}${cat ? `<span class="r-cat">${catIcon(cat, 14)}${esc(cat.nome)}</span>` : ''}${(l.tags || []).map(t => { const tg = C.tags.find(x => x.nome === t); return tg ? tagChip(tg) : ''; }).join('')}</div></div>
     <div class="r-conta" title="${esc(conta?.nome || '')}">${bankIcon(conta, 22)}<span>${esc(conta?.nome || '')}</span></div>

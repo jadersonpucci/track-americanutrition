@@ -109,7 +109,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .bicon{--s:36px;display:inline-grid;place-items:center;width:var(--s);height:var(--s);border-radius:calc(var(--s) * .28);background:#fff;border:1px solid var(--line);overflow:hidden;flex:none;box-shadow:0 1px 2px rgba(10,27,61,.06)}.bicon img{width:100%;height:100%;object-fit:contain;display:block}.bicon.mono{color:#fff;font-weight:700;font-size:calc(var(--s) * .36);border:0;letter-spacing:-.5px}
 :root[data-theme=dark] .bicon{border-color:transparent}
 .avatar{--s:36px;display:inline-grid;place-items:center;width:var(--s);height:var(--s);border-radius:50%;color:#fff;font-weight:700;font-size:calc(var(--s) * .36);flex:none;letter-spacing:-.3px}
-.cicon{--s:36px;--c:var(--blue);display:inline-grid;place-items:center;width:var(--s);height:var(--s);border-radius:calc(var(--s) * .3);background:color-mix(in srgb,var(--c) 13%,transparent);color:var(--c);flex:none;font-size:calc(var(--s) * .5)}
+.cicon{--s:36px;--c:var(--blue);display:inline-grid;place-items:center;width:var(--s);height:var(--s);border-radius:calc(var(--s) * .3);background:color-mix(in srgb,var(--c) 10%,transparent);color:var(--c);flex:none;font-size:calc(var(--s) * .5)}.row .cicon,.li .cicon{--c:var(--muted)!important;background:var(--bg);font-size:calc(var(--s) * .48)}
 .dot-on{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--blue);margin-left:4px}
 
 /* ---------- overlays ---------- */
