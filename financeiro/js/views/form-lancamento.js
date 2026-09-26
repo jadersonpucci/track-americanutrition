@@ -1,6 +1,6 @@
 // Formulário de lançamento (despesa / receita / transferência) + baixa (pagar/receber) + estorno.
 import { db } from '../db.js';
-import { drawer, modal, field, fieldEl, moneyInput, combobox, segmented, toggle, toast, confirm, icon, h, bankIcon, catIcon, avatar, on } from '../ui.js';
+import { drawer, modal, field, fieldEl, moneyInput, combobox, segmented, toggle, toast, confirm, icon, h, bankIcon, catIcon, avatar, on, centrosPicker } from '../ui.js';
 import { today, addDays, addMonths, monthStart, uid, esc, money, round2, fmtDate, sum, readFile } from '../utils.js';
 import { FORMAS, gerarParcelas, gerarRecorrencia, emAberto, statusOf, liquidado } from '../model.js';
 import { app } from '../app.js';
@@ -12,7 +12,10 @@ const contatoOpts = (contatos, tipo) => contatos.filter(c => !c.arquivado).sort(
 export function abrirLancamento(existing = null, { tipo = 'pagar', defaults = {} } = {}) {
   const E = app.empresaId; const C = app.ctx();
   const isEdit = !!existing;
-  const L = existing ? JSON.parse(JSON.stringify(existing)) : { tipo, descricao: '', valor: 0, vencimento: today(), competencia: monthStart(today()), categoria_id: null, contato_id: null, conta_id: C.contas.find(c => !c.arquivada && c.tipo !== 'cartao')?.id || null, forma_pagamento: 'pix', tags: [], anexos: [], rateio_categorias: [], rateio_centros: [], observacoes: '', referencia: '', baixas: [], status: 'aberto', ...defaults };
+  // centro de custo padrão: o do contato (se cadastrado) ou "Brasil" (tudo que não é marcado como outro centro)
+  const centrosPadrao = contatoId => { const ct = contatoId ? C.contatos.find(c => c.id === contatoId) : null; if (ct && Array.isArray(ct.rateio_centros_padrao) && ct.rateio_centros_padrao.length) return ct.rateio_centros_padrao.map(r => ({ ...r })); const br = C.centros.find(c => !c.arquivado && /^brasil$/i.test(c.nome)); return br ? [{ centro_id: br.id, percent: 100 }] : []; };
+  const L = existing ? JSON.parse(JSON.stringify(existing)) : { tipo, descricao: '', valor: 0, vencimento: today(), competencia: monthStart(today()), categoria_id: null, contato_id: null, conta_id: C.contas.find(c => !c.arquivada && c.tipo !== 'cartao')?.id || null, forma_pagamento: 'pix', tags: [], anexos: [], rateio_categorias: [], rateio_centros: centrosPadrao(defaults.contato_id || null), observacoes: '', referencia: '', baixas: [], status: 'aberto', ...defaults };
+  let ccPick = null, ccTocado = false;
   const d = drawer({ title: isEdit ? 'Editar lançamento' : 'Novo lançamento', size: 'lg', cls: 'form-lanc' });
   const body = d.body; body.innerHTML = '';
   const f = h(`<form class="lform" autocomplete="off"></form>`); body.appendChild(f);
@@ -37,7 +40,7 @@ export function abrirLancamento(existing = null, { tipo = 'pagar', defaults = {}
   venc.addEventListener('change', () => { if (!compTouched) comp.value = venc.value.slice(0, 7); }); let compTouched = false; comp.addEventListener('change', () => compTouched = true);
 
   // contato + categoria
-  const contato = combobox({ options: contatoOpts(C.contatos), value: L.contato_id, placeholder: 'Cliente, fornecedor…', allowCreate: async nome => { const c = await db.upsert('contatos', { id: uid(), empresa_id: E, nome, tipo: L.tipo === 'receber' ? 'cliente' : 'fornecedor', documento: '', email: '', telefone: '', pix: '', cidade: '', uf: '', observacoes: '', arquivado: false }); toast('Contato criado'); return { id: c.id, label: c.nome, icon: avatar(c.nome, 24) }; } });
+  const contato = combobox({ options: contatoOpts(C.contatos), value: L.contato_id, placeholder: 'Cliente, fornecedor…', onChange: v => { if (ccPick && !ccTocado) ccPick.set(centrosPadrao(v)); }, allowCreate: async nome => { const c = await db.upsert('contatos', { id: uid(), empresa_id: E, nome, tipo: L.tipo === 'receber' ? 'cliente' : 'fornecedor', documento: '', email: '', telefone: '', pix: '', cidade: '', uf: '', observacoes: '', arquivado: false }); toast('Contato criado'); return { id: c.id, label: c.nome, icon: avatar(c.nome, 24) }; } });
   const categoria = combobox({ options: catOpts(C.categorias, L.tipo === 'receber' ? 'in' : 'out'), value: L.categoria_id, placeholder: 'Categoria', allowEmpty: false });
   const rowCC = h('<div class="row2"></div>'); rowCC.append(fieldEl('Contato', contato), fieldEl('Categoria', categoria, { req: true })); f.appendChild(rowCC);
   // rateio de categorias
@@ -71,20 +74,9 @@ export function abrirLancamento(existing = null, { tipo = 'pagar', defaults = {}
   rowConta.append(fConta, fDest, fForma); f.appendChild(rowConta);
 
   // centro de custo (rateio %)
-  let centros = (L.rateio_centros || []).map(r => ({ ...r }));
-  const ccBox = h(`<div class="ccbox"><div class="fl">Centro de custo</div><div class="cc-l"></div></div>`);
-  const paintCC = () => {
-    const l = ccBox.querySelector('.cc-l'); l.innerHTML = '';
-    C.centros.filter(c => !c.arquivado).forEach(c => {
-      const r = centros.find(x => x.centro_id === c.id);
-      const b = h(`<button type="button" class="chip ${r ? 'on' : ''}" style="--c:${c.cor || '#5B667E'}">${esc(c.nome)}${r ? `<input class="pct" value="${r.percent}" inputmode="numeric">%` : ''}</button>`);
-      b.onclick = e => { if (e.target.classList.contains('pct')) return; if (r) centros = centros.filter(x => x !== r); else { centros.push({ centro_id: c.id, percent: centros.length ? 0 : 100 }); if (centros.length === 2) { centros[0].percent = 50; centros[1].percent = 50; } } paintCC(); };
-      const p = b.querySelector('.pct'); if (p) { p.onclick = e => e.stopPropagation(); p.oninput = () => { r.percent = Number(p.value) || 0; }; }
-      l.appendChild(b);
-    });
-    if (!C.centros.length) l.innerHTML = '<span class="muted sm">Nenhum centro de custo cadastrado.</span>';
-  };
-  paintCC(); f.appendChild(ccBox);
+  const ccBox = h(`<div class="ccbox"><div class="fl">Centro de custo</div></div>`);
+  ccPick = centrosPicker({ centros: C.centros, value: L.rateio_centros || [], onChange: () => { ccTocado = true; } });
+  ccBox.appendChild(ccPick.el); f.appendChild(ccBox);
 
   // repetição (só na criação)
   const repBox = h(`<div class="repbox"></div>`);
@@ -159,7 +151,7 @@ export function abrirLancamento(existing = null, { tipo = 'pagar', defaults = {}
     if (!tr && !categoria.get() && !rateio.length) { toast('Escolha a categoria', 'err'); return; }
     if (!tr && rateio.length) { const t = sum(rateio, r => r.valor); if (Math.abs(t - v) > 0.005) { toast('O rateio precisa somar o valor total', 'err'); return; } if (rateio.some(r => !r.categoria_id)) { toast('Escolha a categoria de cada linha do rateio', 'err'); return; } }
     const pctTot = sum(centros, c => c.percent); if (centros.length && Math.abs(pctTot - 100) > 0.01) { toast('Os centros de custo precisam somar 100%', 'err'); return; }
-    const base = { ...L, empresa_id: E, tipo: L.tipo, descricao: descr.value.trim(), valor: v, vencimento: venc.value, competencia: (comp.value || venc.value.slice(0, 7)) + '-01', contato_id: tr ? null : contato.get(), categoria_id: tr ? null : (rateio.length ? rateio[0].categoria_id : categoria.get()), rateio_categorias: tr ? [] : (rateio.length > 1 ? rateio.map(r => ({ categoria_id: r.categoria_id, valor: round2(r.valor), descricao: r.descricao || '' })) : []), rateio_centros: tr ? [] : centros.map(c => ({ centro_id: c.centro_id, percent: Number(c.percent) })), conta_id: conta.get(), conta_destino_id: tr ? contaDest.get() : null, forma_pagamento: tr ? 'transferencia' : forma.get(), tags: [...selTags], referencia: ref.value.trim(), observacoes: obs.value.trim(), anexos, origem: L.origem || 'manual', criado_em: L.criado_em || new Date().toISOString() };
+    const base = { ...L, empresa_id: E, tipo: L.tipo, descricao: descr.value.trim(), valor: v, vencimento: venc.value, competencia: (comp.value || venc.value.slice(0, 7)) + '-01', contato_id: tr ? null : contato.get(), categoria_id: tr ? null : (rateio.length ? rateio[0].categoria_id : categoria.get()), rateio_categorias: tr ? [] : (rateio.length > 1 ? rateio.map(r => ({ categoria_id: r.categoria_id, valor: round2(r.valor), descricao: r.descricao || '' })) : []), rateio_centros: tr ? [] : ccPick.get(), conta_id: conta.get(), conta_destino_id: tr ? contaDest.get() : null, forma_pagamento: tr ? 'transferencia' : forma.get(), tags: [...selTags], referencia: ref.value.trim(), observacoes: obs.value.trim(), anexos, origem: L.origem || 'manual', criado_em: L.criado_em || new Date().toISOString() };
     if (tr) base.status = 'pago';
     let rows = [base];
     if (!isEdit && !tr) {

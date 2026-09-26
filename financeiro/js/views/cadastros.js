@@ -1,7 +1,7 @@
 // Cadastros: contas, categorias (plano de contas), centros de custo, contatos, tags.
 import { app } from '../app.js';
 import { db } from '../db.js';
-import { h, icon, bankIcon, catIcon, avatar, drawer, modal, field, fieldEl, moneyInput, combobox, segmented, toggle, toast, confirm, menu, emptyState, on, prompt } from '../ui.js';
+import { h, icon, bankIcon, catIcon, avatar, drawer, modal, field, fieldEl, moneyInput, combobox, segmented, toggle, toast, confirm, menu, emptyState, on, prompt, centrosPicker } from '../ui.js';
 import { money, today, esc, uid, norm, fmtDoc, sum, round2 } from '../utils.js';
 import { BANCOS, TIPOS_CONTA, banco } from '../bancos.js';
 import { GRUPOS } from '../seed.js';
@@ -129,9 +129,11 @@ export function abrirContato(c = null) {
   f.append(fieldEl('Nome', nome, { req: true }), h('<div class="row2"></div>')); f.lastChild.append(fieldEl('Tipo', tipo), (() => { const fd = fieldEl('CNPJ / CPF', doc); fd.appendChild(bBusca); return fd; })());
   f.append(h('<div class="row2"></div>')); f.lastChild.append(fieldEl('E-mail', email), fieldEl('Telefone / WhatsApp', tel));
   f.append(fieldEl('Chave PIX', pix), h('<div class="row2"></div>')); f.lastChild.append(fieldEl('Cidade', cidade), fieldEl('UF', uf));
-  f.append(fieldEl('Observações', obs));
+  const ccPad = centrosPicker({ centros: C.centros, value: L.rateio_centros_padrao || [] });
+  const ccBox = h('<div class="ccbox"><div class="fl">Centro de custo padrão</div><p class="muted sm">Aplicado automaticamente aos novos lançamentos deste contato. Sem seleção, vale o padrão da empresa (Brasil).</p></div>'); ccBox.appendChild(ccPad.el);
+  f.append(fieldEl('Observações', obs), ccBox);
   d.footer.innerHTML = ''; const bc = h('<button class="btn ghost">Cancelar</button>'); bc.onclick = () => d.close(); const ok = h(`<button class="btn primary">${icon('ti-check')}Salvar</button>`); d.footer.append(bc, ok);
-  ok.onclick = async () => { if (!nome.value.trim()) return toast('Informe o nome', 'err'); await db.upsert('contatos', { ...L, empresa_id: E, nome: nome.value.trim(), tipo: tipo.get(), documento: doc.value.replace(/\D/g, ''), email: email.value.trim(), telefone: tel.value.trim(), pix: pix.value.trim(), cidade: cidade.value.trim(), uf: uf.value.trim().toUpperCase(), observacoes: obs.value.trim() }); toast('Contato salvo'); d.close(true); };
+  ok.onclick = async () => { if (!nome.value.trim()) return toast('Informe o nome', 'err'); await db.upsert('contatos', { ...L, empresa_id: E, nome: nome.value.trim(), tipo: tipo.get(), documento: doc.value.replace(/\D/g, ''), email: email.value.trim(), telefone: tel.value.trim(), pix: pix.value.trim(), cidade: cidade.value.trim(), uf: uf.value.trim().toUpperCase(), observacoes: obs.value.trim(), rateio_centros_padrao: ccPad.get() }); toast('Contato salvo'); d.close(true); };
 }
 
 function paintCentros(body, C, E) {

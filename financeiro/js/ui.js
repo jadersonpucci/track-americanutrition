@@ -171,6 +171,25 @@ export function combobox({ options = [], value = null, placeholder = 'Selecionar
   paint(); return el;
 }
 
+// Seletor de centros de custo com rateio em % (usado no lançamento e no padrão do contato)
+export function centrosPicker({ centros = [], value = [], onChange = null } = {}) {
+  let sel = (value || []).map(r => ({ ...r }));
+  const el = h('<div class="cc-l"></div>');
+  const api = { el, get: () => sel.map(r => ({ centro_id: r.centro_id, percent: Number(r.percent) || 0 })), set(v) { sel = (v || []).map(r => ({ ...r })); paint(); } };
+  const paint = () => {
+    el.innerHTML = '';
+    centros.filter(c => !c.arquivado).forEach(c => {
+      const r = sel.find(x => x.centro_id === c.id);
+      const b = h(`<button type="button" class="chip ${r ? 'on' : ''}" style="--c:${c.cor || '#5B667E'}">${esc(c.nome)}${r ? `<input class="pct" value="${r.percent}" inputmode="numeric">%` : ''}</button>`);
+      b.onclick = e => { if (e.target.classList.contains('pct')) return; if (r) sel = sel.filter(x => x !== r); else { sel.push({ centro_id: c.id, percent: sel.length ? 0 : 100 }); if (sel.length === 2) { sel[0].percent = 50; sel[1].percent = 50; } } paint(); onChange && onChange(api.get()); };
+      const pct = b.querySelector('.pct'); if (pct) { pct.onclick = e => e.stopPropagation(); pct.oninput = () => { r.percent = Number(pct.value) || 0; onChange && onChange(api.get()); }; }
+      el.appendChild(b);
+    });
+    if (!centros.length) el.innerHTML = '<span class="muted sm">Nenhum centro de custo cadastrado.</span>';
+  };
+  paint(); return api;
+}
+
 export function segmented(options, value, onChange, cls = '') {
   const el = h(`<div class="seg ${cls}">${options.map(o => `<button type="button" data-v="${o.id}" class="${o.id === value ? 'on' : ''} ${o.cls || ''}">${o.icon ? icon(o.icon) : ''}${o.label}</button>`).join('')}</div>`);
   el.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; el.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); onChange && onChange(b.dataset.v); });

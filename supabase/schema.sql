@@ -490,3 +490,49 @@ begin
   exception when others then null; end;
   return jsonb_build_object('ok', true, 'lancamento_id', v_id, 'afiliado', af.nome, 'valor', valor);
 end $$;
+
+-- =====================================================================
+--  Centro de custo padrão
+--  · contatos.rateio_centros_padrao: rateio aplicado aos lançamentos novos do contato
+--  · trigger: lançamento (pagar/receber) sem centro recebe o padrão do contato ou "Brasil" 100%
+--  · migração única: cria "Brasil", aplica 100% Brasil a tudo que não tinha centro
+-- =====================================================================
+alter table contatos add column if not exists rateio_centros_padrao jsonb;
+
+create or replace function fin_centro_padrao() returns trigger language plpgsql as $$
+declare pad jsonb; br uuid;
+begin
+  if new.tipo in ('pagar', 'receber') and (new.rateio_centros is null or jsonb_typeof(new.rateio_centros) <> 'array' or jsonb_array_length(new.rateio_centros) = 0) then
+    if new.contato_id is not null then
+      select rateio_centros_padrao into pad from contatos where id = new.contato_id;
+      if pad is not null and jsonb_typeof(pad) = 'array' and jsonb_array_length(pad) > 0 then new.rateio_centros := pad; return new; end if;
+    end if;
+    select id into br from centros where empresa_id = new.empresa_id and deletado_em is null and not arquivado and nome ilike 'brasil' limit 1;
+    if br is not null then new.rateio_centros := jsonb_build_array(jsonb_build_object('centro_id', br, 'percent', 100)); end if;
+  end if;
+  return new;
+end $$;
+drop trigger if exists trg_centro_padrao on lancamentos;
+create trigger trg_centro_padrao before insert on lancamentos for each row execute function fin_centro_padrao();
+
+-- migração (idempotente): centro Brasil + rateios
+do $$
+declare emp uuid := '6b2e7c1a-0f4d-4a1e-9c3b-2d5e8f7a9b10'; br uuid; eua uuid; ies uuid; n int;
+begin
+  if not exists (select 1 from empresas where id = emp) then return; end if;
+  select id into br from centros where empresa_id = emp and deletado_em is null and nome ilike 'brasil' limit 1;
+  if br is null then insert into centros (empresa_id, nome, cor) values (emp, 'Brasil', '#07388E') returning id into br; end if;
+  select id into eua from centros where empresa_id = emp and deletado_em is null and nome ilike 'estados unidos' limit 1;
+  -- Iesney: 50% Estados Unidos / 50% Brasil (contato e lançamentos)
+  select id into ies from contatos where empresa_id = emp and deletado_em is null and nome ilike '%iesney%' order by nome limit 1;
+  if ies is not null and eua is not null then
+    update contatos set rateio_centros_padrao = jsonb_build_array(jsonb_build_object('centro_id', eua, 'percent', 50), jsonb_build_object('centro_id', br, 'percent', 50)) where id = ies;
+    update lancamentos set rateio_centros = jsonb_build_array(jsonb_build_object('centro_id', eua, 'percent', 50), jsonb_build_object('centro_id', br, 'percent', 50))
+      where empresa_id = emp and deletado_em is null and contato_id = ies and tipo in ('pagar', 'receber');
+  end if;
+  -- tudo sem centro vira Brasil 100%
+  update lancamentos set rateio_centros = jsonb_build_array(jsonb_build_object('centro_id', br, 'percent', 100))
+    where empresa_id = emp and deletado_em is null and tipo in ('pagar', 'receber') and (rateio_centros is null or jsonb_typeof(rateio_centros) <> 'array' or jsonb_array_length(rateio_centros) = 0);
+  get diagnostics n = row_count;
+  raise notice 'centro Brasil aplicado a % lançamentos', n;
+end $$;
