@@ -42,7 +42,7 @@ const CATS = [
   ['Benefícios',                  'out',3, 'Pessoas',             '3.1.004', 'ti-gift'],
   ['Ajuda de custo e diárias',    'out',3, 'Pessoas',             '3.1.005', 'ti-coins'],
   ['Rescisões',                   'out',3, 'Pessoas',             '3.1.006', 'ti-door-exit'],
-  ['Empréstimo a funcionários',   'out',3, 'Pessoas',             '3.1.007', 'ti-hand-coin'],
+  ['Empréstimo a funcionários',   'out',3, 'Pessoas',             '3.1.007', 'ti-coin'],
   ['Aluguel e condomínio',        'out',3, 'Fixas',               '3.2.001', 'ti-home'],
   ['Luz',                         'out',3, 'Fixas',               '3.2.002', 'ti-bolt'],
   ['Água',                        'out',3, 'Fixas',               '3.2.003', 'ti-droplet'],
@@ -71,7 +71,7 @@ const CATS = [
   ['Pagamento de empréstimo',     'out',5, 'Financiamentos',      '5.1.002', 'ti-cash-off'],
   ['Aporte de capital',           'in', 5, 'Sócios',              '5.2.001', 'ti-arrow-down-circle'],
   ['Retirada de capital',         'out',5, 'Sócios',              '5.2.002', 'ti-arrow-up-circle'],
-  ['Distribuição de lucros',      'out',5, 'Sócios',              '5.2.003', 'ti-pie-chart'],
+  ['Distribuição de lucros',      'out',5, 'Sócios',              '5.2.003', 'ti-chart-pie'],
 ];
 
 export function seedEmpresa(nome = 'America Nutrition', cnpj = '11.298.909/0001-94') {
