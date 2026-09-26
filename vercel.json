@@ -1,17 +1,40 @@
 {
   "cleanUrls": true,
   "redirects": [
-    { "source": "/stories.php", "destination": "/", "permanent": false },
-    { "source": "/stories", "destination": "/", "permanent": false }
+    {
+      "source": "/stories.php",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/stories",
+      "destination": "/",
+      "permanent": false
+    }
   ],
   "rewrites": [
-    { "source": "/:code([A-Za-z0-9]+)", "destination": "/" }
+    {
+      "source": "/:code((?!financeiro)[A-Za-z0-9]+)",
+      "destination": "/"
+    }
   ],
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/financeiro/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=604800"
+        }
       ]
     }
   ]

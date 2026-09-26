@@ -1,0 +1,9 @@
+{
+  "name": "Financeiro · America Nutrition",
+  "short_name": "Financeiro",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#F3F6FB",
+  "theme_color": "#07388E",
+  "icons": [{ "src": "https://cdn.shopify.com/s/files/1/0643/9000/4908/t/26/assets/logo-america-nutrition.png", "sizes": "any", "type": "image/png" }]
+}
