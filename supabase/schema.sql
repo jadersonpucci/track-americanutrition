@@ -303,9 +303,10 @@ end $$;
 --  (com dedupe). Esta função espelha essas linhas em `lancamentos`,
 --  idempotente por (empresa_id, origem, origem_ref). O workflow
 --  "Financeiro · Sync (Pagar.me + Inter)" chama a cada 10 min.
---  checkout_config: fin_lancar = on|off, fin_desde = ISO (só linhas criadas depois).
+--  checkout_config: fin_lancar = on|off, fin_desde = ISO (só linhas criadas depois),
+--  fin_pgm_saque_conta = nome da conta que recebe os saques do Pagar.me (padrão Stone).
 -- =====================================================================
-insert into checkout_config (chave, valor) values ('fin_lancar', 'on'), ('fin_desde', '2026-09-26T10:18:00Z') on conflict (chave) do nothing;
+insert into checkout_config (chave, valor) values ('fin_lancar', 'on'), ('fin_desde', '2026-09-26T10:18:00Z'), ('fin_pgm_saque_conta', 'Stone') on conflict (chave) do nothing;
 
 create or replace function fin_contato_garantir(p_empresa uuid, p_nome text, p_tipo text, p_nibo_id text) returns uuid language plpgsql as $$
 declare v uuid;
@@ -337,7 +338,8 @@ begin
 
   select id into c_pgm from contas where empresa_id = p_empresa and deletado_em is null and (nibo_id = cfg->>'nibo_pgm_conta_id' or nome ilike 'pagar.me' or banco = 'pagarme') order by (nibo_id = cfg->>'nibo_pgm_conta_id') desc nulls last limit 1;
   select id into c_inter from contas where empresa_id = p_empresa and deletado_em is null and (nibo_id = cfg->>'nibo_conta_inter_id' or nome ilike 'inter' or banco = 'inter') order by (nibo_id = cfg->>'nibo_conta_inter_id') desc nulls last limit 1;
-  select id into c_btg from contas where empresa_id = p_empresa and deletado_em is null and (nibo_id = cfg->>'nibo_pgm_conta_destino_id' or nome = 'BTG') order by (nibo_id = cfg->>'nibo_pgm_conta_destino_id') desc nulls last limit 1;
+  -- conta que recebe os saques do Pagar.me: checkout_config.fin_pgm_saque_conta (nome da conta; padrão Stone)
+  select id into c_btg from contas where empresa_id = p_empresa and deletado_em is null and nome ilike coalesce(nullif(cfg->>'fin_pgm_saque_conta', ''), 'Stone') limit 1;
   if c_pgm is null or c_inter is null or c_btg is null then
     return jsonb_build_object('ok', false, 'erro', 'contas nao encontradas', 'pagarme', c_pgm, 'inter', c_inter, 'btg', c_btg);
   end if;
@@ -386,7 +388,7 @@ begin
     select * from pagarme_nibo_lancamentos where status = 'lancado' and criado_em >= desde and tipo = 'saque' and valor > 0
   ), ins as (
     insert into lancamentos (empresa_id, tipo, descricao, valor, vencimento, competencia, conta_id, conta_destino_id, forma_pagamento, status, baixas, referencia, origem, origem_ref, criado_em)
-    select p_empresa, 'transferencia', 'Saque Pagar.me → BTG', round(s.valor, 2), s.data, date_trunc('month', s.data)::date, c_pgm, c_btg, 'transferencia', 'pago', '[]'::jsonb,
+    select p_empresa, 'transferencia', 'Saque Pagar.me → ' || (select nome from contas where id = c_btg), round(s.valor, 2), s.data, date_trunc('month', s.data)::date, c_pgm, c_btg, 'transferencia', 'pago', '[]'::jsonb,
       s.referencia, 'pagarme', s.chave, s.criado_em
     from src s
     on conflict (empresa_id, origem, origem_ref) where origem_ref is not null do nothing
