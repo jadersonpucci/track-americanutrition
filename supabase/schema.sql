@@ -295,3 +295,156 @@ begin
 
   return jsonb_build_object('ok', false, 'erro', 'op_desconhecida');
 end $$;
+
+-- =====================================================================
+--  Sincronização Pagar.me + Banco Inter → Financeiro (sem passar pelo Nibo)
+--  Os workflows "AN - Pagar.me → Nibo" e "AN - PIX Banco Inter" já gravam
+--  cada evento nas tabelas pagarme_nibo_lancamentos / inter_nibo_lancamentos
+--  (com dedupe). Esta função espelha essas linhas em `lancamentos`,
+--  idempotente por (empresa_id, origem, origem_ref). O workflow
+--  "Financeiro · Sync (Pagar.me + Inter)" chama a cada 10 min.
+--  checkout_config: fin_lancar = on|off, fin_desde = ISO (só linhas criadas depois).
+-- =====================================================================
+insert into checkout_config (chave, valor) values ('fin_lancar', 'on'), ('fin_desde', '2026-09-26T10:18:00Z') on conflict (chave) do nothing;
+
+create or replace function fin_contato_garantir(p_empresa uuid, p_nome text, p_tipo text, p_nibo_id text) returns uuid language plpgsql as $$
+declare v uuid;
+begin
+  if p_nibo_id is not null and p_nibo_id <> '' then
+    select id into v from contatos where empresa_id = p_empresa and deletado_em is null and nibo_id = p_nibo_id limit 1;
+    if found then return v; end if;
+  end if;
+  select id into v from contatos where empresa_id = p_empresa and deletado_em is null and upper(nome) = upper(p_nome) limit 1;
+  if found then
+    if p_nibo_id is not null and p_nibo_id <> '' then update contatos set nibo_id = coalesce(nibo_id, p_nibo_id) where id = v; end if;
+    return v;
+  end if;
+  insert into contatos (empresa_id, nome, tipo, nibo_id) values (p_empresa, p_nome, p_tipo, nullif(p_nibo_id, '')) returning id into v;
+  return v;
+end $$;
+
+create or replace function fin_sync_staging(p_empresa uuid) returns jsonb language plpgsql as $$
+declare
+  cfg jsonb; desde timestamptz;
+  c_pgm uuid; c_inter uuid; c_btg uuid;
+  cat_vendas uuid; cat_tarifa uuid; cat_dev_out uuid; cat_dev_in uuid; cat_imp uuid; cat_rend uuid;
+  ct_pgm_cli uuid; ct_pgm_forn uuid; ct_inter uuid;
+  n_rec int := 0; n_taxa int := 0; n_saque int := 0; n_est int := 0; n_inter_c int := 0; n_inter_d int := 0;
+begin
+  select coalesce(jsonb_object_agg(chave, valor), '{}'::jsonb) into cfg from checkout_config;
+  if coalesce(cfg->>'fin_lancar', 'off') <> 'on' then return jsonb_build_object('ok', false, 'motivo', 'fin_lancar=off'); end if;
+  desde := coalesce(nullif(cfg->>'fin_desde', '')::timestamptz, now());
+
+  select id into c_pgm from contas where empresa_id = p_empresa and deletado_em is null and (nibo_id = cfg->>'nibo_pgm_conta_id' or nome ilike 'pagar.me' or banco = 'pagarme') order by (nibo_id = cfg->>'nibo_pgm_conta_id') desc nulls last limit 1;
+  select id into c_inter from contas where empresa_id = p_empresa and deletado_em is null and (nibo_id = cfg->>'nibo_conta_inter_id' or nome ilike 'inter' or banco = 'inter') order by (nibo_id = cfg->>'nibo_conta_inter_id') desc nulls last limit 1;
+  select id into c_btg from contas where empresa_id = p_empresa and deletado_em is null and (nibo_id = cfg->>'nibo_pgm_conta_destino_id' or nome = 'BTG') order by (nibo_id = cfg->>'nibo_pgm_conta_destino_id') desc nulls last limit 1;
+  if c_pgm is null or c_inter is null or c_btg is null then
+    return jsonb_build_object('ok', false, 'erro', 'contas nao encontradas', 'pagarme', c_pgm, 'inter', c_inter, 'btg', c_btg);
+  end if;
+  select id into cat_vendas from categorias where empresa_id = p_empresa and deletado_em is null and tipo = 'in' and nome ilike 'vendas' limit 1;
+  select id into cat_tarifa from categorias where empresa_id = p_empresa and deletado_em is null and tipo = 'out' and nome ilike 'tarifa banc%' limit 1;
+  select id into cat_dev_out from categorias where empresa_id = p_empresa and deletado_em is null and tipo = 'out' and nome ilike 'devolu%' limit 1;
+  select id into cat_dev_in from categorias where empresa_id = p_empresa and deletado_em is null and tipo = 'in' and nome ilike 'devolu%' limit 1;
+  select id into cat_imp from categorias where empresa_id = p_empresa and deletado_em is null and tipo = 'out' and nome = 'Impostos' limit 1;
+  select id into cat_rend from categorias where empresa_id = p_empresa and deletado_em is null and tipo = 'in' and nome ilike 'rendimento%' limit 1;
+  ct_pgm_cli := fin_contato_garantir(p_empresa, 'PAGARME GATEWAY', 'cliente', cfg->>'nibo_pgm_cliente_id');
+  ct_pgm_forn := fin_contato_garantir(p_empresa, 'PAGAR.ME', 'fornecedor', cfg->>'nibo_pgm_fornecedor_id');
+  ct_inter := fin_contato_garantir(p_empresa, 'BANCO INTER - PIX', 'cliente', cfg->>'nibo_cliente_id');
+
+  -- ---- Pagar.me: venda paga (bruto) ----
+  with src as (
+    select * from pagarme_nibo_lancamentos where status = 'lancado' and criado_em >= desde and tipo = 'credit' and valor > 0
+  ), ins as (
+    insert into lancamentos (empresa_id, tipo, descricao, valor, vencimento, competencia, categoria_id, contato_id, conta_id, forma_pagamento, status, baixas, referencia, origem, origem_ref, criado_em)
+    select p_empresa, 'receber', coalesce(nullif(s.descricao, ''), 'Cobrança ' || right(coalesce(s.charge_id, ''), 8) || ' · Pagar.me'), round(s.valor, 2), s.data, date_trunc('month', s.data)::date, cat_vendas, ct_pgm_cli, c_pgm,
+      case coalesce(s.detalhes->>'metodo', '') when 'credit_card' then 'cartao' when 'card' then 'cartao' when 'debit_card' then 'debito' when 'pix' then 'pix' when 'boleto' then 'boleto' else 'outro' end,
+      'aberto', jsonb_build_array(jsonb_build_object('id', gen_random_uuid(), 'data', s.data, 'valor', round(s.valor, 2), 'conta_id', c_pgm, 'juros', 0, 'multa', 0, 'desconto', 0)),
+      s.charge_id, 'pagarme', s.chave || ':rec', s.criado_em
+    from src s
+    on conflict (empresa_id, origem, origem_ref) where origem_ref is not null do nothing
+    returning 1
+  ) select count(*) into n_rec from ins;
+
+  -- ---- Pagar.me: taxa da venda ----
+  with src as (
+    select * from pagarme_nibo_lancamentos where status = 'lancado' and criado_em >= desde and tipo = 'credit' and taxas > 0
+  ), ins as (
+    insert into lancamentos (empresa_id, tipo, descricao, valor, vencimento, competencia, categoria_id, contato_id, conta_id, forma_pagamento, status, baixas, referencia, origem, origem_ref, criado_em)
+    select p_empresa, 'pagar',
+      'Taxa Pagar.me · ' || split_part(coalesce(nullif(s.descricao, ''), 'Cobrança ' || right(coalesce(s.charge_id, ''), 8)), ' · Pagar.me', 1)
+        || coalesce(' · ' || nullif(trim(regexp_replace(coalesce(s.descricao, ''), '^.*· Pagar\.me ?', '')), ''), ''),
+      round(s.taxas, 2), s.data, date_trunc('month', s.data)::date, cat_tarifa, ct_pgm_forn, c_pgm, 'outro',
+      'aberto', jsonb_build_array(jsonb_build_object('id', gen_random_uuid(), 'data', s.data, 'valor', round(s.taxas, 2), 'conta_id', c_pgm, 'juros', 0, 'multa', 0, 'desconto', 0)),
+      s.charge_id, 'pagarme', s.chave || ':taxa', s.criado_em
+    from src s
+    on conflict (empresa_id, origem, origem_ref) where origem_ref is not null do nothing
+    returning 1
+  ) select count(*) into n_taxa from ins;
+
+  -- ---- Pagar.me: saque → transferência Pagar.me → BTG ----
+  with src as (
+    select * from pagarme_nibo_lancamentos where status = 'lancado' and criado_em >= desde and tipo = 'saque' and valor > 0
+  ), ins as (
+    insert into lancamentos (empresa_id, tipo, descricao, valor, vencimento, competencia, conta_id, conta_destino_id, forma_pagamento, status, baixas, referencia, origem, origem_ref, criado_em)
+    select p_empresa, 'transferencia', 'Saque Pagar.me → BTG', round(s.valor, 2), s.data, date_trunc('month', s.data)::date, c_pgm, c_btg, 'transferencia', 'pago', '[]'::jsonb,
+      s.referencia, 'pagarme', s.chave, s.criado_em
+    from src s
+    on conflict (empresa_id, origem, origem_ref) where origem_ref is not null do nothing
+    returning 1
+  ) select count(*) into n_saque from ins;
+
+  -- ---- Pagar.me: estorno / chargeback (líquido negativo = saída; positivo = entrada) ----
+  with src as (
+    select * from pagarme_nibo_lancamentos where status = 'lancado' and criado_em >= desde and tipo not in ('credit', 'saque') and coalesce(liquido, 0) <> 0
+  ), ins as (
+    insert into lancamentos (empresa_id, tipo, descricao, valor, vencimento, competencia, categoria_id, contato_id, conta_id, forma_pagamento, status, baixas, referencia, origem, origem_ref, criado_em)
+    select p_empresa, case when s.liquido < 0 then 'pagar' else 'receber' end,
+      coalesce(nullif(s.descricao, ''), (case s.tipo when 'chargeback' then 'Chargeback' when 'chargeback_refund' then 'Reversão de chargeback' when 'refund' then 'Estorno' else 'Ajuste ' || s.tipo end) || ' · Cobrança ' || right(coalesce(s.charge_id, ''), 8)),
+      round(abs(s.liquido), 2), s.data, date_trunc('month', s.data)::date,
+      case when s.liquido < 0 then cat_dev_out else cat_dev_in end,
+      case when s.liquido < 0 then ct_pgm_forn else ct_pgm_cli end, c_pgm, 'outro',
+      'aberto', jsonb_build_array(jsonb_build_object('id', gen_random_uuid(), 'data', s.data, 'valor', round(abs(s.liquido), 2), 'conta_id', c_pgm, 'juros', 0, 'multa', 0, 'desconto', 0)),
+      s.charge_id, 'pagarme', s.chave || ':est', s.criado_em
+    from src s
+    on conflict (empresa_id, origem, origem_ref) where origem_ref is not null do nothing
+    returning 1
+  ) select count(*) into n_est from ins;
+
+  -- ---- Inter: créditos (PIX, TED, boleto…) ----
+  with src as (
+    select * from inter_nibo_lancamentos where status in ('lancado', 'ignorado') and criado_em >= desde and coalesce(tipo, '') not like 'DEBITO_%' and valor > 0
+  ), ins as (
+    insert into lancamentos (empresa_id, tipo, descricao, valor, vencimento, competencia, categoria_id, contato_id, conta_id, forma_pagamento, status, baixas, referencia, origem, origem_ref, criado_em)
+    select p_empresa, 'receber',
+      coalesce(nullif(s.descricao, ''), (case when s.tipo = 'PIX' then 'PIX recebido' else s.tipo || ' recebido' end) || coalesce(' · ' || nullif(s.nome, ''), '')),
+      round(s.valor, 2), s.data, date_trunc('month', s.data)::date,
+      case when s.tipo ~* 'REND' then cat_rend when s.tipo ~* 'PIX|TED|DOC|BOLETO|TRANSFER|DEPOSITO' then cat_vendas else null end,
+      case when s.tipo ~* 'PIX|TED|DOC|BOLETO|TRANSFER|DEPOSITO' then ct_inter else null end, c_inter,
+      case when s.tipo = 'PIX' then 'pix' when s.tipo = 'BOLETO' then 'boleto' else 'transferencia' end,
+      'aberto', jsonb_build_array(jsonb_build_object('id', gen_random_uuid(), 'data', s.data, 'valor', round(s.valor, 2), 'conta_id', c_inter, 'juros', 0, 'multa', 0, 'desconto', 0)),
+      s.referencia, 'inter', s.chave, s.criado_em
+    from src s
+    on conflict (empresa_id, origem, origem_ref) where origem_ref is not null do nothing
+    returning 1
+  ) select count(*) into n_inter_c from ins;
+
+  -- ---- Inter: débitos do extrato (PIX enviado, boleto pago, tarifas, impostos) ----
+  with src as (
+    select * from inter_nibo_lancamentos where status in ('lancado', 'ignorado') and criado_em >= desde and coalesce(tipo, '') like 'DEBITO_%' and valor > 0
+  ), ins as (
+    insert into lancamentos (empresa_id, tipo, descricao, valor, vencimento, competencia, categoria_id, contato_id, conta_id, forma_pagamento, status, baixas, referencia, origem, origem_ref, criado_em)
+    select p_empresa, 'pagar',
+      coalesce(nullif(s.descricao, ''), replace(s.tipo, 'DEBITO_', '') || ' enviado' || coalesce(' · ' || nullif(s.nome, ''), '')),
+      round(s.valor, 2), s.data, date_trunc('month', s.data)::date,
+      case when s.descricao ~* 'tarifa|taxa|anuidade|mensalidade' then cat_tarifa when s.descricao ~* 'darf|imposto|\mdas\M|\mgps\M|issqn|inss|fgts|tribut' then cat_imp else null end,
+      null, c_inter,
+      case when s.tipo like '%PIX%' then 'pix' when s.tipo like '%BOLETO%' then 'boleto' else 'transferencia' end,
+      'aberto', jsonb_build_array(jsonb_build_object('id', gen_random_uuid(), 'data', s.data, 'valor', round(s.valor, 2), 'conta_id', c_inter, 'juros', 0, 'multa', 0, 'desconto', 0)),
+      s.referencia, 'inter', s.chave, s.criado_em
+    from src s
+    on conflict (empresa_id, origem, origem_ref) where origem_ref is not null do nothing
+    returning 1
+  ) select count(*) into n_inter_d from ins;
+
+  return jsonb_build_object('ok', true, 'desde', desde, 'pagarme', jsonb_build_object('recebimentos', n_rec, 'taxas', n_taxa, 'saques', n_saque, 'estornos', n_est), 'inter', jsonb_build_object('creditos', n_inter_c, 'debitos', n_inter_d));
+end $$;
