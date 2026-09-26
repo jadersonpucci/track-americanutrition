@@ -4,7 +4,7 @@
 --  Modelo espelha o que o app usa em memória: uma linha por registro,
 --  listas (baixas, rateios, tags, anexos) em jsonb.
 -- =====================================================================
-create extension if not exists pgcrypto;
+create extension if not exists pgcrypto with schema extensions;
 
 create table if not exists empresas (
   id uuid primary key default gen_random_uuid(),
@@ -185,3 +185,113 @@ select a.id as conta_id, a.empresa_id, a.nome, a.banco,
        from lancamentos l where l.deletado_em is null and l.tipo='transferencia' and (l.conta_id = a.id or l.conta_destino_id = a.id)
          and (a.data_saldo_inicial is null or l.vencimento >= a.data_saldo_inicial)), 0) as saldo
 from contas a where a.deletado_em is null;
+
+-- =====================================================================
+--  API pelo n8n (webhook financeiro-api → fin_api). Autenticação própria:
+--  usuários e sessões em tabelas, senha com bcrypt (pgcrypto). O navegador
+--  nunca vê chave do Supabase; fala só com o webhook do n8n.
+-- =====================================================================
+create table if not exists fin_usuarios (
+  id uuid primary key default gen_random_uuid(),
+  email text not null unique,
+  nome text,
+  senha_hash text not null,
+  ativo boolean not null default true,
+  criado_em timestamptz default now()
+);
+create table if not exists fin_sessoes (
+  token text primary key,
+  usuario_id uuid not null references fin_usuarios(id) on delete cascade,
+  criado_em timestamptz default now(),
+  ultimo_uso timestamptz default now(),
+  expira_em timestamptz not null,
+  origem text
+);
+create index if not exists fin_sessoes_usuario on fin_sessoes (usuario_id);
+
+create or replace function fin_criar_usuario(p_email text, p_nome text, p_senha text) returns uuid language plpgsql as $$
+declare v_id uuid;
+begin
+  insert into fin_usuarios (email, nome, senha_hash) values (lower(trim(p_email)), p_nome, extensions.crypt(p_senha, extensions.gen_salt('bf', 10)))
+  on conflict (email) do update set nome = excluded.nome, senha_hash = excluded.senha_hash, ativo = true
+  returning id into v_id;
+  return v_id;
+end $$;
+
+create or replace function fin_login(p_email text, p_senha text, p_origem text default null) returns jsonb language plpgsql as $$
+declare u fin_usuarios; tok text;
+begin
+  select * into u from fin_usuarios where email = lower(trim(coalesce(p_email,''))) and ativo;
+  if not found or u.senha_hash <> extensions.crypt(coalesce(p_senha,''), u.senha_hash) then
+    perform pg_sleep(0.4);
+    return jsonb_build_object('ok', false, 'erro', 'E-mail ou senha incorretos');
+  end if;
+  tok := encode(extensions.gen_random_bytes(32), 'hex');
+  insert into fin_sessoes (token, usuario_id, expira_em, origem) values (tok, u.id, now() + interval '30 days', p_origem);
+  return jsonb_build_object('ok', true, 'token', tok, 'user', jsonb_build_object('id', u.id, 'email', u.email, 'nome', u.nome));
+end $$;
+
+create or replace function fin_api(body jsonb) returns jsonb language plpgsql as $$
+declare
+  op text := body->>'op'; tok text := body->>'token'; p jsonb := coalesce(body->'payload', '{}'::jsonb);
+  s fin_sessoes; u fin_usuarios; tabela text; setlist text; rows jsonb; ids uuid[]; n int; t text;
+  permitidas text[] := array['empresas','contas','categorias','centros','contatos','tags','lancamentos','extrato_itens'];
+  res jsonb := '{}'::jsonb;
+begin
+  if op = 'login' then return fin_login(p->>'email', p->>'senha', p->>'origem'); end if;
+  if op = 'ping' then return jsonb_build_object('ok', true, 'agora', now()); end if;
+  if op = 'primeiro_usuario' then
+    if exists (select 1 from fin_usuarios) then return jsonb_build_object('ok', false, 'erro', 'ja_existe_usuario'); end if;
+    if length(coalesce(p->>'senha','')) < 8 then return jsonb_build_object('ok', false, 'erro', 'senha_curta'); end if;
+    perform fin_criar_usuario(p->>'email', p->>'nome', p->>'senha');
+    return fin_login(p->>'email', p->>'senha', 'bootstrap');
+  end if;
+  select * into s from fin_sessoes where token = tok and expira_em > now();
+  if not found then return jsonb_build_object('ok', false, 'erro', 'sessao_invalida'); end if;
+  select * into u from fin_usuarios where id = s.usuario_id and ativo;
+  if not found then return jsonb_build_object('ok', false, 'erro', 'usuario_inativo'); end if;
+  update fin_sessoes set ultimo_uso = now(), expira_em = now() + interval '30 days' where token = tok;
+
+  if op = 'logout' then delete from fin_sessoes where token = tok; return jsonb_build_object('ok', true); end if;
+  if op = 'me' then return jsonb_build_object('ok', true, 'user', jsonb_build_object('id', u.id, 'email', u.email, 'nome', u.nome)); end if;
+
+  if op = 'load' then
+    foreach t in array permitidas loop
+      execute format('select coalesce(jsonb_agg(to_jsonb(x)), ''[]''::jsonb) from %I x where x.deletado_em is null', t) into rows;
+      res := res || jsonb_build_object(t, rows);
+    end loop;
+    return jsonb_build_object('ok', true, 'data', res, 'user', jsonb_build_object('id', u.id, 'email', u.email, 'nome', u.nome));
+  end if;
+
+  if op = 'upsert' then
+    tabela := p->>'table'; rows := p->'rows';
+    if not (tabela = any(permitidas)) then return jsonb_build_object('ok', false, 'erro', 'tabela_nao_permitida'); end if;
+    if rows is null or jsonb_typeof(rows) <> 'array' then return jsonb_build_object('ok', false, 'erro', 'rows_invalido'); end if;
+    -- strings vazias viram null (campos de data/uuid não aceitam '')
+    rows := regexp_replace(rows::text, ':\s*""', ':null', 'g')::jsonb;
+    select string_agg(format('%I = excluded.%I', column_name, column_name), ', ') into setlist
+      from information_schema.columns where table_schema = 'public' and table_name = tabela and column_name not in ('id', 'criado_em');
+    execute format('insert into %I select * from jsonb_populate_recordset(null::%I, %L::jsonb) on conflict (id) do update set %s', tabela, tabela, rows::text, setlist);
+    get diagnostics n = row_count;
+    return jsonb_build_object('ok', true, 'n', n);
+  end if;
+
+  if op = 'remove' then
+    tabela := p->>'table';
+    if not (tabela = any(permitidas)) then return jsonb_build_object('ok', false, 'erro', 'tabela_nao_permitida'); end if;
+    select array_agg(x::uuid) into ids from jsonb_array_elements_text(p->'ids') x;
+    execute format('delete from %I where id = any(%L::uuid[])', tabela, ids);
+    get diagnostics n = row_count;
+    return jsonb_build_object('ok', true, 'n', n);
+  end if;
+
+  if op = 'wipe_empresa' then
+    foreach t in array permitidas loop
+      if t <> 'empresas' then execute format('delete from %I where empresa_id = %L::uuid', t, p->>'empresa_id'); end if;
+    end loop;
+    delete from empresas where id = (p->>'empresa_id')::uuid;
+    return jsonb_build_object('ok', true);
+  end if;
+
+  return jsonb_build_object('ok', false, 'erro', 'op_desconhecida');
+end $$;

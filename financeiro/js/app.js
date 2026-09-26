@@ -3,6 +3,7 @@ import { db, prefs } from './db.js';
 import { h, icon, modal, toast, avatar, bankIcon, catIcon, closeAll, menu, on } from './ui.js';
 import { esc, money, norm, today, fmtDate } from './utils.js';
 import { seedEmpresa, seedCadastros, seedLancamentos } from './seed.js';
+import { CONFIG } from './config.js';
 import { statusOf, emAberto } from './model.js';
 import { ctx as mkCtx } from './model.js';
 
@@ -44,6 +45,25 @@ async function boot() {
   document.getElementById('splash')?.remove();
 }
 
+function telaLogin() {
+  return new Promise(res => {
+    const el = h(`<div class="login"><form class="login-box"><img class="login-logo" src="https://cdn.shopify.com/s/files/1/0643/9000/4908/t/26/assets/logo-america-nutrition.png" alt="America Nutrition"><h1>Financeiro</h1><p class="muted">Entre com seu e-mail e senha.</p>
+      <label class="fld"><span class="fl">E-mail</span><input class="inp" type="email" name="email" autocomplete="username" required autofocus></label>
+      <label class="fld"><span class="fl">Senha</span><input class="inp" type="password" name="senha" autocomplete="current-password" required></label>
+      <div class="login-err hidden"></div>
+      <button class="btn primary lg" type="submit">${icon('ti-login-2')}Entrar</button>
+      <button class="linkbtn" type="button" data-local>Usar sem servidor (dados só neste navegador)</button></form></div>`);
+    document.body.appendChild(el);
+    const form = el.querySelector('form'); const err = el.querySelector('.login-err'); const btn = form.querySelector('button[type=submit]');
+    form.onsubmit = async e => {
+      e.preventDefault(); err.classList.add('hidden'); btn.disabled = true; btn.innerHTML = `${icon('ti-loader-2', 'spin')}Entrando…`;
+      try { await db.backend.login(form.email.value.trim(), form.senha.value); await db.reload(); el.remove(); res(); }
+      catch (ex) { err.textContent = ex.message; err.classList.remove('hidden'); btn.disabled = false; btn.innerHTML = `${icon('ti-login-2')}Entrar`; }
+    };
+    el.querySelector('[data-local]').onclick = () => { prefs.set('backend', { type: 'local' }); location.reload(); };
+  });
+}
+
 async function onboarding() {
   return new Promise(res => {
     const m = modal({ title: 'Bem-vindo ao Financeiro', size: 'md', cls: 'onb', footer: null, body: `<p class="muted">Vou criar a empresa <b>America Nutrition</b> com o plano de contas e as contas bancárias já configuradas (Inter, BTG, Stone, Pagar.me, Caixa). Como quer começar?</p>
@@ -81,7 +101,7 @@ function layout() {
 function paintSidebar() {
   const e = db.get('empresas', app.empresaId); if (!e) return;
   const b = document.querySelector('[data-emp]'); b.innerHTML = `${avatar(e.nome, 30, e.cor)}<span class="emp-n">${esc(e.nome)}</span>${icon('ti-selector')}`;
-  const m = document.querySelector('[data-mode]'); m.innerHTML = db.backend.name === 'supabase' ? `${icon('ti-cloud')}<span>Supabase${db.backend.user ? ' · ' + esc(db.backend.user.email.split('@')[0]) : ''}</span>` : `${icon('ti-device-laptop')}<span>Dados neste navegador</span>`;
+  const m = document.querySelector('[data-mode]'); m.innerHTML = db.backend.name === 'supabase' ? `${icon('ti-cloud-check')}<span>${esc(CONFIG.nomeServidor || 'Servidor')}${db.backend.user ? ' · ' + esc((db.backend.user.nome || db.backend.user.email).split(/[@ ]/)[0]) : ''}</span>` : `${icon('ti-device-laptop')}<span>Dados neste navegador</span>`;
   m.onclick = () => location.hash = '#/config/conexao';
   document.title = `${e.nome} · Financeiro`;
 }

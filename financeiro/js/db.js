@@ -3,6 +3,7 @@
 //  - supabase: PostgREST + Auth do Supabase self-hosted (multiusuário, backup, integrações via n8n)
 // O app trabalha sempre em memória (db.state) e cada escrita vai pro backend.
 import { uid } from './utils.js';
+import { CONFIG } from './config.js';
 
 export const TABLES = ['empresas', 'contas', 'categorias', 'centros', 'contatos', 'tags', 'lancamentos', 'extrato_itens'];
 const LS_PREFIX = 'fin:v1:';
@@ -75,6 +76,32 @@ class SupabaseBackend {
   async wipe() { throw new Error('Não é possível apagar tudo no Supabase por aqui. Use o SQL Editor.'); }
 }
 
+// Gateway n8n → fin_api (Postgres). Sessão própria (token) guardada no navegador.
+class GatewayBackend {
+  name = 'supabase';
+  constructor(url) { this.url = url; this.session = prefs.get('gw:session'); }
+  get user() { return this.session?.user || null; }
+  async call(op, payload = {}, { auth = true } = {}) {
+    const r = await fetch(this.url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ op, token: auth ? this.session?.token : undefined, payload }) });
+    if (!r.ok) throw new Error(`Servidor respondeu ${r.status}`);
+    let j = await r.json();
+    if (Array.isArray(j)) j = j[0];
+    if (j && j.r && !('ok' in j)) j = j.r;
+    if (!j || j.ok === false) { const e = new Error(j?.erro === 'sessao_invalida' ? 'Sessão expirada. Entre de novo.' : (j?.erro || 'Erro no servidor')); e.code = j?.erro; throw e; }
+    return j;
+  }
+  async login(email, senha) { const j = await this.call('login', { email, senha, origem: navigator.userAgent.slice(0, 80) }, { auth: false }); this.session = { token: j.token, user: j.user }; prefs.set('gw:session', this.session); return j.user; }
+  async logout() { try { await this.call('logout'); } catch {} this.session = null; prefs.del('gw:session'); }
+  async load() {
+    if (!this.session?.token) { const e = new Error('login'); e.code = 'login'; throw e; }
+    const j = await this.call('load'); if (j.user) { this.session.user = j.user; prefs.set('gw:session', this.session); }
+    return j.data;
+  }
+  async upsert(table, rows) { for (let i = 0; i < rows.length; i += 400) await this.call('upsert', { table, rows: rows.slice(i, i + 400) }); }
+  async remove(table, ids) { await this.call('remove', { table, ids }); }
+  async wipe() { throw new Error('No servidor, apague pela empresa (Configurações → Empresas).'); }
+}
+
 export const db = {
   state: Object.fromEntries(TABLES.map(t => [t, []])),
   backend: null,
@@ -84,10 +111,11 @@ export const db = {
   emit(table) { for (const fn of this.listeners) { try { fn(table); } catch (e) { console.error(e); } } },
 
   async init() {
-    const cfg = prefs.get('backend');
-    this.backend = cfg?.type === 'supabase' && cfg.url && cfg.anonKey ? new SupabaseBackend(cfg) : new LocalBackend();
+    const cfg = prefs.get('backend') || (CONFIG.gateway ? { type: 'gateway' } : { type: 'local' });
+    this.backend = cfg.type === 'gateway' && CONFIG.gateway ? new GatewayBackend(CONFIG.gateway) : cfg.type === 'supabase' && cfg.url && cfg.anonKey ? new SupabaseBackend(cfg) : new LocalBackend();
+    this.needsLogin = false;
     try { this.state = await this.backend.load(); }
-    catch (e) { console.error(e); this.loadError = e; if (this.backend.name === 'supabase') { this.state = Object.fromEntries(TABLES.map(t => [t, []])); } }
+    catch (e) { if (e.code === 'login' || e.code === 'sessao_invalida') { this.needsLogin = true; if (e.code === 'sessao_invalida') { this.backend.session = null; prefs.del('gw:session'); } } else { console.error(e); this.loadError = e; } if (this.backend.name === 'supabase') { this.state = Object.fromEntries(TABLES.map(t => [t, []])); } }
     for (const t of TABLES) if (!Array.isArray(this.state[t])) this.state[t] = [];
     this.index = {}; for (const t of TABLES) this.reindex(t);
     this.ready = true; return this;
@@ -116,6 +144,7 @@ export const db = {
     await this.backend.remove(t, ids, this.state);
     this.emit(t);
   },
+  async reload() { this.state = await this.backend.load(); for (const t of TABLES) if (!Array.isArray(this.state[t])) this.state[t] = []; for (const t of TABLES) this.reindex(t); this.needsLogin = false; this.loadError = null; this.emit('*'); },
   async replaceAll(data) {
     for (const t of TABLES) { this.state[t] = data[t] || []; this.reindex(t); await this.backend.upsert(t, this.state[t], this.state); }
     this.emit('*');

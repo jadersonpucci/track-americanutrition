@@ -33,6 +33,11 @@ pre.code{font-family:ui-monospace,Menlo,monospace;font-size:12px;background:var(
 #splash{position:fixed;inset:0;display:grid;place-items:center;background:var(--bg);z-index:999;color:var(--soft);font-size:13px;gap:10px}
 #splash img{height:22px;display:block;margin:0 auto 12px}
 
+/* ---------- login ---------- */
+.login{position:fixed;inset:0;display:grid;place-items:center;background:var(--bg);z-index:90;padding:20px}
+.login-box{width:100%;max-width:380px;background:var(--card);border:1px solid var(--line);border-radius:24px;padding:32px 28px;display:flex;flex-direction:column;gap:14px;box-shadow:var(--shadow-lg)}
+.login-logo{height:18px;align-self:flex-start;margin-bottom:6px}:root[data-theme=dark] .login-logo{filter:brightness(0) invert(1)}
+.login-box h1{font-size:24px}.login-box p{margin-top:-8px;font-size:13.5px}.login-err{background:var(--red-soft);color:var(--red);padding:8px 12px;border-radius:10px;font-size:13px}.btn.lg{height:46px;font-size:15px}.login-box .linkbtn{align-self:center;color:var(--soft);font-weight:500}
 /* ---------- layout ---------- */
 .sb{position:fixed;left:0;top:0;bottom:0;width:var(--sbw);background:var(--card);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:18px 14px;z-index:40;transition:transform .25s}
 .sb-top{display:flex;align-items:center;justify-content:space-between;padding:2px 6px 14px}

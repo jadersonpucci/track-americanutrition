@@ -4,6 +4,7 @@ import { db, prefs, TABLES } from '../db.js';
 import { h, icon, modal, drawer, field, fieldEl, toggle, segmented, toast, confirm, on, copy, combobox, avatar } from '../ui.js';
 import { esc, uid, download, readFile, today, fmtDateTime, parseMoney, norm, monthStart } from '../utils.js';
 import { seedCadastros, seedLancamentos, seedEmpresa } from '../seed.js';
+import { CONFIG } from '../config.js';
 
 const SECS = [{ id: 'empresa', label: 'Empresas', icon: 'ti-building' }, { id: 'dados', label: 'Dados e backup', icon: 'ti-database' }, { id: 'conexao', label: 'Conexão', icon: 'ti-cloud' }, { id: 'integracoes', label: 'Integrações', icon: 'ti-plug' }, { id: 'aparencia', label: 'Aparência', icon: 'ti-palette' }, { id: 'atalhos', label: 'Atalhos', icon: 'ti-keyboard' }];
 let sec = 'empresa';
@@ -102,61 +103,46 @@ async function importarCSV(text) {
 }
 
 function secConexao(body) {
-  const cfg = prefs.get('backend') || { type: 'local' }; const isSb = db.backend.name === 'supabase'; const user = isSb ? db.backend.user : null;
-  body.innerHTML = `<div class="card"><div class="card-h"><h3>Onde os dados ficam</h3>${isSb ? '<span class="pill green">Supabase conectado</span>' : '<span class="pill gray">Modo local</span>'}</div>
-    <div class="modes"><label class="mode ${cfg.type !== 'supabase' ? 'on' : ''}"><input type="radio" name="mode" value="local" ${cfg.type !== 'supabase' ? 'checked' : ''}><div>${icon('ti-device-laptop')}<b>Neste navegador</b><p>Rápido e sem servidor. Os dados ficam só neste aparelho: faça backup.</p></div></label><label class="mode ${cfg.type === 'supabase' ? 'on' : ''}"><input type="radio" name="mode" value="supabase" ${cfg.type === 'supabase' ? 'checked' : ''}><div>${icon('ti-cloud')}<b>Supabase (recomendado)</b><p>Multiusuário, acessível do Mac e do iPhone, com integrações via n8n. Use o <code>supabase/schema.sql</code>.</p></div></label></div>
-    <div class="sb ${cfg.type === 'supabase' ? '' : 'hidden'}"><div class="row2"><label class="fld"><span class="fl">URL do Supabase</span><input class="inp" data-url value="${esc(cfg.url || 'https://supabase.americanutrition.com')}" placeholder="https://supabase.americanutrition.com"></label><label class="fld"><span class="fl">Anon key</span><input class="inp" data-key value="${esc(cfg.anonKey || '')}" placeholder="eyJ…"></label></div>
-      ${isSb ? `<div class="sb-user">${user ? `${avatar(user.email, 28)}<span>Logado como <b>${esc(user.email)}</b></span><button class="btn ghost xs" data-logout>Sair</button>` : `<span class="muted">Não autenticado.</span>`}</div>` : ''}
-      <div class="row2"><label class="fld"><span class="fl">E-mail</span><input class="inp" type="email" data-email value="${esc(user?.email || '')}"></label><label class="fld"><span class="fl">Senha</span><input class="inp" type="password" data-pass></label></div>
-      <p class="muted xs">Usuários são criados no painel do Supabase (Authentication → Users). As políticas RLS do schema liberam leitura e escrita para qualquer usuário autenticado.</p></div>
-    <div class="btns"><button class="btn primary" data-save>${icon('ti-check')}Salvar e conectar</button>${isSb ? `<button class="btn ghost" data-migrar>${icon('ti-cloud-upload')}Enviar dados locais pro Supabase</button>` : ''}</div>${db.loadError ? `<div class="alert red">${icon('ti-alert-circle')}Erro ao carregar: ${esc(db.loadError.message)}</div>` : ''}</div>`;
-  body.querySelectorAll('input[name=mode]').forEach(r => r.onchange = () => { body.querySelector('.sb').classList.toggle('hidden', r.value !== 'supabase' || !r.checked); body.querySelectorAll('.mode').forEach(m => m.classList.toggle('on', m.querySelector('input').checked)); });
-  body.querySelector('[data-save]').onclick = async () => {
-    const mode = body.querySelector('input[name=mode]:checked').value;
-    if (mode === 'local') { prefs.set('backend', { type: 'local' }); location.reload(); return; }
-    const url = body.querySelector('[data-url]').value.trim().replace(/\/$/, ''), anonKey = body.querySelector('[data-key]').value.trim(); if (!url || !anonKey) return toast('Informe URL e anon key', 'err');
-    const email = body.querySelector('[data-email]').value.trim(), pass = body.querySelector('[data-pass]').value;
-    prefs.set('backend', { type: 'supabase', url, anonKey });
-    if (email && pass) { try { const r = await fetch(`${url}/auth/v1/token?grant_type=password`, { method: 'POST', headers: { apikey: anonKey, 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password: pass }) }); const j = await r.json(); if (!r.ok) throw new Error(j.error_description || j.msg || 'Falha no login'); prefs.set('sb:session', j); } catch (e) { return toast(e.message, 'err', 5000); } }
-    toast('Conectando…'); location.reload();
-  };
-  body.querySelector('[data-logout]')?.addEventListener('click', () => { db.backend.logout(); location.reload(); });
+  const cfg = prefs.get('backend') || (CONFIG.gateway ? { type: 'gateway' } : { type: 'local' }); const isGw = db.backend.name === 'supabase'; const user = isGw ? db.backend.user : null;
+  body.innerHTML = `<div class="card"><div class="card-h"><h3>Onde os dados ficam</h3>${isGw ? '<span class="pill green">Conectado ao servidor</span>' : '<span class="pill gray">Modo local</span>'}</div>
+    <div class="modes"><label class="mode ${cfg.type === 'gateway' ? 'on' : ''}"><input type="radio" name="mode" value="gateway" ${cfg.type === 'gateway' ? 'checked' : ''}><div>${icon('ti-cloud-check')}<b>${esc(CONFIG.nomeServidor || 'Servidor')} (recomendado)</b><p>Banco Supabase da America Nutrition via n8n. Multiusuário, acessível do Mac e do iPhone, com integrações automáticas.</p></div></label><label class="mode ${cfg.type !== 'gateway' ? 'on' : ''}"><input type="radio" name="mode" value="local" ${cfg.type !== 'gateway' ? 'checked' : ''}><div>${icon('ti-device-laptop')}<b>Neste navegador</b><p>Sem servidor. Os dados ficam só neste aparelho: faça backup.</p></div></label></div>
+    ${isGw ? `<div class="sb-user">${user ? `${avatar(user.nome || user.email, 28)}<span>Logado como <b>${esc(user.nome || '')}</b> ${esc(user.email)}</span><button class="btn ghost xs" data-logout>Sair</button>` : '<span class="muted">Não autenticado.</span>'}</div>` : ''}
+    <div class="btns"><button class="btn primary" data-save>${icon('ti-check')}Salvar</button>${isGw ? `<button class="btn ghost" data-migrar>${icon('ti-cloud-upload')}Enviar dados locais deste navegador pro servidor</button>` : ''}</div>${db.loadError ? `<div class="alert red">${icon('ti-alert-circle')}Erro ao carregar: ${esc(db.loadError.message)}</div>` : ''}
+    <p class="muted xs">Usuários são criados no banco com <code>select fin_criar_usuario('email', 'Nome', 'senha')</code> (workflow "Financeiro · Setup" no n8n ou SQL Editor do Supabase).</p></div>`;
+  body.querySelectorAll('input[name=mode]').forEach(r => r.onchange = () => body.querySelectorAll('.mode').forEach(m => m.classList.toggle('on', m.querySelector('input').checked)));
+  body.querySelector('[data-save]').onclick = () => { const mode = body.querySelector('input[name=mode]:checked').value; prefs.set('backend', { type: mode }); location.reload(); };
+  body.querySelector('[data-logout]')?.addEventListener('click', async () => { await db.backend.logout(); location.reload(); });
   body.querySelector('[data-migrar]')?.addEventListener('click', async () => {
     const local = {}; for (const t of TABLES) { try { local[t] = JSON.parse(localStorage.getItem('fin:v1:' + t) || '[]'); } catch { local[t] = []; } }
     const n = (local.lancamentos || []).length; if (!n && !(local.empresas || []).length) return toast('Não há dados locais neste navegador', 'warn');
-    if (!await confirm({ title: 'Enviar dados locais', msg: `Envia ${(local.empresas || []).length} empresa(s) e ${n} lançamentos do navegador para o Supabase (mescla por id).`, ok: 'Enviar' })) return;
-    try { for (const t of TABLES) { const rows = local[t] || []; for (let i = 0; i < rows.length; i += 500) await db.backend.upsert(t, rows.slice(i, i + 500)); } toast('Dados enviados. Recarregando…'); setTimeout(() => location.reload(), 800); } catch (e) { toast(e.message, 'err', 6000); }
+    if (!await confirm({ title: 'Enviar dados locais', msg: `Envia ${(local.empresas || []).length} empresa(s) e ${n} lançamentos deste navegador para o servidor (mescla por id).`, ok: 'Enviar' })) return;
+    try { for (const t of TABLES) { const rows = local[t] || []; if (rows.length) await db.backend.upsert(t, rows); } toast('Dados enviados. Recarregando…'); setTimeout(() => location.reload(), 800); } catch (e) { toast(e.message, 'err', 6000); }
   });
 }
 
 function secIntegracoes(body) {
-  const E = app.empresaId; const C = app.ctx(); const cfg = prefs.get('backend') || {};
-  const url = cfg.url || 'https://supabase.americanutrition.com';
-  const contaPg = C.contas.find(c => c.banco === 'pagarme'); const catVendas = C.categorias.find(c => c.nome === 'Vendas'); const catTaxa = C.categorias.find(c => /gateway/i.test(c.nome)); const ctPg = C.contatos.find(c => /pagar\.?me/i.test(c.nome));
-  const ex = (tipo, desc, valor, cat, ct, conta, extra = '') => `{
-  "empresa_id": "${E}",
-  "tipo": "${tipo}",
-  "descricao": "${desc}",
-  "valor": ${valor},
-  "vencimento": "2026-09-26",
-  "competencia": "2026-09-01",
-  "categoria_id": "${cat || '<id da categoria>'}",
-  "contato_id": "${ct || '<id do contato>'}",
-  "conta_id": "${conta || '<id da conta>'}",
-  "forma_pagamento": "cartao",
-  "referencia": "AN-15541",
-  "origem": "pagarme",
-  "origem_ref": "ch_xxxxx",
-  "baixas": [{ "id": "<uuid>", "data": "2026-09-26", "valor": ${valor}, "conta_id": "${conta || '<id da conta>'}", "juros": 0, "multa": 0, "desconto": 0 }]${extra}
-}`;
+  const E = app.empresaId; const C = app.ctx();
+  const contaPg = C.contas.find(c => c.banco === 'pagarme'); const catVendas = C.categorias.find(c => /^vendas$/i.test(c.nome)); const catTaxa = C.categorias.find(c => /gateway|taxa/i.test(c.nome)); const ctPg = C.contatos.find(c => /pagar\.?me/i.test(c.nome));
+  const ex = (tipo, desc, valor, cat, ct, conta) => `select fin_api('{
+  "op": "upsert", "token": "<token de serviço>",
+  "payload": { "table": "lancamentos", "rows": [{
+    "id": "<uuid novo>", "empresa_id": "${E}", "tipo": "${tipo}", "descricao": "${desc}",
+    "valor": ${valor}, "vencimento": "2026-09-26", "competencia": "2026-09-01",
+    "categoria_id": "${cat || '<id da categoria>'}", "contato_id": "${ct || '<id do contato>'}", "conta_id": "${conta || '<id da conta>'}",
+    "forma_pagamento": "cartao", "referencia": "AN-15541", "origem": "pagarme", "origem_ref": "ch_xxxxx",
+    "baixas": [{ "id": "<uuid>", "data": "2026-09-26", "valor": ${valor}, "conta_id": "${conta || '<id da conta>'}", "juros": 0, "multa": 0, "desconto": 0 }]
+  }] }
+}'::jsonb);`;
   body.innerHTML = `<div class="card"><div class="card-h"><h3>Lançamentos automáticos via n8n</h3></div>
-    <p class="muted sm">Com o Supabase conectado, qualquer workflow do n8n (Shopify pedido pago, Pagar.me repasse/taxa, Mercado Livre) pode inserir lançamentos direto na tabela <code>lancamentos</code> via REST, sem passar pelo Nibo. Use a <b>service_role key</b> no n8n (nunca no navegador). Marque <code>origem</code> e <code>origem_ref</code> pra não duplicar: o índice único <code>(empresa_id, origem, origem_ref)</code> rejeita repetições.</p>
-    <div class="kvs"><div class="kv"><span>Endpoint</span><b class="mono">POST ${esc(url)}/rest/v1/lancamentos</b></div><div class="kv"><span>Headers</span><b class="mono">apikey: &lt;service_role&gt; · Authorization: Bearer &lt;service_role&gt; · Prefer: resolution=ignore-duplicates</b></div><div class="kv"><span>Empresa ativa</span><b class="mono">${E} <button class="ibtn xs" data-copy="${E}">${icon('ti-copy')}</button></b></div></div>
-    <h5>Exemplo · venda aprovada no Pagar.me (receita já recebida na conta Pagar.me)</h5><pre class="code" data-code>${esc(ex('receber', 'Pedido AN-15541 · Pagar.me cartão 3x', 489.9, catVendas?.id, ctPg?.id, contaPg?.id))}</pre>
-    <h5>Exemplo · taxa do gateway (despesa já paga)</h5><pre class="code" data-code>${esc(ex('pagar', 'Taxa Pagar.me · Pedido AN-15541', 19.06, catTaxa?.id, ctPg?.id, contaPg?.id))}</pre>
-    <p class="muted xs">Pra lançar em aberto (a receber no futuro), mande <code>"baixas": []</code> e o vencimento previsto. Pra lançar repasse consolidado do dia, some as vendas e mande um único registro.</p></div>
-    <div class="card"><div class="card-h"><h3>IDs úteis para os workflows</h3></div><div class="ids"><h6>Contas</h6>${C.contas.map(c => `<div class="id-r"><span>${esc(c.nome)}</span><code>${c.id}</code><button class="ibtn xs" data-copy="${c.id}">${icon('ti-copy')}</button></div>`).join('')}<h6>Categorias mais usadas</h6>${C.categorias.filter(c => /vendas|gateway|fretes|chargeback|tráfego|comiss/i.test(c.nome)).map(c => `<div class="id-r"><span>${esc(c.nome)}</span><code>${c.id}</code><button class="ibtn xs" data-copy="${c.id}">${icon('ti-copy')}</button></div>`).join('')}<h6>Contatos de plataforma</h6>${C.contatos.filter(c => /pagar|inter|mercado|shopify|stone/i.test(c.nome)).map(c => `<div class="id-r"><span>${esc(c.nome)}</span><code>${c.id}</code><button class="ibtn xs" data-copy="${c.id}">${icon('ti-copy')}</button></div>`).join('')}</div></div>
-    <div class="card"><div class="card-h"><h3>Extrato bancário</h3></div><p class="muted sm">Inter, BTG e Stone exportam OFX pelo internet banking. Importe em <a href="#/extrato">Contas → Conciliação</a>. Com o Supabase, o n8n também pode inserir na tabela <code>extrato_itens</code> (ex.: webhook de PIX recebido do Inter) e a conciliação sugere o lançamento sozinha.</p></div>`;
+    <p class="muted sm">Qualquer workflow do n8n (Shopify pedido pago, Pagar.me repasse/taxa, Mercado Livre, PIX do Inter) pode gravar lançamentos direto no banco, sem passar pelo Nibo. Duas formas:</p>
+    <ul class="muted sm"><li><b>Nó Postgres</b> (credencial "Postgres account") chamando a função <code>fin_api</code>, ou um <code>insert into lancamentos …</code> direto.</li><li><b>HTTP Request</b> para o webhook <code>${esc(CONFIG.gateway || '')}</code> com o mesmo JSON (precisa de um token de sessão: faça login com um usuário "n8n" via <code>op: login</code>).</li></ul>
+    <p class="muted sm">Marque <code>origem</code> e <code>origem_ref</code> pra não duplicar: o índice único <code>(empresa_id, origem, origem_ref)</code> rejeita repetições.</p>
+    <div class="kvs"><div class="kv"><span>Empresa ativa</span><b class="mono">${E} <button class="ibtn xs" data-copy="${E}">${icon('ti-copy')}</button></b></div></div>
+    <h5>Exemplo · venda aprovada no Pagar.me (receita já recebida na conta Pagar.me)</h5><pre class="code">${esc(ex('receber', 'Pedido AN-15541 · Pagar.me cartão 3x', 489.9, catVendas?.id, ctPg?.id, contaPg?.id))}</pre>
+    <h5>Exemplo · taxa do gateway (despesa já paga)</h5><pre class="code">${esc(ex('pagar', 'Taxa Pagar.me · Pedido AN-15541', 19.06, catTaxa?.id, ctPg?.id, contaPg?.id))}</pre>
+    <p class="muted xs">Pra lançar em aberto (a receber no futuro), mande <code>"baixas": []</code> e o vencimento previsto. Pra repasse consolidado do dia, some as vendas e mande um único registro.</p></div>
+    <div class="card"><div class="card-h"><h3>IDs úteis para os workflows</h3></div><div class="ids"><h6>Contas</h6>${C.contas.map(c => `<div class="id-r"><span>${esc(c.nome)}</span><code>${c.id}</code><button class="ibtn xs" data-copy="${c.id}">${icon('ti-copy')}</button></div>`).join('')}<h6>Categorias mais usadas</h6>${C.categorias.filter(c => /vendas|gateway|fretes|chargeback|tráfego|trafego|comiss|taxa/i.test(c.nome)).map(c => `<div class="id-r"><span>${esc(c.nome)}</span><code>${c.id}</code><button class="ibtn xs" data-copy="${c.id}">${icon('ti-copy')}</button></div>`).join('')}<h6>Contatos de plataforma</h6>${C.contatos.filter(c => /pagar|inter|mercado|shopify|stone/i.test(c.nome)).map(c => `<div class="id-r"><span>${esc(c.nome)}</span><code>${c.id}</code><button class="ibtn xs" data-copy="${c.id}">${icon('ti-copy')}</button></div>`).join('')}</div></div>
+    <div class="card"><div class="card-h"><h3>Extrato bancário</h3></div><p class="muted sm">Inter, BTG e Stone exportam OFX pelo internet banking. Importe em <a href="#/extrato">Contas → Conciliação</a>. O n8n também pode inserir na tabela <code>extrato_itens</code> (ex.: webhook de PIX recebido do Inter) e a conciliação sugere o lançamento sozinha.</p></div>`;
   on(body, 'click', '[data-copy]', (e, b) => copy(b.dataset.copy));
 }
 
