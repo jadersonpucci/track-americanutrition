@@ -450,3 +450,43 @@ begin
 
   return jsonb_build_object('ok', true, 'desde', desde, 'pagarme', jsonb_build_object('recebimentos', n_rec, 'taxas', n_taxa, 'saques', n_saque, 'estornos', n_est), 'inter', jsonb_build_object('creditos', n_inter_c, 'debitos', n_inter_d));
 end $$;
+
+-- =====================================================================
+--  Comissão de afiliado (substitui o POST /payments do Nibo).
+--  Chamada pelo workflow "Nibo - Lancar Comissao Afiliado" (webhook
+--  /webhook/nibo-lancar-comissao, body {afiliado_id, valor, ano, mes, motivo?}).
+--  Uma comissão por afiliado por mês (origem 'afiliado', origem_ref id:ano-mm),
+--  já paga na conta Stone, categoria Comissões, contato = fornecedor do afiliado.
+-- =====================================================================
+create or replace function fin_lancar_comissao(p_afiliado_id text, p_valor numeric, p_ano int, p_mes int, p_motivo text default null) returns jsonb language plpgsql as $$
+declare
+  emp uuid := '6b2e7c1a-0f4d-4a1e-9c3b-2d5e8f7a9b10';
+  af record; v_conta uuid; v_cat uuid; v_ct uuid; v_id uuid; v_ref text; motivo text := nullif(trim(coalesce(p_motivo, '')), '');
+  valor numeric := round(coalesce(p_valor, 0), 2); hoje date := current_date;
+begin
+  if nullif(trim(coalesce(p_afiliado_id, '')), '') is null or valor <= 0 or coalesce(p_ano, 0) < 2000 or coalesce(p_mes, 0) not between 1 and 12 then
+    return jsonb_build_object('ok', false, 'motivo', 'dados-invalidos');
+  end if;
+  select a.id::text as id, a.nome, a.nome_completo, a.nibo_supplier_id into af from afiliados a where a.id::text = trim(p_afiliado_id);
+  if not found then return jsonb_build_object('ok', false, 'motivo', 'afiliado-nao-encontrado', 'afiliado_id', p_afiliado_id); end if;
+  select id into v_conta from contas where empresa_id = emp and deletado_em is null and nome ilike 'Stone' limit 1;
+  if v_conta is null then return jsonb_build_object('ok', false, 'motivo', 'conta-stone-nao-encontrada'); end if;
+  select id into v_cat from categorias where empresa_id = emp and deletado_em is null and tipo = 'out' and nome ilike 'comiss%' order by nome limit 1;
+  v_ct := fin_contato_garantir(emp, coalesce(af.nome_completo, af.nome), 'fornecedor', af.nibo_supplier_id);
+  v_ref := af.id || ':' || p_ano || '-' || lpad(p_mes::text, 2, '0');
+  insert into lancamentos (empresa_id, tipo, descricao, valor, vencimento, competencia, categoria_id, contato_id, conta_id, forma_pagamento, status, baixas, referencia, observacoes, origem, origem_ref)
+  values (emp, 'pagar',
+    'Comissoes ' || lpad(p_mes::text, 2, '0') || '/' || p_ano || ' - ' || coalesce(af.nome_completo, af.nome) || coalesce(' (desc: ' || motivo || ')', ''),
+    valor, hoje, make_date(p_ano, p_mes, 1), v_cat, v_ct, v_conta, 'pix', 'aberto',
+    jsonb_build_array(jsonb_build_object('id', gen_random_uuid(), 'data', hoje, 'valor', valor, 'conta_id', v_conta, 'juros', 0, 'multa', 0, 'desconto', 0)),
+    af.id, 'Comissao afiliado ' || coalesce(af.nome, '') || coalesce(' - desconto: ' || motivo, ''), 'afiliado', v_ref)
+  on conflict (empresa_id, origem, origem_ref) where origem_ref is not null do nothing
+  returning id into v_id;
+  if v_id is null then return jsonb_build_object('ok', false, 'motivo', 'ja-lancado', 'afiliado', af.nome); end if;
+  -- compatibilidade com quem lê afiliado_nibo_lancamentos (nibo_payment_id = id do lançamento)
+  begin
+    execute 'insert into afiliado_nibo_lancamentos (afiliado_id, ano, mes, valor, nibo_payment_id, status) values ($1, $2, $3, $4, $5, ''ok'') on conflict do nothing'
+      using af.id, p_ano, p_mes, valor, v_id::text;
+  exception when others then null; end;
+  return jsonb_build_object('ok', true, 'lancamento_id', v_id, 'afiliado', af.nome, 'valor', valor);
+end $$;
