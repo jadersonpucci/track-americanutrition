@@ -35,6 +35,10 @@ export function toast(msg, type = 'ok', ms = 2800) {
 }
 
 // ---------- overlays: modal, drawer, confirm ----------
+// Trava a rolagem da página atrás de um overlay. No iOS overflow:hidden não basta: fixa o body na posição atual e restaura ao fechar.
+let scrollLockY = 0;
+function lockScroll() { scrollLockY = window.scrollY || 0; document.body.style.top = -scrollLockY + 'px'; document.body.classList.add('ov-open'); }
+function unlockScroll() { document.body.classList.remove('ov-open'); document.body.style.top = ''; window.scrollTo(0, scrollLockY); }
 const stack = [];
 function overlay(kind, { title = '', body = '', footer = '', size = '', onClose = null, cls = '' } = {}) {
   const el = h(`<div class="ov ${kind} ${cls}"><div class="ov-bg"></div><div class="ov-box ${size}" role="dialog" aria-modal="true">
@@ -43,10 +47,10 @@ function overlay(kind, { title = '', body = '', footer = '', size = '', onClose 
   const bodyEl = el.querySelector('.ov-b'); const footEl = el.querySelector('.ov-f');
   if (typeof body === 'string') bodyEl.innerHTML = body; else if (body) bodyEl.appendChild(body);
   if (footEl) { if (typeof footer === 'string') footEl.innerHTML = footer; else if (footer) footEl.appendChild(footer); }
-  const api = { el, body: bodyEl, footer: footEl, closed: false, close(result) { if (api.closed) return; api.closed = true; el.classList.remove('on'); setTimeout(() => el.remove(), 220); stack.splice(stack.indexOf(api), 1); document.body.classList.toggle('ov-open', stack.length > 0); onClose && onClose(result); }, setTitle(t) { el.querySelector('.ov-h h3').innerHTML = t; } };
+  const api = { el, body: bodyEl, footer: footEl, closed: false, close(result) { if (api.closed) return; api.closed = true; el.classList.remove('on'); setTimeout(() => el.remove(), 220); stack.splice(stack.indexOf(api), 1); if (!stack.length) unlockScroll(); onClose && onClose(result); }, setTitle(t) { el.querySelector('.ov-h h3').innerHTML = t; } };
   el.querySelector('.ov-x').onclick = () => api.close();
   el.querySelector('.ov-bg').onclick = () => api.close();
-  document.body.appendChild(el); stack.push(api); document.body.classList.add('ov-open');
+  document.body.appendChild(el); if (!stack.length) lockScroll(); stack.push(api);
   requestAnimationFrame(() => el.classList.add('on'));
   const first = bodyEl.querySelector('input:not([type=hidden]),select,textarea,button'); if (first && window.innerWidth > 700) setTimeout(() => first.focus(), 60);
   return api;
