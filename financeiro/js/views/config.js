@@ -147,7 +147,7 @@ function secIntegracoes(body) {
 }
 
 function secAparencia(body) {
-  const tema = prefs.get('tema', 'auto'); const dens = prefs.get('densidade', 'normal'); const inicio = prefs.get('inicio', '#/');
+  const tema = prefs.get('tema', 'light'); const dens = prefs.get('densidade', 'normal'); const inicio = prefs.get('inicio', '#/');
   body.innerHTML = `<div class="card"><div class="card-h"><h3>Tema</h3></div><div data-tema></div></div><div class="card"><div class="card-h"><h3>Densidade das listas</h3></div><div data-dens></div></div><div class="card"><div class="card-h"><h3>Tela inicial</h3></div><div data-ini></div></div><div class="card"><div class="card-h"><h3>Nome</h3></div><p class="muted sm">Aparece na saudação da visão geral.</p><input class="inp" data-nome value="${esc(prefs.get('nome', ''))}" placeholder="Seu nome"></div>`;
   body.querySelector('[data-tema]').appendChild(segmented([{ id: 'auto', label: 'Automático', icon: 'ti-device-desktop' }, { id: 'light', label: 'Claro', icon: 'ti-sun' }, { id: 'dark', label: 'Escuro', icon: 'ti-moon' }], tema, v => { prefs.set('tema', v); app.applyTheme(); }));
   body.querySelector('[data-dens]').appendChild(segmented([{ id: 'normal', label: 'Confortável' }, { id: 'compacta', label: 'Compacta' }], dens, v => { prefs.set('densidade', v); document.documentElement.dataset.dens = v; }));

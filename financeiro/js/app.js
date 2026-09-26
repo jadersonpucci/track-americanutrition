@@ -12,7 +12,7 @@ export const app = {
   ctx() { return mkCtx(this.empresaId); },
   lanc(id) { return db.get('lancamentos', id); },
   setEmpresa(id) { this.empresaId = id; prefs.set('empresa', id); paintSidebar(); route(true); },
-  applyTheme() { const t = prefs.get('tema', 'auto'); const dark = t === 'dark' || (t === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches); document.documentElement.dataset.theme = dark ? 'dark' : 'light'; document.querySelector('meta[name=theme-color]')?.setAttribute('content', dark ? '#0B1220' : '#F3F6FB'); },
+  applyTheme() { const t = prefs.get('tema', 'light'); const dark = t === 'dark' || (t === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches); document.documentElement.dataset.theme = dark ? 'dark' : 'light'; document.querySelector('meta[name=theme-color]')?.setAttribute('content', dark ? '#0B1220' : '#F3F6FB'); },
 };
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => app.applyTheme());
 
