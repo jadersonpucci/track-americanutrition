@@ -38,6 +38,18 @@ O workflow **Financeiro · Sync (Pagar.me + Inter)** (n8n, a cada 10 min) chama 
 
 Os coletores continuam sendo os workflows "AN - Pagar.me → Nibo" e "AN - PIX Banco Inter (Provedor)", que gravam nas tabelas `pagarme_nibo_lancamentos` / `inter_nibo_lancamentos`. Com `checkout_config.fin_lancar = on` eles funcionam mesmo com o Nibo desligado (`pgm_nibo_lancar` / `nibo_lancar = off`). `fin_desde` define a partir de quando espelhar (antes disso os dados vieram da importação do Nibo).
 
+## O que já foi migrado do Nibo
+
+| Fluxo (n8n) | Antes | Agora |
+|---|---|---|
+| Relatório Mensal · Fechamento (`/webhook/relatorio`) | contas pagas do Nibo | `v_lancamentos` (pagar, pago, por vencimento) |
+| Relatório Internacional · USA (`/webhook/relatorio-usa`) | idem + centro de custo | idem, `rateio_centros` → centro "Estados Unidos" |
+| Painel Diretoria · Web | despesas, contas em aberto e saldos do Nibo | mesmas consultas no Financeiro |
+| Nibo - Lancar Comissao Afiliado (`/webhook/nibo-lancar-comissao`) | POST /payments no Nibo | `fin_lancar_comissao()` (conta Stone, categoria Comissões) |
+| AN - Pagar.me → Nibo, conferência diária 9h05 | Pagar.me × Nibo | Pagar.me × Financeiro |
+
+Os nós Postgres devolvem o mesmo formato que a API do Nibo devolvia, então o HTML dos relatórios não mudou.
+
 ## Migrar do Nibo
 
 No Mac, com o `apitoken` do Nibo (Configurações → Integrações → API):
