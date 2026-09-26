@@ -37,7 +37,7 @@ No Mac, com o `apitoken` do Nibo (Configurações → Integrações → API):
 python3 scripts/importar-nibo.py --token SEU_APITOKEN --saida nibo.json
 ```
 
-Depois: Configurações → Dados → **Importar arquivo do Nibo**. Contas, categorias, centros de custo, contatos e lançamentos (com baixas) entram casando por nome com o que já existe. Rodar de novo não duplica (usa o id do Nibo como referência).
+Depois: Configurações → Dados → **Importar arquivo do Nibo**. Contas (com saldo inicial e data do Nibo), categorias, centros de custo, contatos, lançamentos e transferências entram casando por nome com o que já existe. As baixas usam a data e a conta reais de `/receipts` e `/payments` do Nibo (não a data de vencimento), então o saldo de cada conta fecha com o Nibo. Rodar de novo não duplica (usa o id do Nibo como referência).
 
 ## Lançamentos automáticos (n8n)
 

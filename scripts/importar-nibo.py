@@ -106,12 +106,13 @@ def main():
     debitos = lista(T, 'schedules/debit', orderby='dueDate', filtro=filtro)
     creditos = lista(T, 'schedules/credit', orderby='dueDate', filtro=filtro)
 
-    # entradas realizadas (pagamentos) — usadas pra descobrir data e conta das baixas
-    entries = []
-    try:
-        entries = lista(T, 'entries', orderby='date', filtro=(f'date ge {a.desde}' if a.desde else None))
-    except Exception as e:
-        sys.stderr.write(f'  (sem acesso a /entries: {e}; baixas usarão a data de vencimento)\n')
+    # recebimentos e pagamentos realizados (data e conta reais de cada baixa). As rotas /entries e
+    # /transfers não existem na API; /receipts e /payments trazem tudo, inclusive transferências (isTransfer).
+    fdata = f'date ge {a.desde}' if a.desde else None
+    recs = lista(T, 'receipts', orderby='date', filtro=fdata)
+    pays = lista(T, 'payments', orderby='date', filtro=fdata)
+    ids_rec = {e.get('entryId') for e in recs}
+    entries = recs + [e for e in pays if e.get('entryId') not in ids_rec]
     por_schedule = {}
     for e in entries:
         sid = e.get('scheduleId') or (e.get('schedule') or {}).get('id')
@@ -145,18 +146,31 @@ def main():
                           'rateio_categorias': rate if len(rate) > 1 else [], 'rateio_centros': cc, 'referencia': s.get('reference') or '', 'observacoes': '',
                           'parcela_num': parc[0] if parc else None, 'parcela_total': parc[1] if parc else None, 'grupo_parcelas_id': s.get('installmentId') if parc else None,
                           'baixas': baixas, 'criado_em': s.get('createDate')})
-    # entradas sem agendamento (lançamentos diretos no extrato do Nibo) viram lançamentos pagos
+    # transferências: par (saída em /payments, entrada em /receipts) na mesma data e valor
     ids_sched = {l['nibo_id'] for l in lancs}
+    tr_in = [e for e in recs if e.get('isTransfer')]
+    usados = set()
+    for o in [e for e in pays if e.get('isTransfer')]:
+        cand = [i for i in tr_in if i.get('entryId') not in usados and (i.get('date') or '')[:10] == (o.get('date') or '')[:10]
+                and abs(abs(float(i.get('value') or 0)) - abs(float(o.get('value') or 0))) < 0.01 and (i.get('account') or {}).get('id') != (o.get('account') or {}).get('id')]
+        cand.sort(key=lambda i: 0 if i.get('identifier') == o.get('identifier') else 1)
+        if not cand: continue
+        i = cand[0]; usados.add(i.get('entryId')); usados.add(o.get('entryId'))
+        lancs.append({'nibo_id': 'tr:' + str(o.get('entryId')), 'tipo': 'transferencia', 'descricao': (o.get('identifier') or 'Transferência').replace(' ? ', ' → ').strip(), 'valor': abs(float(o.get('value') or 0)),
+                      'vencimento': (o.get('date') or '')[:10], 'competencia': (o.get('date') or '')[:7] + '-01', 'categoria_nibo_id': None, 'contato_nibo_id': None,
+                      'conta_nibo_id': (o.get('account') or {}).get('id'), 'conta_destino_nibo_id': (i.get('account') or {}).get('id'), 'rateio_categorias': [], 'rateio_centros': [],
+                      'referencia': '', 'observacoes': '', 'baixas': [], 'criado_em': o.get('createDate') or o.get('date')})
+    # entradas sem agendamento (lançamentos diretos no extrato do Nibo, ou transferências sem par) viram lançamentos pagos
     for e in entries:
         sid = e.get('scheduleId') or (e.get('schedule') or {}).get('id')
         if sid and sid in ids_sched: continue
-        if e.get('isTransfer') or e.get('transferId'): continue
-        v = float(e.get('value') or 0)
+        if e.get('entryId') in usados: continue
+        v = abs(float(e.get('value') or 0))
         if not v: continue
         acc = e.get('account') or {}
-        lancs.append({'nibo_id': 'entry:' + str(e.get('entryId') or e.get('id')), 'tipo': 'receber' if v > 0 else 'pagar', 'descricao': (e.get('description') or 'Lançamento Nibo').strip(), 'valor': abs(v), 'vencimento': (e.get('date') or '')[:10], 'competencia': (e.get('date') or '')[:7] + '-01',
+        lancs.append({'nibo_id': 'entry:' + str(e.get('entryId') or e.get('id')), 'tipo': 'receber' if e.get('entryId') in ids_rec else 'pagar', 'descricao': (e.get('description') or e.get('identifier') or 'Lançamento Nibo').strip(), 'valor': v, 'vencimento': (e.get('date') or '')[:10], 'competencia': (e.get('accrualDate') or e.get('date') or '')[:7] + '-01',
                       'categoria_nibo_id': (e.get('category') or {}).get('id'), 'contato_nibo_id': alias.get((e.get('stakeholder') or {}).get('id'), (e.get('stakeholder') or {}).get('id')), 'conta_nibo_id': acc.get('id'), 'rateio_categorias': [], 'rateio_centros': [], 'referencia': '', 'observacoes': '',
-                      'baixas': [{'data': (e.get('date') or '')[:10], 'valor': abs(v), 'conta_nibo_id': acc.get('id')}], 'criado_em': e.get('createDate')})
+                      'baixas': [{'data': (e.get('date') or '')[:10], 'valor': v, 'conta_nibo_id': acc.get('id')}], 'criado_em': e.get('createDate') or e.get('date')})
 
     saida = {'gerado_em': datetime.datetime.now().isoformat(), 'origem': 'nibo', 'empresa': (orgs[0].get('name') if orgs else ''), 'contas': contas, 'categorias': categorias, 'centros': centros, 'contatos': contatos, 'lancamentos': lancs}
     with open(a.saida, 'w', encoding='utf-8') as f: json.dump(saida, f, ensure_ascii=False, indent=1)
