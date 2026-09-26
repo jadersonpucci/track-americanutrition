@@ -29,6 +29,15 @@ Atalhos: `⌘K` busca e comandos · `N` despesa · `R` receita · `T` transferê
 
 **Modo local (alternativo):** em Configurações → Conexão dá pra usar só o navegador (`localStorage`), sem servidor. Útil pra testes; faça backup em Configurações → Dados.
 
+## Pagar.me e Banco Inter em tempo real
+
+O workflow **Financeiro · Sync (Pagar.me + Inter)** (n8n, a cada 10 min) chama `fin_sync_staging()` e espelha nos lançamentos:
+
+- **Pagar.me**: cada venda paga vira recebimento bruto (Vendas, cliente PAGARME GATEWAY) + taxa (Tarifa bancária, fornecedor PAGAR.ME) na conta Pagar.me; estornos e chargebacks viram saída (Devoluções); cada saque vira transferência Pagar.me → conta configurada em `checkout_config.fin_pgm_saque_conta` (padrão Stone).
+- **Inter**: PIX e boletos do checkout viram recebimentos na conta Inter. Com a permissão **Extrato** liberada na aplicação da API do Inter, a varredura de 10 min também traz TED/DOC/depósitos e todos os **débitos** (PIX enviado, boletos pagos, tarifas, impostos), que entram como pagos, com categoria sugerida quando dá para inferir.
+
+Os coletores continuam sendo os workflows "AN - Pagar.me → Nibo" e "AN - PIX Banco Inter (Provedor)", que gravam nas tabelas `pagarme_nibo_lancamentos` / `inter_nibo_lancamentos`. Com `checkout_config.fin_lancar = on` eles funcionam mesmo com o Nibo desligado (`pgm_nibo_lancar` / `nibo_lancar = off`). `fin_desde` define a partir de quando espelhar (antes disso os dados vieram da importação do Nibo).
+
 ## Migrar do Nibo
 
 No Mac, com o `apitoken` do Nibo (Configurações → Integrações → API):
