@@ -83,7 +83,7 @@ function paintCategorias(body, C, E) {
 const ICONES = ['ti-shopping-cart', 'ti-tool', 'ti-trending-up', 'ti-percentage', 'ti-flask', 'ti-package', 'ti-truck', 'ti-credit-card', 'ti-users', 'ti-user-star', 'ti-home', 'ti-bolt', 'ti-droplet', 'ti-wifi', 'ti-speakerphone', 'ti-ad', 'ti-printer', 'ti-video', 'ti-plane', 'ti-building-bank', 'ti-alert-triangle', 'ti-heart', 'ti-device-laptop', 'ti-cash-banknote', 'ti-chart-pie', 'ti-apps', 'ti-calculator', 'ti-microscope', 'ti-scale', 'ti-gift', 'ti-coins', 'ti-hammer', 'ti-tools', 'ti-paperclip', 'ti-file-percent', 'ti-building', 'ti-receipt-refund', 'ti-users-group', 'ti-arrows-exchange', 'ti-tag', 'ti-crane', 'ti-building-warehouse', 'ti-cash-off', 'ti-arrow-down-circle', 'ti-arrow-up-circle', 'ti-beach', 'ti-door-exit', 'ti-coin', 'ti-discount', 'ti-dots', 'ti-car', 'ti-phone', 'ti-book', 'ti-school', 'ti-shield', 'ti-briefcase', 'ti-world', 'ti-star'];
 export function abrirCategoria(c = null, defaults = {}) {
   const E = app.empresaId; const isEdit = !!c; const C = app.ctx();
-  const L = c ? { ...c } : { nome: '', tipo: defaults.grupo === 1 ? 'in' : 'out', grupo: 3, subgrupo: '', codigo: '', icone: 'ti-tag', cor: null, arquivada: false, ordem: C.categorias.length, ...defaults };
+  const L = c ? { ...c } : { nome: '', tipo: defaults.grupo === 1 ? 'in' : 'out', grupo: 4, subgrupo: '', codigo: '', icone: 'ti-tag', cor: null, arquivada: false, ordem: C.categorias.length, ...defaults };
   const d = drawer({ title: isEdit ? 'Editar categoria' : 'Nova categoria', size: 'md' });
   const f = h('<form class="lform"></form>'); d.body.appendChild(f);
   const nome = h(`<input class="inp" value="${esc(L.nome)}" placeholder="Ex.: Tráfego pago" required>`);

@@ -144,8 +144,8 @@ export function dre(empresaId, ano, regime = 'competencia', { centroId = null } 
   const G = id => grupos.find(g => g.id === id).totais;
   const soma = (...ids) => Array.from({ length: 12 }, (_, i) => round2(ids.reduce((s, id) => s + G(id)[i], 0)));
   const resumo = [
-    linha('Receita líquida', G(1), 'sub'), linha('Lucro bruto', soma(1, 2), 'sub'), linha('Resultado operacional', soma(1, 2, 3), 'sub'),
-    linha('Resultado do período', soma(1, 2, 3, 4, 5), 'final'),
+    linha('Receita líquida', soma(1, 2), 'sub'), linha('Margem de contribuição', soma(1, 2, 3), 'sub'), linha('Resultado operacional (EBITDA)', soma(1, 2, 3, 4), 'sub'),
+    linha('Resultado líquido', soma(1, 2, 3, 4, 5), 'sub'), linha('Resultado após investimentos e sócios', soma(1, 2, 3, 4, 5, 6, 7), 'final'),
   ];
   return { meses, grupos, resumo, receita: G(1) };
 }

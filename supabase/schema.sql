@@ -344,10 +344,10 @@ begin
     return jsonb_build_object('ok', false, 'erro', 'contas nao encontradas', 'pagarme', c_pgm, 'inter', c_inter, 'btg', c_btg);
   end if;
   select id into cat_vendas from categorias where empresa_id = p_empresa and deletado_em is null and tipo = 'in' and nome ilike 'vendas' limit 1;
-  select id into cat_tarifa from categorias where empresa_id = p_empresa and deletado_em is null and tipo = 'out' and nome ilike 'tarifa banc%' limit 1;
-  select id into cat_dev_out from categorias where empresa_id = p_empresa and deletado_em is null and tipo = 'out' and nome ilike 'devolu%' limit 1;
+  select id into cat_tarifa from categorias where empresa_id = p_empresa and deletado_em is null and tipo = 'out' and (nome ilike 'taxas de gateway%' or nome ilike 'tarifa banc%') order by (nome ilike 'taxas de gateway%') desc limit 1;
+  select id into cat_dev_out from categorias where empresa_id = p_empresa and deletado_em is null and tipo = 'out' and (nome ilike 'chargeback%' or nome ilike 'devolu%') order by (nome ilike 'chargeback%') desc limit 1;
   select id into cat_dev_in from categorias where empresa_id = p_empresa and deletado_em is null and tipo = 'in' and nome ilike 'devolu%' limit 1;
-  select id into cat_imp from categorias where empresa_id = p_empresa and deletado_em is null and tipo = 'out' and nome = 'Impostos' limit 1;
+  select id into cat_imp from categorias where empresa_id = p_empresa and deletado_em is null and tipo = 'out' and nome ilike 'impostos%' order by length(nome) limit 1;
   select id into cat_rend from categorias where empresa_id = p_empresa and deletado_em is null and tipo = 'in' and nome ilike 'rendimento%' limit 1;
   ct_pgm_cli := fin_contato_garantir(p_empresa, 'PAGARME GATEWAY', 'cliente', cfg->>'nibo_pgm_cliente_id');
   ct_pgm_forn := fin_contato_garantir(p_empresa, 'PAGAR.ME', 'fornecedor', cfg->>'nibo_pgm_fornecedor_id');
