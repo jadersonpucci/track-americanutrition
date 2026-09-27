@@ -205,3 +205,20 @@ begin
   insert into checkout_config (chave, valor) values ('fin_dre_v2', now()::text) on conflict (chave) do nothing;
   raise notice 'DRE v2 aplicada: % lançamentos reclassificados', tot;
 end $$;
+
+-- Rateios por categoria que ainda apontam para categorias "(antiga)": remapeia para a sucessora (idempotente).
+with mapa as (
+  select a.id as de, n.id as para
+  from categorias a
+  join (values ('Outras receitas (antiga)','Outras receitas'), ('Análises (antiga)','Análises laboratoriais'),
+               ('Férias (antiga)','Férias e 13º'), ('Benefícios (antiga)','Benefícios e alimentação'),
+               ('Ajuda de Custo (antiga)','Diárias e ajuda de custo'), ('Auxílios (antiga)','Diárias e ajuda de custo')) m(de_nome, para_nome) on m.de_nome = a.nome
+  join categorias n on n.empresa_id = a.empresa_id and n.tipo = a.tipo and n.nome = m.para_nome and n.deletado_em is null and not n.arquivada
+  where a.deletado_em is null
+)
+update lancamentos l set rateio_categorias = (
+  select coalesce(jsonb_agg(case when mp.para is not null then jsonb_set(r.item, '{categoria_id}', to_jsonb(mp.para::text)) else r.item end order by r.ord), '[]'::jsonb)
+  from jsonb_array_elements(l.rateio_categorias) with ordinality as r(item, ord)
+  left join mapa mp on (r.item->>'categoria_id') = mp.de::text)
+where l.deletado_em is null
+  and exists (select 1 from jsonb_array_elements(l.rateio_categorias) x join mapa mp on (x->>'categoria_id') = mp.de::text);

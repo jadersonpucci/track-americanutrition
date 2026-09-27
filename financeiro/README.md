@@ -50,6 +50,22 @@ Os coletores continuam sendo os workflows "AN - Pagar.me → Nibo" e "AN - PIX B
 
 Os nós Postgres devolvem o mesmo formato que a API do Nibo devolvia, então o HTML dos relatórios não mudou.
 
+## Plano de contas e DRE
+
+O DRE gerencial segue 7 grupos, na ordem de um DRE profissional. Cada categoria tem código (`1.1.01`…), grupo e subgrupo; a ordem no DRE vem do código.
+
+| Grupo | Subgrupos | Linha de resultado logo abaixo |
+|---|---|---|
+| 1. Receita bruta | Receita de vendas, Outras receitas | |
+| 2. Deduções da receita | Devoluções e estornos, Impostos sobre vendas | **Receita líquida** |
+| 3. Custos variáveis | Produto, Logística, Vendas (comissões, taxas de gateway e marketplace) | **Margem de contribuição** |
+| 4. Despesas operacionais | Marketing, Pessoas, Ocupação e utilidades, Tecnologia, Administrativas, Tributos | **Resultado operacional (EBITDA)** |
+| 5. Resultado financeiro | Receitas financeiras, Despesas financeiras (juros, IOF, multas) | **Resultado líquido** |
+| 6. Investimentos | Equipamentos, ativo fixo, construção, aporte em coligadas (USA) | |
+| 7. Sócios e financiamentos | Empréstimos, Retiradas de sócios, Distribuição de lucros | **Resultado após investimentos e sócios** |
+
+Categorias novas nascem em `financeiro/js/seed.js`. Para uma base que veio do Nibo, `supabase/migracao_dre.sql` renomeia e reagrupa as categorias existentes (mantendo os ids), cria as que faltam, reclassifica os lançamentos por regras de descrição/fornecedor (tráfego pago, embalagens, encargos, retiradas de sócios, aporte USA…) e arquiva as categorias antigas do Nibo. É idempotente (marcador `fin_dre_v2` em `checkout_config`) e roda pelo workflow **Financeiro · Setup (schema)**. O que não casou com nenhuma regra fica em **A classificar** (grupo 4) para revisão manual.
+
 ## Migrar do Nibo
 
 No Mac, com o `apitoken` do Nibo (Configurações → Integrações → API):
