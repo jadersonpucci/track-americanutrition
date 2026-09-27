@@ -31,6 +31,7 @@ export function render(root) {
 
     <section class="hero-cards">
       <div class="card hero-saldo"><div class="hc-l">Saldo em contas</div><div class="hc-v">${money(saldo)}</div><div class="hc-s"><span class="hc-pill ${proj30 >= saldo ? 'pos' : 'neg'}">${icon(proj30 >= saldo ? 'ti-trending-up' : 'ti-trending-down')}${money(proj30)} em 30 dias</span></div><div class="hc-spark" data-spark></div></div>
+      <section class="card contas-list" data-contas-list><div class="card-h"><h3>Contas</h3><a href="#/extrato" class="lnk">Extrato ${icon('ti-arrow-right')}</a></div></section>
       <div class="card venc-card"><div class="card-h"><h3>Vencimentos</h3><a href="#/pagar" class="lnk">Ver todos ${icon('ti-arrow-right')}</a></div>
         ${vencRow('Atrasados', 'ti-alert-triangle', atras.length, sAtr, '#/pagar?status=atrasado', 'warn')}
         ${vencRow('Hoje', 'ti-calendar-event', hoje.length, sHoje, '#/pagar?periodo=hoje')}
@@ -39,7 +40,6 @@ export function render(root) {
     </section>
 
     <section class="contas-strip" data-contas></section>
-    <section class="card contas-list" data-contas-list><div class="card-h"><h3>Contas</h3><a href="#/extrato" class="lnk">Extrato ${icon('ti-arrow-right')}</a></div></section>
 
     <section class="grid2">
       <div class="card"><div class="card-h"><h3>Fluxo de caixa · 30 dias</h3><a href="#/fluxo" class="lnk">Ver tudo ${icon('ti-arrow-right')}</a></div><div data-fluxo class="chart-box"></div></div>
@@ -59,7 +59,8 @@ export function render(root) {
   cs.innerHTML = contas.map(c => { const s = saldoConta(E, c.id); return `<a class="conta-card" href="#/extrato/${c.id}">${bankIcon(c, 40)}<div class="cc-i"><div class="cc-n">${esc(c.nome)}</div><div class="cc-t">${c.tipo === 'cartao' ? 'Cartão' : c.tipo === 'gateway' ? 'Gateway' : c.tipo === 'caixa' ? 'Dinheiro' : c.agencia ? `Ag ${esc(c.agencia)}${c.numero ? ' · ' + esc(c.numero) : ''}` : 'Conta'}</div></div><div class="cc-v ${s < 0 ? 'neg' : ''}">${money(s)}</div></a>`; }).join('') + `<a class="conta-card add" href="#/cadastros/contas">${icon('ti-plus')}<span>Nova conta</span></a>`;
 
   const cl = root.querySelector('[data-contas-list]');
-  cl.insertAdjacentHTML('beforeend', contas.map(c => { const s = saldoConta(E, c.id); return `<a class="ct-row" href="#/extrato/${c.id}">${bankIcon(c, 28)}<span class="ct-n">${esc(c.nome)}</span><b class="ct-v ${s < 0 ? 'neg' : ''}">${money(s)}</b></a>`; }).join(''));
+  cl.insertAdjacentHTML('beforeend', contas.map(c => { const s = saldoConta(E, c.id); return `<a class="ct-row" href="#/extrato/${c.id}">${bankIcon(c, 28)}<span class="ct-n">${esc(c.nome)}</span><b class="ct-v ${s < 0 ? 'neg' : ''}">${money(s)}</b></a>`; }).join('')
+    + `<div class="ct-row total"><span class="ct-n">Saldo unificado</span><b class="ct-v ${saldo < 0 ? 'neg' : ''}">${money(saldo)}</b></div>`);
 
   // fluxo 30d
   const fx = fluxoCaixa(E, t, addDays(t, 29), 'dia');
