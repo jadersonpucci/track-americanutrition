@@ -39,9 +39,10 @@ export function render(root) {
     </section>
 
     <section class="contas-strip" data-contas></section>
+    <section class="card contas-list" data-contas-list><div class="card-h"><h3>Contas</h3><a href="#/extrato" class="lnk">Extrato ${icon('ti-arrow-right')}</a></div></section>
 
     <section class="grid2">
-      <div class="card"><div class="card-h"><h3>Fluxo de caixa · 30 dias</h3><a href="#/fluxo" class="lnk">Ver completo ${icon('ti-arrow-right')}</a></div><div data-fluxo class="chart-box"></div></div>
+      <div class="card"><div class="card-h"><h3>Fluxo de caixa · 30 dias</h3><a href="#/fluxo" class="lnk">Ver tudo ${icon('ti-arrow-right')}</a></div><div data-fluxo class="chart-box"></div></div>
       <div class="card"><div class="card-h"><h3>${fmtMonth(mes, true)}</h3><a href="#/dre" class="lnk">DRE ${icon('ti-arrow-right')}</a></div>
         <div class="mes-kpis"><div><span>Receitas</span><b class="pos">${money(recMes)}</b>${varPct(recMes, recAnt) != null ? `<small class="${recMes >= recAnt ? 'pos' : 'neg'}">${recMes >= recAnt ? '↑' : '↓'} ${Math.abs(varPct(recMes, recAnt))}% vs ${fmtMonth(mesAnt)}</small>` : ''}</div><div><span>Despesas</span><b class="neg">${money(despMes)}</b>${varPct(despMes, despAnt) != null ? `<small class="${despMes <= despAnt ? 'pos' : 'neg'}">${despMes >= despAnt ? '↑' : '↓'} ${Math.abs(varPct(despMes, despAnt))}%</small>` : ''}</div><div><span>Resultado</span><b class="${recMes - despMes >= 0 ? 'pos' : 'neg'}">${money(recMes - despMes)}</b><small class="muted">margem ${recMes ? Math.round((recMes - despMes) / recMes * 100) : 0}%</small></div></div>
         <div class="donut-row"><div data-donut class="donut-box"></div><div data-donut-l class="donut-legend"></div></div></div>
@@ -56,6 +57,9 @@ export function render(root) {
   // contas
   const cs = root.querySelector('[data-contas]');
   cs.innerHTML = contas.map(c => { const s = saldoConta(E, c.id); return `<a class="conta-card" href="#/extrato/${c.id}">${bankIcon(c, 40)}<div class="cc-i"><div class="cc-n">${esc(c.nome)}</div><div class="cc-t">${c.tipo === 'cartao' ? 'Cartão' : c.tipo === 'gateway' ? 'Gateway' : c.tipo === 'caixa' ? 'Dinheiro' : c.agencia ? `Ag ${esc(c.agencia)}${c.numero ? ' · ' + esc(c.numero) : ''}` : 'Conta'}</div></div><div class="cc-v ${s < 0 ? 'neg' : ''}">${money(s)}</div></a>`; }).join('') + `<a class="conta-card add" href="#/cadastros/contas">${icon('ti-plus')}<span>Nova conta</span></a>`;
+
+  const cl = root.querySelector('[data-contas-list]');
+  cl.insertAdjacentHTML('beforeend', contas.map(c => { const s = saldoConta(E, c.id); return `<a class="ct-row" href="#/extrato/${c.id}">${bankIcon(c, 28)}<span class="ct-n">${esc(c.nome)}</span><b class="ct-v ${s < 0 ? 'neg' : ''}">${money(s)}</b></a>`; }).join(''));
 
   // fluxo 30d
   const fx = fluxoCaixa(E, t, addDays(t, 29), 'dia');
