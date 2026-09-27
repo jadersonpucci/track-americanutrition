@@ -112,10 +112,22 @@ export function abrirLancamento(existing = null, { tipo = 'pagar', defaults = {}
   const ref = h(`<input class="inp" placeholder="Nº da nota, pedido, contrato…" value="${esc(L.referencia || '')}">`);
   const obs = h(`<textarea class="inp" rows="3" placeholder="Observações internas">${esc(L.observacoes || '')}</textarea>`);
   const anexos = [...(L.anexos || [])];
-  const anexBox = h(`<div class="anexos"><div class="anexos-l"></div><div class="anexos-a"><label class="btn ghost sm">${icon('ti-paperclip')}Anexar arquivo<input type="file" multiple hidden accept="image/*,.pdf"></label><button type="button" class="btn ghost sm" data-link>${icon('ti-link')}Adicionar link</button></div></div>`);
-  const paintAnex = () => { anexBox.querySelector('.anexos-l').innerHTML = anexos.map((a, i) => `<span class="anexo">${icon(a.url?.startsWith('data:image') || /\.(png|jpe?g|webp)$/i.test(a.nome || '') ? 'ti-photo' : 'ti-file')}<a href="${esc(a.url)}" target="_blank">${esc(a.nome || a.url)}</a><button type="button" data-rm="${i}">${icon('ti-x')}</button></span>`).join('') || '<span class="muted sm">Sem anexos.</span>'; };
-  paintAnex(); anexBox.addEventListener('click', e => { const rm = e.target.closest('[data-rm]'); if (rm) { anexos.splice(Number(rm.dataset.rm), 1); paintAnex(); } });
-  anexBox.querySelector('input[type=file]').onchange = async e => { for (const file of e.target.files) { if (file.size > 800 * 1024 && db.backend.name === 'local') { toast(`"${file.name}" é grande demais pra guardar no navegador (máx. 800 KB). Use um link.`, 'warn', 5000); continue; } const url = await readFile(file, 'data'); anexos.push({ nome: file.name, url, tipo: file.type, tamanho: file.size }); } paintAnex(); };
+  const anexBox = h(`<div class="anexos"><div class="anexos-l"></div><div class="anexos-a"><label class="btn ghost sm">${icon('ti-paperclip')}Anexar arquivo<input type="file" multiple hidden accept="image/*,.pdf"></label><label class="btn ghost sm cam">${icon('ti-camera')}Foto<input type="file" hidden accept="image/*" capture="environment"></label><button type="button" class="btn ghost sm" data-link>${icon('ti-link')}Link</button></div></div>`);
+  const paintAnex = () => { anexBox.querySelector('.anexos-l').innerHTML = anexos.map((a, i) => `<span class="anexo ${a.enviando ? 'busy' : ''}">${icon(anexoIcone(a))}<a href="${a.url && !a.id ? esc(a.url) : '#'}" ${a.id ? `data-open="${i}"` : 'target="_blank"'}>${esc(a.nome || a.url)}</a>${a.tamanho ? `<small class="muted">${fmtBytes(a.tamanho)}</small>` : ''}<button type="button" class="ibtn xs" data-rm="${i}" title="Remover">${icon('ti-x')}</button></span>`).join('') || '<span class="muted sm">Boleto, nota fiscal, comprovante…</span>'; };
+  paintAnex(); anexBox.addEventListener('click', async e => { const rm = e.target.closest('[data-rm]'); if (rm) { const a = anexos.splice(Number(rm.dataset.rm), 1)[0]; if (a?.id && db.temAnexosServidor) db.backend.anexoRemove(a.id).catch(() => {}); paintAnex(); return; } const op = e.target.closest('[data-open]'); if (op) { e.preventDefault(); abrirAnexo(anexos[Number(op.dataset.open)]); } });
+  const onFiles = async e => { const files = [...e.target.files]; e.target.value = ''; for (const file of files) { await anexarArquivo(file); } };
+  async function anexarArquivo(file) {
+    if (!db.temAnexosServidor) { if (file.size > 800 * 1024) { toast(`"${file.name}" é grande demais pra guardar no navegador (máx. 800 KB). Use um link.`, 'warn', 5000); return; } const url = await readFile(file, 'data'); anexos.push({ nome: file.name, url, tipo: file.type, tamanho: file.size }); paintAnex(); return; }
+    if (file.size > 12 * 1024 * 1024) { toast(`"${file.name}" passa de 12 MB.`, 'warn', 5000); return; }
+    const tmp = { nome: file.name, tipo: file.type, tamanho: file.size, enviando: true }; anexos.push(tmp); paintAnex();
+    try {
+      const { base64, tipo, tamanho, nome } = await prepararArquivo(file);
+      const a = await db.backend.anexoPut({ empresa_id: E, lancamento_id: L.id || null, nome, tipo, base64 });
+      Object.assign(tmp, a, { enviando: false }); delete tmp.enviando;
+    } catch (err) { anexos.splice(anexos.indexOf(tmp), 1); toast('Falha ao enviar o anexo: ' + err.message, 'err', 5000); }
+    paintAnex();
+  }
+  anexBox.querySelectorAll('input[type=file]').forEach(i => i.onchange = onFiles);
   anexBox.querySelector('[data-link]').onclick = () => { const url = window.prompt('URL do anexo (nota fiscal, comprovante…)'); if (url) { anexos.push({ nome: url.split('/').pop().slice(0, 40) || url, url }); paintAnex(); } };
   mb.append(fieldEl('Tags', tagsEl), h('<div class="row2"></div>')); mb.lastChild.append(fieldEl('Referência', ref), fieldEl('Observações', obs)); mb.append(fieldEl('Anexos', anexBox));
   f.appendChild(more);
@@ -150,7 +162,9 @@ export function abrirLancamento(existing = null, { tipo = 'pagar', defaults = {}
     if (tr && (!contaDest.get() || contaDest.get() === conta.get())) { toast('Escolha uma conta de destino diferente da origem', 'err'); return; }
     if (!tr && !categoria.get() && !rateio.length) { toast('Escolha a categoria', 'err'); return; }
     if (!tr && rateio.length) { const t = sum(rateio, r => r.valor); if (Math.abs(t - v) > 0.005) { toast('O rateio precisa somar o valor total', 'err'); return; } if (rateio.some(r => !r.categoria_id)) { toast('Escolha a categoria de cada linha do rateio', 'err'); return; } }
+    const centros = ccPick ? ccPick.get() : [];
     const pctTot = sum(centros, c => c.percent); if (centros.length && Math.abs(pctTot - 100) > 0.01) { toast('Os centros de custo precisam somar 100%', 'err'); return; }
+    if (anexos.some(a => a.enviando)) { toast('Aguarde o envio dos anexos', 'warn'); return; }
     const base = { ...L, empresa_id: E, tipo: L.tipo, descricao: descr.value.trim(), valor: v, vencimento: venc.value, competencia: (comp.value || venc.value.slice(0, 7)) + '-01', contato_id: tr ? null : contato.get(), categoria_id: tr ? null : (rateio.length ? rateio[0].categoria_id : categoria.get()), rateio_categorias: tr ? [] : (rateio.length > 1 ? rateio.map(r => ({ categoria_id: r.categoria_id, valor: round2(r.valor), descricao: r.descricao || '' })) : []), rateio_centros: tr ? [] : ccPick.get(), conta_id: conta.get(), conta_destino_id: tr ? contaDest.get() : null, forma_pagamento: tr ? 'transferencia' : forma.get(), tags: [...selTags], referencia: ref.value.trim(), observacoes: obs.value.trim(), anexos, origem: L.origem || 'manual', criado_em: L.criado_em || new Date().toISOString() };
     if (tr) base.status = 'pago';
     let rows = [base];
@@ -237,8 +251,9 @@ export function abrirDetalhe(l) {
   ${l.rateio_categorias?.length ? `<h5>Rateio</h5><div class="det-list">${l.rateio_categorias.map(r => `<div class="det-li">${catIcon(C.cat(r.categoria_id), 24)}<span>${esc(C.cat(r.categoria_id)?.nome)}${r.descricao ? ` <small class="muted">${esc(r.descricao)}</small>` : ''}</span><b>${money(r.valor)}</b></div>`).join('')}</div>` : ''}
   ${!isTr ? `<h5>Baixas <span class="muted">${money(liquidado(l))} de ${money(l.valor)}</span></h5><div class="det-list" data-baixas>${(l.baixas || []).map(b => `<div class="det-li">${bankIcon(C.conta(b.conta_id), 24)}<span>${fmtDate(b.data)} · ${esc(C.conta(b.conta_id)?.nome || '')}${b.juros || b.multa || b.desconto ? ` <small class="muted">${b.juros ? 'juros ' + money(b.juros) + ' ' : ''}${b.multa ? 'multa ' + money(b.multa) + ' ' : ''}${b.desconto ? 'desc. ' + money(b.desconto) : ''}</small>` : ''}${b.observacao ? ` <small class="muted">${esc(b.observacao)}</small>` : ''}</span><b>${money(b.valor)}</b><button class="ibtn" data-est="${b.id}" title="Estornar">${icon('ti-arrow-back-up')}</button></div>`).join('') || '<div class="muted sm">Nenhuma baixa ainda.</div>'}</div>` : ''}
   ${l.observacoes ? `<h5>Observações</h5><p class="muted">${esc(l.observacoes)}</p>` : ''}
-  ${l.anexos?.length ? `<h5>Anexos</h5><div class="anexos-l">${l.anexos.map(a => `<a class="anexo" href="${esc(a.url)}" target="_blank">${icon('ti-paperclip')}${esc(a.nome || a.url)}</a>`).join('')}</div>` : ''}
+  ${l.anexos?.length ? `<h5>Anexos</h5><div class="anexos-l">${l.anexos.map((a, i) => `<a class="anexo" href="${a.id ? '#' : esc(a.url)}" ${a.id ? `data-anexo="${i}"` : 'target="_blank"'}>${icon(anexoIcone(a))}${esc(a.nome || a.url)}${a.tamanho ? ` <small class="muted">${fmtBytes(a.tamanho)}</small>` : ''}</a>`).join('')}</div>` : ''}
   <div class="muted xs det-meta">Criado ${l.criado_em ? new Date(l.criado_em).toLocaleString('pt-BR') : ''}${l.atualizado_em ? ' · atualizado ' + new Date(l.atualizado_em).toLocaleString('pt-BR') : ''}</div>`;
+  d.body.querySelectorAll('[data-anexo]').forEach(a => a.onclick = e => { e.preventDefault(); abrirAnexo(l.anexos[Number(a.dataset.anexo)]); });
   d.body.querySelectorAll('[data-est]').forEach(b => b.onclick = async () => { if (await estornarBaixa(l, b.dataset.est)) d.close(); });
   d.footer.innerHTML = '';
   const bDel = h(`<button class="btn ghost danger-t">${icon('ti-trash')}</button>`); bDel.onclick = async () => { if (await excluirLancamento(l)) d.close(); };
@@ -252,4 +267,35 @@ export function statusPill(l) {
   const s = statusOf(l); const map = { aberto: 'blue', parcial: 'amber', atrasado: 'red', pago: 'green', cancelado: 'gray' };
   const nome = s === 'pago' ? (l.tipo === 'receber' ? 'Recebido' : l.tipo === 'transferencia' ? 'Efetuada' : 'Pago') : { aberto: 'Em aberto', parcial: 'Parcial', atrasado: 'Atrasado', cancelado: 'Cancelado' }[s];
   return `<span class="pill ${map[s]}">${nome}</span>`;
+}
+
+// ---------- anexos ----------
+function anexoIcone(a) { const t = a.tipo || ''; const n = a.nome || a.url || ''; return t.startsWith('image/') || /\.(png|jpe?g|webp|heic)$/i.test(n) || (a.url || '').startsWith('data:image') ? 'ti-photo' : t === 'application/pdf' || /\.pdf$/i.test(n) ? 'ti-file-type-pdf' : a.url && !a.id ? 'ti-link' : 'ti-file'; }
+function fmtBytes(b) { return b > 1048576 ? (b / 1048576).toFixed(1) + ' MB' : b > 1024 ? Math.round(b / 1024) + ' KB' : b + ' B'; }
+// fotos do iPhone vêm com 3-5 MB: reduz pra no máx. 1800px / JPEG 85% antes de subir
+async function prepararArquivo(file) {
+  let nome = file.name, tipo = file.type || 'application/octet-stream';
+  if (tipo.startsWith('image/') && file.size > 700 * 1024 && typeof createImageBitmap === 'function') {
+    try {
+      const bmp = await createImageBitmap(file); const max = 1800; const k = Math.min(1, max / Math.max(bmp.width, bmp.height));
+      const cv = document.createElement('canvas'); cv.width = Math.round(bmp.width * k); cv.height = Math.round(bmp.height * k);
+      cv.getContext('2d').drawImage(bmp, 0, 0, cv.width, cv.height);
+      const base64 = cv.toDataURL('image/jpeg', 0.85); nome = nome.replace(/\.[^.]+$/, '') + '.jpg';
+      return { base64, tipo: 'image/jpeg', tamanho: Math.round((base64.length - 23) * 3 / 4), nome };
+    } catch {}
+  }
+  const base64 = await readFile(file, 'data'); return { base64, tipo, tamanho: file.size, nome };
+}
+export async function abrirAnexo(a) {
+  if (!a) return;
+  if (a.url && !a.id) { window.open(a.url, '_blank'); return; }
+  if (!db.temAnexosServidor) return toast('Anexo indisponível neste modo', 'warn');
+  const w = window.open('', '_blank'); // abre já no gesto do toque (Safari bloqueia depois do await)
+  try {
+    const x = await db.backend.anexoGet(a.id);
+    const bin = atob(x.base64); const buf = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+    const url = URL.createObjectURL(new Blob([buf], { type: x.tipo || 'application/octet-stream' }));
+    if (w) w.location = url; else window.open(url, '_blank');
+    setTimeout(() => URL.revokeObjectURL(url), 120000);
+  } catch (e) { if (w) w.close(); toast('Não foi possível abrir o anexo: ' + e.message, 'err', 5000); }
 }

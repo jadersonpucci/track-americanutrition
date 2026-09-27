@@ -66,6 +66,15 @@ O DRE gerencial segue 7 grupos, na ordem de um DRE profissional. Cada categoria 
 
 Categorias novas nascem em `financeiro/js/seed.js`. Para uma base que veio do Nibo, `supabase/migracao_dre.sql` renomeia e reagrupa as categorias existentes (mantendo os ids), cria as que faltam, reclassifica os lançamentos por regras de descrição/fornecedor (tráfego pago, embalagens, encargos, retiradas de sócios, aporte USA…) e arquiva as categorias antigas do Nibo. É idempotente (marcador `fin_dre_v2` em `checkout_config`) e roda pelo workflow **Financeiro · Setup (schema)**. O que não casou com nenhuma regra fica em **A classificar** (grupo 4) para revisão manual.
 
+## Automação (regras, previstos, anexos, backup)
+
+- **Regras de classificação** (Cadastros → Regras): todo lançamento que chega sem categoria (extrato do Inter, Pagar.me, importação) passa pelas regras na ordem de prioridade; a primeira que casa (por fornecedor e/ou por padrão na descrição) define a categoria e, opcionalmente, o centro de custo. O que não casa fica em **A classificar**. "Sugerir pelo histórico" cria regras para fornecedores com 3+ lançamentos e 70%+ na mesma categoria. No banco: trigger `trg_a_classificar`, `fin_regras_aprender`, `fin_classificar_pendentes`.
+- **Previstos**: pares fornecedor + categoria de despesa presentes em 6+ dos últimos 9 meses viram lançamentos com a tag **Previsto** nos 6 meses seguintes (valor e dia medianos; parcelamentos só até a última parcela). Quando o pagamento real entra no mesmo mês, o previsto some sozinho. `fin_recorrencias_gerar` / `fin_recorrencias_conciliar`, chamados por `fin_rotina` a cada 10 min pelo workflow **Financeiro · Sync**.
+- **Anexos**: boleto, nota ou foto do comprovante ficam no Postgres (tabela `anexos`, ops `anexo_put` / `anexo_get` / `anexo_remove` da `fin_api`); o lançamento guarda só os metadados. Fotos grandes são reduzidas no aparelho antes de subir (máx. 1800px). Anexos de formulários abandonados são apagados após 2 dias.
+- **Backup diário** (workflow **Financeiro · Backup diário**, 03:40): JSON gzip com todas as tabelas e anexos, enviado ao Telegram (chat da conferência) e à pasta "Financeiro · Backups" do Google Drive, com retenção de 30 dias no Drive.
+
+Tudo isso está em `supabase/automacao.sql` (idempotente), aplicado pelo workflow **Financeiro · Setup (schema)** depois de `schema.sql`.
+
 ## Migrar do Nibo
 
 No Mac, com o `apitoken` do Nibo (Configurações → Integrações → API):

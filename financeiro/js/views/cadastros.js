@@ -7,20 +7,20 @@ import { BANCOS, TIPOS_CONTA, banco } from '../bancos.js';
 import { GRUPOS } from '../seed.js';
 import { saldoConta, statusOf } from '../model.js';
 
-const ABAS = [{ id: 'contas', label: 'Contas', icon: 'ti-building-bank' }, { id: 'categorias', label: 'Categorias', icon: 'ti-category' }, { id: 'contatos', label: 'Contatos', icon: 'ti-users' }, { id: 'centros', label: 'Centros de custo', icon: 'ti-target' }, { id: 'tags', label: 'Tags', icon: 'ti-tag' }];
+const ABAS = [{ id: 'contas', label: 'Contas', icon: 'ti-building-bank' }, { id: 'categorias', label: 'Categorias', icon: 'ti-category' }, { id: 'contatos', label: 'Contatos', icon: 'ti-users' }, { id: 'centros', label: 'Centros de custo', icon: 'ti-target' }, { id: 'tags', label: 'Tags', icon: 'ti-tag' }, { id: 'regras', label: 'Regras', icon: 'ti-wand' }];
 let aba = 'contas'; let q = '';
 
 export function render(root, { sub = null } = {}) {
   if (sub && ABAS.some(a => a.id === sub)) aba = sub;
   const E = app.empresaId; const C = app.ctx();
-  root.innerHTML = `<div class="page cad"><header class="ph"><div><h1>Cadastros</h1></div><div class="ph-a"><button class="btn primary" data-novo>${icon('ti-plus')}${{ contas: 'Nova conta', categorias: 'Nova categoria', contatos: 'Novo contato', centros: 'Novo centro', tags: 'Nova tag' }[aba]}</button></div></header>
-    <div class="rel-nav">${ABAS.map(a => `<a class="rel-tab ${aba === a.id ? 'on' : ''}" href="#/cadastros/${a.id}">${icon(a.icon)}${a.label}<b>${C[a.id].filter(x => !x.arquivada && !x.arquivado).length}</b></a>`).join('')}</div>
+  root.innerHTML = `<div class="page cad"><header class="ph"><div><h1>Cadastros</h1></div><div class="ph-a"><button class="btn primary" data-novo>${icon('ti-plus')}${{ regras: 'Nova regra', contas: 'Nova conta', categorias: 'Nova categoria', contatos: 'Novo contato', centros: 'Novo centro', tags: 'Nova tag' }[aba]}</button></div></header>
+    <div class="rel-nav">${ABAS.map(a => `<a class="rel-tab ${aba === a.id ? 'on' : ''}" href="#/cadastros/${a.id}">${icon(a.icon)}${a.label}<b>${C[a.id].filter(x => !x.arquivada && !x.arquivado && x.ativa !== false).length}</b></a>`).join('')}</div>
     <div class="toolbar"><div class="search">${icon('ti-search')}<input placeholder="Buscar…" value="${esc(q)}"></div></div>
     <div data-body></div></div>`;
   const si = root.querySelector('.search input'); si.oninput = () => { q = si.value; const p = si.selectionStart; paint(); };
-  root.querySelector('[data-novo]').onclick = () => ({ contas: () => abrirConta(), categorias: () => abrirCategoria(), contatos: () => abrirContato(), centros: () => abrirCentro(), tags: () => abrirTag() }[aba]());
+  root.querySelector('[data-novo]').onclick = () => ({ contas: () => abrirConta(), categorias: () => abrirCategoria(), contatos: () => abrirContato(), centros: () => abrirCentro(), tags: () => abrirTag(), regras: () => abrirRegra() }[aba]());
   const body = root.querySelector('[data-body]');
-  const paint = () => { body.innerHTML = ''; ({ contas: paintContas, categorias: paintCategorias, contatos: paintContatos, centros: paintCentros, tags: paintTags }[aba])(body, C, E); };
+  const paint = () => { body.innerHTML = ''; ({ contas: paintContas, categorias: paintCategorias, contatos: paintContatos, centros: paintCentros, tags: paintTags, regras: paintRegras }[aba])(body, C, E); };
   paint();
 }
 const match = (s) => !q || norm(s).includes(norm(q));
@@ -159,4 +159,72 @@ export function abrirTag(t = null) {
   const E = app.empresaId; const L = t ? { ...t } : { nome: '', cor: '#2F6BE0' };
   const m = modal({ title: t ? 'Editar tag' : 'Nova tag', size: 'sm', body: `<div class="row2"><label class="fld"><span class="fl">Nome</span><input class="inp" value="${esc(L.nome)}" data-n></label><label class="fld"><span class="fl">Cor</span><input type="color" class="inp color" value="${L.cor}" data-c></label></div>`, footer: `<button class="btn ghost" data-x>Cancelar</button><button class="btn primary" data-ok>Salvar</button>` });
   m.footer.querySelector('[data-x]').onclick = () => m.close(); m.footer.querySelector('[data-ok]').onclick = async () => { const nome = m.body.querySelector('[data-n]').value.trim(); if (!nome) return toast('Informe o nome', 'err'); const old = L.nome; await db.upsert('tags', { ...L, empresa_id: E, nome, cor: m.body.querySelector('[data-c]').value }); if (t && old !== nome) { const ls = db.of('lancamentos', E).filter(l => (l.tags || []).includes(old)); if (ls.length) await db.upsert('lancamentos', ls.map(l => ({ ...l, tags: l.tags.map(x => x === old ? nome : x) }))); } m.close(); toast('Salvo'); };
+}
+
+// ---------- regras de classificação ----------
+const TIPO_REGRA = { pagar: 'Saídas', receber: 'Entradas' };
+function descreveRegra(r, C) {
+  const p = []; const ct = C.contato(r.contato_id);
+  if (ct) p.push(`fornecedor <b>${esc(ct.nome)}</b>`);
+  if (r.padrao) p.push(`descrição casa com <code>${esc(r.padrao)}</code>`);
+  return (r.tipo ? TIPO_REGRA[r.tipo] + ' · ' : '') + (p.join(' e ') || '<span class="neg">sem condição</span>');
+}
+function paintRegras(body, C, E) {
+  const list = C.regras.filter(r => match((r.nome || '') + ' ' + (C.contato(r.contato_id)?.nome || '') + ' ' + (r.padrao || '') + ' ' + (C.cat(r.categoria_id)?.nome || ''))).sort((a, b) => (b.ativa - a.ativa) || (a.prioridade || 100) - (b.prioridade || 100) || (a.nome || '').localeCompare(b.nome || ''));
+  const intro = h(`<div class="card regras-intro"><div class="card-h"><h3>${icon('ti-wand')}Classificação automática</h3><button class="btn ghost sm" data-aprender>${icon('ti-sparkles')}Sugerir pelo histórico</button></div><p class="muted sm">Tudo que entra sem categoria (extrato do Inter, Pagar.me, importações) passa por estas regras, na ordem de prioridade. A primeira que casar define a categoria e, se quiser, o centro de custo. O que não casar cai em <b>A classificar</b>.</p></div>`);
+  body.appendChild(intro);
+  intro.querySelector('[data-aprender]').onclick = () => aprenderRegras(C, E);
+  if (!list.length) return body.appendChild(emptyState({ icon: 'ti-wand', title: 'Nenhuma regra', text: 'Crie uma regra ou deixe o sistema sugerir a partir dos lançamentos que já existem.', action: { label: 'Sugerir pelo histórico', icon: 'ti-sparkles', onClick: () => aprenderRegras(C, E) } }));
+  body.insertAdjacentHTML('beforeend', `<div class="listwrap">${list.map(r => { const cat = C.cat(r.categoria_id); return `<div class="row rg-r ${r.ativa ? '' : 'arch'}" data-id="${r.id}">${catIcon(cat, 36)}<div class="r-b"><div class="r-t">${esc(r.nome || (C.contato(r.contato_id)?.nome ? C.contato(r.contato_id).nome + ' → ' + (cat?.nome || '') : cat?.nome || 'Regra'))}${r.origem === 'aprendida' ? '<span class="pill gray">aprendida</span>' : ''}${r.ativa ? '' : '<span class="pill gray">desativada</span>'}</div><div class="r-s"><span>${descreveRegra(r, C)}</span></div></div><div class="r-v"><span class="r-cat">${cat ? catIcon(cat, 14) + esc(cat.nome) : '<span class="neg">sem categoria</span>'}</span><small class="muted">${r.acertos ? `${r.acertos} acerto${r.acertos === 1 ? '' : 's'}` : 'nunca usada'} · prioridade ${r.prioridade ?? 100}</small></div><button class="ibtn" data-menu>${icon('ti-dots-vertical')}</button></div>`; }).join('')}</div>`);
+  on(body, 'click', '[data-menu]', (e, b) => { e.stopPropagation(); const r = db.get('regras', b.closest('[data-id]').dataset.id); menu(b, [{ label: 'Editar', icon: 'ti-pencil', onClick: () => abrirRegra(r) }, { label: r.ativa ? 'Desativar' : 'Ativar', icon: r.ativa ? 'ti-player-pause' : 'ti-player-play', onClick: () => db.upsert('regras', { ...r, ativa: !r.ativa }) }, { label: 'Excluir', icon: 'ti-trash', danger: true, onClick: async () => { if (await confirm({ title: 'Excluir regra', msg: 'Os lançamentos já classificados não mudam.', ok: 'Excluir', danger: true })) { await db.remove('regras', r.id); toast('Regra excluída'); } } }]); });
+  on(body, 'click', '.rg-r', (e, el) => { if (e.target.closest('button')) return; abrirRegra(db.get('regras', el.dataset.id)); });
+}
+export function abrirRegra(r = null, defaults = {}) {
+  const E = app.empresaId; const C = app.ctx(); const isEdit = !!r;
+  const L = r ? { ...r } : { nome: '', tipo: null, contato_id: null, padrao: '', categoria_id: null, rateio_centros: null, prioridade: 100, ativa: true, origem: 'manual', acertos: 0, ...defaults };
+  const d = drawer({ title: isEdit ? 'Editar regra' : 'Nova regra', size: 'md' });
+  const f = h('<form class="lform"></form>'); d.body.appendChild(f);
+  const tipo = segmented([{ id: '', label: 'Ambos' }, { id: 'pagar', label: 'Saídas', icon: 'ti-arrow-up-right', cls: 'out' }, { id: 'receber', label: 'Entradas', icon: 'ti-arrow-down-left', cls: 'in' }], L.tipo || '', v => { L.tipo = v || null; cat.setOptions(catOptions()); });
+  const contato = combobox({ options: C.contatos.filter(c => !c.arquivado).sort((a, b) => a.nome.localeCompare(b.nome)).map(c => ({ id: c.id, label: c.nome, icon: avatar(c.nome, 24) })), value: L.contato_id, placeholder: 'Qualquer fornecedor ou cliente', onChange: v => L.contato_id = v });
+  const padrao = h(`<input class="inp" value="${esc(L.padrao || '')}" placeholder="Ex.: meta|google ads|tráfego">`);
+  const catOptions = () => C.categorias.filter(c => !c.arquivada && (!L.tipo || c.tipo === (L.tipo === 'pagar' ? 'out' : 'in'))).sort((a, b) => (a.grupo - b.grupo) || (a.codigo || '').localeCompare(b.codigo || '')).map(c => ({ id: c.id, label: c.nome, sub: c.codigo, icon: catIcon(c, 24), group: `${c.grupo} · ${c.subgrupo || ''}` }));
+  const cat = combobox({ options: catOptions(), value: L.categoria_id, placeholder: 'Categoria a aplicar', allowEmpty: false, onChange: v => L.categoria_id = v });
+  const cc = centrosPicker({ centros: C.centros, value: L.rateio_centros || [] });
+  const prio = h(`<input class="inp" type="number" min="1" max="999" value="${L.prioridade ?? 100}">`);
+  const ativa = toggle({ label: 'Regra ativa', checked: L.ativa !== false });
+  const nome = h(`<input class="inp" value="${esc(L.nome || '')}" placeholder="Opcional · ex.: Meta Ads → Tráfego pago">`);
+  f.append(fieldEl('Vale para', tipo), fieldEl('Quando o fornecedor/cliente for', contato), fieldEl('E/ou a descrição contiver', padrao, { hint: 'Texto ou expressão regular, sem diferenciar maiúsculas. Use | para alternativas.' }), fieldEl('Classificar como', cat, { req: true }));
+  const ccBox = h('<div class="ccbox"><div class="fl">Centro de custo (opcional)</div><p class="muted sm">Se marcar, o rateio vale para os lançamentos classificados por esta regra.</p></div>'); ccBox.appendChild(cc); f.appendChild(ccBox);
+  f.append(h('<div class="row2"></div>')); f.lastChild.append(fieldEl('Prioridade', prio, { hint: 'Menor número é avaliado antes.' }), fieldEl('Nome', nome));
+  f.appendChild(ativa);
+  d.footer.innerHTML = ''; const bc = h('<button class="btn ghost">Cancelar</button>'); bc.onclick = () => d.close(); const ok = h(`<button class="btn primary">${icon('ti-check')}Salvar</button>`); d.footer.append(bc, ok);
+  ok.onclick = async () => {
+    const pad = padrao.value.trim();
+    if (!L.contato_id && !pad) return toast('Informe o fornecedor ou um padrão de descrição', 'err');
+    if (!cat.get()) return toast('Escolha a categoria', 'err');
+    if (pad) { try { new RegExp(pad, 'i'); } catch { return toast('Padrão inválido (expressão regular)', 'err'); } }
+    const centros = cc.get(); if (centros.length && Math.abs(sum(centros, c => c.percent) - 100) > 0.01) return toast('Os centros de custo precisam somar 100%', 'err');
+    await db.upsert('regras', { ...L, empresa_id: E, nome: nome.value.trim() || null, tipo: L.tipo || null, contato_id: L.contato_id || null, padrao: pad || null, categoria_id: cat.get(), rateio_centros: centros.length ? centros : null, prioridade: Number(prio.value) || 100, ativa: ativa.get() });
+    toast(isEdit ? 'Regra salva' : 'Regra criada'); d.close();
+  };
+  return d;
+}
+// Sugere regras contato → categoria pelo histórico (3+ lançamentos, 70%+ na mesma categoria).
+async function aprenderRegras(C, E) {
+  const stat = new Map(); const cats = new Map(C.categorias.map(c => [c.id, c]));
+  for (const l of C.lancamentos) {
+    if (!l.contato_id || !l.categoria_id || l.status === 'cancelado' || !['pagar', 'receber'].includes(l.tipo) || l.origem === 'recorrencia') continue;
+    const c = cats.get(l.categoria_id); if (!c || c.arquivada || /a classificar/i.test(c.nome)) continue;
+    const k = l.tipo + ':' + l.contato_id; const s = stat.get(k) || { tipo: l.tipo, contato_id: l.contato_id, n: 0, por: new Map() }; s.n++; s.por.set(l.categoria_id, (s.por.get(l.categoria_id) || 0) + 1); stat.set(k, s);
+  }
+  const novas = [];
+  for (const s of stat.values()) {
+    if (s.n < 3) continue; const [catId, n] = [...s.por.entries()].sort((a, b) => b[1] - a[1])[0]; if (n / s.n < 0.7) continue;
+    if (C.regras.some(r => r.contato_id === s.contato_id && !r.padrao && (!r.tipo || r.tipo === s.tipo))) continue;
+    const ct = C.contato(s.contato_id); if (!ct || /^identificar$/i.test(ct.nome)) continue;
+    novas.push({ id: uid(), empresa_id: E, nome: `${ct.nome} → ${cats.get(catId).nome}`, tipo: s.tipo, contato_id: s.contato_id, padrao: null, categoria_id: catId, rateio_centros: null, prioridade: 200, ativa: true, origem: 'aprendida', acertos: 0 });
+  }
+  if (!novas.length) return toast('Nada novo a sugerir: os fornecedores recorrentes já têm regra.', 'ok', 4000);
+  if (!await confirm({ title: 'Sugerir regras', msg: `${novas.length} fornecedor${novas.length === 1 ? '' : 'es'} com categoria consistente no histórico. Criar as regras? Você pode editar ou desativar depois.`, ok: 'Criar regras' })) return;
+  await db.upsert('regras', novas); toast(`${novas.length} regras criadas`);
 }

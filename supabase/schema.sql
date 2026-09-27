@@ -231,70 +231,8 @@ begin
   return jsonb_build_object('ok', true, 'token', tok, 'user', jsonb_build_object('id', u.id, 'email', u.email, 'nome', u.nome));
 end $$;
 
-create or replace function fin_api(body jsonb) returns jsonb language plpgsql as $$
-declare
-  op text := body->>'op'; tok text := body->>'token'; p jsonb := coalesce(body->'payload', '{}'::jsonb);
-  s fin_sessoes; u fin_usuarios; tabela text; setlist text; rows jsonb; ids uuid[]; n int; t text;
-  permitidas text[] := array['empresas','contas','categorias','centros','contatos','tags','lancamentos','extrato_itens'];
-  res jsonb := '{}'::jsonb;
-begin
-  if op = 'login' then return fin_login(p->>'email', p->>'senha', p->>'origem'); end if;
-  if op = 'ping' then return jsonb_build_object('ok', true, 'agora', now()); end if;
-  if op = 'primeiro_usuario' then
-    if exists (select 1 from fin_usuarios) then return jsonb_build_object('ok', false, 'erro', 'ja_existe_usuario'); end if;
-    if length(coalesce(p->>'senha','')) < 8 then return jsonb_build_object('ok', false, 'erro', 'senha_curta'); end if;
-    perform fin_criar_usuario(p->>'email', p->>'nome', p->>'senha');
-    return fin_login(p->>'email', p->>'senha', 'bootstrap');
-  end if;
-  select * into s from fin_sessoes where token = tok and expira_em > now();
-  if not found then return jsonb_build_object('ok', false, 'erro', 'sessao_invalida'); end if;
-  select * into u from fin_usuarios where id = s.usuario_id and ativo;
-  if not found then return jsonb_build_object('ok', false, 'erro', 'usuario_inativo'); end if;
-  update fin_sessoes set ultimo_uso = now(), expira_em = now() + interval '30 days' where token = tok;
+-- fin_api: definida em automacao.sql (ops de anexo, tabela regras). Rode automacao.sql depois deste arquivo.
 
-  if op = 'logout' then delete from fin_sessoes where token = tok; return jsonb_build_object('ok', true); end if;
-  if op = 'me' then return jsonb_build_object('ok', true, 'user', jsonb_build_object('id', u.id, 'email', u.email, 'nome', u.nome)); end if;
-
-  if op = 'load' then
-    foreach t in array permitidas loop
-      execute format('select coalesce(jsonb_agg(to_jsonb(x)), ''[]''::jsonb) from %I x where x.deletado_em is null', t) into rows;
-      res := res || jsonb_build_object(t, rows);
-    end loop;
-    return jsonb_build_object('ok', true, 'data', res, 'user', jsonb_build_object('id', u.id, 'email', u.email, 'nome', u.nome));
-  end if;
-
-  if op = 'upsert' then
-    tabela := p->>'table'; rows := p->'rows';
-    if not (tabela = any(permitidas)) then return jsonb_build_object('ok', false, 'erro', 'tabela_nao_permitida'); end if;
-    if rows is null or jsonb_typeof(rows) <> 'array' then return jsonb_build_object('ok', false, 'erro', 'rows_invalido'); end if;
-    -- strings vazias viram null (campos de data/uuid não aceitam '')
-    rows := regexp_replace(rows::text, ':\s*""', ':null', 'g')::jsonb;
-    select string_agg(format('%I = excluded.%I', column_name, column_name), ', ') into setlist
-      from information_schema.columns where table_schema = 'public' and table_name = tabela and column_name not in ('id', 'criado_em');
-    execute format('insert into %I select * from jsonb_populate_recordset(null::%I, %L::jsonb) on conflict (id) do update set %s', tabela, tabela, rows::text, setlist);
-    get diagnostics n = row_count;
-    return jsonb_build_object('ok', true, 'n', n);
-  end if;
-
-  if op = 'remove' then
-    tabela := p->>'table';
-    if not (tabela = any(permitidas)) then return jsonb_build_object('ok', false, 'erro', 'tabela_nao_permitida'); end if;
-    select array_agg(x::uuid) into ids from jsonb_array_elements_text(p->'ids') x;
-    execute format('delete from %I where id = any(%L::uuid[])', tabela, ids);
-    get diagnostics n = row_count;
-    return jsonb_build_object('ok', true, 'n', n);
-  end if;
-
-  if op = 'wipe_empresa' then
-    foreach t in array permitidas loop
-      if t <> 'empresas' then execute format('delete from %I where empresa_id = %L::uuid', t, p->>'empresa_id'); end if;
-    end loop;
-    delete from empresas where id = (p->>'empresa_id')::uuid;
-    return jsonb_build_object('ok', true);
-  end if;
-
-  return jsonb_build_object('ok', false, 'erro', 'op_desconhecida');
-end $$;
 
 -- =====================================================================
 --  Sincronização Pagar.me + Banco Inter → Financeiro (sem passar pelo Nibo)
@@ -439,7 +377,7 @@ begin
       coalesce(nullif(s.descricao, ''), replace(s.tipo, 'DEBITO_', '') || ' enviado' || coalesce(' · ' || nullif(s.nome, ''), '')),
       round(s.valor, 2), s.data, date_trunc('month', s.data)::date,
       case when s.descricao ~* 'tarifa|taxa|anuidade|mensalidade' then cat_tarifa when s.descricao ~* 'darf|imposto|\mdas\M|\mgps\M|issqn|inss|fgts|tribut' then cat_imp else null end,
-      null, c_inter,
+      case when nullif(trim(coalesce(s.nome, '')), '') is not null then fin_contato_garantir(p_empresa, trim(s.nome), 'fornecedor', null) else null end, c_inter,
       case when s.tipo like '%PIX%' then 'pix' when s.tipo like '%BOLETO%' then 'boleto' else 'transferencia' end,
       'aberto', jsonb_build_array(jsonb_build_object('id', gen_random_uuid(), 'data', s.data, 'valor', round(s.valor, 2), 'conta_id', c_inter, 'juros', 0, 'multa', 0, 'desconto', 0)),
       s.referencia, 'inter', s.chave, s.criado_em

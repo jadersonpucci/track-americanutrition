@@ -35,7 +35,7 @@ export function dataPagamento(l) { const b = l.baixas || []; return b.length ? b
 export function ctx(empresaId) {
   const c = {
     contas: db.of('contas', empresaId), categorias: db.of('categorias', empresaId), centros: db.of('centros', empresaId),
-    contatos: db.of('contatos', empresaId), tags: db.of('tags', empresaId), lancamentos: db.of('lancamentos', empresaId), extrato: db.of('extrato_itens', empresaId),
+    contatos: db.of('contatos', empresaId), tags: db.of('tags', empresaId), lancamentos: db.of('lancamentos', empresaId), extrato: db.of('extrato_itens', empresaId), regras: db.of('regras', empresaId),
   };
   c.conta = id => db.get('contas', id); c.cat = id => db.get('categorias', id); c.contato = id => db.get('contatos', id); c.centro = id => db.get('centros', id);
   return c;

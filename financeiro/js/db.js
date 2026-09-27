@@ -5,7 +5,7 @@
 import { uid } from './utils.js';
 import { CONFIG } from './config.js';
 
-export const TABLES = ['empresas', 'contas', 'categorias', 'centros', 'contatos', 'tags', 'lancamentos', 'extrato_itens'];
+export const TABLES = ['empresas', 'contas', 'categorias', 'centros', 'contatos', 'tags', 'lancamentos', 'extrato_itens', 'regras'];
 const LS_PREFIX = 'fin:v1:';
 
 export const prefs = {
@@ -100,6 +100,10 @@ class GatewayBackend {
   async upsert(table, rows) { for (let i = 0; i < rows.length; i += 400) await this.call('upsert', { table, rows: rows.slice(i, i + 400) }); }
   async remove(table, ids) { await this.call('remove', { table, ids }); }
   async wipe() { throw new Error('No servidor, apague pela empresa (Configurações → Empresas).'); }
+  // anexos ficam no banco: só os metadados viajam com o lançamento
+  async anexoPut({ empresa_id, lancamento_id = null, nome, tipo, base64 }) { const j = await this.call('anexo_put', { empresa_id, lancamento_id, nome, tipo, base64 }); return j.anexo; }
+  async anexoGet(id) { const j = await this.call('anexo_get', { id }); return j.anexo; }
+  async anexoRemove(id) { await this.call('anexo_remove', { id }); }
 }
 
 export const db = {
@@ -150,4 +154,5 @@ export const db = {
     this.emit('*');
   },
   export() { return { versao: 1, exportado_em: new Date().toISOString(), ...Object.fromEntries(TABLES.map(t => [t, this.state[t]])) }; },
+  get temAnexosServidor() { return typeof this.backend?.anexoPut === 'function'; },
 };
