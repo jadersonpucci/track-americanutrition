@@ -252,7 +252,12 @@ export function abrirDetalhe(l) {
   ${!isTr ? `<h5>Baixas <span class="muted">${money(liquidado(l))} de ${money(l.valor)}</span></h5><div class="det-list" data-baixas>${(l.baixas || []).map(b => `<div class="det-li">${bankIcon(C.conta(b.conta_id), 24)}<span>${fmtDate(b.data)} · ${esc(C.conta(b.conta_id)?.nome || '')}${b.juros || b.multa || b.desconto ? ` <small class="muted">${b.juros ? 'juros ' + money(b.juros) + ' ' : ''}${b.multa ? 'multa ' + money(b.multa) + ' ' : ''}${b.desconto ? 'desc. ' + money(b.desconto) : ''}</small>` : ''}${b.observacao ? ` <small class="muted">${esc(b.observacao)}</small>` : ''}</span><b>${money(b.valor)}</b><button class="ibtn" data-est="${b.id}" title="Estornar">${icon('ti-arrow-back-up')}</button></div>`).join('') || '<div class="muted sm">Nenhuma baixa ainda.</div>'}</div>` : ''}
   ${l.observacoes ? `<h5>Observações</h5><p class="muted">${esc(l.observacoes)}</p>` : ''}
   ${l.anexos?.length ? `<h5>Anexos</h5><div class="anexos-l">${l.anexos.map((a, i) => `<a class="anexo" href="${a.id ? '#' : esc(a.url)}" ${a.id ? `data-anexo="${i}"` : 'target="_blank"'}>${icon(anexoIcone(a))}${esc(a.nome || a.url)}${a.tamanho ? ` <small class="muted">${fmtBytes(a.tamanho)}</small>` : ''}</a>`).join('')}</div>` : ''}
-  <div class="muted xs det-meta">Criado ${l.criado_em ? new Date(l.criado_em).toLocaleString('pt-BR') : ''}${l.atualizado_em ? ' · atualizado ' + new Date(l.atualizado_em).toLocaleString('pt-BR') : ''}</div>`;
+  ${sugestaoHtml(l, C)}
+  <div class="muted xs det-meta">Criado ${l.criado_em ? new Date(l.criado_em).toLocaleString('pt-BR') : ''}${l.atualizado_em ? ' · atualizado ' + new Date(l.atualizado_em).toLocaleString('pt-BR') : ''}</div>
+  ${db.temHistorico ? '<details class="hist"><summary>' + icon('ti-history') + 'Histórico de alterações</summary><div class="hist-b" data-hist><span class="muted sm">Carregando…</span></div></details>' : ''}`;
+  d.body.querySelectorAll('[data-sug-ok]').forEach(b => b.onclick = () => aceitarSugestao(l, d));
+  d.body.querySelectorAll('[data-sug-outra]').forEach(b => b.onclick = () => { d.close(); abrirLancamento({ ...l, sugestao: null }); });
+  const histEl = d.body.querySelector('[data-hist]'); if (histEl) { const det = histEl.closest('details'); det.addEventListener('toggle', () => { if (det.open && !det.dataset.ok) { det.dataset.ok = '1'; carregarHistorico(histEl, 'lancamentos', l, C, d); } }, { once: false }); }
   d.body.querySelectorAll('[data-anexo]').forEach(a => a.onclick = e => { e.preventDefault(); abrirAnexo(l.anexos[Number(a.dataset.anexo)]); });
   d.body.querySelectorAll('[data-est]').forEach(b => b.onclick = async () => { if (await estornarBaixa(l, b.dataset.est)) d.close(); });
   d.footer.innerHTML = '';
@@ -298,4 +303,68 @@ export async function abrirAnexo(a) {
     if (w) w.location = url; else window.open(url, '_blank');
     setTimeout(() => URL.revokeObjectURL(url), 120000);
   } catch (e) { if (w) w.close(); toast('Não foi possível abrir o anexo: ' + e.message, 'err', 5000); }
+}
+
+// ---------- sugestão da IA ----------
+function sugestaoHtml(l, C) {
+  const sg = l.sugestao; if (!sg || !sg.categoria_id || l.categoria_id === sg.categoria_id) return '';
+  const cat = C.cat(sg.categoria_id); if (!cat) return '';
+  const pct = Math.round((Number(sg.confianca) || 0) * 100);
+  return `<div class="sug"><div class="sug-h">${icon('ti-sparkles')}<b>Sugestão da IA</b><span class="pill ${pct >= 80 ? 'green' : 'gray'}">${pct}%</span></div><div class="sug-b">${catIcon(cat, 26)}<div><div class="sug-c">${esc(cat.nome)}</div>${sg.motivo ? `<div class="muted xs">${esc(sg.motivo)}</div>` : ''}</div></div><div class="sug-a"><button class="btn primary sm" data-sug-ok>${icon('ti-check')}Aceitar</button><button class="btn ghost sm" data-sug-outra>Escolher outra</button></div></div>`;
+}
+export async function aceitarSugestao(l, d = null) {
+  const C = app.ctx(); const sg = l.sugestao; const cat = C.cat(sg?.categoria_id); if (!cat) return;
+  await db.upsert('lancamentos', { ...l, categoria_id: cat.id, sugestao: null });
+  toast(`Classificado como ${cat.nome}`);
+  if (d) d.close();
+  if (l.contato_id && !C.regras.some(r => r.contato_id === l.contato_id && !r.padrao)) {
+    const ct = C.contato(l.contato_id);
+    if (ct && await confirm({ title: 'Criar regra?', msg: `Sempre classificar <b>${esc(ct.nome)}</b> como <b>${esc(cat.nome)}</b>? Vale para os próximos lançamentos desse fornecedor.`, ok: 'Criar regra', cancel: 'Só este' })) {
+      await db.upsert('regras', { id: uid(), empresa_id: l.empresa_id, nome: `${ct.nome} → ${cat.nome}`, tipo: l.tipo, contato_id: ct.id, padrao: null, categoria_id: cat.id, rateio_centros: null, prioridade: 150, ativa: true, origem: 'manual', acertos: 0 });
+      toast('Regra criada');
+    }
+  }
+}
+
+// ---------- histórico de alterações ----------
+const ROTULOS = { descricao: 'Descrição', valor: 'Valor', vencimento: 'Vencimento', competencia: 'Competência', categoria_id: 'Categoria', contato_id: 'Contato', conta_id: 'Conta', conta_destino_id: 'Conta destino', status: 'Status', baixas: 'Baixas', tags: 'Tags', observacoes: 'Observações', referencia: 'Referência', forma_pagamento: 'Forma de pagamento', rateio_centros: 'Centros de custo', rateio_categorias: 'Rateio', anexos: 'Anexos', deletado_em: 'Excluído', sugestao: 'Sugestão da IA', recorrencia: 'Recorrência', tipo: 'Tipo', nome: 'Nome', ativa: 'Ativa', padrao: 'Padrão', prioridade: 'Prioridade' };
+function fmtCampo(k, v, C) {
+  if (v === null || v === undefined || v === '') return '—';
+  if (k === 'valor') return money(Number(v));
+  if (k === 'vencimento' || k === 'competencia') return fmtDate(String(v).slice(0, 10));
+  if (k === 'categoria_id') return C.cat(v)?.nome || '?';
+  if (k === 'contato_id') return C.contato(v)?.nome || '?';
+  if (k === 'conta_id' || k === 'conta_destino_id') return C.conta(v)?.nome || '?';
+  if (k === 'baixas') return Array.isArray(v) ? (v.length ? v.map(b => `${fmtDate(b.data)} ${money(b.valor)}`).join(', ') : 'nenhuma') : String(v);
+  if (k === 'rateio_centros') return Array.isArray(v) ? v.map(r => `${C.centro(r.centro_id)?.nome || '?'} ${r.percent}%`).join(', ') : String(v);
+  if (k === 'anexos') return Array.isArray(v) ? `${v.length} arquivo${v.length === 1 ? '' : 's'}` : String(v);
+  if (k === 'tags') return Array.isArray(v) ? (v.join(', ') || 'nenhuma') : String(v);
+  if (k === 'deletado_em') return v ? 'sim' : 'não';
+  if (typeof v === 'object') return JSON.stringify(v).slice(0, 80);
+  return String(v);
+}
+export function itemHistoricoHtml(it, C, { comTitulo = false } = {}) {
+  const quando = new Date(it.em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  const quem = it.quem && it.quem !== 'sistema' ? esc(it.quem) : (it.origem ? `sistema · ${esc(it.origem)}` : 'sistema');
+  const verbo = { criou: 'criou', alterou: 'alterou', excluiu: 'excluiu', restaurou: 'restaurou' }[it.acao] || it.acao;
+  let detalhe = '';
+  if (it.acao === 'alterou' && it.campos) detalhe = `<ul class="hist-d">${it.campos.filter(k => k !== 'atualizado_em').map(k => `<li><span>${esc(ROTULOS[k] || k)}</span> ${esc(fmtCampo(k, it.de?.[k], C))} <i class="ti ti-arrow-right"></i> <b>${esc(fmtCampo(k, it.para?.[k], C))}</b></li>`).join('')}</ul>`;
+  return `<div class="hist-i" data-aud="${it.id}"><div class="hist-t"><b>${quem}</b> ${verbo}${comTitulo && it.titulo ? ` <span class="muted">${esc(it.titulo)}${it.valor ? ' · ' + money(Number(it.valor)) : ''}</span>` : ''} <small class="muted">${quando}</small>${it.acao !== 'restaurou' ? `<button class="btn ghost xs" data-undo="${it.id}" title="Desfazer">${icon('ti-arrow-back-up')}Desfazer</button>` : ''}</div>${detalhe}</div>`;
+}
+async function carregarHistorico(el, tabela, l, C, d) {
+  try {
+    const itens = await db.backend.historico(tabela, l.id);
+    el.innerHTML = itens.length ? itens.map(it => itemHistoricoHtml(it, C)).join('') : '<span class="muted sm">Nenhuma alteração registrada ainda.</span>';
+    el.querySelectorAll('[data-undo]').forEach(b => b.onclick = () => desfazerAlteracao(Number(b.dataset.undo), tabela, d));
+  } catch (e) { el.innerHTML = `<span class="neg sm">${esc(e.message)}</span>`; }
+}
+export async function desfazerAlteracao(id, tabela, d = null) {
+  if (!await confirm({ title: 'Desfazer alteração', msg: 'O registro volta ao estado anterior a esta alteração. Isso também fica no histórico.', ok: 'Desfazer' })) return false;
+  try {
+    const r = await db.backend.desfazer(id);
+    if (r.registro) db.aplicarLocal(tabela, r.registro);
+    toast(r.removido ? 'Registro arquivado' : 'Alteração desfeita');
+    if (d) d.close();
+    return true;
+  } catch (e) { toast(e.message, 'err', 5000); return false; }
 }

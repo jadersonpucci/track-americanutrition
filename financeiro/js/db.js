@@ -104,6 +104,10 @@ class GatewayBackend {
   async anexoPut({ empresa_id, lancamento_id = null, nome, tipo, base64 }) { const j = await this.call('anexo_put', { empresa_id, lancamento_id, nome, tipo, base64 }); return j.anexo; }
   async anexoGet(id) { const j = await this.call('anexo_get', { id }); return j.anexo; }
   async anexoRemove(id) { await this.call('anexo_remove', { id }); }
+  // trilha de alterações
+  async historico(tabela, registro_id) { const j = await this.call('historico', { tabela, registro_id, limit: 60 }); return j.itens || []; }
+  async atividade(empresa_id, limit = 150) { const j = await this.call('atividade', { empresa_id, limit }); return j.itens || []; }
+  async desfazer(id) { return this.call('desfazer', { id }); }
 }
 
 export const db = {
@@ -155,4 +159,12 @@ export const db = {
   },
   export() { return { versao: 1, exportado_em: new Date().toISOString(), ...Object.fromEntries(TABLES.map(t => [t, this.state[t]])) }; },
   get temAnexosServidor() { return typeof this.backend?.anexoPut === 'function'; },
+  get temHistorico() { return typeof this.backend?.historico === 'function'; },
+  // aplica um registro vindo do servidor no estado local, sem gravar de novo
+  aplicarLocal(t, row) {
+    if (!row || !row.id) return;
+    if (row.deletado_em) { this.state[t] = this.state[t].filter(r => r.id !== row.id); }
+    else { const i = this.state[t].findIndex(x => x.id === row.id); if (i >= 0) this.state[t][i] = row; else this.state[t].push(row); }
+    this.reindex(t); this.emit(t);
+  },
 };

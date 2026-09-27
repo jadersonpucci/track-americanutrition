@@ -113,7 +113,7 @@ function linha(l, C, S) {
   return `<div class="row ${st} ${S.sel.has(l.id) ? 'sel' : ''}" data-id="${l.id}">
     <label class="chk"><input type="checkbox" data-sel="${l.id}" ${S.sel.has(l.id) ? 'checked' : ''} ${pago ? 'disabled' : ''}></label>
     ${catIcon(cat, 34)}
-    <div class="r-b"><div class="r-t">${esc(l.descricao)}${l.parcela_total ? `<span class="parc">${l.parcela_num}/${l.parcela_total}</span>` : ''}${l.recorrencia_id ? icon('ti-repeat', 'rep') : ''}${l.anexos?.length ? icon('ti-paperclip', 'rep') : ''}</div>
+    <div class="r-b"><div class="r-t">${esc(l.descricao)}${l.parcela_total ? `<span class="parc">${l.parcela_num}/${l.parcela_total}</span>` : ''}${l.recorrencia_id ? icon('ti-repeat', 'rep') : ''}${l.sugestao && l.sugestao.categoria_id && l.sugestao.categoria_id !== l.categoria_id ? `<span class="sug-tag" title="Sugestão da IA: ${esc(C.cat(l.sugestao.categoria_id)?.nome || '')}">${icon('ti-sparkles')}IA</span>` : ''}${l.anexos?.length ? icon('ti-paperclip', 'rep') : ''}</div>
       <div class="r-s">${ct ? `<span>${esc(ct.nome)}</span>` : ''}${cat ? `<span class="r-cat">${catIcon(cat, 14)}${esc(cat.nome)}</span>` : ''}${(l.tags || []).map(t => { const tg = C.tags.find(x => x.nome === t); return tg ? tagChip(tg) : ''; }).join('')}</div></div>
     <div class="r-conta" title="${esc(conta?.nome || '')}">${bankIcon(conta, 22)}<span>${esc(conta?.nome || '')}</span></div>
     <div class="r-d ${st === 'atrasado' ? 'neg' : ''}">${pago ? `<small>${l.tipo === 'receber' ? 'recebido' : 'pago'} em</small>${fmtDate(dataPagamento(l))}` : `${fmtDate(l.vencimento)}<small>${relDate(l.vencimento)}</small>`}</div>

@@ -6,14 +6,14 @@ import { esc, uid, download, readFile, today, fmtDateTime, parseMoney, norm, mon
 import { seedCadastros, seedLancamentos, seedEmpresa } from '../seed.js';
 import { CONFIG } from '../config.js';
 
-const SECS = [{ id: 'empresa', label: 'Empresas', icon: 'ti-building' }, { id: 'dados', label: 'Dados e backup', icon: 'ti-database' }, { id: 'conexao', label: 'Conexão', icon: 'ti-cloud' }, { id: 'integracoes', label: 'Integrações', icon: 'ti-plug' }, { id: 'aparencia', label: 'Aparência', icon: 'ti-palette' }, { id: 'atalhos', label: 'Atalhos', icon: 'ti-keyboard' }];
+const SECS = [{ id: 'empresa', label: 'Empresas', icon: 'ti-building' }, { id: 'dados', label: 'Dados e backup', icon: 'ti-database' }, { id: 'conexao', label: 'Conexão', icon: 'ti-cloud' }, { id: 'integracoes', label: 'Integrações', icon: 'ti-plug' }, { id: 'aparencia', label: 'Aparência', icon: 'ti-palette' }, { id: 'atividade', label: 'Atividade', icon: 'ti-history' }, { id: 'atalhos', label: 'Atalhos', icon: 'ti-keyboard' }];
 let sec = 'empresa';
 export function render(root, { sub = null } = {}) {
   if (sub && SECS.some(s => s.id === sub)) sec = sub;
   root.innerHTML = `<div class="page cfg"><header class="ph"><div><h1>Configurações</h1></div></header>
     <div class="cfg-wrap"><nav class="cfg-nav">${SECS.map(s => `<a href="#/config/${s.id}" class="${sec === s.id ? 'on' : ''}">${icon(s.icon)}${s.label}</a>`).join('')}</nav><div class="cfg-body" data-body></div></div></div>`;
   const body = root.querySelector('[data-body]');
-  ({ empresa: secEmpresa, dados: secDados, conexao: secConexao, integracoes: secIntegracoes, aparencia: secAparencia, atalhos: secAtalhos })[sec](body);
+  ({ empresa: secEmpresa, dados: secDados, conexao: secConexao, integracoes: secIntegracoes, aparencia: secAparencia, atividade: secAtividade, atalhos: secAtalhos })[sec](body);
 }
 
 function secEmpresa(body) {
@@ -161,4 +161,22 @@ function secAtalhos(body) {
     <div class="kv"><span>Ir para visão geral</span><b>${k('G')} depois ${k('H')}</b></div><div class="kv"><span>Ir para contas a pagar</span><b>${k('G')} depois ${k('P')}</b></div><div class="kv"><span>Ir para contas a receber</span><b>${k('G')} depois ${k('R')}</b></div><div class="kv"><span>Ir para extrato</span><b>${k('G')} depois ${k('E')}</b></div><div class="kv"><span>Ir para fluxo de caixa</span><b>${k('G')} depois ${k('F')}</b></div><div class="kv"><span>Ir para DRE</span><b>${k('G')} depois ${k('D')}</b></div>
     <div class="kv"><span>Fechar painel / modal</span><b>${k('Esc')}</b></div></div></div>
     <div class="card"><div class="card-h"><h3>Sobre</h3></div><p class="muted sm">Financeiro America Nutrition · substitui o Nibo com contas a pagar e receber, extrato e conciliação, fluxo de caixa, DRE gerencial, centros de custo, rateios, parcelamentos, recorrências, anexos, multiempresa e integrações via Supabase + n8n.</p></div>`;
+}
+
+async function secAtividade(body) {
+  body.innerHTML = `<div class="card"><div class="card-h"><h3>${icon('ti-history')}Atividade recente</h3><button class="btn ghost sm" data-reload>${icon('ti-refresh')}Atualizar</button></div><p class="muted sm">Quem alterou o quê nos últimos registros: lançamentos, contatos, categorias, contas, regras. Cada linha pode ser desfeita.</p><div class="hist-b" data-list><span class="muted sm">Carregando…</span></div></div>`;
+  if (!db.temHistorico) { body.querySelector('[data-list]').innerHTML = '<span class="muted sm">Disponível só com o servidor conectado.</span>'; return; }
+  const { itemHistoricoHtml, desfazerAlteracao, abrirDetalhe } = await import('./form-lancamento.js');
+  const C = app.ctx();
+  const paint = async () => {
+    const el = body.querySelector('[data-list]');
+    try {
+      const itens = await db.backend.atividade(app.empresaId, 150);
+      el.innerHTML = itens.length ? itens.map(it => itemHistoricoHtml(it, C, { comTitulo: true }).replace('class="hist-i"', `class="hist-i ${it.tabela === 'lancamentos' && !it.apagado ? 'lnk' : ''}" data-tab="${it.tabela}" data-reg="${it.registro_id}"`)).join('') : '<span class="muted sm">Nada registrado ainda.</span>';
+      el.querySelectorAll('[data-undo]').forEach(b => b.onclick = async e => { e.stopPropagation(); const it = itens.find(x => x.id === Number(b.dataset.undo)); if (await desfazerAlteracao(Number(b.dataset.undo), it?.tabela || 'lancamentos')) paint(); });
+      el.querySelectorAll('.hist-i.lnk .hist-t b').forEach(b => b.onclick = () => { const row = b.closest('.hist-i'); const l = db.get('lancamentos', row.dataset.reg); if (l) abrirDetalhe(l); });
+    } catch (e) { el.innerHTML = `<span class="neg sm">${esc(e.message)}</span>`; }
+  };
+  body.querySelector('[data-reload]').onclick = paint;
+  paint();
 }
