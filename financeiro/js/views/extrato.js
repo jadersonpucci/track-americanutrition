@@ -12,18 +12,20 @@ const S = { contaId: null, mes: monthStart(today()), aba: 'extrato' };
 export function render(root, { contaId = null } = {}) {
   const E = app.empresaId; const C = app.ctx();
   const contas = C.contas.filter(c => !c.arquivada).sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
-  if (contaId) S.contaId = contaId;
-  if (!S.contaId || !db.get('contas', S.contaId)) S.contaId = contas[0]?.id || null;
-  const conta = db.get('contas', S.contaId);
   const total = round2(sum(contas.filter(c => c.tipo !== 'cartao'), c => saldoConta(E, c.id)));
+  if (contaId && !db.get('contas', contaId)) { location.replace('#/extrato'); return; }
+  S.contaId = contaId;
+  if (!contaId) return renderVisao(root, { E, C, contas, total });
+  const conta = db.get('contas', S.contaId);
 
   root.innerHTML = `<div class="page extrato">
+    <a class="back" href="#/extrato">${icon('ti-chevron-left')}Contas</a>
     <header class="ph"><div><div class="eyebrow">Saldo total em contas</div><h1 class="money">${money(total)}</h1></div>
       <div class="ph-a"><button class="btn secondary" data-transf>${icon('ti-arrows-exchange')}Transferir</button><button class="btn ghost" data-nova-conta>${icon('ti-plus')}Conta</button></div></header>
     <section class="contas-strip sel" data-contas></section>
-    ${conta ? `<section class="card ext-card"><div class="ext-h">${bankIcon(conta, 44)}<div class="ext-i"><div class="ext-n">${esc(conta.nome)}<button class="ibtn xs" data-edit-conta>${icon('ti-pencil')}</button></div><div class="muted sm">${tipoNome(conta)}${conta.agencia ? ` · Ag ${esc(conta.agencia)}` : ''}${conta.numero ? ` · ${esc(conta.numero)}` : ''}</div></div>
+    <section class="card ext-card"><div class="ext-h">${bankIcon(conta, 44)}<div class="ext-i"><div class="ext-n">${esc(conta.nome)}<button class="ibtn xs" data-edit-conta>${icon('ti-pencil')}</button></div><div class="muted sm">${tipoNome(conta)}${conta.agencia ? ` · Ag ${esc(conta.agencia)}` : ''}${conta.numero ? ` · ${esc(conta.numero)}` : ''}</div></div>
         <div class="ext-s"><div><span>Saldo atual</span><b class="${saldoConta(E, conta.id) < 0 ? 'neg' : ''}">${money(saldoConta(E, conta.id))}</b></div><div><span>Projetado 30d</span><b>${money(saldoProjetado(E, conta.id, addDays(today(), 30)))}</b></div></div></div>
-      <div class="ext-tabs" data-tabs></div><div data-body></div></section>` : ''}
+      <div class="ext-tabs" data-tabs></div><div data-body></div></section>
   </div>`;
 
   const cs = root.querySelector('[data-contas]');
@@ -31,13 +33,28 @@ export function render(root, { contaId = null } = {}) {
   on(cs, 'click', '[data-conta]', (e, b) => { S.contaId = b.dataset.conta; location.hash = '#/extrato/' + S.contaId; });
   root.querySelector('[data-transf]').onclick = () => abrirLancamento(null, { tipo: 'transferencia', defaults: { conta_id: S.contaId } });
   root.querySelector('[data-nova-conta]').onclick = () => abrirConta();
-  if (!conta) { root.querySelector('.page').appendChild(emptyState({ icon: 'ti-building-bank', title: 'Nenhuma conta', text: 'Cadastre a primeira conta bancária.', action: { label: 'Nova conta', icon: 'ti-plus', onClick: () => abrirConta() } })); return; }
   root.querySelector('[data-edit-conta]').onclick = () => abrirConta(conta);
   const tabs = segmented([{ id: 'extrato', label: 'Extrato', icon: 'ti-list' }, { id: 'conciliar', label: 'Conciliação', icon: 'ti-checks' }, { id: 'previsto', label: 'Previsto', icon: 'ti-calendar-time' }], S.aba, v => { S.aba = v; paint(); });
   root.querySelector('[data-tabs]').appendChild(tabs);
   const body = root.querySelector('[data-body]');
   const paint = () => { body.innerHTML = ''; if (S.aba === 'extrato') paintExtrato(body, conta, C, E); else if (S.aba === 'conciliar') paintConciliar(body, conta, C, E); else paintPrevisto(body, conta, C, E); };
   paint();
+}
+// Visão geral: todas as contas com saldo, projeção e o saldo unificado. Toque numa conta para abrir o extrato.
+function renderVisao(root, { E, C, contas, total }) {
+  const t = today(); const proj = round2(sum(contas.filter(c => c.tipo !== 'cartao'), c => saldoProjetado(E, c.id, addDays(t, 30))));
+  root.innerHTML = `<div class="page extrato">
+    <header class="ph"><div><div class="eyebrow">Saldo unificado</div><h1 class="money">${money(total)}</h1><p class="muted sm">${money(proj)} projetado em 30 dias</p></div>
+      <div class="ph-a"><button class="btn secondary" data-transf>${icon('ti-arrows-exchange')}Transferir</button><button class="btn ghost" data-nova-conta>${icon('ti-plus')}Conta</button></div></header>
+    <section class="card contas-visao" data-list></section>
+  </div>`;
+  const lw = root.querySelector('[data-list]');
+  if (!contas.length) { lw.remove(); root.querySelector('.page').appendChild(emptyState({ icon: 'ti-building-bank', title: 'Nenhuma conta', text: 'Cadastre a primeira conta bancária.', action: { label: 'Nova conta', icon: 'ti-plus', onClick: () => abrirConta() } })); }
+  else lw.innerHTML = contas.map(c => { const s = saldoConta(E, c.id); const p = saldoProjetado(E, c.id, addDays(t, 30));
+    return `<a class="cv-row" href="#/extrato/${c.id}">${bankIcon(c, 40)}<div class="cv-i"><div class="cv-n">${esc(c.nome)}</div><div class="cv-t">${tipoNome(c)}${c.agencia ? ` · Ag ${esc(c.agencia)}` : ''}</div></div><div class="cv-v"><b class="${s < 0 ? 'neg' : ''}">${money(s)}</b><small class="${p < 0 ? 'neg' : ''}">${money(p)} em 30d</small></div>${icon('ti-chevron-right', 'cv-go')}</a>`; }).join('')
+    + `<div class="cv-row total"><div class="cv-i"><div class="cv-n">Saldo unificado</div><div class="cv-t">${contas.length} conta${contas.length === 1 ? '' : 's'}</div></div><div class="cv-v"><b class="${total < 0 ? 'neg' : ''}">${money(total)}</b><small class="${proj < 0 ? 'neg' : ''}">${money(proj)} em 30d</small></div></div>`;
+  root.querySelector('[data-transf]').onclick = () => abrirLancamento(null, { tipo: 'transferencia', defaults: { conta_id: contas[0]?.id } });
+  root.querySelector('[data-nova-conta]').onclick = () => abrirConta();
 }
 function tipoNome(c) { return { corrente: 'Conta corrente', poupanca: 'Poupança', investimento: 'Investimento', gateway: 'Gateway', cartao: 'Cartão de crédito', caixa: 'Dinheiro' }[c.tipo] || 'Conta'; }
 
@@ -50,8 +67,8 @@ function paintExtrato(body, conta, C, E) {
   body.innerHTML = `<div class="toolbar"><div class="periodo"><button class="ibtn" data-prev>${icon('ti-chevron-left')}</button><span class="per-l">${fmtMonth(S.mes, true)}</span><button class="ibtn" data-next>${icon('ti-chevron-right')}</button></div><span class="grow"></span><button class="btn ghost sm" data-export>${icon('ti-download')}CSV</button></div>
     <div class="sumbar"><div><span>Saldo inicial</span><b>${money(saldoIni)}</b></div><div><span>Entradas</span><b class="pos">${money(entradas)}</b></div><div><span>Saídas</span><b class="neg">${money(saidas)}</b></div><div><span>Saldo final</span><b>${money(round2(saldoIni + entradas - saidas))}</b></div></div>
     <div class="listwrap" data-list></div>`;
-  body.querySelector('[data-prev]').onclick = () => { S.mes = addMonths(S.mes, -1); render(document.getElementById('main')); };
-  body.querySelector('[data-next]').onclick = () => { S.mes = addMonths(S.mes, 1); render(document.getElementById('main')); };
+  body.querySelector('[data-prev]').onclick = () => { S.mes = addMonths(S.mes, -1); render(document.getElementById('main'), { contaId: S.contaId }); };
+  body.querySelector('[data-next]').onclick = () => { S.mes = addMonths(S.mes, 1); render(document.getElementById('main'), { contaId: S.contaId }); };
   body.querySelector('[data-export]').onclick = () => { download(`extrato-${norm(conta.nome)}-${S.mes.slice(0, 7)}.csv`, toCSV([...rows].reverse(), [{ label: 'Data', get: r => fmtDate(r.data) }, { label: 'Descrição', key: 'descricao' }, { label: 'Valor', get: r => String(r.valor).replace('.', ',') }, { label: 'Saldo', get: r => String(r.saldo).replace('.', ',') }])); };
   const lw = body.querySelector('[data-list]');
   if (!rows.length) { lw.appendChild(emptyState({ icon: 'ti-file-invoice', title: 'Sem movimentos', text: `Nenhuma baixa ou transferência nesta conta em ${fmtMonth(S.mes, true)}.` })); return; }
