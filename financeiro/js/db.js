@@ -87,7 +87,7 @@ class GatewayBackend {
     let j = await r.json();
     if (Array.isArray(j)) j = j[0];
     if (j && j.r && !('ok' in j)) j = j.r;
-    if (!j || j.ok === false) { const e = new Error(j?.erro === 'sessao_invalida' ? 'Sessão expirada. Entre de novo.' : (j?.erro || 'Erro no servidor')); e.code = j?.erro; throw e; }
+    if (!j || j.ok !== true) { const e = new Error(j?.erro === 'sessao_invalida' ? 'Sessão expirada. Entre de novo.' : (j?.erro || j?.message || 'Erro no servidor')); e.code = j?.erro; throw e; }
     return j;
   }
   async login(email, senha) { const j = await this.call('login', { email, senha, origem: navigator.userAgent.slice(0, 80) }, { auth: false }); this.session = { token: j.token, user: j.user }; prefs.set('gw:session', this.session); return j.user; }

@@ -223,7 +223,9 @@ create index if not exists anexos_lanc on anexos (lancamento_id) where deletado_
 create or replace function fin_anexos_limpar() returns int language plpgsql as $$
 declare n int;
 begin
-  delete from anexos where lancamento_id is null and criado_em < now() - interval '2 days';
+  delete from anexos an
+   where an.criado_em < now() - interval '2 days'
+     and not exists (select 1 from lancamentos l where l.deletado_em is null and l.anexos::text like '%' || an.id::text || '%');
   get diagnostics n = row_count; return n;
 end $$;
 
@@ -237,7 +239,7 @@ declare
   op text := body->>'op'; tok text := body->>'token'; p jsonb := coalesce(body->'payload', '{}'::jsonb);
   s fin_sessoes; u fin_usuarios; tabela text; setlist text; rows jsonb; ids uuid[]; n int; t text;
   permitidas text[] := array['empresas','contas','categorias','centros','contatos','tags','lancamentos','extrato_itens','regras'];
-  res jsonb := '{}'::jsonb; a anexos; b64 text; conteudo bytea;
+  res jsonb := '{}'::jsonb; ax anexos; b64 text; conteudo bytea;
 begin
   if op = 'login' then return fin_login(p->>'email', p->>'senha', p->>'origem'); end if;
   if op = 'ping' then return jsonb_build_object('ok', true, 'agora', now()); end if;
@@ -276,9 +278,9 @@ begin
     get diagnostics n = row_count;
     if tabela = 'lancamentos' then
       -- vincula anexos enviados antes de o lançamento existir
-      update anexos a set lancamento_id = v.lid
+      update anexos an set lancamento_id = v.lid
         from (select (x->>'id')::uuid as lid, (y->>'id')::uuid as aid from jsonb_array_elements(rows) x, jsonb_array_elements(coalesce(x->'anexos', '[]'::jsonb)) y where y ? 'id') v
-        where a.id = v.aid and a.lancamento_id is distinct from v.lid;
+        where an.id = v.aid and an.lancamento_id is distinct from v.lid;
     end if;
     return jsonb_build_object('ok', true, 'n', n);
   end if;
@@ -299,14 +301,14 @@ begin
     conteudo := decode(b64, 'base64');
     insert into anexos (empresa_id, lancamento_id, nome, tipo, tamanho, conteudo, criado_por)
       values ((p->>'empresa_id')::uuid, nullif(p->>'lancamento_id', '')::uuid, left(p->>'nome', 200), p->>'tipo', length(conteudo), conteudo, u.id)
-      returning * into a;
-    return jsonb_build_object('ok', true, 'anexo', jsonb_build_object('id', a.id, 'nome', a.nome, 'tipo', a.tipo, 'tamanho', a.tamanho));
+      returning * into ax;
+    return jsonb_build_object('ok', true, 'anexo', jsonb_build_object('id', ax.id, 'nome', ax.nome, 'tipo', ax.tipo, 'tamanho', ax.tamanho));
   end if;
 
   if op = 'anexo_get' then
-    select * into a from anexos where id = (p->>'id')::uuid and deletado_em is null;
+    select * into ax from anexos where id = (p->>'id')::uuid and deletado_em is null;
     if not found then return jsonb_build_object('ok', false, 'erro', 'anexo_nao_encontrado'); end if;
-    return jsonb_build_object('ok', true, 'anexo', jsonb_build_object('id', a.id, 'nome', a.nome, 'tipo', a.tipo, 'tamanho', a.tamanho, 'base64', replace(encode(a.conteudo, 'base64'), E'\n', '')));
+    return jsonb_build_object('ok', true, 'anexo', jsonb_build_object('id', ax.id, 'nome', ax.nome, 'tipo', ax.tipo, 'tamanho', ax.tamanho, 'base64', replace(encode(ax.conteudo, 'base64'), E'\n', '')));
   end if;
 
   if op = 'anexo_remove' then
