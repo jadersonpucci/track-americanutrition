@@ -1747,3 +1747,26 @@ Os nós que usam **Haiku 4.5** (descrição de imagem, triagem anti-spam, respos
 como estavam: Haiku 4.5 é a geração atual. Três workflows (Reposição, Auditoria, Proposta da Base)
 ainda têm `'claude-sonnet-5'` como *fallback* no código, usado só se a chave `modelo` sumir da
 `serena_config`; na prática todos leem a chave e já rodam no 5.5.
+
+### Leitura de imagem e PDF passou para o Sonnet 5.5 (29/09)
+
+O nó `Descrever Imagem (Claude)` da Entrada rodava no Haiku 4.5. Testei os dois modelos com o
+mesmo print de comprovante de PIX (o do Weslei, Banco Inter):
+
+| | Haiku 4.5 | Sonnet 5.5 |
+| --- | --- | --- |
+| Valor | R$ 372,73 ✅ | R$ 372,73 ✅ |
+| Pagador e CPF | CPF errado | ✅ |
+| Banco do recebedor | **"Nubank"** ❌ | **Banco Inter** ✅ |
+| Data | **"13/10/2024"**, inventada ❌ | "não aparece no trecho visível" ✅ |
+| CNPJ | ilegível/embaralhado | ✅ |
+
+O Haiku preencheu os buracos em vez de admitir que não dava para ler — e essa descrição é o que a
+Serena lê para responder ao cliente. São **107 imagens/PDFs em 30 dias** (44 citando comprovante),
+então a troca custa centavos por mês. `max_tokens` subiu para 700 (imagem) e 1200 (PDF): com 400 o
+Sonnet era cortado no meio. O prompt ganhou a regra explícita de nunca deduzir dado ilegível.
+
+**O que continua no Haiku 4.5, de propósito:** triagem anti-spam (classificação de uma palavra),
+resposta trivial (existe justamente para ser barata e instantânea), classificador de humor/lacuna
+(JSON curto, roda em toda mensagem) e o resumo de handoff. Para essas, subir o modelo custaria o
+dobro sem ganho perceptível. Não existe Haiku mais novo: o 4.5 é a geração atual da linha.
