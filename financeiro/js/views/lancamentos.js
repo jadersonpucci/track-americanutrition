@@ -90,6 +90,12 @@ export function render(root, { tipo = 'pagar', params = {} } = {}) {
     lw.innerHTML = html;
   }
   on(lw, 'click', '.row', (e, r) => { if (e.target.closest('input,button,a')) return; abrirDetalhe(app.lanc(r.dataset.id)); });
+  // Shift + clique marca (ou desmarca) todos entre o último clicado e este
+  on(lw, 'click', 'input[data-sel]', (e, i) => {
+    const todos = [...lw.querySelectorAll('input[data-sel]:not([disabled])')];
+    if (e.shiftKey && S.ultimo) { const a = todos.findIndex(x => x.dataset.sel === S.ultimo), b = todos.indexOf(i); if (a >= 0 && b >= 0) { const [de, ate] = a < b ? [a, b] : [b, a]; const marcar = i.checked; for (let k = de; k <= ate; k++) { const x = todos[k]; if (x === i) continue; x.checked = marcar; marcar ? S.sel.add(x.dataset.sel) : S.sel.delete(x.dataset.sel); x.closest('.row').classList.toggle('sel', marcar); } } }
+    S.ultimo = i.dataset.sel;
+  });
   on(lw, 'change', 'input[data-sel]', (e, i) => { i.checked ? S.sel.add(i.dataset.sel) : S.sel.delete(i.dataset.sel); i.closest('.row').classList.toggle('sel', i.checked); paintBulk(); });
   on(lw, 'click', '[data-pay]', (e, b) => { e.stopPropagation(); abrirBaixa(app.lanc(b.dataset.pay)); });
   on(lw, 'click', '[data-menu]', (e, b) => { e.stopPropagation(); const l = app.lanc(b.dataset.menu); const s = statusOf(l); menu(b, [
