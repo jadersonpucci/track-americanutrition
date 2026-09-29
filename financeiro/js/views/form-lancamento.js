@@ -109,6 +109,11 @@ export function abrirLancamento(existing = null, { tipo = 'pagar', defaults = {}
   const avisoVenc = () => { const passou = venc.value && venc.value < today() && !tglPago.get() && !isEdit && L.tipo !== 'transferencia'; vencHint.classList.toggle('hidden', !passou); if (passou) vencHint.innerHTML = `${icon('ti-info-circle')} A data já passou. Se ${L.tipo === 'receber' ? 'já recebeu' : 'já pagou'}, marque acima: sem baixa o lançamento fica em aberto e não entra no extrato da conta.`; };
   venc.addEventListener('change', avisoVenc); venc.addEventListener('input', avisoVenc); quick.addEventListener('click', () => setTimeout(avisoVenc, 0));
   conta.addEventListener('change', e => { pagoConta.set(e.detail); });
+  // transferência: descrição padrão "Transferência Origem → Destino", trocada junto com as contas enquanto o usuário não escrever a sua
+  let descrAuto = '';
+  const nomeConta = id => C.conta(id)?.nome || '';
+  const descrTransf = () => { if (L.tipo !== 'transferencia') return; const de = nomeConta(conta.get()), para = nomeConta(contaDest.get()); const txt = 'Transferência' + (de || para ? ` ${de || '…'} → ${para || '…'}` : ''); if (!descr.value.trim() || descr.value === descrAuto) descr.value = txt; descrAuto = txt; };
+  conta.addEventListener('change', descrTransf); contaDest.addEventListener('change', descrTransf);
   if (!isEdit) { pagoBox.prepend(tglPago, pagoOpts); f.appendChild(pagoBox); avisoVenc(); }
 
   // observações sempre visíveis no formulário; na lista não aparecem, só ao abrir o lançamento
@@ -160,6 +165,7 @@ export function abrirLancamento(existing = null, { tipo = 'pagar', defaults = {}
     if (!isEdit) avisoVenc();
     if (!tr) { categoria.setOptions(catOpts(C.categorias, L.tipo === 'receber' ? 'in' : 'out')); const cat = db.get('categorias', categoria.get()); if (cat && cat.tipo !== (L.tipo === 'receber' ? 'in' : 'out')) categoria.set(null); tglPago.querySelector('.tgl-l').textContent = L.tipo === 'receber' ? 'Já foi recebido' : 'Já foi pago'; }
     descr.placeholder = tr ? 'Ex.: Saque Pagar.me → BTG' : L.tipo === 'receber' ? 'Ex.: Repasse Mercado Livre' : 'Ex.: Meta Ads · setembro';
+    if (tr && !isEdit) descrTransf(); else if (!tr && descrAuto && descr.value === descrAuto) { descr.value = ''; descrAuto = ''; }
   }
   repaintTipo();
 
