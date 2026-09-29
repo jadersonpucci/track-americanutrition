@@ -21,7 +21,7 @@ export function render(root, { contaId = null } = {}) {
   root.innerHTML = `<div class="page extrato">
     <a class="back" href="#/extrato">${icon('ti-chevron-left')}Contas</a>
     <header class="ph"><div><div class="eyebrow">Saldo total em contas</div><h1 class="money">${money(total)}</h1></div>
-      <div class="ph-a"><button class="btn secondary" data-transf>${icon('ti-arrows-exchange')}Transferir</button><button class="btn ghost" data-nova-conta>${icon('ti-plus')}Conta</button></div></header>
+      <div class="ph-a"><button class="btn secondary" data-novo="pagar" title="Nova despesa nesta conta">${icon('ti-arrow-up-right')}<span>Despesa</span></button><button class="btn secondary" data-novo="receber" title="Nova receita nesta conta">${icon('ti-arrow-down-left')}<span>Receita</span></button><button class="btn secondary" data-transf>${icon('ti-arrows-exchange')}<span>Transferir</span></button><button class="btn ghost" data-nova-conta>${icon('ti-plus')}<span>Conta</span></button></div></header>
     <section class="contas-strip sel" data-contas></section>
     <section class="card ext-card"><div class="ext-h">${bankIcon(conta, 44)}<div class="ext-i"><div class="ext-n">${esc(conta.nome)}<button class="ibtn xs" data-edit-conta>${icon('ti-pencil')}</button></div><div class="muted sm">${tipoNome(conta)}${conta.agencia ? ` · Ag ${esc(conta.agencia)}` : ''}${conta.numero ? ` · ${esc(conta.numero)}` : ''}</div></div>
         <div class="ext-s"><div><span>Saldo atual</span><b class="${saldoConta(E, conta.id) < 0 ? 'neg' : ''}">${money(saldoConta(E, conta.id))}</b></div><div><span>Projetado 30d</span><b>${money(saldoProjetado(E, conta.id, addDays(today(), 30)))}</b></div></div></div>
@@ -32,6 +32,8 @@ export function render(root, { contaId = null } = {}) {
   cs.innerHTML = contas.map(c => { const s = saldoConta(E, c.id); return `<button class="conta-card ${c.id === S.contaId ? 'on' : ''}" data-conta="${c.id}">${bankIcon(c, 40)}<div class="cc-i"><div class="cc-n">${esc(c.nome)}</div><div class="cc-t">${tipoNome(c)}</div></div><div class="cc-v ${s < 0 ? 'neg' : ''}">${money(s)}</div></button>`; }).join('');
   on(cs, 'click', '[data-conta]', (e, b) => { S.contaId = b.dataset.conta; location.hash = '#/extrato/' + S.contaId; });
   root.querySelector('[data-transf]').onclick = () => abrirLancamento(null, { tipo: 'transferencia', defaults: { conta_id: S.contaId } });
+  // despesa / receita já com esta conta preenchida
+  on(root, 'click', '[data-novo]', (e, b) => abrirLancamento(null, { tipo: b.dataset.novo, defaults: { conta_id: S.contaId } }));
   root.querySelector('[data-nova-conta]').onclick = () => abrirConta();
   root.querySelector('[data-edit-conta]').onclick = () => abrirConta(conta);
   const tabs = segmented([{ id: 'extrato', label: 'Extrato', icon: 'ti-list' }, { id: 'conciliar', label: 'Conciliação', icon: 'ti-checks' }, { id: 'previsto', label: 'Previsto', icon: 'ti-calendar-time' }], S.aba, v => { S.aba = v; paint(); });
