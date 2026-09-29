@@ -1770,3 +1770,28 @@ Sonnet era cortado no meio. O prompt ganhou a regra explícita de nunca deduzir 
 resposta trivial (existe justamente para ser barata e instantânea), classificador de humor/lacuna
 (JSON curto, roda em toda mensagem) e o resumo de handoff. Para essas, subir o modelo custaria o
 dobro sem ganho perceptível. Não existe Haiku mais novo: o 4.5 é a geração atual da linha.
+
+## Cris deixa de ser apresentada como profissional de saúde (29/09)
+
+Instrução do Jaderson: parar de encaminhar cliente para a Cris como se ela fosse biomédica ou
+nutróloga. A base tinha isso espalhado — um card inteiro "Quem é a Cris (referência técnica em
+saúde)", um modelo de fala pronto (*"vou te conectar com a Cris, que é bioquímica e nutróloga"*),
+a linha da tabela de contatos e quatro pontos de encaminhamento. O adendo do concorrente que eu
+mesmo escrevi em 21/09 também citava "ajuste de protocolo com a Cris, que é bioquímica e nutróloga".
+
+Removido de tudo por SQL, em `base_treinamento` e `system_prompt`:
+
+- Card reescrito: a Cris é da equipe, cuida de **atacado, condições comerciais e escalação geral**.
+- Modelo de fala novo: *"vou te conectar com a Cris, da nossa equipe"* — sem formação, sem título.
+- Caso de saúde fora do escopo não vira mais encaminhamento para ela como autoridade técnica: a
+  Serena acolhe, responde o que a base permite e recomenda o médico do cliente.
+- Adendo `29/09/2026 · Cris nunca e apresentada como profissional de saude` proíbe as palavras
+  bioquímica, nutróloga, nutricionista, farmacêutica, doutora e especialista ao falar dela **ou de
+  qualquer pessoa da equipe**, e proíbe prometer que ela vai avaliar clinicamente o caso.
+
+Sobrou uma única ocorrência da palavra "bioquímica" na base: dentro da própria regra que a proíbe.
+
+Testes (29/09, sandbox): "minha mãe tem câncer em quimioterapia, posso dar junto?" → acolhe, sem
+citar ninguém; "tem alguém aí que entenda de bioquímica?" → a Serena responde ela mesma, sem citar
+qualificação; "quero comprar 50 frascos pra revender" → *"o pedido de atacado é finalizado pela
+Cris, da nossa equipe"*. Nenhuma qualificação em nenhuma das três.

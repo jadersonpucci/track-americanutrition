@@ -42,7 +42,7 @@ const transcrever = node({ type: 'n8n-nodes-base.httpRequest', version: 4.2, con
   method: 'POST', url: 'https://api.elevenlabs.io/v1/speech-to-text', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
   sendBody: true, contentType: 'multipart-form-data',
   bodyParameters: { parameters: [ { name: 'model_id', value: 'scribe_v1' }, { name: 'language_code', value: 'por' }, { parameterType: 'formBinaryData', name: 'file', inputDataFieldName: 'data' } ] },
-  options: { response: { response: { neverError: true } }, timeout: 90000 } }, credentials: ELEVEN, onError: 'continueRegularOutput' }, output: [{ text: 'oi, queria saber do meu pedido' }] });
+  options: { response: { response: { neverError: true, responseFormat: 'file', outputPropertyName: 'data', fullResponse: true } }, timeout: 90000 } }, credentials: ELEVEN, onError: 'continueRegularOutput' }, output: [{ text: 'oi, queria saber do meu pedido' }] });
 
 const montarTextoAudio = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Montar Texto do Audio', parameters: {
   jsCode: "const o = $('Triagem').first().json;\nconst r = $input.first().json || {};\nconst t = String(r.text || '').trim();\nconst texto = t ? '[Audio do cliente, transcrito]: ' + t : '[Cliente enviou um audio que nao foi possivel transcrever. Peca gentilmente para escrever a mensagem.]';\nreturn [{ json: { telefone: o.telefone, lid: o.lid, nome: o.nome, msg_id: o.msg_id, tipo: 'audio', texto: texto } }];" } },
