@@ -109,8 +109,8 @@ export function fluxoCaixa(empresaId, de, ate, gran = 'dia', { contaId = null } 
 export function weekKey(iso) { const d = fromISO(iso); const day = (d.getDay() + 6) % 7; d.setDate(d.getDate() - day); return toISO(d); }
 
 // ---------- DRE ----------
-// regime: 'competencia' (valor por competência, com rateio de categorias) | 'caixa' (baixas por data)
-export function dre(empresaId, ano, regime = 'competencia', { centroId = null } = {}) {
+// regime: 'vencimento' (valor pelo mês de vencimento, com rateio de categorias) | 'caixa' (baixas por data)
+export function dre(empresaId, ano, regime = 'vencimento', { centroId = null } = {}) {
   const cats = db.of('categorias', empresaId);
   const meses = Array.from({ length: 12 }, (_, i) => `${ano}-${String(i + 1).padStart(2, '0')}`);
   const cell = new Map(); // catId -> [12]
@@ -121,8 +121,8 @@ export function dre(empresaId, ano, regime = 'competencia', { centroId = null } 
     if (centroId) { const rc = l.rateio_centros || []; const r = rc.find(x => x.centro_id === centroId); if (!r) continue; fator = (Number(r.percent) || 0) / 100; }
     const splits = (l.rateio_categorias && l.rateio_categorias.length) ? l.rateio_categorias.map(r => ({ cat: r.categoria_id, valor: Number(r.valor) || 0 })) : [{ cat: l.categoria_id, valor: Number(l.valor) || 0 }];
     const total = sum(splits, s => s.valor) || Number(l.valor) || 1;
-    if (regime === 'competencia') {
-      const mk = monthKey(l.competencia || l.vencimento);
+    if (regime !== 'caixa') {
+      const mk = monthKey(l.vencimento);
       for (const s of splits) add(s.cat, mk, s.valor * fator);
     } else {
       for (const b of l.baixas || []) { const p = principalBaixa(b); for (const s of splits) add(s.cat, monthKey(b.data), p * (s.valor / total) * fator); }
@@ -158,7 +158,7 @@ export function gerarParcelas(base, n, { modo = 'dividir', intervalo = 'mensal',
   for (let i = 0; i < n; i++) {
     const venc = intervalo === 'semanal' ? addDays(primeiro || base.vencimento, 7 * i) : intervalo === 'quinzenal' ? addDays(primeiro || base.vencimento, 15 * i) : addMonths(primeiro || base.vencimento, i);
     let v = parcela; if (modo === 'dividir' && i === n - 1) v = round2(total - acum); acum = round2(acum + v);
-    out.push({ ...base, id: uid(), valor: v, vencimento: venc, competencia: base.competencia && i === 0 ? base.competencia : monthStart(venc), parcela_num: i + 1, parcela_total: n, grupo_parcelas_id: grupo, baixas: [] });
+    out.push({ ...base, id: uid(), valor: v, vencimento: venc, competencia: monthStart(venc), parcela_num: i + 1, parcela_total: n, grupo_parcelas_id: grupo, baixas: [] });
   }
   return out;
 }
@@ -169,7 +169,7 @@ export function gerarRecorrencia(base, rec) {
   let venc = base.vencimento; const diaBase = fromISO(base.vencimento).getDate();
   for (let i = 0; i < max; i++) {
     if (rec.ate && venc > rec.ate) break;
-    out.push({ ...base, id: uid(), vencimento: venc, competencia: i === 0 && base.competencia ? base.competencia : monthStart(venc), recorrencia_id: grupo, recorrencia: { ...rec, n: i + 1 }, baixas: [] });
+    out.push({ ...base, id: uid(), vencimento: venc, competencia: monthStart(venc), recorrencia_id: grupo, recorrencia: { ...rec, n: i + 1 }, baixas: [] });
     // pra mensal e derivados, preserva o dia original (ex.: 31 → 28/30 → 31)
     if (['mensal', 'bimestral', 'trimestral', 'semestral', 'anual'].includes(rec.freq)) { const m = { mensal: 1, bimestral: 2, trimestral: 3, semestral: 6, anual: 12 }[rec.freq]; const d = fromISO(monthStart(venc)); d.setMonth(d.getMonth() + m); const last = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate(); d.setDate(Math.min(diaBase, last)); venc = toISO(d); } else venc = step(venc);
   }

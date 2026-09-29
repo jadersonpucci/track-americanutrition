@@ -15,9 +15,9 @@ export function render(root) {
   const S = arr => ({ pagar: round2(sum(arr.filter(l => l.tipo === 'pagar'), emAberto)), receber: round2(sum(arr.filter(l => l.tipo === 'receber'), emAberto)) });
   const sHoje = S(hoje), sAtr = S(atras), sProx = S(prox7);
   const saldo = saldoTotal(E); const proj30 = round2(sum(contas.filter(c => c.tipo !== 'cartao'), c => saldoProjetado(E, c.id, addDays(t, 30))));
-  const mes = monthStart(t); const mesLancs = lancs.filter(l => (l.competencia || l.vencimento) >= mes && (l.competencia || l.vencimento) <= monthEnd(mes));
+  const mes = monthStart(t); const mesLancs = lancs.filter(l => l.vencimento >= mes && l.vencimento <= monthEnd(mes));
   const recMes = round2(sum(mesLancs.filter(l => l.tipo === 'receber'), l => l.valor)), despMes = round2(sum(mesLancs.filter(l => l.tipo === 'pagar'), l => l.valor));
-  const mesAnt = addMonths(mes, -1); const antLancs = lancs.filter(l => (l.competencia || l.vencimento) >= mesAnt && (l.competencia || l.vencimento) <= monthEnd(mesAnt));
+  const mesAnt = addMonths(mes, -1); const antLancs = lancs.filter(l => l.vencimento >= mesAnt && l.vencimento <= monthEnd(mesAnt));
   const recAnt = round2(sum(antLancs.filter(l => l.tipo === 'receber'), l => l.valor)), despAnt = round2(sum(antLancs.filter(l => l.tipo === 'pagar'), l => l.valor));
   const varPct = (a, b) => b ? Math.round((a - b) / b * 100) : null;
   const hora = new Date().getHours(); const sauda = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';

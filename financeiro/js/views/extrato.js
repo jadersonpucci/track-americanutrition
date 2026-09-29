@@ -132,7 +132,7 @@ function paintConciliar(body, conta, C, E) {
   on(lw, 'click', '[data-ign]', async (e, b) => { const it = item(b.dataset.ign); await db.upsert('extrato_itens', { ...it, ignorado: true }); });
   on(lw, 'click', '[data-unign]', async (e, b) => { const it = item(b.dataset.unign); await db.upsert('extrato_itens', { ...it, ignorado: false }); });
   on(lw, 'click', '[data-novo]', (e, b) => { const it = item(b.dataset.novo); const tipo = it.valor >= 0 ? 'receber' : 'pagar';
-    const d = abrirLancamento(null, { tipo, defaults: { descricao: it.descricao, valor: Math.abs(it.valor), vencimento: it.data, competencia: monthStart(it.data), conta_id: conta.id, origem: 'extrato', conciliado_fitid: it.fitid } });
+    const d = abrirLancamento(null, { tipo, defaults: { descricao: it.descricao, valor: Math.abs(it.valor), vencimento: it.data, conta_id: conta.id, origem: 'extrato', conciliado_fitid: it.fitid } });
     const prevClose = d.close; d.close = async r => { prevClose(r); if (r) { const l = db.of('lancamentos', E).find(x => x.conciliado_fitid === it.fitid); if (l) { if (!(l.baixas || []).length) await db.upsert('lancamentos', { ...l, baixas: [{ id: uid(), data: it.data, valor: Math.abs(it.valor), conta_id: conta.id, juros: 0, multa: 0, desconto: 0 }] }); await db.upsert('extrato_itens', { ...it, lancamento_id: l.id }); } } }; });
   on(lw, 'click', '[data-outro]', (e, b) => { const it = item(b.dataset.outro); escolherLanc(it, conta, C, E); });
 }

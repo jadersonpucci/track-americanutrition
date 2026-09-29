@@ -7,13 +7,13 @@ import { filtrar, statusOf, emAberto, liquidado, topPor, principalBaixa } from '
 import { donut, barsInOut } from '../charts.js';
 import { abrirDetalhe } from './form-lancamento.js';
 
-const S = Object.assign({ tipo: 'categoria', de: monthStart(today()), ate: monthEnd(today()), fluxo: 'pagar', regime: 'competencia' }, prefs.get('rel') || {});
+const S = Object.assign({ tipo: 'categoria', de: monthStart(today()), ate: monthEnd(today()), fluxo: 'pagar' }, prefs.get('rel') || {});
 const TIPOS = [{ id: 'categoria', label: 'Por categoria', icon: 'ti-category' }, { id: 'contato', label: 'Por contato', icon: 'ti-users' }, { id: 'centro', label: 'Por centro de custo', icon: 'ti-target' }, { id: 'evolucao', label: 'Evolução mensal', icon: 'ti-chart-bar' }, { id: 'inadimplencia', label: 'Atrasados', icon: 'ti-alert-triangle' }, { id: 'lancamentos', label: 'Lançamentos', icon: 'ti-list-details' }];
 
 export function render(root, { params = {} } = {}) {
   const E = app.empresaId; const C = app.ctx(); const save = () => prefs.set('rel', S);
   if (params.categoria) { S.tipo = 'lancamentos'; S.categoria = params.categoria; if (params.ano) { S.de = `${params.ano}-01-01`; S.ate = `${params.ano}-12-31`; } }
-  const dataDe = l => S.regime === 'competencia' ? (l.competencia || l.vencimento) : l.vencimento;
+  const dataDe = l => l.vencimento;
   const base = C.lancamentos.filter(l => l.tipo !== 'transferencia' && l.status !== 'cancelado' && dataDe(l) >= S.de && dataDe(l) <= monthEnd(S.ate) && (S.tipo === 'evolucao' || S.tipo === 'inadimplencia' || l.tipo === S.fluxo));
   root.innerHTML = `<div class="page rel">
     <header class="ph"><div><h1>Relatórios</h1></div><div class="ph-a"><button class="btn ghost" data-export>${icon('ti-download')}</button><button class="btn ghost" data-print>${icon('ti-printer')}</button></div></header>
@@ -22,7 +22,6 @@ export function render(root, { params = {} } = {}) {
     <div data-body></div></div>`;
   const tb = root.querySelector('[data-tb]');
   if (!['evolucao', 'inadimplencia'].includes(S.tipo)) tb.appendChild(segmented([{ id: 'pagar', label: 'Despesas' }, { id: 'receber', label: 'Receitas' }], S.fluxo, v => { S.fluxo = v; save(); render(root); }));
-  if (S.tipo !== 'inadimplencia') tb.appendChild(segmented([{ id: 'competencia', label: 'Competência' }, { id: 'vencimento', label: 'Vencimento' }], S.regime, v => { S.regime = v; save(); render(root); }));
   on(root, 'click', '.rel-tab', (e, b) => { S.tipo = b.dataset.t; S.categoria = null; save(); render(root); });
   root.querySelector('[data-prev]').onclick = () => { const m = addMonths(S.de, -1); S.de = m; S.ate = monthEnd(m); save(); render(root); };
   root.querySelector('[data-next]').onclick = () => { const m = addMonths(S.de, 1); S.de = m; S.ate = monthEnd(m); save(); render(root); };

@@ -12,7 +12,7 @@ Sistema financeiro completo para substituir o Nibo: contas a pagar e a receber, 
 | Baixa | data, conta, valor (parcial ou total), juros, multa, desconto; estorno; baixa em lote |
 | Contas e extrato | saldo por conta, extrato com saldo corrente, previsto (60 dias), **conciliação** com importação **OFX/CSV**, sugestão automática, conciliar em um clique, criar lançamento a partir da linha, ignorar |
 | Fluxo de caixa | dia / semana / mês, 30–90 dias (ou 6–12 meses), realizado vs previsto, saldo acumulado, atrasados caindo em "hoje", por conta ou consolidado |
-| DRE | competência ou caixa, 12 meses, grupos → subgrupos → categorias, % da receita, filtro por centro de custo, exportação e impressão |
+| DRE | por vencimento ou caixa, 12 meses ou 4 trimestres (padrão no celular), valores sem centavos, grupos → subgrupos → categorias, % da receita, filtro por centro de custo, exportação e impressão |
 | Relatórios | por categoria, por contato, por centro de custo, evolução mensal, atrasados por faixa, lançamentos detalhados |
 | Cadastros | contas (49 bancos/gateways com logo), categorias (plano de contas com código DRE, ícone, cor), contatos (busca de CNPJ na Receita), centros de custo, tags |
 | Configurações | multiempresa, backup/restauração JSON, importação do Nibo, importação CSV, dados de exemplo, conexão Supabase, integrações n8n, tema claro/escuro, densidade, atalhos |
