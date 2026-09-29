@@ -23,6 +23,7 @@ export function parseMoney(s) {
   s = s.replace(/[^\d,.]/g, '');
   if (s.includes(',') && s.includes('.')) s = s.replace(/\./g, '').replace(',', '.');
   else if (s.includes(',')) s = s.replace(',', '.');
+  else if (/^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, ''); // só pontos de milhar: 10.322 → 10322
   const v = parseFloat(s) || 0;
   return neg ? -v : v;
 }
