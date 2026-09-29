@@ -76,6 +76,16 @@ export function saldoProjetado(empresaId, contaId, ate) {
   }
   return round2(s);
 }
+// projeção de todas as contas (sem cartão) + lançamentos abertos ainda sem conta definida
+export function saldoProjetadoTotal(empresaId, ate) {
+  let s = sum(db.of('contas', empresaId).filter(c => !c.arquivada && c.tipo !== 'cartao'), c => saldoProjetado(empresaId, c.id, ate));
+  for (const l of db.of('lancamentos', empresaId)) {
+    if (l.tipo === 'transferencia' || l.conta_id) continue;
+    const st = statusOf(l); if (st === 'pago' || st === 'cancelado') continue;
+    if (l.vencimento <= ate) s += (l.tipo === 'receber' ? 1 : -1) * emAberto(l);
+  }
+  return round2(s);
+}
 export function saldoTotal(empresaId, { incluirCartao = false, ate = today() } = {}) {
   return round2(sum(db.of('contas', empresaId).filter(c => !c.arquivada && (incluirCartao || c.tipo !== 'cartao')), c => saldoConta(empresaId, c.id, ate)));
 }

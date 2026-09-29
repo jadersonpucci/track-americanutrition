@@ -3,7 +3,7 @@ import { app } from '../app.js';
 import { db, prefs } from '../db.js';
 import { h, icon, bankIcon, catIcon, avatar, moneyEl, menu, emptyState, toast, confirm, modal, drawer, combobox, on, field, fieldEl, segmented } from '../ui.js';
 import { money, today, addDays, monthStart, monthEnd, addMonths, fmtDate, fmtMonth, relDate, esc, sum, round2, toCSV, download, groupBy, readFile, parseOFX, parseCSVExtrato, uid, norm } from '../utils.js';
-import { saldoConta, saldoProjetado, movimentos, statusOf, sugerirConciliacao, emAberto } from '../model.js';
+import { saldoConta, saldoProjetado, saldoProjetadoTotal, movimentos, statusOf, sugerirConciliacao, emAberto } from '../model.js';
 import { abrirLancamento, abrirDetalhe, abrirBaixa } from './form-lancamento.js';
 import { abrirConta } from './cadastros.js';
 
@@ -42,7 +42,7 @@ export function render(root, { contaId = null } = {}) {
 }
 // Visão geral: todas as contas com saldo, projeção e o saldo unificado. Toque numa conta para abrir o extrato.
 function renderVisao(root, { E, C, contas, total }) {
-  const t = today(); const proj = round2(sum(contas.filter(c => c.tipo !== 'cartao'), c => saldoProjetado(E, c.id, addDays(t, 30))));
+  const t = today(); const proj = saldoProjetadoTotal(E, addDays(t, 30));
   root.innerHTML = `<div class="page extrato">
     <header class="ph"><div><div class="eyebrow">Saldo unificado</div><h1 class="money">${money(total)}</h1><p class="muted sm">${money(proj)} projetado em 30 dias</p></div>
       <div class="ph-a"><button class="btn secondary" data-transf>${icon('ti-arrows-exchange')}Transferir</button><button class="btn ghost" data-nova-conta>${icon('ti-plus')}Conta</button></div></header>

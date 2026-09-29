@@ -2,7 +2,7 @@
 import { app } from '../app.js';
 import { h, icon, bankIcon, catIcon, avatar, moneyEl, emptyState, on } from '../ui.js';
 import { money, today, addDays, monthStart, monthEnd, fmtDate, fmtMonth, relDate, esc, sum, round2, daysBetween, addMonths, monthKey } from '../utils.js';
-import { saldoConta, saldoTotal, saldoProjetado, fluxoCaixa, statusOf, emAberto, filtrar, dre, topPor, liquidado, movimentos } from '../model.js';
+import { saldoConta, saldoTotal, saldoProjetadoTotal, fluxoCaixa, statusOf, emAberto, filtrar, dre, topPor, liquidado, movimentos } from '../model.js';
 import { barsInOut, lineSaldo, donut, sparkline } from '../charts.js';
 import { abrirLancamento, abrirBaixa, abrirDetalhe, statusPill } from './form-lancamento.js';
 
@@ -14,7 +14,7 @@ export function render(root) {
   const hoje = abertos.filter(l => l.vencimento === t), atras = abertos.filter(l => l.vencimento < t), prox7 = abertos.filter(l => l.vencimento > t && l.vencimento <= addDays(t, 7));
   const S = arr => ({ pagar: round2(sum(arr.filter(l => l.tipo === 'pagar'), emAberto)), receber: round2(sum(arr.filter(l => l.tipo === 'receber'), emAberto)) });
   const sHoje = S(hoje), sAtr = S(atras), sProx = S(prox7);
-  const saldo = saldoTotal(E); const proj30 = round2(sum(contas.filter(c => c.tipo !== 'cartao'), c => saldoProjetado(E, c.id, addDays(t, 30))));
+  const saldo = saldoTotal(E); const proj30 = saldoProjetadoTotal(E, addDays(t, 30));
   const mes = monthStart(t); const mesLancs = lancs.filter(l => l.vencimento >= mes && l.vencimento <= monthEnd(mes));
   const recMes = round2(sum(mesLancs.filter(l => l.tipo === 'receber'), l => l.valor)), despMes = round2(sum(mesLancs.filter(l => l.tipo === 'pagar'), l => l.valor));
   const mesAnt = addMonths(mes, -1); const antLancs = lancs.filter(l => l.vencimento >= mesAnt && l.vencimento <= monthEnd(mesAnt));

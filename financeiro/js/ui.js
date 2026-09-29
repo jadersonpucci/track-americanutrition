@@ -141,7 +141,7 @@ export function combobox({ options = [], value = null, placeholder = 'Selecionar
   const el = h(`<div class="combo ${cls}" tabindex="0" ${name ? `data-name="${name}"` : ''}><span class="combo-v"></span><i class="ti ti-selector"></i></div>`);
   let opts = options; let cur = value; let pop = null; let hi = 0; let filtered = [];
   const find = id => opts.find(o => o.id === id);
-  const paint = () => { const o = find(cur); const v = el.querySelector('.combo-v'); if (o) { v.innerHTML = renderValue ? renderValue(o) : `${o.icon || ''}<span class="t">${esc(o.label)}</span>`; v.classList.remove('ph'); } else { v.innerHTML = `<span class="t">${esc(placeholder)}</span>`; v.classList.add('ph'); } };
+  const paint = () => { const o = find(cur); const v = el.querySelector('.combo-v'); if (o) { v.innerHTML = renderValue ? renderValue(o) : `${o.icon || ''}<span class="t">${esc(o.label)}</span>`; v.classList.remove('vazio'); } else { v.innerHTML = `<span class="t">${esc(placeholder)}</span>`; v.classList.add('vazio'); } };
   const close = () => { if (pop) { pop.remove(); pop = null; document.removeEventListener('click', outside, true); } };
   const outside = e => { if (pop && !pop.contains(e.target) && !el.contains(e.target)) close(); };
   const pick = o => { cur = o ? o.id : null; paint(); close(); el.dispatchEvent(new CustomEvent('change', { bubbles: true, detail: cur })); onChange && onChange(cur, o); };

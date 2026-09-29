@@ -14,7 +14,7 @@ export function abrirLancamento(existing = null, { tipo = 'pagar', defaults = {}
   const isEdit = !!existing;
   // centro de custo padrão: o do contato (se cadastrado) ou "Brasil" (tudo que não é marcado como outro centro)
   const centrosPadrao = contatoId => { const ct = contatoId ? C.contatos.find(c => c.id === contatoId) : null; if (ct && Array.isArray(ct.rateio_centros_padrao) && ct.rateio_centros_padrao.length) return ct.rateio_centros_padrao.map(r => ({ ...r })); const br = C.centros.find(c => !c.arquivado && /^brasil$/i.test(c.nome)); return br ? [{ centro_id: br.id, percent: 100 }] : []; };
-  const L = existing ? JSON.parse(JSON.stringify(existing)) : { tipo, descricao: '', valor: 0, vencimento: today(), categoria_id: null, contato_id: null, conta_id: C.contas.find(c => !c.arquivada && c.tipo !== 'cartao')?.id || null, forma_pagamento: 'pix', tags: [], anexos: [], rateio_categorias: [], rateio_centros: centrosPadrao(defaults.contato_id || null), observacoes: '', referencia: '', baixas: [], status: 'aberto', ...defaults };
+  const L = existing ? JSON.parse(JSON.stringify(existing)) : { tipo, descricao: '', valor: 0, vencimento: today(), categoria_id: null, contato_id: null, conta_id: tipo === 'transferencia' ? (C.contas.find(c => !c.arquivada && c.tipo !== 'cartao')?.id || null) : null, forma_pagamento: 'pix', tags: [], anexos: [], rateio_categorias: [], rateio_centros: centrosPadrao(defaults.contato_id || null), observacoes: '', referencia: '', baixas: [], status: 'aberto', ...defaults };
   let ccPick = null, ccTocado = false;
   const d = drawer({ title: isEdit ? 'Editar lançamento' : 'Novo lançamento', size: 'lg', cls: 'form-lanc' });
   const body = d.body; body.innerHTML = '';
@@ -65,10 +65,10 @@ export function abrirLancamento(existing = null, { tipo = 'pagar', defaults = {}
   if (rateio.length) { rateioBox.classList.remove('hidden'); rateioBtn.classList.add('hidden'); paintRateio(); }
 
   // conta + forma
-  const conta = combobox({ options: C.contas.filter(c => !c.arquivada || c.id === L.conta_id).map(contaOpt), value: L.conta_id, placeholder: 'Conta', allowEmpty: false });
+  const conta = combobox({ options: C.contas.filter(c => !c.arquivada || c.id === L.conta_id).map(contaOpt), value: L.conta_id, placeholder: 'Definir na baixa', allowEmpty: true });
   const contaDest = combobox({ options: C.contas.filter(c => !c.arquivada || c.id === L.conta_destino_id).map(contaOpt), value: L.conta_destino_id || null, placeholder: 'Conta de destino', allowEmpty: false });
   const forma = combobox({ options: FORMAS.map(x => ({ id: x.id, label: x.nome, icon: icon(x.icone, 'oi') })), value: L.forma_pagamento || 'pix', allowEmpty: false });
-  const rowConta = h('<div class="row2"></div>'); const fConta = fieldEl('Conta', conta, { req: true }); const fDest = fieldEl('Para a conta', contaDest, { req: true }); const fForma = fieldEl('Forma', forma);
+  const rowConta = h('<div class="row2"></div>'); const fConta = fieldEl('Conta', conta); const fDest = fieldEl('Para a conta', contaDest, { req: true }); const fForma = fieldEl('Forma', forma);
   rowConta.append(fConta, fDest, fForma); f.appendChild(rowConta);
 
   // centro de custo (rateio %)
@@ -101,14 +101,14 @@ export function abrirLancamento(existing = null, { tipo = 'pagar', defaults = {}
   conta.addEventListener('change', e => { pagoConta.set(e.detail); });
   if (!isEdit) { pagoBox.append(tglPago, pagoOpts); f.appendChild(pagoBox); }
 
-  // mais: tags, referência, obs, anexos
-  const more = h(`<details class="more" ${L.tags?.length || L.referencia || L.observacoes || L.anexos?.length ? 'open' : ''}><summary>${icon('ti-chevron-right')}Mais detalhes <span class="muted">tags, referência, observações, anexos</span></summary><div class="more-b"></div></details>`);
+  // observações sempre visíveis no formulário; na lista não aparecem, só ao abrir o lançamento
+  const more = h(`<details class="more" ${L.tags?.length || L.referencia || L.anexos?.length ? 'open' : ''}><summary>${icon('ti-chevron-right')}Mais detalhes <span class="muted">tags, referência, anexos</span></summary><div class="more-b"></div></details>`);
   const mb = more.querySelector('.more-b');
   const tagsEl = h(`<div class="chips"></div>`); const selTags = new Set(L.tags || []);
   const paintTags = () => { tagsEl.innerHTML = C.tags.map(t => `<button type="button" class="chip ${selTags.has(t.nome) ? 'on' : ''}" style="--c:${t.cor}" data-t="${esc(t.nome)}">${esc(t.nome)}</button>`).join('') + `<button type="button" class="chip add" data-new>${icon('ti-plus')}Nova tag</button>`; };
   paintTags(); tagsEl.onclick = async e => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.new) { const nome = window.prompt('Nome da tag'); if (nome) { await db.upsert('tags', { id: uid(), empresa_id: E, nome, cor: ['#2F6BE0', '#17924A', '#B26A00', '#8E44AD', '#E8262C'][C.tags.length % 5] }); C.tags = db.of('tags', E); selTags.add(nome); paintTags(); } return; } selTags.has(b.dataset.t) ? selTags.delete(b.dataset.t) : selTags.add(b.dataset.t); paintTags(); };
   const ref = h(`<input class="inp" placeholder="Nº da nota, pedido, contrato…" value="${esc(L.referencia || '')}">`);
-  const obs = h(`<textarea class="inp" rows="3" placeholder="Observações internas">${esc(L.observacoes || '')}</textarea>`);
+  const obs = h(`<textarea class="inp" rows="2" placeholder="Ex.: combinado desconto se pagar até o dia 10">${esc(L.observacoes || '')}</textarea>`);
   const anexos = [...(L.anexos || [])];
   const anexBox = h(`<div class="anexos"><div class="anexos-l"></div><div class="anexos-a"><label class="btn ghost sm">${icon('ti-paperclip')}Anexar arquivo<input type="file" multiple hidden accept="image/*,.pdf"></label><label class="btn ghost sm cam">${icon('ti-camera')}Foto<input type="file" hidden accept="image/*" capture="environment"></label><button type="button" class="btn ghost sm" data-link>${icon('ti-link')}Link</button></div></div>`);
   const paintAnex = () => { anexBox.querySelector('.anexos-l').innerHTML = anexos.map((a, i) => `<span class="anexo ${a.enviando ? 'busy' : ''}">${icon(anexoIcone(a))}<a href="${a.url && !a.id ? esc(a.url) : '#'}" ${a.id ? `data-open="${i}"` : 'target="_blank"'}>${esc(a.nome || a.url)}</a>${a.tamanho ? `<small class="muted">${fmtBytes(a.tamanho)}</small>` : ''}<button type="button" class="ibtn xs" data-rm="${i}" title="Remover">${icon('ti-x')}</button></span>`).join('') || '<span class="muted sm">Boleto, nota fiscal, comprovante…</span>'; };
@@ -127,7 +127,8 @@ export function abrirLancamento(existing = null, { tipo = 'pagar', defaults = {}
   }
   anexBox.querySelectorAll('input[type=file]').forEach(i => i.onchange = onFiles);
   anexBox.querySelector('[data-link]').onclick = () => { const url = window.prompt('URL do anexo (nota fiscal, comprovante…)'); if (url) { anexos.push({ nome: url.split('/').pop().slice(0, 40) || url, url }); paintAnex(); } };
-  mb.append(fieldEl('Tags', tagsEl), h('<div class="row2"></div>')); mb.lastChild.append(fieldEl('Referência', ref), fieldEl('Observações', obs)); mb.append(fieldEl('Anexos', anexBox));
+  mb.append(h('<div class="row2"></div>')); mb.lastChild.append(fieldEl('Tags', tagsEl), fieldEl('Referência', ref)); mb.append(fieldEl('Anexos', anexBox));
+  f.appendChild(fieldEl('Observações', obs, { hint: 'Aparecem só ao abrir o lançamento.' }));
   f.appendChild(more);
 
   // footer
@@ -145,7 +146,7 @@ export function abrirLancamento(existing = null, { tipo = 'pagar', defaults = {}
     const tr = L.tipo === 'transferencia';
     f.classList.toggle('is-tr', tr);
     fDest.classList.toggle('hidden', !tr); fForma.classList.toggle('hidden', tr); rowCC.classList.toggle('hidden', tr); rateioBox.classList.toggle('hidden', tr || !rateio.length); ccBox.classList.toggle('hidden', tr); pagoBox.classList.toggle('hidden', tr); repBox.classList.toggle('hidden', tr);
-    fConta.querySelector('.fl').textContent = tr ? 'Da conta' : 'Conta';
+    fConta.querySelector('.fl').textContent = tr ? 'Da conta' : 'Conta (opcional)';
     if (!tr) { categoria.setOptions(catOpts(C.categorias, L.tipo === 'receber' ? 'in' : 'out')); const cat = db.get('categorias', categoria.get()); if (cat && cat.tipo !== (L.tipo === 'receber' ? 'in' : 'out')) categoria.set(null); tglPago.querySelector('.tgl-l').textContent = L.tipo === 'receber' ? 'Já foi recebido' : 'Já foi pago'; }
     descr.placeholder = tr ? 'Ex.: Saque Pagar.me → BTG' : L.tipo === 'receber' ? 'Ex.: Repasse Mercado Livre' : 'Ex.: Meta Ads · setembro';
   }
@@ -156,7 +157,8 @@ export function abrirLancamento(existing = null, { tipo = 'pagar', defaults = {}
     if (!descr.value.trim()) { toast('Informe a descrição', 'err'); descr.focus(); return; }
     if (!venc.value) { toast('Informe a data', 'err'); return; }
     const tr = L.tipo === 'transferencia';
-    if (!conta.get()) { toast('Escolha a conta', 'err'); return; }
+    if (tr && !conta.get()) { toast('Escolha a conta de origem', 'err'); return; }
+    if (!tr && !isEdit && tglPago.get() && !pagoConta.get()) { toast(L.tipo === 'receber' ? 'Escolha a conta em que recebeu' : 'Escolha a conta que pagou', 'err'); return; }
     if (tr && (!contaDest.get() || contaDest.get() === conta.get())) { toast('Escolha uma conta de destino diferente da origem', 'err'); return; }
     if (!tr && !categoria.get() && !rateio.length) { toast('Escolha a categoria', 'err'); return; }
     if (!tr && rateio.length) { const t = sum(rateio, r => r.valor); if (Math.abs(t - v) > 0.005) { toast('O rateio precisa somar o valor total', 'err'); return; } if (rateio.some(r => !r.categoria_id)) { toast('Escolha a categoria de cada linha do rateio', 'err'); return; } }
@@ -204,6 +206,7 @@ export function abrirBaixa(lancs, { onDone } = {}) {
   m.footer.innerHTML = ''; const bc = h('<button class="btn ghost">Cancelar</button>'); bc.onclick = () => m.close(); const ok = h(`<button class="btn primary">${icon('ti-check')}Confirmar</button>`); m.footer.append(bc, ok);
   ok.onclick = async () => {
     let restante = val.get(); if (restante <= 0) { toast('Informe o valor', 'err'); return; }
+    if (!conta.get()) { toast('Escolha a conta', 'err'); return; }
     const rows = [];
     for (const l of list) {
       const ab = emAberto(l); if (ab <= 0 && multi) continue;
@@ -248,7 +251,7 @@ export function abrirDetalhe(l) {
   <div class="kvs">${kv('Vencimento', fmtDate(l.vencimento))}${kv(isTr ? 'De' : 'Conta', cta ? `<span class="inl">${bankIcon(cta, 18)} ${esc(cta.nome)}</span>` : '')}${isTr ? kv('Para', `<span class="inl">${bankIcon(C.conta(l.conta_destino_id), 18)} ${esc(C.conta(l.conta_destino_id)?.nome)}</span>`) : ''}${kv('Forma', FORMAS.find(f => f.id === l.forma_pagamento)?.nome)}${kv('Referência', esc(l.referencia))}${kv('Origem', esc({ manual: 'Manual', pagarme: 'Pagar.me', shopify: 'Shopify', nibo: 'Nibo', importacao: 'Importação', extrato: 'Extrato' }[l.origem || 'manual']))}${kv('Centro de custo', (l.rateio_centros || []).map(r => `${esc(C.centro(r.centro_id)?.nome)} ${r.percent}%`).join(', '))}</div>
   ${l.rateio_categorias?.length ? `<h5>Rateio</h5><div class="det-list">${l.rateio_categorias.map(r => `<div class="det-li">${catIcon(C.cat(r.categoria_id), 24)}<span>${esc(C.cat(r.categoria_id)?.nome)}${r.descricao ? ` <small class="muted">${esc(r.descricao)}</small>` : ''}</span><b>${money(r.valor)}</b></div>`).join('')}</div>` : ''}
   ${!isTr ? `<h5>Baixas <span class="muted">${money(liquidado(l))} de ${money(l.valor)}</span></h5><div class="det-list" data-baixas>${(l.baixas || []).map(b => `<div class="det-li">${bankIcon(C.conta(b.conta_id), 24)}<span>${fmtDate(b.data)} · ${esc(C.conta(b.conta_id)?.nome || '')}${b.juros || b.multa || b.desconto ? ` <small class="muted">${b.juros ? 'juros ' + money(b.juros) + ' ' : ''}${b.multa ? 'multa ' + money(b.multa) + ' ' : ''}${b.desconto ? 'desc. ' + money(b.desconto) : ''}</small>` : ''}${b.observacao ? ` <small class="muted">${esc(b.observacao)}</small>` : ''}</span><b>${money(b.valor)}</b><button class="ibtn" data-est="${b.id}" title="Estornar">${icon('ti-arrow-back-up')}</button></div>`).join('') || '<div class="muted sm">Nenhuma baixa ainda.</div>'}</div>` : ''}
-  ${l.observacoes ? `<h5>Observações</h5><p class="muted">${esc(l.observacoes)}</p>` : ''}
+  ${l.observacoes ? `<h5>Observações</h5><p class="det-obs">${esc(l.observacoes)}</p>` : ''}
   ${l.anexos?.length ? `<h5>Anexos</h5><div class="anexos-l">${l.anexos.map((a, i) => `<a class="anexo" href="${a.id ? '#' : esc(a.url)}" ${a.id ? `data-anexo="${i}"` : 'target="_blank"'}>${icon(anexoIcone(a))}${esc(a.nome || a.url)}${a.tamanho ? ` <small class="muted">${fmtBytes(a.tamanho)}</small>` : ''}</a>`).join('')}</div>` : ''}
   ${sugestaoHtml(l, C)}
   <div class="muted xs det-meta">Criado ${l.criado_em ? new Date(l.criado_em).toLocaleString('pt-BR') : ''}${l.atualizado_em ? ' · atualizado ' + new Date(l.atualizado_em).toLocaleString('pt-BR') : ''}</div>
