@@ -33,7 +33,16 @@ export function render(root, { contaId = null } = {}) {
   on(cs, 'click', '[data-conta]', (e, b) => { S.contaId = b.dataset.conta; location.hash = '#/extrato/' + S.contaId; });
   root.querySelector('[data-transf]').onclick = () => abrirLancamento(null, { tipo: 'transferencia', defaults: { conta_id: S.contaId } });
   // despesa / receita já com esta conta preenchida
-  on(root, 'click', '[data-novo]', (e, b) => abrirLancamento(null, { tipo: b.dataset.novo, defaults: { conta_id: S.contaId } }));
+  on(root, 'click', '[data-novo]', (e, b) => {
+    const d = abrirLancamento(null, { tipo: b.dataset.novo, defaults: { conta_id: S.contaId } });
+    const prevClose = d.close; d.close = r => { prevClose(r); if (!r) return;
+      // mostra onde o lançamento novo foi parar: pago entra no extrato do mês da baixa; em aberto fica no Previsto
+      const novo = db.of('lancamentos', E).filter(l => l.conta_id === S.contaId && !l.deletado_em).sort((a, b) => String(b.criado_em || '').localeCompare(String(a.criado_em || '')))[0];
+      if (!novo) return;
+      if (statusOf(novo) === 'pago') { const bx = (novo.baixas || [])[0]; if (bx?.data) S.mes = monthStart(bx.data); S.aba = 'extrato'; }
+      else { S.aba = 'previsto'; toast('Lançamento em aberto: aparece em "Previsto" e entra no extrato quando for pago.'); }
+    };
+  });
   root.querySelector('[data-nova-conta]').onclick = () => abrirConta();
   root.querySelector('[data-edit-conta]').onclick = () => abrirConta(conta);
   const tabs = segmented([{ id: 'extrato', label: 'Extrato', icon: 'ti-list' }, { id: 'conciliar', label: 'Conciliação', icon: 'ti-checks' }, { id: 'previsto', label: 'Previsto', icon: 'ti-calendar-time' }], S.aba, v => { S.aba = v; paint(); });
@@ -73,7 +82,7 @@ function paintExtrato(body, conta, C, E) {
   body.querySelector('[data-next]').onclick = () => { S.mes = addMonths(S.mes, 1); render(document.getElementById('main'), { contaId: S.contaId }); };
   body.querySelector('[data-export]').onclick = () => { download(`extrato-${norm(conta.nome)}-${S.mes.slice(0, 7)}.csv`, toCSV([...rows].reverse(), [{ label: 'Data', get: r => fmtDate(r.data) }, { label: 'Descrição', key: 'descricao' }, { label: 'Valor', get: r => String(r.valor).replace('.', ',') }, { label: 'Saldo', get: r => String(r.saldo).replace('.', ',') }])); };
   const lw = body.querySelector('[data-list]');
-  if (!rows.length) { lw.appendChild(emptyState({ icon: 'ti-file-invoice', title: 'Sem movimentos', text: `Nenhuma baixa ou transferência nesta conta em ${fmtMonth(S.mes, true)}.` })); return; }
+  if (!rows.length) { lw.appendChild(emptyState({ icon: 'ti-file-invoice', title: 'Sem movimentos', text: `Nenhuma baixa ou transferência nesta conta em ${fmtMonth(S.mes, true)}. Lançamentos ainda em aberto ficam na aba Previsto.` })); return; }
   const grupos = groupBy(rows, r => r.data); let html = '';
   for (const [d, arr] of grupos) {
     html += `<div class="grp-h"><span>${relDate(d)} <small>${fmtDate(d)}</small></span><span class="grp-t muted">saldo ${money(arr[0].saldo)}</span></div>`;
