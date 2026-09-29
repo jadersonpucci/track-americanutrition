@@ -29,7 +29,7 @@ export function render(root, { contaId = null } = {}) {
   </div>`;
 
   const cs = root.querySelector('[data-contas]');
-  cs.innerHTML = contas.map(c => { const s = saldoConta(E, c.id); return `<button class="conta-card ${c.id === S.contaId ? 'on' : ''}" data-conta="${c.id}">${bankIcon(c, 40)}<div class="cc-i"><div class="cc-n">${esc(c.nome)}</div><div class="cc-t">${tipoNome(c)}</div></div><div class="cc-v ${s < 0 ? 'neg' : ''}">${money(s)}</div></button>`; }).join('');
+  cs.innerHTML = contas.map(c => { const s = saldoConta(E, c.id); return `<button class="conta-card ${c.id === S.contaId ? 'on' : ''}" data-conta="${c.id}">${bankIcon(c, 28)}<div class="cc-i"><div class="cc-n">${esc(c.nome)}</div><div class="cc-t">${tipoNome(c)}</div></div><div class="cc-v ${s < 0 ? 'neg' : ''}">${money(s)}</div></button>`; }).join('');
   on(cs, 'click', '[data-conta]', (e, b) => { S.contaId = b.dataset.conta; location.hash = '#/extrato/' + S.contaId; });
   root.querySelector('[data-transf]').onclick = () => abrirLancamento(null, { tipo: 'transferencia', defaults: { conta_id: S.contaId } });
   // despesa / receita já com esta conta preenchida
