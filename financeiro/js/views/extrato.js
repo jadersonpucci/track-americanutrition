@@ -34,7 +34,7 @@ export function render(root, { contaId = null } = {}) {
   root.querySelector('[data-transf]').onclick = () => abrirLancamento(null, { tipo: 'transferencia', defaults: { conta_id: S.contaId } });
   // despesa / receita já com esta conta preenchida
   on(root, 'click', '[data-novo]', (e, b) => {
-    const d = abrirLancamento(null, { tipo: b.dataset.novo, defaults: { conta_id: S.contaId } });
+    const d = abrirLancamento(null, { tipo: b.dataset.novo, defaults: { conta_id: S.contaId }, jaPago: true });
     const prevClose = d.close; d.close = r => { prevClose(r); if (!r) return;
       // mostra onde o lançamento novo foi parar: pago entra no extrato do mês da baixa; em aberto fica no Previsto
       const novo = db.of('lancamentos', E).filter(l => l.conta_id === S.contaId && !l.deletado_em).sort((a, b) => String(b.criado_em || '').localeCompare(String(a.criado_em || '')))[0];

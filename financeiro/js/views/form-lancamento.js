@@ -9,7 +9,8 @@ const contaOpt = c => ({ id: c.id, label: c.nome, sub: c.tipo === 'cartao' ? 'Ca
 const catOpts = (cats, tipo) => cats.filter(c => !c.arquivada && (!tipo || c.tipo === tipo)).sort((a, b) => (a.grupo - b.grupo) || (a.ordem - b.ordem)).map(c => ({ id: c.id, label: c.nome, sub: c.codigo, icon: catIcon(c, 24), group: `${c.grupo} · ${c.subgrupo || ''}`, keywords: c.subgrupo }));
 const contatoOpts = (contatos, tipo) => contatos.filter(c => !c.arquivado).sort((a, b) => a.nome.localeCompare(b.nome)).map(c => ({ id: c.id, label: c.nome, sub: c.tipo === 'socio' ? 'Sócio' : c.tipo === 'cliente' ? 'Cliente' : c.tipo === 'fornecedor' ? 'Fornecedor' : c.tipo === 'funcionario' ? 'Funcionário' : '', icon: avatar(c.nome, 24) }));
 
-export function abrirLancamento(existing = null, { tipo = 'pagar', defaults = {} } = {}) {
+// jaPago: abre com "Já foi pago/recebido" marcado e a data da baixa acompanhando o vencimento (usado pela tela da conta)
+export function abrirLancamento(existing = null, { tipo = 'pagar', defaults = {}, jaPago = false } = {}) {
   const E = app.empresaId; const C = app.ctx();
   const isEdit = !!existing;
   // centro de custo padrão: o do contato (se cadastrado) ou "Brasil" (tudo que não é marcado como outro centro)
@@ -96,8 +97,11 @@ export function abrirLancamento(existing = null, { tipo = 'pagar', defaults = {}
 
   // já pago
   const pagoBox = h('<div class="pagobox"></div>');
-  const tglPago = toggle({ label: L.tipo === 'receber' ? 'Já foi recebido' : 'Já foi pago', checked: false });
-  const pagoOpts = h(`<div class="row2 hidden"><label class="fld"><span class="fl">Data</span><input class="inp" type="date" value="${today()}" data-dt></label></div>`);
+  const tglPago = toggle({ label: L.tipo === 'receber' ? 'Já foi recebido' : 'Já foi pago', checked: !isEdit && jaPago });
+  const pagoOpts = h(`<div class="row2 ${!isEdit && jaPago ? '' : 'hidden'}"><label class="fld"><span class="fl">Data</span><input class="inp" type="date" value="${jaPago ? L.vencimento : today()}" data-dt></label></div>`);
+  let dtPagoTocada = false; pagoOpts.querySelector('[data-dt]').addEventListener('change', () => dtPagoTocada = true);
+  venc.addEventListener('change', () => { if (jaPago && !dtPagoTocada && tglPago.get()) pagoOpts.querySelector('[data-dt]').value = venc.value; });
+  quick.addEventListener('click', () => setTimeout(() => { if (jaPago && !dtPagoTocada && tglPago.get()) pagoOpts.querySelector('[data-dt]').value = venc.value; }, 0));
   const pagoConta = combobox({ options: C.contas.filter(c => !c.arquivada).map(contaOpt), value: L.conta_id, placeholder: 'Conta', allowEmpty: false }); pagoOpts.appendChild(fieldEl('Na conta', pagoConta));
   tglPago.querySelector('input').onchange = e => { pagoOpts.classList.toggle('hidden', !e.target.checked); avisoVenc(); };
   // data já passou e não está marcado como pago: lembra que, sem baixa, não entra no extrato
