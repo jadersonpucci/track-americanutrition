@@ -1645,3 +1645,38 @@ Testes (23/09, sandbox): "quanto tempo dura um pote do green propolis tomando 2 
 dia?" → "60 cápsulas, 2 por dia, rende exatos 30 dias". "quanto fica por mês o imunofosfo 90
 junto com o green propolis?" → **R$ 404,00**. "quanto dura o ômega 3 e o propolis extract?" →
 30 dias cada.
+
+## Avise-me quando voltar ao estoque (29/09)
+
+Print de +55 33 9950-9132: a cliente clicou no "avise-me" do site, a Serena respondeu *"Prontinho! 💙 Assim
+que o D3 50.000 UI voltar, você é avisada por aqui"* — e **não existia nada** que cumprisse isso. Nenhuma
+tabela, nenhum cron: a promessa morria ali. Duas clientes já estavam nessa situação (+55 33 9950-9132 e
++55 11 98449-5905, as duas esperando o D3 with K2, A and E 50.000 UI).
+
+Workflow novo `[Serena] Avise-me Quando Voltar` (`XfrzsyTwdMdhbwwZ`, fonte em `aviso-estoque.workflow.js`),
+cron de 30 min, e a tabela `serena_avisos_estoque`:
+
+1. **Registrar** — lê as mensagens de cliente dos últimos 3 dias que falam em aviso (`avisar/avisado/aviso`)
+   e em volta (`voltar/chegar/repor/disponível/estoque`), descobre o produto e confere o estoque real na
+   Shopify. Só entra na fila se o produto estiver **fora** de estoque: produto disponível não tem o que
+   esperar, e isso descarta sozinho o "me avisa quando meu pedido chegar", que não cita produto nenhum.
+2. **Avisar** — para a fila pendente, consulta o estoque a cada rodada; voltou, a Serena escreve o aviso
+   (Core proativo, `tipo_proativo: estoque_voltou`), o Samuel envia, grava nota no contato e a linha vira
+   `avisado`. Só entre 8h e 20h BRT, com 12–20s entre envios, pulando quem está na blocklist.
+
+Detalhes que custaram uma rodada de teste:
+
+- **Nome em dois idiomas.** No banco o produto é `D3 com K2, A e E - 50.000 UI`; o botão do site manda
+  `D3 with K2, A and E - 50.000 UI`. O casamento é por tokens fortes, e o primeiro filtro (`w.length > 2`)
+  descartava justamente `d3`, `k2` e `50` — sobrava só `000` e ninguém era registrado. Agora conta token de
+  2 caracteres e a nota é acertos + cobertura do nome, então `D3 com K2, A e E 50.000` (4/4) ganha de
+  `D3 Vitamin with K2 and A` (2/2) na mensagem certa, e perde na outra.
+- **"Quando voltar me avisa".** Sozinha, essa frase não nomeia produto. A busca leva junto a última mensagem
+  da Serena antes dela, que é onde o produto foi citado.
+
+Kill switch: `serena_config aviso_estoque = off`. Resumo de registros e avisos no Telegram (tópico 289).
+
+Testes (29/09): rodada real registrou as duas clientes que estavam esperando (`serena_avisos_estoque` 1 e 2,
+D3 50.000 UI, pendente). Geração do texto pelo Core conferida: *"Passando aqui pra te avisar que a D3 com K2,
+A e E 50.000 UI já voltou ao estoque, como você pediu 🧬"*. Marcação de `avisado` testada em linha de teste,
+depois removida. O D3 50.000 UI segue fora de estoque, então nada foi enviado ainda.
