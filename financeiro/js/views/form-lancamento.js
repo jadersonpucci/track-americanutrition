@@ -33,7 +33,7 @@ export function abrirLancamento(existing = null, { tipo = 'pagar', defaults = {}
 
   // datas
   const venc = h(`<input class="inp" type="date" value="${L.vencimento}" required>`);
-  const quick = h(`<div class="quick"><button type="button" data-d="0">Hoje</button><button type="button" data-d="1">Amanhã</button><button type="button" data-d="7">+7 dias</button><button type="button" data-d="30">+30 dias</button></div>`);
+  const quick = h(`<div class="quick"><button type="button" tabindex="-1" data-d="0">Hoje</button><button type="button" tabindex="-1" data-d="1">Amanhã</button><button type="button" tabindex="-1" data-d="7">+7 dias</button><button type="button" tabindex="-1" data-d="30">+30 dias</button></div>`);
   quick.onclick = e => { const b = e.target.closest('button'); if (!b) return; venc.value = addDays(today(), Number(b.dataset.d)); };
   const rowDatas = h('<div class="row2"></div>'); const fv = fieldEl('Vencimento', venc, { req: true }); fv.appendChild(quick); rowDatas.append(fv); f.appendChild(rowDatas);
 
@@ -45,7 +45,7 @@ export function abrirLancamento(existing = null, { tipo = 'pagar', defaults = {}
   const rowCC = h('<div class="row2"></div>'); rowCC.append(fieldEl('Contato', contato), catCol); f.appendChild(rowCC);
   // rateio de categorias
   const rateioBox = h(`<div class="rateio hidden"><div class="rateio-h"><span>Rateio por categoria</span><button type="button" class="btn ghost xs" data-add>${icon('ti-plus')}Linha</button></div><div class="rateio-l"></div><div class="rateio-t"></div></div>`);
-  const rateioBtn = h(`<button type="button" class="linkbtn">${icon('ti-layout-list')}Dividir em mais de uma categoria</button>`);
+  const rateioBtn = h(`<button type="button" class="linkbtn" tabindex="-1">${icon('ti-layout-list')}Dividir em mais de uma categoria</button>`);
   catCol.appendChild(rateioBtn); f.appendChild(rateioBox);
   let rateio = (L.rateio_categorias || []).map(r => ({ ...r }));
   const paintRateio = () => {

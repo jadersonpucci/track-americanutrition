@@ -141,8 +141,10 @@ export function combobox({ options = [], value = null, placeholder = 'Selecionar
   const paint = () => { const o = find(cur); const v = el.querySelector('.combo-v'); if (o) { v.innerHTML = renderValue ? renderValue(o) : `${o.icon || ''}<span class="t">${esc(o.label)}</span>`; v.classList.remove('vazio'); } else { v.innerHTML = `<span class="t">${esc(placeholder)}</span>`; v.classList.add('vazio'); } };
   const close = () => { if (pop) { pop.remove(); pop = null; document.removeEventListener('click', outside, true); } };
   const outside = e => { if (pop && !pop.contains(e.target) && !el.contains(e.target)) close(); };
-  const pick = o => { cur = o ? o.id : null; paint(); close(); el.dispatchEvent(new CustomEvent('change', { bubbles: true, detail: cur })); onChange && onChange(cur, o); };
-  const open = () => {
+  const pick = (o, { foco = true } = {}) => { cur = o ? o.id : null; paint(); close(); if (foco) el.focus(); el.dispatchEvent(new CustomEvent('change', { bubbles: true, detail: cur })); onChange && onChange(cur, o); };
+  // Tab dentro da busca: leva o foco para o campo seguinte (ou anterior) do formulário
+  const focarVizinho = dir => { const f = [...document.querySelectorAll('input, select, textarea, button, [tabindex]:not([tabindex="-1"])')].filter(x => !x.disabled && x.getAttribute('tabindex') !== '-1' && x.offsetParent !== null && !x.closest('.combo-pop')); const i = f.indexOf(el); const n = f[i + dir]; (n || el).focus(); };
+  const open = (inicial = '') => {
     if (pop) return; hi = 0;
     pop = h(`<div class="combo-pop on"><div class="combo-s"><i class="ti ti-search"></i><input placeholder="Buscar…"></div><div class="combo-l"></div></div>`);
     document.body.appendChild(pop); document.addEventListener('click', outside, true);
@@ -150,7 +152,7 @@ export function combobox({ options = [], value = null, placeholder = 'Selecionar
     const spaceBelow = window.innerHeight - r.bottom; const ph = Math.min(360, Math.max(200, spaceBelow - 16));
     pop.style.width = wdt + 'px'; pop.style.left = Math.min(r.left, window.innerWidth - wdt - 8) + 'px';
     if (spaceBelow < 260 && r.top > 300) { pop.style.top = ''; pop.style.bottom = (window.innerHeight - r.top + 6) + 'px'; pop.style.maxHeight = Math.min(360, r.top - 16) + 'px'; } else { pop.style.top = (r.bottom + 6) + 'px'; pop.style.maxHeight = ph + 'px'; }
-    const inp = pop.querySelector('input'); const list = pop.querySelector('.combo-l');
+    const inp = pop.querySelector('input'); const list = pop.querySelector('.combo-l'); inp.value = inicial;
     const render = () => {
       const q = norm(inp.value); filtered = opts.filter(o => !q || norm(o.label + ' ' + (o.sub || '') + ' ' + (o.keywords || '')).includes(q));
       let html = ''; let lastG = null;
@@ -168,13 +170,19 @@ export function combobox({ options = [], value = null, placeholder = 'Selecionar
       else if (e.key === 'ArrowUp') { hi = Math.max(0, hi - 1); render(); e.preventDefault(); }
       else if (e.key === 'Enter') { e.preventDefault(); if (filtered[hi]) pick(filtered[hi]); else if (allowCreate && inp.value.trim()) doCreate(inp.value.trim()); }
       else if (e.key === 'Escape') { e.stopPropagation(); close(); el.focus(); }
+      else if (e.key === 'Tab') { e.preventDefault(); const dir = e.shiftKey ? -1 : 1; if (inp.value.trim() && filtered[hi]) pick(filtered[hi], { foco: false }); else close(); focarVizinho(dir); }
     });
     const doCreate = async txt => { const o = await allowCreate(txt); if (o) { opts = [...opts, o]; pick(o); } };
     list.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.create) return doCreate(inp.value.trim()); const i = Number(b.dataset.i); pick(i < 0 ? null : filtered[i]); });
+    if (inicial) inp.focus(); // aberto pelo teclado: foco já, para não perder as próximas teclas
     setTimeout(() => inp.focus(), 20);
   };
   el.addEventListener('click', () => pop ? close() : open());
-  el.addEventListener('keydown', e => { if (['Enter', ' ', 'ArrowDown'].includes(e.key)) { e.preventDefault(); open(); } });
+  el.addEventListener('keydown', e => {
+    if (['Enter', ' ', 'ArrowDown'].includes(e.key)) { e.preventDefault(); open(); }
+    else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); open(e.key); } // começar a digitar já abre e busca
+    else if ((e.key === 'Backspace' || e.key === 'Delete') && allowEmpty && cur) { e.preventDefault(); pick(null); }
+  });
   el.get = () => cur; el.set = v => { cur = v; paint(); }; el.setOptions = o => { opts = o; paint(); };
   paint(); return el;
 }
