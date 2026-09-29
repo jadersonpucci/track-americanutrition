@@ -40,11 +40,13 @@ export function abrirLancamento(existing = null, { tipo = 'pagar', defaults = {}
   // contato + categoria
   const contato = combobox({ options: contatoOpts(C.contatos), value: L.contato_id, placeholder: 'Cliente, fornecedor…', onChange: v => { if (ccPick && !ccTocado) ccPick.set(centrosPadrao(v)); }, allowCreate: async nome => { const c = await db.upsert('contatos', { id: uid(), empresa_id: E, nome, tipo: L.tipo === 'receber' ? 'cliente' : 'fornecedor', documento: '', email: '', telefone: '', pix: '', cidade: '', uf: '', observacoes: '', arquivado: false }); toast('Contato criado'); return { id: c.id, label: c.nome, icon: avatar(c.nome, 24) }; } });
   const categoria = combobox({ options: catOpts(C.categorias, L.tipo === 'receber' ? 'in' : 'out'), value: L.categoria_id, placeholder: 'Categoria', allowEmpty: false });
-  const rowCC = h('<div class="row2"></div>'); rowCC.append(fieldEl('Contato', contato), fieldEl('Categoria', categoria, { req: true })); f.appendChild(rowCC);
+  // o botão de rateio fica fora do <label>: dentro dele, o clique no seletor (uma div) acionava o botão
+  const catCol = h('<div class="fld-col"></div>'); catCol.appendChild(fieldEl('Categoria', categoria, { req: true }));
+  const rowCC = h('<div class="row2"></div>'); rowCC.append(fieldEl('Contato', contato), catCol); f.appendChild(rowCC);
   // rateio de categorias
   const rateioBox = h(`<div class="rateio hidden"><div class="rateio-h"><span>Rateio por categoria</span><button type="button" class="btn ghost xs" data-add>${icon('ti-plus')}Linha</button></div><div class="rateio-l"></div><div class="rateio-t"></div></div>`);
   const rateioBtn = h(`<button type="button" class="linkbtn">${icon('ti-layout-list')}Dividir em mais de uma categoria</button>`);
-  rowCC.lastChild.appendChild(rateioBtn); f.appendChild(rateioBox);
+  catCol.appendChild(rateioBtn); f.appendChild(rateioBox);
   let rateio = (L.rateio_categorias || []).map(r => ({ ...r }));
   const paintRateio = () => {
     const list = rateioBox.querySelector('.rateio-l'); list.innerHTML = '';
