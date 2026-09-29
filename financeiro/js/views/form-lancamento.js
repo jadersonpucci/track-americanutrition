@@ -99,9 +99,13 @@ export function abrirLancamento(existing = null, { tipo = 'pagar', defaults = {}
   const tglPago = toggle({ label: L.tipo === 'receber' ? 'Já foi recebido' : 'Já foi pago', checked: false });
   const pagoOpts = h(`<div class="row2 hidden"><label class="fld"><span class="fl">Data</span><input class="inp" type="date" value="${today()}" data-dt></label></div>`);
   const pagoConta = combobox({ options: C.contas.filter(c => !c.arquivada).map(contaOpt), value: L.conta_id, placeholder: 'Conta', allowEmpty: false }); pagoOpts.appendChild(fieldEl('Na conta', pagoConta));
-  tglPago.querySelector('input').onchange = e => pagoOpts.classList.toggle('hidden', !e.target.checked);
+  tglPago.querySelector('input').onchange = e => { pagoOpts.classList.toggle('hidden', !e.target.checked); avisoVenc(); };
+  // data já passou e não está marcado como pago: lembra que, sem baixa, não entra no extrato
+  const vencHint = h('<div class="venc-hint hidden"></div>'); pagoBox.appendChild(vencHint);
+  const avisoVenc = () => { const passou = venc.value && venc.value < today() && !tglPago.get() && !isEdit && L.tipo !== 'transferencia'; vencHint.classList.toggle('hidden', !passou); if (passou) vencHint.innerHTML = `${icon('ti-info-circle')} A data já passou. Se ${L.tipo === 'receber' ? 'já recebeu' : 'já pagou'}, marque acima: sem baixa o lançamento fica em aberto e não entra no extrato da conta.`; };
+  venc.addEventListener('change', avisoVenc); venc.addEventListener('input', avisoVenc); quick.addEventListener('click', () => setTimeout(avisoVenc, 0));
   conta.addEventListener('change', e => { pagoConta.set(e.detail); });
-  if (!isEdit) { pagoBox.append(tglPago, pagoOpts); f.appendChild(pagoBox); }
+  if (!isEdit) { pagoBox.prepend(tglPago, pagoOpts); f.appendChild(pagoBox); avisoVenc(); }
 
   // observações sempre visíveis no formulário; na lista não aparecem, só ao abrir o lançamento
   const more = h(`<details class="more" ${L.tags?.length || L.referencia || L.anexos?.length ? 'open' : ''}><summary>${icon('ti-chevron-right')}Mais detalhes <span class="muted">tags, referência, anexos</span></summary><div class="more-b"></div></details>`);
@@ -149,6 +153,7 @@ export function abrirLancamento(existing = null, { tipo = 'pagar', defaults = {}
     f.classList.toggle('is-tr', tr);
     fDest.classList.toggle('hidden', !tr); fForma.classList.toggle('hidden', tr); rowCC.classList.toggle('hidden', tr); rateioBox.classList.toggle('hidden', tr || !rateio.length); ccBox.classList.toggle('hidden', tr); pagoBox.classList.toggle('hidden', tr); repBox.classList.toggle('hidden', tr);
     fConta.querySelector('.fl').textContent = tr ? 'Da conta' : 'Conta (opcional)';
+    if (!isEdit) avisoVenc();
     if (!tr) { categoria.setOptions(catOpts(C.categorias, L.tipo === 'receber' ? 'in' : 'out')); const cat = db.get('categorias', categoria.get()); if (cat && cat.tipo !== (L.tipo === 'receber' ? 'in' : 'out')) categoria.set(null); tglPago.querySelector('.tgl-l').textContent = L.tipo === 'receber' ? 'Já foi recebido' : 'Já foi pago'; }
     descr.placeholder = tr ? 'Ex.: Saque Pagar.me → BTG' : L.tipo === 'receber' ? 'Ex.: Repasse Mercado Livre' : 'Ex.: Meta Ads · setembro';
   }
