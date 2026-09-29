@@ -112,23 +112,20 @@ export function fieldEl(label, el, opts = {}) { const f = field(label, '', opts)
 
 // input monetário: mostra formatado, aceita digitação livre, guarda número em .value (getter)
 export function moneyInput({ value = 0, placeholder = '0,00', cls = '', allowNegative = false, name = '' } = {}) {
-  const wrap = h(`<div class="minp ${cls}"><span class="cur">R$</span><input inputmode="decimal" placeholder="${placeholder}" ${name ? `name="${name}"` : ''}></div>`);
+  const wrap = h(`<div class="minp ${cls}"><span class="cur">R$</span><input inputmode="numeric" placeholder="${placeholder}" ${name ? `name="${name}"` : ''}></div>`);
   const inp = wrap.querySelector('input');
   const fmt = v => v === 0 || v == null ? '' : Math.abs(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   inp.value = fmt(value); if (value < 0) inp.value = '-' + inp.value;
   inp.addEventListener('blur', () => { const v = wrap.get(); inp.value = v < 0 ? '-' + fmt(v) : fmt(v); inp.dispatchEvent(new CustomEvent('money', { bubbles: true, detail: v })); });
-  // formata enquanto digita: pontos de milhar na parte inteira, vírgula com até 2 casas
-  const mascara = e => {
-    const raw = inp.value; const pos = inp.selectionStart ?? raw.length;
-    let s = raw; if (e?.inputType === 'insertText' && e.data === '.' && !raw.includes(',')) s = raw.slice(0, pos - 1) + ',' + raw.slice(pos); // "." digitado vira vírgula
-    const antes = s.slice(0, pos).replace(/[^\d,]/g, '').length; // dígitos e vírgula antes do cursor
-    const neg = allowNegative && s.trim().startsWith('-');
-    s = s.replace(/[^\d,]/g, '');
-    const ci = s.indexOf(','); let int = (ci >= 0 ? s.slice(0, ci) : s).replace(/^0+(?=\d)/, ''); const dec = ci >= 0 ? s.slice(ci + 1).replace(/,/g, '').slice(0, 2) : null;
-    const out = (neg ? '-' : '') + int.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + (dec !== null ? ',' + dec : '');
-    if (out !== raw) { inp.value = out; let n = 0, p = neg ? 1 : 0; while (p < out.length && n < antes) { if (/[\d,]/.test(out[p])) n++; p++; } try { inp.setSelectionRange(p, p); } catch {} }
+  // máscara de centavos: os dígitos entram pela direita, sem precisar digitar a vírgula (172279 → 1.722,79)
+  const mascara = () => {
+    const raw = inp.value; const neg = allowNegative && raw.trim().startsWith('-');
+    const dig = raw.replace(/\D/g, '').replace(/^0+/, '').slice(0, 15);
+    const out = dig ? (neg ? '-' : '') + fmt(Number(dig) / 100) : '';
+    if (out !== raw) inp.value = out;
+    try { inp.setSelectionRange(out.length, out.length); } catch {}
   };
-  inp.addEventListener('input', e => { mascara(e); inp.dispatchEvent(new CustomEvent('money', { bubbles: true, detail: wrap.get() })); });
+  inp.addEventListener('input', () => { mascara(); inp.dispatchEvent(new CustomEvent('money', { bubbles: true, detail: wrap.get() })); });
   inp.addEventListener('focus', () => setTimeout(() => inp.select(), 0));
   wrap.get = () => { let v = parseMoney(inp.value); if (!allowNegative) v = Math.abs(v); return Math.round(v * 100) / 100; };
   wrap.set = v => { inp.value = v < 0 ? '-' + fmt(v) : fmt(v); };
