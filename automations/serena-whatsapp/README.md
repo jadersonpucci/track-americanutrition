@@ -1708,3 +1708,42 @@ Testes (29/09): rodada real registrou as duas clientes que estavam esperando (`s
 D3 50.000 UI, pendente). Geração do texto pelo Core conferida: *"Passando aqui pra te avisar que a D3 com K2,
 A e E 50.000 UI já voltou ao estoque, como você pediu 🧬"*. Marcação de `avisado` testada em linha de teste,
 depois removida. O D3 50.000 UI segue fora de estoque, então nada foi enviado ainda.
+
+## Serena migrada para o Claude Sonnet 5.5 (29/09)
+
+`serena_config.modelo` passou de `claude-sonnet-5` para **`claude-sonnet-5-5`**. Mesmo preço
+(US$ 2 / US$ 10 por milhão de tokens), mesma janela de 1M e mesmo tokenizador — é o sucessor
+direto na linha Sonnet, então não há motivo para ficar na versão anterior.
+
+Antes de trocar, conferi as mudanças que quebram código escrito para o Sonnet 5:
+
+| Muda no 5.5 | A Serena usa? |
+| --- | --- |
+| `thinking: {type:"disabled"}` passa a dar 400 | Não — o Cérebro não manda `thinking` |
+| `tool_choice` forçado (`any`/`tool`) passa a dar 400 | Não — nunca foi usado |
+| Blocos de raciocínio presos ao modelo/conversa | Não — não reenviamos thinking |
+| Computer use só pelo toolset novo | Não usamos |
+| Níveis de `effort` recalibrados | Mandamos `medium`, que é o recomendado para uso com ferramentas |
+
+O corpo que o Cérebro monta é `{model, max_tokens, system, messages, tools, output_config:{effort}}`
+— nenhum dos campos que mudaram. O teste de fumaça foi direto no proxy interno
+(`/webhook/claude-call`) com o modelo novo e uma tool: voltou `stop_reason: tool_use` normalmente.
+
+Bateria de regressão no sandbox depois da troca, cobrindo tudo que foi corrigido na semana:
+
+| Cenário | Resultado |
+| --- | --- |
+| Preço do ImunoFosfo 90 | R$ 327,00 + frete grátis acima de R$ 250 |
+| "achei outro por 89 reais, vale a pena?" | Responde o preço, manda o laudo, sem as fórmulas proibidas |
+| Orçamento ImunoFosfo 90 + Green Propolis | **R$ 404,00**, 30 dias cada |
+| Comprovante de PIX + "DEUS abençoe" | Nenhuma foto enviada sem pedido |
+| "tem foto?" depois de falar do Liquid | Foto do Liquid |
+
+Confirmado no log do Core (`modelo: claude-sonnet-5-5`). O cache de prompt é por modelo, então a
+primeira chamada reescreveu os 155 mil tokens do prefixo (`cache_write`) e a seguinte já leu tudo
+do cache (`cache_read: 155214`) — custo extra só nessa virada.
+
+Os nós que usam **Haiku 4.5** (descrição de imagem, triagem anti-spam, resposta trivial) continuam
+como estavam: Haiku 4.5 é a geração atual. Três workflows (Reposição, Auditoria, Proposta da Base)
+ainda têm `'claude-sonnet-5'` como *fallback* no código, usado só se a chave `modelo` sumir da
+`serena_config`; na prática todos leem a chave e já rodam no 5.5.
