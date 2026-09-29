@@ -5,7 +5,14 @@ import { banco, logoUrl } from './bancos.js';
 export function h(html) { const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstElementChild; }
 export function frag(html) { const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content; }
 export const icon = (n, cls = '') => `<i class="ti ${n} ${cls}"></i>`;
-export function on(root, ev, sel, fn) { root.addEventListener(ev, e => { const t = e.target.closest(sel); if (t && root.contains(t)) fn(e, t); }); }
+// Delegação de eventos. A raiz das telas (app.root) persiste entre re-renderizações, então o mesmo
+// (evento, seletor) é registrado uma vez só e a função é trocada a cada render, sem acumular ouvintes.
+export function on(root, ev, sel, fn) {
+  const reg = root.__on || (root.__on = new Map()); const k = ev + '|' + sel;
+  if (reg.has(k)) { reg.get(k).fn = fn; return; }
+  const h = { fn }; reg.set(k, h);
+  root.addEventListener(ev, e => { const t = e.target.closest(sel); if (t && root.contains(t)) h.fn(e, t); });
+}
 
 // ---------- ícones de conta / contato / categoria ----------
 export function bankIcon(conta, size = 36, cls = '') {
