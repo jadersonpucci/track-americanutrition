@@ -38,17 +38,26 @@ const STOP = new Set(['de','da','do','com','and','the','with','ui','mg','e','a',
 // O nome no banco esta em portugues ("D3 com K2, A e E - 50.000 UI") e o botao do site manda em ingles
 // ("D3 with K2, A and E - 50.000 UI"): por isso o casamento e por tokens fortes, inclusive curtos como
 // d3, k2 e 180 (com w.length > 2 nao sobrava nada desse nome e nenhum cliente era registrado).
+// bate() aceita plural/genero (vegano~veganas, liquido~liquida). Token raro (em ate 2 produtos) vale sozinho,
+// para "avisa quando chegar o omega 3" funcionar; "imunofosfo" sozinho e ambiguo e de proposito nao casa nada.
+const tokens = nome => norm(nome).split(' ').filter(w => w.length >= 2 && !STOP.has(w));
+const freq = {};
+for (const p of produtos) { for (const w of new Set(tokens(p.nome))) { freq[w] = (freq[w] || 0) + 1; } }
+const bate = (t, w) => t.indexOf(' ' + w + ' ') >= 0 || (w.length >= 5 && t.indexOf(' ' + w.slice(0, -1)) >= 0);
 function acharProduto(texto) {
   const t = ' ' + norm(texto) + ' ';
   let melhor = null, melhorScore = 0;
   for (const p of produtos) {
-    const palavras = norm(p.nome).split(' ').filter(w => w.length >= 2 && !STOP.has(w));
+    const palavras = tokens(p.nome);
     if (!palavras.length) continue;
-    let nota = 0;
-    for (const w of palavras) { if (t.indexOf(' ' + w + ' ') >= 0) nota++; }
+    const casados = palavras.filter(w => bate(t, w));
+    const nota = casados.length;
+    if (!nota) continue;
     const cobertura = nota / palavras.length;
     const score = nota + cobertura;
-    if (nota >= 2 && cobertura >= 0.5 && score > melhorScore) { melhorScore = score; melhor = p; }
+    const raro = casados.some(w => w.length >= 4 && (freq[w] || 9) <= 2);
+    const aceita = (nota >= 2 && cobertura >= 0.5) || raro;
+    if (aceita && score > melhorScore) { melhorScore = score; melhor = p; }
   }
   return melhor;
 }
@@ -82,13 +91,14 @@ async function estoqueDe(ids) {
 const rows = [];
 const avisados = [];
 const registrados = [];
+const semProduto = [];
 
 // --- 1) pedidos novos ---
 if (novos.length) {
   const casados = [];
   for (const n of novos) {
     const p = acharProduto(n.texto);
-    if (!p) continue;
+    if (!p) { semProduto.push({ nome: n.nome, telefone: n.telefone, texto: String(n.texto || '').split(' | ')[0].slice(0, 120) }); continue; }
     casados.push({ n: n, p: p });
   }
   if (casados.length) {
@@ -137,14 +147,15 @@ if (pendentes.length && podeEnviar) {
   }
 }
 
-if (avisados.length || registrados.length) {
+if (avisados.length || registrados.length || semProduto.length) {
   const partes = [];
   if (avisados.length) partes.push('\\u{1F514} <b>Voltou ao estoque: ' + avisados.length + ' cliente(s) avisado(s)</b>' + NL + avisados.map(a => '\\u2022 ' + esc(a.nome || 'Cliente') + ' - ' + esc(a.produto)).join(NL));
   if (registrados.length) partes.push('\\u{1F4DD} <b>Novos pedidos de aviso: ' + registrados.length + '</b>' + NL + registrados.map(a => '\\u2022 ' + esc(a.nome || 'Cliente') + ' - ' + esc(a.produto)).join(NL));
+  if (semProduto.length) partes.push('\\u2753 <b>Pediu aviso e nao identifiquei o produto: ' + semProduto.length + '</b>' + NL + semProduto.map(a => '\\u2022 ' + esc(a.nome || 'Cliente') + ' (+' + esc(a.telefone) + '): "' + esc(a.texto) + '"').join(NL) + NL + '<i>Registrar na mao ou responder pelo Inbox.</i>');
   try { await this.helpers.httpRequest({ method: 'POST', url: 'https://api.telegram.org/bot8872435172:AAGA-EmIy8MKA8e0p3DhtIAtqRQfcFCI7vk/sendMessage', json: true, timeout: 20000,
     body: { chat_id: '-1003766435449', message_thread_id: 289, text: partes.join(NL + NL), parse_mode: 'HTML', disable_web_page_preview: true } }); } catch (e5) {}
 }
-return [{ json: { payload: JSON.stringify(rows), registrados: registrados.length, avisados: avisados.length, fila: pendentes.length } }];` } },
+return [{ json: { payload: JSON.stringify(rows), registrados: registrados.length, avisados: avisados.length, sem_produto: semProduto.length, fila: pendentes.length } }];` } },
   output: [{ payload: '[]', registrados: 0, avisados: 0, fila: 0 }] });
 
 const gravar = node({ type: 'n8n-nodes-base.postgres', version: 2.6, config: { name: 'Gravar Fila', parameters: { operation: 'executeQuery',

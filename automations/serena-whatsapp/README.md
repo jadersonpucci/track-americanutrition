@@ -1674,6 +1674,34 @@ Detalhes que custaram uma rodada de teste:
 - **"Quando voltar me avisa".** Sozinha, essa frase não nomeia produto. A busca leva junto a última mensagem
   da Serena antes dela, que é onde o produto foi citado.
 
+### Cobertura: vale para qualquer produto (29/09)
+
+Não é específico do D3 — o casamento roda contra todos os produtos ativos com `variant_id` na tabela
+`produtos`. Testei o texto exato do botão do site (`Olá! Quero ser avisado quando o <nome do produto>
+voltar ao estoque.`) para as **24 variantes da loja**:
+
+| Resultado | Quantas |
+| --- | --- |
+| Casaram no produto certo | 21 |
+| Casaram no produto errado | 0 |
+| Não têm linha em `produtos` | 3 — Carvão Vegetal Ativado (rascunho), ImunoFosfo Phase One + eBook (não listado), ImunoFosfo (USA) |
+
+Os três de fora não estão à venda no site brasileiro, então ninguém clica "avise-me" neles. Se um dia
+entrarem, basta cadastrar a linha em `produtos` com o `variant_id`.
+
+Duas regras nasceram desse teste:
+
+- **Plural e gênero** — "Veganas" no site, "Vegano" no banco; "Líquida" no site, "Líquido" no banco. Sem
+  isso, o ImunoFosfo Vegano casava no ImunoFosfo 90 comum (errado) e o ImunoPet não casava em nada.
+- **Token raro vale sozinho** — quem escreve "avisa quando chegar o ômega 3" ou "me avisa quando o kids
+  voltar" não digita o nome completo. Palavra que só aparece em um ou dois produtos (`omega`, `kids`,
+  `creatina`, `healing`, `plus`) já resolve. Já "me avisa quando o imunofosfo voltar" é ambíguo de
+  propósito e **não** registra nada: sete produtos têm essa palavra.
+
+Quando o cliente pede aviso e o produto não é identificado, ninguém fica no vácuo: vai um alerta
+`❓ Pediu aviso e não identifiquei o produto` no Telegram com o texto dele, para registrar na mão ou
+responder pelo Inbox.
+
 Kill switch: `serena_config aviso_estoque = off`. Resumo de registros e avisos no Telegram (tópico 289).
 
 Testes (29/09): rodada real registrou as duas clientes que estavam esperando (`serena_avisos_estoque` 1 e 2,
