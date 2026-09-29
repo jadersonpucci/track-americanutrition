@@ -189,17 +189,18 @@ export function abrirLancamento(existing = null, { tipo = 'pagar', defaults = {}
 export function abrirBaixa(lancs, { onDone } = {}) {
   const list = Array.isArray(lancs) ? lancs : [lancs]; const C = app.ctx();
   const isRec = list.every(l => l.tipo === 'receber'); const multi = list.length > 1;
+  if (multi) return abrirBaixaLote(list.filter(l => emAberto(l) > 0), { onDone, isRec });
   const total = round2(sum(list, emAberto));
-  const m = modal({ title: multi ? `${isRec ? 'Receber' : 'Pagar'} ${list.length} lançamentos` : (isRec ? 'Registrar recebimento' : 'Registrar pagamento'), size: 'md' });
+  const m = modal({ title: isRec ? 'Registrar recebimento' : 'Registrar pagamento', size: 'md' });
   const b = m.body;
   const l0 = list[0];
-  b.innerHTML = multi ? `<div class="baixa-head"><div class="muted sm">Total em aberto selecionado</div><div class="big">${money(total)}</div></div>` : `<div class="baixa-head"><div class="baixa-t">${esc(l0.descricao)}</div><div class="muted sm">${C.contato(l0.contato_id)?.nome || ''} · venc. ${fmtDate(l0.vencimento)}${liquidado(l0) ? ` · já ${isRec ? 'recebido' : 'pago'} ${money(liquidado(l0))}` : ''}</div></div>`;
+  b.innerHTML = `<div class="baixa-head"><div class="baixa-t">${esc(l0.descricao)}</div><div class="muted sm">${C.contato(l0.contato_id)?.nome || ''} · venc. ${fmtDate(l0.vencimento)}${liquidado(l0) ? ` · já ${isRec ? 'recebido' : 'pago'} ${money(liquidado(l0))}` : ''}</div></div>`;
   const dt = h(`<input class="inp" type="date" value="${today()}">`);
   const conta = combobox({ options: C.contas.filter(c => !c.arquivada).map(contaOpt), value: l0.conta_id || C.contas[0]?.id, allowEmpty: false });
   const val = moneyInput({ value: total, cls: 'lg' });
   const juros = moneyInput({ value: 0 }), multa = moneyInput({ value: 0 }), desc = moneyInput({ value: 0 });
   const r1 = h('<div class="row2"></div>'); r1.append(fieldEl('Data', dt), fieldEl('Conta', conta)); b.appendChild(r1);
-  b.appendChild(fieldEl(multi ? 'Valor total' : `Valor ${isRec ? 'recebido' : 'pago'}`, val, { hint: multi ? 'Será distribuído na ordem da lista.' : 'Menor que o em aberto = baixa parcial.' }));
+  b.appendChild(fieldEl(`Valor ${isRec ? 'recebido' : 'pago'}`, val, { hint: 'Menor que o em aberto = baixa parcial.' }));
   const det = h(`<details class="more"><summary>${icon('ti-chevron-right')}Juros, multa e desconto</summary><div class="row3"></div></details>`); det.querySelector('.row3').append(fieldEl('Juros', juros), fieldEl('Multa', multa), fieldEl('Desconto', desc)); b.appendChild(det);
   const resumo = h('<div class="baixa-res muted sm"></div>'); b.appendChild(resumo);
   const calc = () => { const principal = round2(val.get() - juros.get() - multa.get() + desc.get()); const rest = round2(total - principal); resumo.innerHTML = `Abate ${money(principal)} do principal${rest > 0.005 ? ` · fica em aberto ${money(rest)}` : rest < -0.005 ? ` · <b class="neg">excede em ${money(-rest)}</b>` : ' · quita tudo'}`; };
@@ -207,17 +208,56 @@ export function abrirBaixa(lancs, { onDone } = {}) {
   const obs = h('<input class="inp" placeholder="Observação (opcional)">'); b.appendChild(fieldEl('Observação', obs));
   m.footer.innerHTML = ''; const bc = h('<button class="btn ghost">Cancelar</button>'); bc.onclick = () => m.close(); const ok = h(`<button class="btn primary">${icon('ti-check')}Confirmar</button>`); m.footer.append(bc, ok);
   ok.onclick = async () => {
-    let restante = val.get(); if (restante <= 0) { toast('Informe o valor', 'err'); return; }
+    const v = val.get(); if (v <= 0) { toast('Informe o valor', 'err'); return; }
     if (!conta.get()) { toast('Escolha a conta', 'err'); return; }
-    const rows = [];
-    for (const l of list) {
-      const ab = emAberto(l); if (ab <= 0 && multi) continue;
-      const v = multi ? Math.min(restante, ab) : restante; if (v <= 0) break;
-      const bx = { id: uid(), data: dt.value, valor: round2(v), conta_id: conta.get(), juros: multi ? 0 : juros.get(), multa: multi ? 0 : multa.get(), desconto: multi ? 0 : desc.get(), observacao: obs.value.trim() };
-      rows.push({ ...l, baixas: [...(l.baixas || []), bx] }); restante = round2(restante - v);
-    }
-    await db.upsert('lancamentos', rows);
+    const bx = { id: uid(), data: dt.value, valor: round2(v), conta_id: conta.get(), juros: juros.get(), multa: multa.get(), desconto: desc.get(), observacao: obs.value.trim() };
+    await db.upsert('lancamentos', [{ ...l0, baixas: [...(l0.baixas || []), bx] }]);
     toast(isRec ? 'Recebimento registrado' : 'Pagamento registrado'); m.close(true); onDone && onDone();
+  };
+}
+
+// Baixa em lote: um campo de valor por lançamento (parcial quando menor que o em aberto)
+function abrirBaixaLote(list, { onDone, isRec }) {
+  const C = app.ctx();
+  if (!list.length) { toast('Nada em aberto nos selecionados'); return; }
+  const m = modal({ title: `${isRec ? 'Receber' : 'Pagar'} ${list.length} lançamentos`, size: 'lg' });
+  const b = m.body;
+  const dt = h(`<input class="inp" type="date" value="${today()}">`);
+  const contaPadrao = list.find(l => l.conta_id)?.conta_id || C.contas.find(c => !c.arquivada && c.tipo !== 'cartao')?.id || C.contas[0]?.id;
+  const conta = combobox({ options: C.contas.filter(c => !c.arquivada).map(contaOpt), value: contaPadrao, allowEmpty: false });
+  const r1 = h('<div class="row2"></div>'); r1.append(fieldEl('Data', dt), fieldEl('Conta', conta)); b.appendChild(r1);
+  const wrap = h(`<div class="bx-lote"><div class="bx-h"><span>Lançamento</span><span class="r">Em aberto</span><span class="r">${isRec ? 'Valor a receber' : 'Valor a pagar'}</span><span></span></div><div class="bx-rows"></div><div class="bx-tot"><span data-n></span><b data-t></b></div></div>`);
+  b.appendChild(wrap);
+  const rowsEl = wrap.querySelector('.bx-rows');
+  const itens = list.map(l => ({ l, aberto: round2(emAberto(l)), valor: round2(emAberto(l)), fora: false }));
+  const paintTot = () => {
+    const ativos = itens.filter(i => !i.fora && i.valor > 0); const t = round2(sum(ativos, i => i.valor));
+    wrap.querySelector('[data-n]').textContent = `${ativos.length} de ${itens.length} lançamento${itens.length === 1 ? '' : 's'}`;
+    wrap.querySelector('[data-t]').textContent = money(t);
+    for (const i of itens) { const r = i.el; if (!r) continue; const st = r.querySelector('.bx-st'); const rest = round2(i.aberto - i.valor); r.classList.toggle('fora', i.fora); r.classList.toggle('parcial', !i.fora && i.valor > 0 && rest > 0.005); r.classList.toggle('excede', !i.fora && rest < -0.005);
+      st.textContent = i.fora ? 'não entra' : i.valor <= 0 ? 'não entra' : rest > 0.005 ? `parcial · fica ${money(rest)}` : rest < -0.005 ? `excede em ${money(-rest)}` : 'quita'; }
+  };
+  for (const it of itens) {
+    const l = it.l; const ct = C.contato(l.contato_id);
+    const r = h(`<div class="bx-r"><div class="bx-d">${catIcon(C.cat(l.categoria_id), 26)}<div class="bx-dt"><b>${esc(l.descricao)}</b><small>${ct ? esc(ct.nome) + ' · ' : ''}venc. ${fmtDate(l.vencimento)}${l.parcela_total ? ` · ${l.parcela_num}/${l.parcela_total}` : ''}</small></div></div><div class="bx-ab r">${money(it.aberto)}</div><div class="bx-v"></div><div class="bx-x"><button type="button" class="ibtn" title="Tirar da lista">${icon('ti-x')}</button></div><div class="bx-st muted"></div></div>`);
+    const mi = moneyInput({ value: it.valor }); mi.addEventListener('money', e => { it.valor = round2(e.detail); paintTot(); });
+    mi.input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); const all = [...rowsEl.querySelectorAll('.minp input')]; const n = all[all.indexOf(mi.input) + 1]; if (n) n.focus(); else ok.focus(); } });
+    r.querySelector('.bx-v').appendChild(mi);
+    r.querySelector('.bx-x button').onclick = () => { it.fora = !it.fora; r.querySelector('.bx-x button').innerHTML = icon(it.fora ? 'ti-arrow-back-up' : 'ti-x'); paintTot(); };
+    it.el = r; rowsEl.appendChild(r);
+  }
+  const obs = h('<input class="inp" placeholder="Observação (opcional, vale para todas)">'); b.appendChild(fieldEl('Observação', obs));
+  m.footer.innerHTML = ''; const bc = h('<button class="btn ghost">Cancelar</button>'); bc.onclick = () => m.close(); const ok = h(`<button class="btn primary">${icon('ti-check')}Confirmar</button>`); m.footer.append(bc, ok);
+  paintTot();
+  ok.onclick = async () => {
+    if (!conta.get()) { toast('Escolha a conta', 'err'); return; }
+    const ativos = itens.filter(i => !i.fora && i.valor > 0);
+    if (!ativos.length) { toast('Informe pelo menos um valor', 'err'); return; }
+    const exc = ativos.find(i => i.valor - i.aberto > 0.005); if (exc) { toast(`"${exc.l.descricao}" está acima do em aberto`, 'err'); return; }
+    const rows = ativos.map(i => ({ ...i.l, baixas: [...(i.l.baixas || []), { id: uid(), data: dt.value, valor: round2(i.valor), conta_id: conta.get(), juros: 0, multa: 0, desconto: 0, observacao: obs.value.trim() }] }));
+    await db.upsert('lancamentos', rows);
+    const parciais = ativos.filter(i => i.aberto - i.valor > 0.005).length;
+    toast(`${rows.length} ${isRec ? 'recebimento' : 'pagamento'}${rows.length === 1 ? '' : 's'} registrado${rows.length === 1 ? '' : 's'}${parciais ? ` (${parciais} parcial${parciais === 1 ? '' : 'is'})` : ''}`); m.close(true); onDone && onDone();
   };
 }
 
