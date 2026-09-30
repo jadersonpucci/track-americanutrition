@@ -194,18 +194,31 @@ export function combobox({ options = [], value = null, placeholder = 'Selecionar
   paint(); return el;
 }
 
-// Seletor de centros de custo com rateio em % (usado no lançamento e no padrão do contato)
-export function centrosPicker({ centros = [], value = [], onChange = null } = {}) {
-  let sel = (value || []).map(r => ({ ...r }));
+// Seletor de centros de custo com rateio em % ou em R$ (os dois campos se ajustam; com dois centros o outro recebe o restante)
+export function centrosPicker({ centros = [], value = [], onChange = null, total = 0 } = {}) {
+  let sel = (value || []).map(r => ({ ...r })); let tot = Number(total) || 0;
   const el = h('<div class="cc-l"></div>');
-  const api = { el, get: () => sel.map(r => ({ centro_id: r.centro_id, percent: Number(r.percent) || 0 })), set(v) { sel = (v || []).map(r => ({ ...r })); paint(); } };
+  const r2 = v => Math.round((Number(v) || 0) * 100) / 100; const r4 = v => Math.round((Number(v) || 0) * 10000) / 10000; // % guardada com 4 casas para o R$ fechar certinho
+  const fmtV = v => r2(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const fmtP = v => String(r2(v)).replace('.', ',');
+  const api = { el, get: () => sel.map(r => ({ centro_id: r.centro_id, percent: r4(r.percent) })), set(v) { sel = (v || []).map(r => ({ ...r })); paint(); }, setTotal(v) { tot = Number(v) || 0; el.classList.toggle('sem-total', !tot); refresh(); } };
+  el.classList.toggle('sem-total', !tot);
+  const outro = r => sel.length === 2 ? sel.find(x => x !== r) : null;
+  // atualiza os campos dos chips sem mexer no que está sendo digitado
+  const refresh = () => { el.querySelectorAll('.chip.on').forEach(b => { const r = sel.find(x => x.centro_id === b.dataset.id); if (!r) return; const p = b.querySelector('.pct'), v = b.querySelector('.val'); if (p && document.activeElement !== p) p.value = fmtP(r.percent); if (v && document.activeElement !== v) v.value = fmtV(tot * r.percent / 100); }); };
   const paint = () => {
     el.innerHTML = '';
     centros.filter(c => !c.arquivado).forEach(c => {
       const r = sel.find(x => x.centro_id === c.id);
-      const b = h(`<button type="button" class="chip ${r ? 'on' : ''}" style="--c:${c.cor || '#5B667E'}">${esc(c.nome)}${r ? `<input class="pct" value="${r.percent}" inputmode="numeric">%` : ''}</button>`);
-      b.onclick = e => { if (e.target.classList.contains('pct')) return; if (r) sel = sel.filter(x => x !== r); else { sel.push({ centro_id: c.id, percent: sel.length ? 0 : 100 }); if (sel.length === 2) { sel[0].percent = 50; sel[1].percent = 50; } } paint(); onChange && onChange(api.get()); };
-      const pct = b.querySelector('.pct'); if (pct) { pct.onclick = e => e.stopPropagation(); pct.oninput = () => { r.percent = Number(pct.value) || 0; onChange && onChange(api.get()); }; }
+      const b = h(`<button type="button" class="chip ${r ? 'on' : ''}" data-id="${c.id}" style="--c:${c.cor || '#5B667E'}">${esc(c.nome)}${r ? `<span class="cc-f"><input class="pct" value="${fmtP(r.percent)}" inputmode="decimal" title="Porcentagem">%<i>·</i>R$<input class="val" value="${fmtV(tot * r.percent / 100)}" inputmode="decimal" title="Valor em reais"></span>` : ''}</button>`);
+      b.onclick = e => { if (e.target.closest('.cc-f')) return; if (r) sel = sel.filter(x => x !== r); else { sel.push({ centro_id: c.id, percent: sel.length ? 0 : 100 }); if (sel.length === 2) { sel[0].percent = 50; sel[1].percent = 50; } } paint(); onChange && onChange(api.get()); };
+      const pct = b.querySelector('.pct'), val = b.querySelector('.val');
+      if (pct) {
+        b.querySelector('.cc-f').onclick = e => e.stopPropagation();
+        pct.oninput = () => { r.percent = Math.max(0, Math.min(100, parseMoney(pct.value))); const o = outro(r); if (o) o.percent = r4(100 - r.percent); refresh(); onChange && onChange(api.get()); };
+        val.oninput = () => { if (!tot) return; const v = Math.max(0, Math.min(tot, parseMoney(val.value))); r.percent = r4(v / tot * 100); const o = outro(r); if (o) o.percent = r4(100 - r.percent); refresh(); onChange && onChange(api.get()); };
+        for (const inp of [pct, val]) { inp.onfocus = () => setTimeout(() => inp.select(), 0); inp.onblur = refresh; inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); inp.blur(); } }; }
+      }
       el.appendChild(b);
     });
     if (!centros.length) el.innerHTML = '<span class="muted sm">Nenhum centro de custo cadastrado.</span>';

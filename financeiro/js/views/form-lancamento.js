@@ -76,7 +76,8 @@ export function abrirLancamento(existing = null, { tipo = 'pagar', defaults = {}
 
   // centro de custo (rateio %)
   const ccBox = h(`<div class="ccbox"><div class="fl">Centro de custo</div></div>`);
-  ccPick = centrosPicker({ centros: C.centros, value: L.rateio_centros || [], onChange: () => { ccTocado = true; } });
+  ccPick = centrosPicker({ centros: C.centros, value: L.rateio_centros || [], total: L.valor, onChange: () => { ccTocado = true; } });
+  valor.addEventListener('money', e => ccPick.setTotal(e.detail));
   ccBox.appendChild(ccPick.el); f.appendChild(ccBox);
 
   // repetição (só na criação)
