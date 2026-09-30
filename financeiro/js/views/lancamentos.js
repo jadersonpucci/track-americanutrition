@@ -81,13 +81,24 @@ export function render(root, { tipo = 'pagar', params = {} } = {}) {
   else {
     const t = today();
     const grupos = S.agrupar === 'nenhum' || S.ordem !== 'vencimento' ? new Map([['', ordenada]]) : groupBy(ordenada, l => S.agrupar === 'semana' ? weekLabel(l.vencimento) : l.vencimento);
-    let html = '';
+    // renderiza em lotes: listas grandes (período "Tudo") não travam o navegador
+    const partes = []; // {html, linha: true|false}
     for (const [k, arr] of grupos) {
       const tot = round2(sum(arr, l => l.valor)); const ab = round2(sum(arr, emAberto));
-      if (k) html += `<div class="grp-h ${S.agrupar === 'dia' && k < t && ab > 0 ? 'late' : ''} ${k === t ? 'today' : ''}"><span>${S.agrupar === 'dia' ? relDate(k) + ' <small>' + fmtDate(k) + '</small>' : k}</span><span class="grp-t">${ab > 0 && ab !== tot ? `<small>${money(ab)} em aberto de </small>` : ''}${money(tot)}</span></div>`;
-      html += arr.map(l => linha(l, C, S)).join('');
+      if (k) partes.push({ html: `<div class="grp-h ${S.agrupar === 'dia' && k < t && ab > 0 ? 'late' : ''} ${k === t ? 'today' : ''}"><span>${S.agrupar === 'dia' ? relDate(k) + ' <small>' + fmtDate(k) + '</small>' : k}</span><span class="grp-t">${ab > 0 && ab !== tot ? `<small>${money(ab)} em aberto de </small>` : ''}${money(tot)}</span></div>`, linha: false });
+      for (const l of arr) partes.push({ html: null, l, linha: true });
     }
-    lw.innerHTML = html;
+    const LOTE = 80; let pos = 0, mostradas = 0;
+    const mais = h(`<div class="load-more"><button type="button" class="btn secondary sm">${icon('ti-chevron-down')}Mostrar mais</button><span class="muted sm"></span></div>`);
+    const maisLinhas = () => {
+      let html = ''; let n = 0;
+      while (pos < partes.length && n < LOTE) { const p = partes[pos++]; html += p.linha ? linha(p.l, C, S) : p.html; if (p.linha) { n++; mostradas++; } }
+      mais.insertAdjacentHTML('beforebegin', html);
+      if (pos >= partes.length) mais.remove(); else mais.querySelector('span').textContent = `${mostradas} de ${ordenada.length} · faltam ${ordenada.length - mostradas}`;
+    };
+    lw.innerHTML = ''; lw.appendChild(mais); maisLinhas();
+    mais.querySelector('button').onclick = maisLinhas;
+    if ('IntersectionObserver' in window) { const io = new IntersectionObserver(es => { if (es.some(x => x.isIntersecting) && mais.isConnected) maisLinhas(); if (!mais.isConnected) io.disconnect(); }, { rootMargin: '600px' }); io.observe(mais); }
   }
   on(lw, 'click', '.row', (e, r) => { if (e.target.closest('input,button,a')) return; abrirDetalhe(app.lanc(r.dataset.id)); });
   // Shift + clique marca (ou desmarca) todos entre o último clicado e este
