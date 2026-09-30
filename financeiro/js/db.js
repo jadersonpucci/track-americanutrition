@@ -82,7 +82,11 @@ class GatewayBackend {
   constructor(url) { this.url = url; this.session = prefs.get('gw:session'); }
   get user() { return this.session?.user || null; }
   async call(op, payload = {}, { auth = true } = {}) {
-    const r = await fetch(this.url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ op, token: auth ? this.session?.token : undefined, payload }) });
+    // tempo limite: sem ele uma chamada pendurada deixava a tela em 'Carregando…' para sempre
+    const ac = new AbortController(); const tmr = setTimeout(() => ac.abort(), op === 'load' ? 90000 : 60000); let r;
+    try { r = await fetch(this.url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ op, token: auth ? this.session?.token : undefined, payload }), signal: ac.signal }); }
+    catch (e) { throw new Error(e.name === 'AbortError' ? 'O servidor demorou demais para responder.' : 'Sem conexão com o servidor.'); }
+    finally { clearTimeout(tmr); }
     if (!r.ok) throw new Error(`Servidor respondeu ${r.status}`);
     let j = await r.json();
     if (Array.isArray(j)) j = j[0];

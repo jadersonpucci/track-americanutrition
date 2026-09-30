@@ -31,8 +31,10 @@ const VIEWS = { '': 'dashboard', pagar: 'lancamentos', receber: 'lancamentos', e
 
 async function boot() {
   app.applyTheme(); document.documentElement.dataset.dens = prefs.get('densidade', 'normal');
-  await db.init();
+  const demora = setTimeout(() => { const s = document.querySelector('#splash > div'); if (s) s.insertAdjacentHTML('beforeend', '<div class="splash-demora">Está demorando mais que o normal… <button type="button" onclick="location.reload()">Tentar de novo</button></div>'); }, 12000);
+  try { await db.init(); } finally { clearTimeout(demora); }
   document.getElementById('splash')?.remove();
+  vigiarVersao();
   if (db.needsLogin) { await telaLogin(); }
   if (db.loadError && db.backend.name === 'supabase') { toast('Não consegui carregar do servidor: ' + db.loadError.message, 'err', 8000); }
   app.userName = prefs.get('nome', '') || (db.backend.user?.nome || '');
@@ -176,6 +178,16 @@ async function keys(e) {
   if (k === 'g') { gPending = true; setTimeout(() => gPending = false, 1200); return; }
   if (['n', 'r', 't'].includes(k)) { const { abrirLancamento } = await import('./views/form-lancamento.js'); abrirLancamento(null, { tipo: { n: 'pagar', r: 'receber', t: 'transferencia' }[k] }); e.preventDefault(); }
   if (k === '/') { e.preventDefault(); cmdk(); }
+}
+
+// Avisa quando uma versão nova foi publicada: compara o ETag do index.html de tempos em tempos e ao voltar para a aba
+async function vigiarVersao() {
+  const etag = async () => { try { const r = await fetch(location.pathname || '/', { method: 'HEAD', cache: 'no-store' }); return r.headers.get('etag') || r.headers.get('last-modified') || ''; } catch { return ''; } };
+  const inicial = await etag(); if (!inicial) return;
+  let avisado = false;
+  const checar = async () => { if (avisado) return; const agora = await etag(); if (agora && agora !== inicial) { avisado = true; document.body.insertAdjacentHTML('beforeend', `<div class="versao-nova">${icon('ti-refresh')}<span>Há uma versão nova do Financeiro.</span><button type="button" class="btn primary sm" onclick="location.reload()">Atualizar</button></div>`); } };
+  setInterval(checar, 5 * 60 * 1000);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checar(); });
 }
 
 boot().catch(e => { console.error(e); document.getElementById('splash')?.remove(); document.body.insertAdjacentHTML('beforeend', `<div class="page"><div class="alert red">Erro ao iniciar: ${esc(e.message)}</div></div>`); });
