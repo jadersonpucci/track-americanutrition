@@ -110,8 +110,10 @@ function paintPrevisto(body, conta, C, E) {
 function paintConciliar(body, conta, C, E) {
   const itens = C.extrato.filter(i => i.conta_id === conta.id).sort((a, b) => b.data.localeCompare(a.data));
   const pend = itens.filter(i => !i.lancamento_id && !i.ignorado);
+  const ehTarifa = i => i.valor < 0 && /tarifa|taxa|anuidade|mensalidade/i.test(i.descricao);
+  const taxasPend = pend.filter(ehTarifa);
   body.innerHTML = `<div class="conc-top"><div><b>${pend.length}</b> pendentes · <b>${itens.filter(i => i.lancamento_id).length}</b> conciliados · <b>${itens.filter(i => i.ignorado).length}</b> ignorados</div><span class="grow"></span>
-    <label class="btn secondary sm">${icon('ti-upload')}Importar OFX / CSV<input type="file" hidden accept=".ofx,.csv,.txt,.qfx"></label>${itens.length ? `<button class="btn ghost sm" data-auto>${icon('ti-wand')}Conciliar automático</button><button class="btn ghost sm" data-limpar>${icon('ti-trash')}</button>` : ''}</div>
+    <label class="btn secondary sm">${icon('ti-upload')}Importar OFX / CSV<input type="file" hidden accept=".ofx,.csv,.txt,.qfx"></label>${itens.length ? `<button class="btn ghost sm" data-auto>${icon('ti-wand')}Conciliar automático</button>` : ''}${taxasPend.length ? `<button class="btn ghost sm" data-tarifas title="Cria uma despesa paga por dia com as tarifas do banco">${icon('ti-receipt-2')}Lançar tarifas (${taxasPend.length})</button>` : ''}${itens.length ? `<button class="btn ghost sm" data-limpar>${icon('ti-trash')}</button>` : ''}</div>
     <div class="conc-list" data-list></div>`;
   body.querySelector('input[type=file]').onchange = async e => {
     const f = e.target.files[0]; if (!f) return; const txt = await readFile(f);
@@ -126,6 +128,22 @@ function paintConciliar(body, conta, C, E) {
     let n = 0; const ups = []; const lups = [];
     for (const it of pend) { const sug = sugerirConciliacao({ ...it, conta_id: conta.id }, E); if (sug[0] && sug[0].score >= 95) { const l = sug[0].l; if (lups.some(x => x.id === l.id)) continue; ups.push({ ...it, lancamento_id: l.id }); lups.push(await conciliarLanc(l, it, conta, false)); n++; } }
     if (n) { await db.upsert('lancamentos', lups); await db.upsert('extrato_itens', ups); } toast(n ? `${n} itens conciliados automaticamente` : 'Nenhuma correspondência exata encontrada', n ? 'ok' : 'warn');
+  });
+  // tarifas do banco: uma despesa paga por dia (soma das cobranças), categoria Tarifas bancárias, conciliada com os itens
+  body.querySelector('[data-tarifas]')?.addEventListener('click', async () => {
+    const porDia = groupBy(taxasPend, i => i.data); const total = round2(sum(taxasPend, i => -i.valor));
+    if (!await confirm({ title: `Lançar ${taxasPend.length} tarifas`, msg: `Cria ${porDia.size} despesa${porDia.size === 1 ? '' : 's'} paga${porDia.size === 1 ? '' : 's'} na conta ${conta.nome} (uma por dia, somando as cobranças do dia), total ${money(total)}, na categoria Tarifas bancárias.`, ok: 'Lançar' })) return;
+    const cat = C.categorias.find(c => c.tipo === 'out' && /tarifa/i.test(c.nome)) || C.categorias.find(c => c.tipo === 'out' && /a classificar/i.test(c.nome));
+    let ct = C.contatos.find(c => new RegExp('^(banco )?' + conta.nome.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i').test(c.nome));
+    if (!ct) { ct = { id: uid(), empresa_id: E, nome: 'Banco ' + conta.nome, tipo: 'fornecedor', criado_em: new Date().toISOString() }; await db.upsert('contatos', ct); }
+    const lancs = [], ups = [];
+    for (const [data, its] of porDia) {
+      const v = round2(sum(its, i => -i.valor)); const id = uid();
+      lancs.push({ id, empresa_id: E, tipo: 'pagar', descricao: `Tarifas ${conta.nome} · ${its.length} cobrança${its.length === 1 ? '' : 's'}`, valor: v, vencimento: data, competencia: monthStart(data), categoria_id: cat?.id || null, contato_id: ct.id, conta_id: conta.id, forma_pagamento: 'debito', status: 'pago', tags: [], anexos: [], observacoes: its.map(i => `${money(-i.valor)} · ${i.descricao}`).join('\n'), rateio_categorias: [], rateio_centros: [], baixas: [{ id: uid(), data, valor: v, conta_id: conta.id, juros: 0, multa: 0, desconto: 0, observacao: 'Extrato importado' }], origem: 'extrato', conciliado_fitid: its[0].fitid, criado_em: new Date().toISOString() });
+      for (const i of its) ups.push({ ...i, lancamento_id: id });
+    }
+    await db.upsert('lancamentos', lancs); await db.upsert('extrato_itens', ups);
+    toast(`${lancs.length} lançamento${lancs.length === 1 ? '' : 's'} de tarifas criado${lancs.length === 1 ? '' : 's'} (${money(total)})`);
   });
   body.querySelector('[data-limpar]')?.addEventListener('click', async () => { if (await confirm({ title: 'Limpar extrato importado', msg: 'Remove os itens importados desta conta (as baixas já feitas ficam). Continuar?', ok: 'Limpar', danger: true })) { await db.remove('extrato_itens', itens.map(i => i.id)); } });
   const lw = body.querySelector('[data-list]');
