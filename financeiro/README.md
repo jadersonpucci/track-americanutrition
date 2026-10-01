@@ -117,3 +117,10 @@ scripts/importar-nibo.py
 ## Deploy
 
 Projeto próprio na Vercel (`financeiro-americanutrition`, Root Directory `financeiro`), ligado a este repositório. O domínio `financeiro.americanutrition.com` aponta por CNAME para `cname.vercel-dns.com` na Cloudflare (registro DNS-only, sem proxy). O `vercel.json` da raiz também exclui `/financeiro` da reescrita de códigos de rastreio.
+
+## Extrato do Inter (API só de extrato)
+
+- `supabase/extrato_inter.sql` cria `fin_extrato_aplicar(empresa, conta)`: para os itens pendentes de `extrato_itens` da conta, descarta duplicatas OFX×API (mesma data e valor), concilia com lançamentos existentes (baixa na conta, mesmo valor, até 3 dias), lança as tarifas do banco como uma despesa paga por dia (categoria Tarifas bancárias, contato "Banco <conta>") e PIX recebidos sem par como receita paga. O resto fica pendente na aba Conciliação.
+- Workflow "Financeiro · Extrato Inter" (n8n, de hora em hora): token OAuth da aplicação só de extrato (escopo `extrato.read`, certificado na credencial "SSL Certificates" dos dois nós HTTP), `GET /banking/v2/extrato/completo` dos últimos 7 dias (`inter_ext_dias` muda a janela), grava em `extrato_itens` e chama `fin_extrato_aplicar`.
+- Credenciais da aplicação ficam em `checkout_config` (`inter_ext_client_id`, `inter_ext_client_secret`, `inter_ext_conta_corrente`), gravadas pelo formulário "Financeiro · Inter Extrato · Credenciais" (exige login no n8n). Nada da integração de PIX/cobrança é alterado.
+- Na aba Conciliação da conta, o botão "Lançar tarifas (N)" faz o mesmo agrupamento por dia para itens importados por OFX.
