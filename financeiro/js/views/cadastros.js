@@ -9,6 +9,9 @@ import { saldoConta, statusOf } from '../model.js';
 
 const ABAS = [{ id: 'contas', label: 'Contas', icon: 'ti-building-bank' }, { id: 'categorias', label: 'Categorias', icon: 'ti-category' }, { id: 'contatos', label: 'Contatos', icon: 'ti-users' }, { id: 'centros', label: 'Centros de custo', icon: 'ti-target' }, { id: 'tags', label: 'Tags', icon: 'ti-tag' }, { id: 'regras', label: 'Regras', icon: 'ti-wand' }];
 let aba = 'contas'; let q = '';
+// Contatos separados por tipo. "Cliente e fornecedor" aparece nas duas listas.
+const CT_TIPOS = [{ id: 'fornecedor', label: 'Fornecedores', icon: 'ti-truck', tipos: ['fornecedor', 'ambos'], novo: 'fornecedor' }, { id: 'cliente', label: 'Clientes', icon: 'ti-user-heart', tipos: ['cliente', 'ambos'], novo: 'cliente' }, { id: 'funcionario', label: 'Funcionários', icon: 'ti-id-badge-2', tipos: ['funcionario'], novo: 'funcionario' }, { id: 'socio', label: 'Sócios', icon: 'ti-users-group', tipos: ['socio'], novo: 'socio' }, { id: 'todos', label: 'Todos', icon: 'ti-users', tipos: null, novo: 'fornecedor' }];
+let ctTipo = 'fornecedor';
 
 export function render(root, { sub = null } = {}) {
   if (sub && ABAS.some(a => a.id === sub)) aba = sub;
@@ -18,7 +21,7 @@ export function render(root, { sub = null } = {}) {
     <div class="toolbar"><div class="search">${icon('ti-search')}<input placeholder="Buscar…" value="${esc(q)}"></div></div>
     <div data-body></div></div>`;
   const si = root.querySelector('.search input'); si.oninput = () => { q = si.value; const p = si.selectionStart; paint(); };
-  root.querySelector('[data-novo]').onclick = () => ({ contas: () => abrirConta(), categorias: () => abrirCategoria(), contatos: () => abrirContato(), centros: () => abrirCentro(), tags: () => abrirTag(), regras: () => abrirRegra() }[aba]());
+  root.querySelector('[data-novo]').onclick = () => ({ contas: () => abrirConta(), categorias: () => abrirCategoria(), contatos: () => abrirContato(null, { tipo: CT_TIPOS.find(t => t.id === ctTipo)?.novo }), centros: () => abrirCentro(), tags: () => abrirTag(), regras: () => abrirRegra() }[aba]());
   const body = root.querySelector('[data-body]');
   const paint = () => { body.innerHTML = ''; ({ contas: paintContas, categorias: paintCategorias, contatos: paintContatos, centros: paintCentros, tags: paintTags, regras: paintRegras }[aba])(body, C, E); };
   paint();
@@ -105,17 +108,22 @@ export function abrirCategoria(c = null, defaults = {}) {
 }
 
 function paintContatos(body, C, E) {
-  const list = C.contatos.filter(c => match(c.nome + ' ' + (c.documento || '') + ' ' + (c.email || ''))).sort((a, b) => (a.arquivado - b.arquivado) || a.nome.localeCompare(b.nome));
+  const doTipo = (c, t) => !t.tipos || t.tipos.includes(c.tipo || 'fornecedor');
+  const ativos = C.contatos.filter(c => !c.arquivado);
+  const tabs = segmented(CT_TIPOS.map(t => ({ id: t.id, label: `${t.label} <b>${ativos.filter(c => doTipo(c, t)).length}</b>`, icon: t.icon })), ctTipo, v => { ctTipo = v; paintContatos(body, C, E); }, 'ct-tabs');
+  const tipoAtual = CT_TIPOS.find(t => t.id === ctTipo) || CT_TIPOS[0];
+  const list = C.contatos.filter(c => doTipo(c, tipoAtual) && match(c.nome + ' ' + (c.documento || '') + ' ' + (c.email || ''))).sort((a, b) => (a.arquivado - b.arquivado) || a.nome.localeCompare(b.nome));
   const stats = new Map(); for (const l of C.lancamentos) { if (!l.contato_id || l.status === 'cancelado') continue; const s = stats.get(l.contato_id) || { n: 0, v: 0, aberto: 0 }; s.n++; s.v += l.valor; if (['aberto', 'parcial', 'atrasado'].includes(statusOf(l))) s.aberto += l.valor; stats.set(l.contato_id, s); }
-  if (!list.length) return body.appendChild(emptyState({ icon: 'ti-users', title: 'Nenhum contato', action: { label: 'Novo contato', icon: 'ti-plus', onClick: () => abrirContato() } }));
+  body.innerHTML = ''; body.appendChild(tabs);
+  if (!list.length) return body.appendChild(emptyState({ icon: tipoAtual.icon, title: q ? 'Nenhum contato encontrado' : `Nenhum ${tipoAtual.label.toLowerCase().replace(/s$/, '')} cadastrado`, action: { label: 'Novo contato', icon: 'ti-plus', onClick: () => abrirContato(null, { tipo: tipoAtual.novo }) } }));
   const tipoL = { cliente: 'Cliente', fornecedor: 'Fornecedor', ambos: 'Cliente e fornecedor', socio: 'Sócio', funcionario: 'Funcionário' };
-  body.innerHTML = `<div class="listwrap">${list.map(c => { const s = stats.get(c.id); return `<div class="row ct-r ${c.arquivado ? 'arch' : ''}" data-id="${c.id}">${avatar(c.nome, 36)}<div class="r-b"><div class="r-t">${esc(c.nome)}</div><div class="r-s"><span>${tipoL[c.tipo] || ''}</span>${c.documento ? `<span class="mono">${fmtDoc(c.documento)}</span>` : ''}${c.email ? `<span>${esc(c.email)}</span>` : ''}${c.pix ? `<span>${icon('ti-bolt')} ${esc(c.pix)}</span>` : ''}</div></div>${s ? `<div class="r-v"><span>${money(s.v)}</span><small>${s.n} lanç.${s.aberto ? ` · ${money(s.aberto)} aberto` : ''}</small></div>` : ''}<button class="ibtn" data-menu>${icon('ti-dots-vertical')}</button></div>`; }).join('')}</div>`;
+  body.insertAdjacentHTML('beforeend', `<div class="listwrap">${list.map(c => { const s = stats.get(c.id); return `<div class="row ct-r ${c.arquivado ? 'arch' : ''}" data-id="${c.id}">${avatar(c.nome, 36)}<div class="r-b"><div class="r-t">${esc(c.nome)}</div><div class="r-s"><span>${tipoL[c.tipo] || ''}</span>${c.documento ? `<span class="mono">${fmtDoc(c.documento)}</span>` : ''}${c.email ? `<span>${esc(c.email)}</span>` : ''}${c.pix ? `<span>${icon('ti-bolt')} ${esc(c.pix)}</span>` : ''}</div></div>${s ? `<div class="r-v"><span>${money(s.v)}</span><small>${s.n} lanç.${s.aberto ? ` · ${money(s.aberto)} aberto` : ''}</small></div>` : ''}<button class="ibtn" data-menu>${icon('ti-dots-vertical')}</button></div>`; }).join('')}</div>`);
   on(body, 'click', '[data-menu]', (e, b) => { e.stopPropagation(); const c = db.get('contatos', b.closest('[data-id]').dataset.id); menu(b, [{ label: 'Editar', icon: 'ti-pencil', onClick: () => abrirContato(c) }, { label: 'Ver lançamentos', icon: 'ti-list', onClick: () => { location.hash = `#/relatorios`; } }, { label: c.arquivado ? 'Reativar' : 'Arquivar', icon: 'ti-archive', onClick: () => db.upsert('contatos', { ...c, arquivado: !c.arquivado }) }, '-', { label: 'Excluir', icon: 'ti-trash', danger: true, onClick: async () => { if (stats.get(c.id)) return toast('Contato com lançamentos. Arquive.', 'warn'); if (await confirm({ title: 'Excluir contato', msg: `Excluir "${esc(c.nome)}"?`, ok: 'Excluir', danger: true })) db.remove('contatos', c.id); } }]); });
   on(body, 'click', '.ct-r', (e, el) => { if (e.target.closest('button')) return; abrirContato(db.get('contatos', el.dataset.id)); });
 }
-export function abrirContato(c = null) {
-  const E = app.empresaId; const isEdit = !!c;
-  const L = c ? { ...c } : { nome: '', tipo: 'fornecedor', documento: '', email: '', telefone: '', pix: '', cidade: '', uf: '', observacoes: '', arquivado: false };
+export function abrirContato(c = null, { tipo: tipoNovo = 'fornecedor' } = {}) {
+  const E = app.empresaId; const C = app.ctx(); const isEdit = !!c;
+  const L = c ? { ...c } : { nome: '', tipo: tipoNovo || 'fornecedor', documento: '', email: '', telefone: '', pix: '', cidade: '', uf: '', observacoes: '', arquivado: false };
   const d = drawer({ title: isEdit ? 'Editar contato' : 'Novo contato', size: 'md' });
   const f = h('<form class="lform"></form>'); d.body.appendChild(f);
   const nome = h(`<input class="inp" value="${esc(L.nome)}" placeholder="Nome ou razão social" required>`);
