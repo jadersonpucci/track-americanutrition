@@ -168,6 +168,8 @@ begin
     from pares p
     join contatos ct on ct.id = p.contato_id and ct.deletado_em is null and not coalesce(ct.arquivado, false) and upper(ct.nome) <> 'IDENTIFICAR'
     join categorias cat on cat.id = p.categoria_id and cat.deletado_em is null and not cat.arquivada and cat.nome not ilike 'a classificar'
+    -- afiliados: a comissão vem do painel (fin_comissoes_prever), não de clone do histórico
+    where not exists (select 1 from afiliados a where (a.nibo_supplier_id is not null and a.nibo_supplier_id = ct.nibo_id) or upper(coalesce(nullif(a.nome_completo, ''), a.nome)) = upper(ct.nome))
   loop
     if r.parcelas_restantes = 0 then continue; end if;
     pares := pares + 1;
@@ -350,11 +352,12 @@ end $$;
 --    real, estende as recorrências e limpa anexos órfãos.
 -- ---------------------------------------------------------------------
 create or replace function fin_rotina(p_empresa uuid) returns jsonb language plpgsql as $$
-declare cls int; conc int; ger jsonb; orf int;
+declare cls int; conc int; ger jsonb; orf int; com jsonb;
 begin
   cls := fin_classificar_pendentes(p_empresa);
   conc := fin_recorrencias_conciliar(p_empresa);
   ger := fin_recorrencias_gerar(p_empresa, 6);
+  com := fin_comissoes_prever(p_empresa);
   orf := fin_anexos_limpar();
-  return jsonb_build_object('ok', true, 'classificados', cls, 'previstos_removidos', conc, 'previstos_criados', ger->'criados', 'pares', ger->'pares', 'anexos_orfaos', orf);
+  return jsonb_build_object('ok', true, 'classificados', cls, 'previstos_removidos', conc, 'previstos_criados', ger->'criados', 'pares', ger->'pares', 'comissoes', com, 'anexos_orfaos', orf);
 end $$;
