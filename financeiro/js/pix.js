@@ -80,6 +80,6 @@ export function modalPix({ lanc, contato, valor, onPago = null, contaNome = '' }
   const bFechar = h('<button class="btn ghost">Fechar</button>'); bFechar.onclick = () => d.close();
   d.footer.append(bFechar, h('<span class="grow"></span>'));
   if (onPago) { const bPago = h(`<button class="btn primary" title="${contaNome ? `Abre a baixa já com a conta ${esc(contaNome)} selecionada` : 'Abre a baixa'}">${icon('ti-check')}Já paguei · dar baixa</button>`); bPago.onclick = () => { d.close(); onPago(); }; d.footer.append(bPago); }
-  if (contaNome) d.body.querySelector('.pix-box p').insertAdjacentHTML('beforeend', ` A baixa vai para a conta <b>${esc(contaNome)}</b> (dá para trocar na próxima tela).`);
+  d.body.querySelector('.pix-box p').insertAdjacentHTML('beforeend', contaNome ? ` A baixa vai para a conta <b>${esc(contaNome)}</b> (dá para trocar na próxima tela).` : ' Na baixa você escolhe de qual conta o PIX saiu.');
   return d;
 }
