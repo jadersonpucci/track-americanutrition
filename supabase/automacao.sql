@@ -170,11 +170,14 @@ begin
     if r.parcelas_restantes = 0 then continue; end if;
     pares := pares + 1;
     v_valor := round((case when r.ultimo is not null and r.ultimo = r.penultimo then r.ultimo else r.valor_med end)::numeric, 2);
-    -- previstos já criados e ainda sem baixa acompanham o valor atual
-    update lancamentos l set valor = v_valor, atualizado_em = now()
+    -- previstos já criados e ainda sem baixa acompanham o valor atual, exceto os
+    -- editados à mão (recorrencia.manual) ou cujo valor já não é o gerado (valor_auto)
+    update lancamentos l set valor = v_valor, recorrencia = l.recorrencia || jsonb_build_object('valor_auto', v_valor), atualizado_em = now()
       where l.empresa_id = p_empresa and l.deletado_em is null and l.origem = 'recorrencia' and (l.recorrencia->>'auto') = 'true'
         and l.contato_id = r.contato_id and l.categoria_id = r.categoria_id and l.status = 'aberto'
-        and jsonb_array_length(coalesce(l.baixas, '[]'::jsonb)) = 0 and l.valor <> v_valor;
+        and jsonb_array_length(coalesce(l.baixas, '[]'::jsonb)) = 0 and l.valor <> v_valor
+        and coalesce((l.recorrencia->>'manual')::boolean, false) = false
+        and ((l.recorrencia->>'valor_auto') is null or (l.recorrencia->>'valor_auto')::numeric = l.valor);
     for i in 0 .. least(greatest(p_meses, 1), coalesce(r.parcelas_restantes, p_meses)) loop
       m := (ini + (i || ' months')::interval)::date;
       if exists (select 1 from lancamentos l where l.empresa_id = p_empresa and l.deletado_em is null and l.status <> 'cancelado' and l.tipo = 'pagar'
@@ -184,7 +187,7 @@ begin
       if i = 0 and venc < current_date then continue; end if;
       insert into lancamentos (empresa_id, tipo, descricao, valor, vencimento, competencia, categoria_id, contato_id, conta_id, forma_pagamento, status, baixas, tags, recorrencia, recorrencia_id, origem, origem_ref)
       values (p_empresa, 'pagar', coalesce(r.descricao, 'Previsto'), v_valor, venc, m, r.categoria_id, r.contato_id, r.conta_id, coalesce(r.forma, 'pix'), 'aberto', '[]'::jsonb, '["Previsto"]'::jsonb,
-              jsonb_build_object('freq', 'mensal', 'auto', true), md5(p_empresa::text || r.contato_id::text || r.categoria_id::text)::uuid, 'recorrencia',
+              jsonb_build_object('freq', 'mensal', 'auto', true, 'valor_auto', v_valor), md5(p_empresa::text || r.contato_id::text || r.categoria_id::text)::uuid, 'recorrencia',
               'auto:' || r.contato_id || ':' || r.categoria_id || ':' || to_char(m, 'YYYYMM'))
       on conflict (empresa_id, origem, origem_ref) where origem_ref is not null do nothing;
       get diagnostics k = row_count; n := n + k;
