@@ -56,7 +56,7 @@ function carregarQR() {
 }
 
 // Abre o modal de pagamento de um lançamento pela chave PIX do contato.
-export function modalPix({ lanc, contato, valor, onPago = null }) {
+export function modalPix({ lanc, contato, valor, onPago = null, contaNome = '' }) {
   const nk = pixKeyNorm(contato?.pix);
   if (!nk) { toast('Este contato não tem chave PIX cadastrada', 'warn'); return null; }
   const v = Math.max(0, Number(valor) || 0);
@@ -79,6 +79,7 @@ export function modalPix({ lanc, contato, valor, onPago = null }) {
   d.footer.innerHTML = '';
   const bFechar = h('<button class="btn ghost">Fechar</button>'); bFechar.onclick = () => d.close();
   d.footer.append(bFechar, h('<span class="grow"></span>'));
-  if (onPago) { const bPago = h(`<button class="btn primary">${icon('ti-check')}Já paguei · dar baixa</button>`); bPago.onclick = () => { d.close(); onPago(); }; d.footer.append(bPago); }
+  if (onPago) { const bPago = h(`<button class="btn primary" title="${contaNome ? `Abre a baixa já com a conta ${esc(contaNome)} selecionada` : 'Abre a baixa'}">${icon('ti-check')}Já paguei · dar baixa</button>`); bPago.onclick = () => { d.close(); onPago(); }; d.footer.append(bPago); }
+  if (contaNome) d.body.querySelector('.pix-box p').insertAdjacentHTML('beforeend', ` A baixa vai para a conta <b>${esc(contaNome)}</b> (dá para trocar na próxima tela).`);
   return d;
 }

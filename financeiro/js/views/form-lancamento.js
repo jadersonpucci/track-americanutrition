@@ -202,7 +202,7 @@ export function abrirLancamento(existing = null, { tipo = 'pagar', defaults = {}
 }
 
 // ---------- baixa (pagar / receber) ----------
-export function abrirBaixa(lancs, { onDone } = {}) {
+export function abrirBaixa(lancs, { onDone, conta_id = null } = {}) {
   const list = Array.isArray(lancs) ? lancs : [lancs]; const C = app.ctx();
   const isRec = list.every(l => l.tipo === 'receber'); const multi = list.length > 1;
   if (multi) return abrirBaixaLote(list.filter(l => emAberto(l) > 0), { onDone, isRec });
@@ -212,7 +212,7 @@ export function abrirBaixa(lancs, { onDone } = {}) {
   const l0 = list[0];
   b.innerHTML = `<div class="baixa-head"><div class="baixa-t">${esc(l0.descricao)}</div><div class="muted sm">${C.contato(l0.contato_id)?.nome || ''} · venc. ${fmtDate(l0.vencimento)}${liquidado(l0) ? ` · já ${isRec ? 'recebido' : 'pago'} ${money(liquidado(l0))}` : ''}</div></div>`;
   const dt = h(`<input class="inp" type="date" value="${today()}">`);
-  const conta = combobox({ options: C.contas.filter(c => !c.arquivada).map(contaOpt), value: l0.conta_id || C.contas[0]?.id, allowEmpty: false });
+  const conta = combobox({ options: C.contas.filter(c => !c.arquivada).map(contaOpt), value: conta_id || l0.conta_id || C.contas[0]?.id, allowEmpty: false });
   const val = moneyInput({ value: total, cls: 'lg' });
   const juros = moneyInput({ value: 0 }), multa = moneyInput({ value: 0 }), desc = moneyInput({ value: 0 });
   const r1 = h('<div class="row2"></div>'); r1.append(fieldEl('Data', dt), fieldEl('Conta', conta)); b.appendChild(r1);
@@ -326,7 +326,9 @@ export function abrirDetalhe(l) {
   d.footer.append(bDel, bDup, h('<span class="grow"></span>'), bEdit);
   if (!isTr && st !== 'pago' && st !== 'cancelado') {
     // fornecedor com chave PIX: QR Code / copia e cola com o valor em aberto
-    if (l.tipo === 'pagar' && ct?.pix) { const bPix = h(`<button class="btn secondary" title="Pagar com PIX">${icon('ti-qrcode')}PIX</button>`); bPix.onclick = async () => { const { modalPix } = await import('../pix.js'); modalPix({ lanc: l, contato: ct, valor: emAberto(l), onPago: () => { d.close(); abrirBaixa(l); } }); }; d.footer.append(bPix); }
+    if (l.tipo === 'pagar' && ct?.pix) { const bPix = h(`<button class="btn secondary" title="Pagar com PIX">${icon('ti-qrcode')}PIX</button>`); bPix.onclick = async () => { const { modalPix } = await import('../pix.js'); // a baixa do PIX sai da conta de onde o PIX é pago: a conta Inter (API de extrato concilia), senão a conta do lançamento
+      const contaPix = C.contas.find(c => !c.arquivada && (c.banco === 'inter' || /inter/i.test(c.nome)))?.id || l.conta_id || null;
+      modalPix({ lanc: l, contato: ct, valor: emAberto(l), contaNome: C.conta(contaPix)?.nome, onPago: () => { d.close(); abrirBaixa(l, { conta_id: contaPix }); } }); }; d.footer.append(bPix); }
     const bPay = h(`<button class="btn primary">${icon(l.tipo === 'receber' ? 'ti-arrow-down-left' : 'ti-check')}${l.tipo === 'receber' ? 'Receber' : 'Pagar'}</button>`); bPay.onclick = () => { d.close(); abrirBaixa(l); }; d.footer.append(bPay);
   }
   return d;
