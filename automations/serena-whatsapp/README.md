@@ -1828,3 +1828,30 @@ Testes (01/10): `sem_fallback: true` → `{ok:true, tipo:"audio", modelo:"eleven
 parâmetro → idem. A ElevenLabs **voltou sozinha** na noite de 29/09: 9 transcrições certas desde
 então ("É, o que que você me fala dessa ImmunoFosfo Plus 180?"), e o alerta de falha no Telegram
 que instrumentei ontem fica de guarda para a próxima.
+
+## Voz da Serena no ElevenLabs v4 turbo (01/10)
+
+Consultei `GET /v1/models` com a credencial da conta em vez de supor o que existe. O `eleven_v4` está
+liberado (`requires_alpha_access: false`), junto com uma variante turbo:
+
+| Modelo | Idiomas | Custo/caractere | Tempo medido (mesma frase, mesma voz) |
+| --- | --- | --- | --- |
+| `eleven_v3` (anterior) | 74 | 1,0× | 4,96 s |
+| `eleven_v4` | 85 | 1,0× | 4,85 s |
+| **`eleven_v4_turbo`** (novo padrão) | 85 | **0,5×** | **3,07 s** |
+| `eleven_v3_conversational` | 74 | 0,5× | 4,13 s |
+
+Jaderson ouviu as quatro amostras e aprovou. No `Preparar` do Envio Samuel:
+principal **`eleven_v4_turbo`**, reserva **`eleven_v4`** (antes era o `eleven_multilingual_v2`, que
+soava pior que os dois). Numa resposta de WhatsApp, 2 segundos a menos é a diferença entre parecer
+gente e parecer robô processando — e o custo da voz caiu pela metade.
+
+Detalhe que evitou um bug silencioso: **a família v4 não aceita `style` nem `use_speaker_boost`**
+(a própria API devolve `can_use_style: false`). O corpo do v3 não mandava esses campos, mas o do v2
+mandava — agora a função `ajustes(id)` só os inclui quando o modelo é mesmo o v2.
+
+`b.modelo` aceita `v4t` (padrão), `v4`, `v3` e `v2` para forçar um modelo específico; `Trocar para v2`
+e `Resultado` passaram a ler `modelo_b` em vez do id fixo do v2.
+
+Testes (01/10, número da equipe): padrão → `eleven_v4_turbo`; `modelo: "v4"` → `eleven_v4`;
+`modelo: "v2"` → `eleven_multilingual_v2` com estilo e speaker boost. Os três entregaram áudio.

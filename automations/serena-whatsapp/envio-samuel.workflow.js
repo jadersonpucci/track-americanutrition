@@ -45,19 +45,28 @@ function paraFala(t) {
 }
 let audioTexto = paraFala(audioTextoRaw);
 
-// Modelo principal eleven_v3 (mais natural e expressivo); reserva eleven_multilingual_v2 com ajustes mais soltos.
-// b.modelo = 'v2' forca o v2 ja na primeira tentativa. b.estabilidade, b.velocidade e b.tag (direcao do v3, ex: '[animada]') sao opcionais.
-const modelo = String(b.modelo || 'v3').toLowerCase();
+// 01/10/2026: a voz saiu do eleven_v3 para o eleven_v4_turbo. Na amostra com a voz da Serena o turbo
+// gerou em 3,0s contra 5,0s do v3 (38% mais rapido) e custa metade por caractere; a reserva agora e o
+// eleven_v4, que antes era o eleven_multilingual_v2. ATENCAO: a familia v4 nao aceita style nem
+// use_speaker_boost (a API devolve can_use_style: false), entao esses dois campos so vao no v2.
+// b.modelo aceita 'v4t' (padrao), 'v4', 'v3' e 'v2' para forcar um modelo especifico.
+const MOD = { v4t: 'eleven_v4_turbo', v4: 'eleven_v4', v3: 'eleven_v3', v2: 'eleven_multilingual_v2' };
+const modelo = String(b.modelo || 'v4t').toLowerCase();
+const idA = MOD[modelo] || 'eleven_v4_turbo';
+const idB = (idA === 'eleven_v4') ? 'eleven_v4_turbo' : 'eleven_v4';
 const est = (b.estabilidade != null && b.estabilidade !== '') ? Number(b.estabilidade) : null;
 const vel = (b.velocidade != null && b.velocidade !== '') ? Math.max(0.7, Math.min(1.2, Number(b.velocidade))) : null;
 const tag = String(b.tag || '').trim();
-const textoV3 = (tag ? tag + ' ' : '') + audioTexto;
-const corpoV3 = { text: textoV3, model_id: 'eleven_v3', voice_settings: { stability: (est != null ? est : 0.5), similarity_boost: 0.8, speed: (vel != null ? vel : 1.1) } };
-const corpoV2 = { text: audioTexto, model_id: 'eleven_multilingual_v2', voice_settings: { stability: (est != null ? est : 0.38), similarity_boost: 0.8, style: 0.45, use_speaker_boost: true, speed: (vel != null ? vel : 1.08) } };
-const corpoA = modelo === 'v2' ? corpoV2 : corpoV3;
+function ajustes(id) {
+  if (id === 'eleven_multilingual_v2') return { stability: (est != null ? est : 0.38), similarity_boost: 0.8, style: 0.45, use_speaker_boost: true, speed: (vel != null ? vel : 1.08) };
+  return { stability: (est != null ? est : 0.5), similarity_boost: 0.8, speed: (vel != null ? vel : 1.1) };
+}
+const textoComTag = (tag ? tag + ' ' : '') + audioTexto;
+const corpoA = { text: textoComTag, model_id: idA, voice_settings: ajustes(idA) };
+const corpoB = { text: textoComTag, model_id: idB, voice_settings: ajustes(idB) };
 
-return [{ json: { number: number, text: text || audioTextoRaw, audio_texto: audioTexto, voz_id: vozId, delay: delay, tipo: audioTexto ? 'audio' : 'texto', modelo_a: corpoA.model_id, corpo_a: corpoA, corpo_b: corpoV2 } }];` } },
-  output: [{ number: '5511999999999', text: 'oi', audio_texto: '', voz_id: 'x', delay: 1000, tipo: 'texto', modelo_a: 'eleven_v3', corpo_a: {}, corpo_b: {} }] });
+return [{ json: { number: number, text: text || audioTextoRaw, audio_texto: audioTexto, voz_id: vozId, delay: delay, tipo: audioTexto ? 'audio' : 'texto', modelo_a: corpoA.model_id, modelo_b: corpoB.model_id, corpo_a: corpoA, corpo_b: corpoB } }];` } },
+  output: [{ number: '5511999999999', text: 'oi', audio_texto: '', voz_id: 'x', delay: 1000, tipo: 'texto', modelo_a: 'eleven_v4_turbo', modelo_b: 'eleven_v4', corpo_a: {}, corpo_b: {} }] });
 
 const eAudio = switchCase({ version: 3.2, config: { name: 'E audio?', parameters: { rules: { values: [
   { outputKey: 'audio', conditions: { options: { caseSensitive: true, leftValue: '', typeValidation: 'strict' }, conditions: [{ leftValue: expr('{{ $json.tipo }}'), operator: { type: 'string', operation: 'equals' }, rightValue: 'audio' }], combinator: 'and' } },
@@ -90,8 +99,8 @@ const vozOk = switchCase({ version: 3.2, config: { name: 'Voz gerada?', paramete
 ] }, options: {} } } });
 
 
-// eleven_v3 falhou: uma segunda passada no mesmo Gerar Voz com eleven_multilingual_v2; se falhar de novo, texto.
-const trocarV2 = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Trocar para v2', parameters: { jsCode: `// A voz principal (eleven_v3) falhou: tenta uma vez com eleven_multilingual_v2 (mesmo no Gerar Voz, segunda passada).
+// o modelo principal falhou: uma segunda passada no mesmo Gerar Voz com a reserva; se falhar de novo, texto (ou nada, com sem_fallback).
+const trocarV2 = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Trocar para v2', parameters: { jsCode: `// A voz principal falhou: tenta uma vez com o modelo de reserva (mesmo no Gerar Voz, segunda passada).
 // Se ja e a segunda passada, ou o v2 ja foi o primeiro modelo, desiste.
 // 01/10: ao desistir, este fluxo mandava o texto por conta propria e respondia {ok:true, tipo:'texto'}.
 // Quem pediu audio (a Entrada) lia tipo != 'audio' como falha e mandava o texto DE NOVO: o cliente
@@ -100,8 +109,8 @@ const trocarV2 = node({ type: 'n8n-nodes-base.code', version: 2, config: { name:
 const p = $('Preparar').first().json;
 let semFallback = false;
 try { const b = ($('Webhook Enviar').first().json.body) || {}; semFallback = b.sem_fallback === true || b.sem_fallback === 'true'; } catch (e) { semFallback = false; }
-const desistir = ($runIndex > 0) || p.modelo_a === 'eleven_multilingual_v2';
-return [{ json: Object.assign({}, p, { corpo_a: p.corpo_b, modelo_a: 'eleven_multilingual_v2', tentar: !desistir, sem_fallback: semFallback }) }];` } },
+const desistir = ($runIndex > 0) || p.modelo_a === p.modelo_b;
+return [{ json: Object.assign({}, p, { corpo_a: p.corpo_b, modelo_a: p.modelo_b, tentar: !desistir, sem_fallback: semFallback }) }];` } },
   output: [{ tentar: true }] });
 
 const tentarV2 = switchCase({ version: 3.2, config: { name: 'Tentar v2?', parameters: { rules: { values: [
@@ -131,7 +140,7 @@ const resultado = node({ type: 'n8n-nodes-base.code', version: 2, config: { name
 const ok = !!(r.key && r.key.id) || !!r.messageId;
 let tipo = 'texto', modelo = null;
 try { if ($('Enviar Audio (Samuel)').isExecuted) tipo = 'audio'; } catch (e) { tipo = 'texto'; }
-if (tipo === 'audio') { try { modelo = $('Trocar para v2').isExecuted ? 'eleven_multilingual_v2' : $('Preparar').first().json.modelo_a; } catch (e) { modelo = null; } }
+// qual modelo de voz saiu: se a reserva entrou em acao, foi o modelo_b do Preparar\nif (tipo === 'audio') { try { const p = $('Preparar').first().json; modelo = $('Trocar para v2').isExecuted ? p.modelo_b : p.modelo_a; } catch (e) { modelo = null; } }
 return [{ json: { ok: ok, tipo: tipo, modelo: modelo, message_id: (r.key && r.key.id) || r.messageId || null, erro: ok ? null : JSON.stringify(r).slice(0, 300) } }];` } },
   output: [{ ok: true, tipo: 'texto', message_id: 'X', erro: null }] });
 
