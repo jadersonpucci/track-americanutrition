@@ -100,7 +100,7 @@ export function render(root, { tipo = 'pagar', params = {} } = {}) {
     mais.querySelector('button').onclick = maisLinhas;
     if ('IntersectionObserver' in window) { const io = new IntersectionObserver(es => { if (es.some(x => x.isIntersecting) && mais.isConnected) maisLinhas(); if (!mais.isConnected) io.disconnect(); }, { rootMargin: '600px' }); io.observe(mais); }
   }
-  on(lw, 'click', '.row', (e, r) => { if (e.target.closest('input,button,a')) return; abrirDetalhe(app.lanc(r.dataset.id)); });
+  on(lw, 'click', '.row', (e, r) => { if (e.target.closest('input,button,a,.chk')) return; abrirDetalhe(app.lanc(r.dataset.id)); });
   // Shift + clique marca (ou desmarca) todos entre o último clicado e este
   on(lw, 'click', 'input[data-sel]', (e, i) => {
     const todos = [...lw.querySelectorAll('input[data-sel]:not([disabled])')];
