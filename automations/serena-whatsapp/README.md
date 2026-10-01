@@ -1903,3 +1903,40 @@ Testes (01/10, sandbox): "moro em sítio, qual transportadora é melhor?" → Co
 agência; "meu endereço é zona rural, a J&T entrega lá?" → Correios, explicando que a J&T não sobe
 para sítio; "moro em apartamento no centro de São Paulo" → comparação normal das três, **sem** aplicar
 a regra rural onde ela não cabe.
+
+## Fila humana parada: ninguém era avisado (01/10)
+
+Print de um cliente (+55 31 98728-0333) que respondeu "sim" às 09:29 e mandou "?" às 09:55 sem
+receber nada. Reconstruindo pelo banco:
+
+1. 30/09 13:12 — a Serena encaminhou para a equipe (`serena_atribuicoes`, status `aberto`).
+2. 01/10 09:27 — ela respondeu uma vez e **pausou a si mesma por 12h** (`wpp_pausa_handoff_min = 720`).
+3. 09:29 e 09:55 — as mensagens dele entraram no buffer, foram marcadas como processadas e **ninguém
+   respondeu**: a IA estava pausada e a fila humana nunca foi atendida.
+
+O encaminhamento continuava **aberto desde 30/09**. Medindo a fila inteira:
+
+| | |
+| --- | --- |
+| Atendimentos abertos | 37 |
+| Clientes esperando resposta humana | **13** |
+| Esperando há mais de 1h | 12 |
+| Espera mais antiga | **528 h (22 dias)**, desde 09/09 |
+
+Não existia alerta nenhum: o `guarda-filas` vigia broadcast, carrinho, transacional e reposição, mas
+**não `serena_atribuicoes`**. Workflow novo `[Serena] Fila Humana Parada` (`klTuJjVCATqxxJfp`, fonte
+`fila-humana-parada.workflow.js`), cron de 20 min:
+
+- Procura encaminhamento aberto cuja **última mensagem do cliente é mais nova que a última resposta
+  nossa** e está esperando há mais de `fila_alerta_min` (padrão 20 min).
+- Manda no Telegram (tópico 289) a lista ordenada por tempo de espera, com a última frase do cliente
+  e o link direto do Inbox.
+- Cada contato só reaparece depois de `fila_realerta_horas` (padrão 4h), para não repetir a mesma
+  lista a cada 20 min. Pula bloqueados. Kill switch `fila_alerta = off`.
+
+Primeira execução (01/10): **11 clientes avisados** e marcados; os outros entram nas próximas rodadas.
+
+**Fica em aberto, é decisão de negócio:** a pausa de 12h ao encaminhar (`wpp_pausa_handoff_min`) é
+longa para encaminhamento que é só um recado ("deixar anotado para avisar quando tiver promoção").
+Nesse caso o cliente respondeu "sim" a uma pergunta que a Serena sabia responder sozinha. Duas saídas
+possíveis: reduzir a pausa, ou devolver a conversa para a Serena se ninguém responder em N horas.
