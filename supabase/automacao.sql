@@ -129,7 +129,7 @@ end $$;
 --    o previsto do mesmo contato/mês é removido automaticamente.
 -- ---------------------------------------------------------------------
 create or replace function fin_recorrencias_gerar(p_empresa uuid, p_meses int default 6) returns jsonb language plpgsql as $$
-declare n int := 0; k int; pares int := 0; r record; m date; venc date; ini date := (date_trunc('month', current_date) + interval '1 month')::date;
+declare n int := 0; k int; pares int := 0; r record; m date; venc date; v_valor numeric; ini date := date_trunc('month', current_date)::date;
 begin
   insert into tags (empresa_id, nome, cor) select p_empresa, 'Previsto', '#5B667E'
     where not exists (select 1 from tags where empresa_id = p_empresa and deletado_em is null and nome = 'Previsto');
@@ -146,10 +146,13 @@ begin
     ), pares as (
       select contato_id, categoria_id, count(*) as meses,
              percentile_cont(0.5) within group (order by valor) as valor_med,
-             percentile_cont(0.5) within group (order by dia) as dia_med
+             percentile_cont(0.5) within group (order by dia) as dia_med,
+             -- valor dos dois meses mais recentes: se repetiu, é o valor atual (reajuste de salário, aluguel etc.)
+             (array_agg(valor order by mes desc))[1] as ultimo,
+             (array_agg(valor order by mes desc))[2] as penultimo
       from hist group by 1, 2 having count(*) >= 6
     )
-    select p.contato_id, p.categoria_id, p.valor_med, p.dia_med,
+    select p.contato_id, p.categoria_id, p.valor_med, p.dia_med, p.ultimo, p.penultimo,
       (select l.descricao from lancamentos l where l.empresa_id = p_empresa and l.deletado_em is null and l.tipo = 'pagar' and l.origem <> 'recorrencia'
          and l.contato_id = p.contato_id and l.categoria_id = p.categoria_id group by l.descricao order by count(*) desc, max(l.vencimento) desc limit 1) as descricao,
       (select coalesce((l.baixas->0->>'conta_id')::uuid, l.conta_id) from lancamentos l where l.empresa_id = p_empresa and l.deletado_em is null and l.tipo = 'pagar' and l.origem <> 'recorrencia'
@@ -166,13 +169,21 @@ begin
   loop
     if r.parcelas_restantes = 0 then continue; end if;
     pares := pares + 1;
-    for i in 0 .. least(greatest(p_meses, 1), coalesce(r.parcelas_restantes, p_meses)) - 1 loop
+    v_valor := round((case when r.ultimo is not null and r.ultimo = r.penultimo then r.ultimo else r.valor_med end)::numeric, 2);
+    -- previstos já criados e ainda sem baixa acompanham o valor atual
+    update lancamentos l set valor = v_valor, atualizado_em = now()
+      where l.empresa_id = p_empresa and l.deletado_em is null and l.origem = 'recorrencia' and (l.recorrencia->>'auto') = 'true'
+        and l.contato_id = r.contato_id and l.categoria_id = r.categoria_id and l.status = 'aberto'
+        and jsonb_array_length(coalesce(l.baixas, '[]'::jsonb)) = 0 and l.valor <> v_valor;
+    for i in 0 .. least(greatest(p_meses, 1), coalesce(r.parcelas_restantes, p_meses)) loop
       m := (ini + (i || ' months')::interval)::date;
       if exists (select 1 from lancamentos l where l.empresa_id = p_empresa and l.deletado_em is null and l.status <> 'cancelado' and l.tipo = 'pagar'
                    and l.contato_id = r.contato_id and l.categoria_id = r.categoria_id and date_trunc('month', coalesce(l.competencia, l.vencimento))::date = m) then continue; end if;
       venc := least(m + (greatest(round(r.dia_med)::int, 1) - 1), (m + interval '1 month - 1 day')::date);
+      -- no mês corrente só cria se o dia ainda não passou (senão nasceria atrasado)
+      if i = 0 and venc < current_date then continue; end if;
       insert into lancamentos (empresa_id, tipo, descricao, valor, vencimento, competencia, categoria_id, contato_id, conta_id, forma_pagamento, status, baixas, tags, recorrencia, recorrencia_id, origem, origem_ref)
-      values (p_empresa, 'pagar', coalesce(r.descricao, 'Previsto'), round(r.valor_med::numeric, 2), venc, m, r.categoria_id, r.contato_id, r.conta_id, coalesce(r.forma, 'pix'), 'aberto', '[]'::jsonb, '["Previsto"]'::jsonb,
+      values (p_empresa, 'pagar', coalesce(r.descricao, 'Previsto'), v_valor, venc, m, r.categoria_id, r.contato_id, r.conta_id, coalesce(r.forma, 'pix'), 'aberto', '[]'::jsonb, '["Previsto"]'::jsonb,
               jsonb_build_object('freq', 'mensal', 'auto', true), md5(p_empresa::text || r.contato_id::text || r.categoria_id::text)::uuid, 'recorrencia',
               'auto:' || r.contato_id || ':' || r.categoria_id || ':' || to_char(m, 'YYYYMM'))
       on conflict (empresa_id, origem, origem_ref) where origem_ref is not null do nothing;
