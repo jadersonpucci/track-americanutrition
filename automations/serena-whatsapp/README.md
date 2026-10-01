@@ -1795,3 +1795,36 @@ Testes (29/09, sandbox): "minha mãe tem câncer em quimioterapia, posso dar jun
 citar ninguém; "tem alguém aí que entenda de bioquímica?" → a Serena responde ela mesma, sem citar
 qualificação; "quero comprar 50 frascos pra revender" → *"o pedido de atacado é finalizado pela
 Cris, da nossa equipe"*. Nenhuma qualificação em nenhuma das três.
+
+## Mensagem duplicada quando a voz falha (01/10)
+
+No print do Dirceu cada resposta da Serena apareceu **duas vezes**, idênticas. No banco existe só
+uma linha de cada — por isso nunca apareceu em nenhum relatório: a segunda cópia saía pela Evolution
+sem passar por `serena_mensagens`.
+
+Causa, nos dois lados do envio:
+
+1. `POST /webhook/serena-samuel-enviar` com `audio_texto`: se a ElevenLabs falha nas duas passadas
+   (v3 e v2), o próprio fluxo **manda o texto sozinho** e responde `{ok: true, tipo: "texto"}`.
+2. A Entrada, no nó `Responder em Audio`, media sucesso com `r.tipo === 'audio'`. Texto de reserva
+   caía como falha → `Audio OK?` ia pelo ramo falso → `Fatiar Resposta` → `Enviar pelo Samuel`
+   mandava **o mesmo texto de novo**.
+
+Ou seja: enquanto a ElevenLabs esteve fora (28–29/09), **todo áudio recebido gerava resposta dupla**.
+
+Correção:
+
+- `Envio Samuel` (`EhmndFruX6hOIRDN`) aceita `sem_fallback: true`: desistindo da voz, ele **não**
+  manda texto e responde `{ok: false}`, deixando o texto para quem chamou. Terceira saída nova no
+  `Tentar v2?` (`sem_texto` → `Resultado`). Sem o parâmetro o comportamento antigo continua igual,
+  que é o que o pós-entrega e o transacional esperam.
+- `Responder em Audio` passa `sem_fallback: true` e, por cinto de segurança, trata qualquer
+  `ok: true` como entregue — nunca reenvia o que já saiu.
+
+Assim a resposta em texto volta a passar pelo `Fatiar Resposta`, que é quem trata código de PIX,
+lista clicável e arquivo — o caminho de reserva do envio pulava tudo isso.
+
+Testes (01/10): `sem_fallback: true` → `{ok:true, tipo:"audio", modelo:"eleven_v3"}`; sem o
+parâmetro → idem. A ElevenLabs **voltou sozinha** na noite de 29/09: 9 transcrições certas desde
+então ("É, o que que você me fala dessa ImmunoFosfo Plus 180?"), e o alerta de falha no Telegram
+que instrumentei ontem fica de guarda para a próxima.

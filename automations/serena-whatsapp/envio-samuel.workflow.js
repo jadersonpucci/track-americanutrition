@@ -92,15 +92,23 @@ const vozOk = switchCase({ version: 3.2, config: { name: 'Voz gerada?', paramete
 
 // eleven_v3 falhou: uma segunda passada no mesmo Gerar Voz com eleven_multilingual_v2; se falhar de novo, texto.
 const trocarV2 = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Trocar para v2', parameters: { jsCode: `// A voz principal (eleven_v3) falhou: tenta uma vez com eleven_multilingual_v2 (mesmo no Gerar Voz, segunda passada).
-// Se ja e a segunda passada, ou o v2 ja foi o primeiro modelo, desiste e manda texto.
+// Se ja e a segunda passada, ou o v2 ja foi o primeiro modelo, desiste.
+// 01/10: ao desistir, este fluxo mandava o texto por conta propria e respondia {ok:true, tipo:'texto'}.
+// Quem pediu audio (a Entrada) lia tipo != 'audio' como falha e mandava o texto DE NOVO: o cliente
+// recebia a mesma mensagem duas vezes, o que apareceu em todo audio desde que a ElevenLabs parou (28/09).
+// Agora quem chama pode pedir sem_fallback: true e cuidar do texto sozinho; sem isso, nada muda.
 const p = $('Preparar').first().json;
+let semFallback = false;
+try { const b = ($('Webhook Enviar').first().json.body) || {}; semFallback = b.sem_fallback === true || b.sem_fallback === 'true'; } catch (e) { semFallback = false; }
 const desistir = ($runIndex > 0) || p.modelo_a === 'eleven_multilingual_v2';
-return [{ json: Object.assign({}, p, { corpo_a: p.corpo_b, modelo_a: 'eleven_multilingual_v2', tentar: !desistir }) }];` } },
+return [{ json: Object.assign({}, p, { corpo_a: p.corpo_b, modelo_a: 'eleven_multilingual_v2', tentar: !desistir, sem_fallback: semFallback }) }];` } },
   output: [{ tentar: true }] });
 
 const tentarV2 = switchCase({ version: 3.2, config: { name: 'Tentar v2?', parameters: { rules: { values: [
   { outputKey: 'sim', conditions: { options: { caseSensitive: true, leftValue: '', typeValidation: 'loose' }, conditions: [{ leftValue: expr('{{ $json.tentar }}'), operator: { type: 'boolean', operation: 'true', singleValue: true }, rightValue: true }], combinator: 'and' } },
-  { outputKey: 'nao', conditions: { options: { caseSensitive: true, leftValue: '', typeValidation: 'loose' }, conditions: [{ leftValue: expr('{{ $json.tentar }}'), operator: { type: 'boolean', operation: 'false', singleValue: true }, rightValue: true }], combinator: 'and' } }
+  { outputKey: 'nao', conditions: { options: { caseSensitive: true, leftValue: '', typeValidation: 'loose' }, conditions: [{ leftValue: expr('{{ $json.tentar }}'), operator: { type: 'boolean', operation: 'false', singleValue: true }, rightValue: true }, { leftValue: expr('{{ $json.sem_fallback }}'), operator: { type: 'boolean', operation: 'false', singleValue: true }, rightValue: true }], combinator: 'and' } }
+  // 01/10: desistiu da voz E quem chamou pediu sem_fallback -> nao manda texto, responde ok:false
+  { outputKey: 'sem_texto', conditions: { options: { caseSensitive: true, leftValue: '', typeValidation: 'loose' }, conditions: [{ leftValue: expr('{{ $json.tentar }}'), operator: { type: 'boolean', operation: 'false', singleValue: true }, rightValue: true }, { leftValue: expr('{{ $json.sem_fallback }}'), operator: { type: 'boolean', operation: 'true', singleValue: true }, rightValue: true }], combinator: 'and' } }
 ] }, options: {} } } });
 
 const enviarAudio = node({ type: 'n8n-nodes-base.httpRequest', version: 4.2, config: { name: 'Enviar Audio (Samuel)', parameters: {
@@ -134,7 +142,7 @@ const nota = sticky('## Envio pelo Samuel (texto ou audio)\n\nPOST /webhook/sere
 export default workflow('serena-samuel-enviar', '[Serena WhatsApp] Envio Samuel (texto ou audio)')
   .add(entrada).to(preparar)
   .to(eAudio
-    .onCase(0, gerarVoz.to(base64.to(vozOk.onCase(0, enviarAudio).onCase(1, trocarV2.to(tentarV2.onCase(0, gerarVoz).onCase(1, enviarTexto))))))
+    .onCase(0, gerarVoz.to(base64.to(vozOk.onCase(0, enviarAudio).onCase(1, trocarV2.to(tentarV2.onCase(0, gerarVoz).onCase(1, enviarTexto).onCase(2, resultado))))))
     .onCase(1, enviarTexto))
   .add(enviarAudio).to(resultado)
   .add(enviarTexto).to(resultado)
