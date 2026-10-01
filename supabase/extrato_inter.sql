@@ -59,6 +59,28 @@ begin
     end if;
   end loop;
 
+  -- 2b. pagamento em lote: um débito (ou crédito) do extrato igual à soma das baixas ainda não conciliadas
+  --     do mesmo dia nesta conta (ex.: um PIX de R$ 21.487,76 que quitou 17 contas)
+  for it in
+    select a.* from extrato_itens a
+    where a.conta_id = p_conta and a.deletado_em is null and a.lancamento_id is null and not a.ignorado
+      and not (a.valor < 0 and a.descricao ~* 'tarifa|taxa|anuidade|mensalidade|\miof\M')
+    order by a.data, a.id
+  loop
+    select array_agg(distinct l.id) as ids, sum((bx.b->>'valor')::numeric) as total, (array_agg(l.id order by l.criado_em, l.id))[1] as primeiro into par
+    from lancamentos l
+    join lateral (select b from jsonb_array_elements(coalesce(l.baixas, '[]'::jsonb)) b) bx on true
+    where l.empresa_id = p_empresa and l.deletado_em is null and coalesce(l.status, '') <> 'cancelado'
+      and l.conciliado_fitid is null and l.tipo = case when it.valor < 0 then 'pagar' else 'receber' end
+      and (bx.b->>'conta_id')::uuid = p_conta and (bx.b->>'data')::date = it.data
+      and not exists (select 1 from extrato_itens x where x.lancamento_id = l.id and x.deletado_em is null);
+    if par.ids is not null and array_length(par.ids, 1) >= 2 and round(par.total, 2) = round(abs(it.valor), 2) then
+      update lancamentos set conciliado_fitid = it.fitid where id = any(par.ids);
+      update extrato_itens set lancamento_id = par.primeiro, descricao = coalesce(descricao, '') || ' [lote: ' || array_length(par.ids, 1) || ' lançamentos]' where id = it.id;
+      n_conc := n_conc + 1;
+    end if;
+  end loop;
+
   -- 3. tarifas: uma despesa paga por dia (só dias já fechados)
   select id into cat_tar from categorias where empresa_id = p_empresa and deletado_em is null and tipo = 'out' and nome ilike 'tarifa%' order by nome limit 1;
   if cat_tar is null then select id into cat_tar from categorias where empresa_id = p_empresa and deletado_em is null and tipo = 'out' and nome ilike 'a classificar' limit 1; end if;
