@@ -1855,3 +1855,51 @@ e `Resultado` passaram a ler `modelo_b` em vez do id fixo do v2.
 
 Testes (01/10, número da equipe): padrão → `eleven_v4_turbo`; `modelo: "v4"` → `eleven_v4`;
 `modelo: "v2"` → `eleven_multilingual_v2` com estilo e speaker boost. Os três entregaram áudio.
+
+## "Digitando..." antes de cada mensagem (01/10)
+
+A Evolution 2.3.7 tem `POST /chat/sendPresence/{instancia}`, e medindo a chamada se descobre o
+detalhe que faz funcionar: **ela segura a resposta pelo tempo do `delay`** (com `delay: 3000` voltou
+em 3,28 s). Ou seja, a própria chamada é a pausa — não precisa de `wait` nenhum.
+
+No `Envio Samuel`, dois nós novos antes do envio:
+
+| Nó | Presença | Duração |
+| --- | --- | --- |
+| `Digitando` | `composing` | `texto.length × 28 ms`, entre 1,2 s e 5 s |
+| `Gravando Audio` | `recording` | 35% da duração estimada do mp3 (128 kbps ≈ 16 KB/s), entre 1,5 s e 5 s |
+
+Os dois zeram o `delay` que ia para a Evolution, senão a espera aconteceria duas vezes — o
+`Enviar Texto` passou a ler `$json` em vez de `$('Preparar')` para enxergar esse zero. Se a presença
+falhar, a mensagem sai do mesmo jeito (`try/catch` silencioso).
+
+Como a Entrada manda cada parte da resposta separadamente, o "digitando" aparece **antes de cada
+balão**, que é o comportamento de uma pessoa escrevendo. O áudio mostra "gravando áudio...", que é o
+equivalente certo para voz.
+
+Testes (01/10, número da equipe): texto 5,0 s no total, áudio 4,8 s — nos dois a mensagem chegou
+depois da presença, e o `ok: true` voltou normal.
+
+## Zona rural: Correios, não transportadora (01/10)
+
+Print de um cliente que disse *"vou comprar agora, só uma coisa: vem pelos Correios? pq moro em
+sítio"*. A Serena respondeu que a J&T *"tem cobertura nacional, então é uma boa opção pra quem mora
+em sítio"* e fechou indicando a J&T — errado: transportadora normalmente não sobe para zona rural, e
+o pedido volta ou fica parado numa base.
+
+A origem do erro estava na própria base: *"J&T Express: entrega TODOS OS DIAS, cobertura nacional
+100%"*. Essa linha ganhou a ressalva de que transportadora não entrega em zona rural, e o adendo
+`01/10/2026 · Zona rural: indicar Correios` fixou a regra:
+
+- Sítio, chácara, fazenda, assentamento, estrada de terra ou "o carteiro não passa aqui" → **Correios
+  (PAC ou SEDEX)**, nunca J&T.
+- O argumento que convence: se não entregarem na porta, o pacote fica **na agência mais próxima para
+  retirar com documento** — para quem mora em sítio, é o caminho que de fato funciona.
+- Cliente que insistir na transportadora: respeita a escolha, avisa em uma frase, sem insistir.
+- Vale também para o frete grátis acima de R$ 250: se a opção gratuita for de transportadora, o
+  cliente rural precisa saber que o Correios, mesmo pago, tem mais chance de entregar.
+
+Testes (01/10, sandbox): "moro em sítio, qual transportadora é melhor?" → Correios, com a retirada na
+agência; "meu endereço é zona rural, a J&T entrega lá?" → Correios, explicando que a J&T não sobe
+para sítio; "moro em apartamento no centro de São Paulo" → comparação normal das três, **sem** aplicar
+a regra rural onde ela não cabe.

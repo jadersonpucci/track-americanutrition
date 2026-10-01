@@ -148,11 +148,40 @@ const responder = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.1, 
 
 const nota = sticky('## Envio pelo Samuel (texto ou audio)\n\nPOST /webhook/serena-samuel-enviar\n- texto: { number, text, delay }\n- audio: { number, audio_texto, voz_id, delay } -> texto limpo pra fala -> ElevenLabs eleven_v3 (reserva: segunda passada com eleven_multilingual_v2) -> sendWhatsAppAudio (PTT). Se a voz falhar, manda o texto.\n\nUsado pela Entrada (ack rapido e resposta em audio) e pelo pos-entrega. Responde { ok, tipo, message_id }.', [preparar, base64], { color: 6 });
 
+// 01/10/2026: antes de cada mensagem o Samuel aparece "digitando..." / "gravando audio..." para o cliente.
+// O /chat/sendPresence da Evolution SEGURA a chamada pelo tempo do delay (medido: delay 3000 -> 3,28s),
+// entao a propria chamada e a pausa; o sendText vai com delay 0 para nao esperar duas vezes.
+const digitando = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Digitando', parameters: { jsCode: `const p = $input.first().json || {};
+const EVO = 'http://evolution-api-aru6-api-1:8080';
+const EVO_KEY = 'EVO_API_KEY';
+const texto = String(p.text || '');
+// ritmo de quem digita, entre 1,2s e 5s para nao deixar o cliente olhando para a tela
+const ms = Math.min(5000, Math.max(1200, Math.round(texto.length * 28)));
+try {
+  await this.helpers.httpRequest({ method: 'POST', url: EVO + '/chat/sendPresence/Samuel', headers: { apikey: EVO_KEY, 'Content-Type': 'application/json' }, body: { number: p.number, presence: 'composing', delay: ms }, json: true, timeout: ms + 20000 });
+} catch (e) {}
+return [{ json: Object.assign({}, p, { delay: 0, digitou_ms: ms }) }];` } },
+  output: [{ delay: 0, digitou_ms: 1800 }] });
+
+const gravando = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Gravando Audio', parameters: { jsCode: `const p = $input.first().json || {};
+const EVO = 'http://evolution-api-aru6-api-1:8080';
+const EVO_KEY = 'EVO_API_KEY';
+// tempo estimado pelo tamanho do mp3 (128 kbps = ~16 KB por segundo), com teto de 5s
+const bytes = Math.floor(String(p.audio || '').length * 3 / 4);
+const segundos = bytes > 0 ? (bytes / 16000) : 3;
+const ms = Math.min(5000, Math.max(1500, Math.round(segundos * 1000 * 0.35)));
+try {
+  await this.helpers.httpRequest({ method: 'POST', url: EVO + '/chat/sendPresence/Samuel', headers: { apikey: EVO_KEY, 'Content-Type': 'application/json' }, body: { number: p.number, presence: 'recording', delay: ms }, json: true, timeout: ms + 20000 });
+} catch (e) {}
+return [{ json: Object.assign({}, p, { delay: 0, gravou_ms: ms }) }];` } },
+  output: [{ delay: 0, gravou_ms: 2000 }] });
+
 export default workflow('serena-samuel-enviar', '[Serena WhatsApp] Envio Samuel (texto ou audio)')
   .add(entrada).to(preparar)
   .to(eAudio
-    .onCase(0, gerarVoz.to(base64.to(vozOk.onCase(0, enviarAudio).onCase(1, trocarV2.to(tentarV2.onCase(0, gerarVoz).onCase(1, enviarTexto).onCase(2, resultado))))))
-    .onCase(1, enviarTexto))
+    .onCase(0, gerarVoz.to(base64.to(vozOk.onCase(0, gravando.to(enviarAudio)).onCase(1, trocarV2.to(tentarV2.onCase(0, gerarVoz).onCase(1, digitando).onCase(2, resultado))))))
+    .onCase(1, digitando))
+  .add(digitando).to(enviarTexto)
   .add(enviarAudio).to(resultado)
   .add(enviarTexto).to(resultado)
   .add(resultado).to(responder)
