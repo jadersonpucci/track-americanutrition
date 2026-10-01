@@ -150,7 +150,9 @@ begin
              -- valor dos dois meses mais recentes: se repetiu, é o valor atual (reajuste de salário, aluguel etc.)
              (array_agg(valor order by mes desc))[1] as ultimo,
              (array_agg(valor order by mes desc))[2] as penultimo
-      from hist group by 1, 2 having count(*) >= 6
+      from hist group by 1, 2
+      -- 6+ meses no histórico e ainda em curso (apareceu num dos 2 últimos meses fechados)
+      having count(*) >= 6 and max(mes) >= (date_trunc('month', current_date) - interval '2 months')::date
     )
     select p.contato_id, p.categoria_id, p.valor_med, p.dia_med, p.ultimo, p.penultimo,
       (select l.descricao from lancamentos l where l.empresa_id = p_empresa and l.deletado_em is null and l.tipo = 'pagar' and l.origem <> 'recorrencia'
