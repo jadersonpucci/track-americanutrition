@@ -1936,7 +1936,52 @@ Não existia alerta nenhum: o `guarda-filas` vigia broadcast, carrinho, transaci
 
 Primeira execução (01/10): **11 clientes avisados** e marcados; os outros entram nas próximas rodadas.
 
-**Fica em aberto, é decisão de negócio:** a pausa de 12h ao encaminhar (`wpp_pausa_handoff_min`) é
-longa para encaminhamento que é só um recado ("deixar anotado para avisar quando tiver promoção").
-Nesse caso o cliente respondeu "sim" a uma pergunta que a Serena sabia responder sozinha. Duas saídas
-possíveis: reduzir a pausa, ou devolver a conversa para a Serena se ninguém responder em N horas.
+### Devolver a conversa para a Serena (decisão do Jaderson, 01/10)
+
+A pausa de 12h ao encaminhar (`wpp_pausa_handoff_min`) é longa para encaminhamento que é só um recado.
+Das duas saídas possíveis — reduzir a pausa ou devolver a conversa — ele escolheu **devolver**: se
+ninguém da equipe responder em N horas, a Serena retoma a conversa. Três nós novos no mesmo workflow,
+antes do alerta:
+
+| Nó | O que faz |
+| --- | --- |
+| `Buscar e Liberar` | escolhe quem devolver e **apaga a pausa do WhatsApp e o `ia_pausada`** (sem isso o Core recusa a conversa) |
+| `Devolver para Serena` | chama o Core em **modo `reprocessar`** (com ferramentas), manda a resposta, registra a nota e avisa no Telegram |
+| `Fechar Devolvidos` | fecha a atribuição de quem foi atendido |
+
+Modo `reprocessar` é o mesmo que a Entrada usa quando o Core falha e a mensagem fica sem resposta: a
+pergunta do cliente **não** é regravada no histórico, a Serena responde tudo o que ficou pendente e o
+prompt já manda **pedir desculpa pela demora**. Diferente do modo proativo, ela continua com as
+ferramentas (pedido, rastreio, PIX), então consegue resolver de verdade — e, se não for caso dela,
+chama `escalar_humano` de novo.
+
+Cercas, todas em `serena_config` (não precisam existir, o SQL tem o padrão embutido):
+
+| Chave | Padrão | Para quê |
+| --- | --- | --- |
+| `fila_devolver` | `on` | kill switch |
+| `fila_devolver_horas` | `2` | espera mínima antes de devolver |
+| `fila_devolver_max_horas` | `24` | **não** devolve conversa mais velha que isso (mensagem de 20 dias atrás não se responde sozinha) |
+| `fila_devolver_hora_ini` / `_fim` | `8` / `20` | só em horário comercial, para a Serena não escrever de madrugada |
+| `fila_devolver_cooldown_horas` | `24` | o mesmo contato só é devolvido de novo depois disso (evita laço) |
+
+Máximo de 5 por rodada, com 12–18s entre um envio e outro. Pula bloqueados. Fica uma nota no contato
+(`atendimento devolvido`, visível no Inbox) dizendo quantas horas ele esperou — essa nota é também o
+marcador do cooldown. Se a Serena encaminhar de novo, a atribuição **continua aberta** e o alerta volta
+a cobrar a equipe. Se a devolução falhar (Core fora, envio recusado), nada é fechado: o cliente
+continua na fila e a falha aparece no Telegram.
+
+O aviso do Telegram mostra a frase do cliente **e** o que a Serena respondeu, para auditar sem abrir o
+Inbox.
+
+Primeira execução em produção (01/10 10:18, execução `2331226`): **2 devolvidas, 0 falhas**.
+
+- Sebastião Mazali, esperando 13,4h, última mensagem "Obrigado" → "De nada, Sebastião 💙". Atribuição
+  fechada, pausa apagada.
+- Luzia, esperando 22,6h, "quero devolver os comprimidos (90)" → a Serena respondeu com o pedido certo
+  (`AN-15445`), pediu para o caso #4 virar devolução e **chamou `escalar_humano` de novo**. A atribuição
+  ficou aberta e ela mesma se pausou outra vez — exatamente o comportamento desejado: devolução de
+  produto não é caso de bot.
+
+Os outros 11 da fila não foram devolvidos porque a última mensagem deles é de mais de 24h (ou o contato
+está bloqueado) — esses continuam só no alerta, para a equipe responder pelo Inbox.
