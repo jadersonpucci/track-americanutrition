@@ -1,0 +1,68 @@
+{%- comment -%} America Nutrition · Faixa Outubro Rosa (home) · aparece sozinha em outubro; no editor do tema sempre aparece pra editar {%- endcomment -%}
+{%- assign aor_show = false -%}
+{%- if section.settings.enabled -%}
+  {%- assign aor_mes = 'now' | date: '%m' -%}
+  {%- if section.settings.only_october == false or aor_mes == '10' -%}{%- assign aor_show = true -%}{%- endif -%}
+{%- endif -%}
+{%- if request.design_mode -%}{%- assign aor_show = true -%}{%- endif -%}
+{%- if aor_show -%}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@700;800&family=Barlow+Semi+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<section class="aor" aria-label="Outubro Rosa">
+  <div class="aor-wrap">
+    <div class="aor-rib" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><path d="M8.5 21 15 10.6c1-1.6 1.5-2.9 1.5-4.1C16.5 4 14.5 2 12 2S7.5 4 7.5 6.5c0 1.2.5 2.5 1.5 4.1L15.5 21" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="aor-copy">
+      {%- if section.settings.eyebrow != blank -%}<span class="aor-eyebrow">{{ section.settings.eyebrow | escape }}</span>{%- endif -%}
+      <h2 class="aor-h">{{ section.settings.heading | escape }}{% if section.settings.heading_em != blank %} <em>{{ section.settings.heading_em | escape }}</em>{% endif %}</h2>
+      {%- if section.settings.text != blank -%}<p class="aor-sub">{{ section.settings.text | escape }}</p>{%- endif -%}
+    </div>
+    {%- if section.settings.button_label != blank and section.settings.link != blank -%}
+      <a class="aor-btn" href="{{ section.settings.link }}"{% if section.settings.new_tab %} target="_blank" rel="noopener"{% endif %}>{{ section.settings.button_label | escape }} <span aria-hidden="true">→</span></a>
+    {%- endif -%}
+  </div>
+</section>
+<style>
+.aor{--pk:#E0457B;--pk-dk:#B8235A;--pk-sf:#FDE7EF;position:relative;overflow:hidden;background:radial-gradient(120% 140% at 0% 0%,#FFF4F8 0%,#FCE3EC 55%,#F8D0DF 100%);color:#06122B;font-family:"Barlow",system-ui,sans-serif}
+.aor:before{content:'';position:absolute;right:-60px;top:-80px;width:340px;height:340px;border-radius:50%;background:radial-gradient(closest-side,rgba(224,69,123,.18),rgba(224,69,123,0));pointer-events:none}
+.aor-wrap{position:relative;max-width:1240px;margin:0 auto;padding:44px 24px;display:flex;align-items:center;gap:32px}
+.aor-rib{flex:none;width:88px;height:88px;border-radius:50%;background:#fff;color:var(--pk);display:grid;place-items:center;box-shadow:0 14px 34px -14px rgba(184,35,90,.55)}
+.aor-rib svg{width:46px;height:52px}
+.aor-copy{flex:1;min-width:0}
+.aor-eyebrow{display:inline-block;font-family:"Barlow Semi Condensed",system-ui,sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.2em;font-size:.78rem;color:var(--pk-dk);margin-bottom:10px}
+.aor-h{font-family:"Barlow Condensed",system-ui,sans-serif;font-weight:800;text-transform:uppercase;letter-spacing:.01em;line-height:.98;font-size:clamp(2rem,4vw,3.1rem);margin:0 0 10px;color:#06122B}
+.aor-h em{font-style:normal;color:var(--pk)}
+.aor-sub{margin:0;font-size:clamp(1rem,1.4vw,1.1rem);line-height:1.5;color:#3C4A66;max-width:60ch}
+.aor-btn{flex:none;display:inline-flex;align-items:center;gap:8px;padding:15px 30px;border-radius:999px;background:linear-gradient(180deg,#E95A8B,var(--pk-dk));color:#fff;font-family:"Barlow Semi Condensed",system-ui,sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.06em;font-size:.95rem;text-decoration:none;box-shadow:0 10px 26px rgba(184,35,90,.3);transition:transform .2s ease,box-shadow .2s ease}
+.aor-btn:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(184,35,90,.38);color:#fff}
+@media (max-width:749px){
+  .aor-wrap{flex-direction:column;align-items:flex-start;gap:18px;padding:34px 20px}
+  .aor-rib{width:64px;height:64px}
+  .aor-rib svg{width:34px;height:38px}
+  .aor-btn{width:100%;justify-content:center}
+}
+@media (prefers-reduced-motion:reduce){.aor-btn{transition:none}}
+</style>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "Outubro Rosa",
+  "tag": "div",
+  "class": "section-an-outubro-rosa",
+  "settings": [
+    { "type": "checkbox", "id": "enabled", "label": "Ativar faixa", "default": true },
+    { "type": "checkbox", "id": "only_october", "label": "Mostrar só em outubro", "info": "Liga sozinha em 1º de outubro e some em 1º de novembro.", "default": true },
+    { "type": "text", "id": "eyebrow", "label": "Chamada", "default": "Outubro Rosa" },
+    { "type": "text", "id": "heading", "label": "Título", "default": "Cuidar de você é" },
+    { "type": "text", "id": "heading_em", "label": "Título (destaque rosa)", "default": "o nosso compromisso" },
+    { "type": "textarea", "id": "text", "label": "Texto", "default": "Neste mês, a America Nutrition se veste de rosa pela conscientização sobre o câncer de mama. Faça o autoexame e converse com seu médico sobre a mamografia. O diagnóstico precoce salva vidas." },
+    { "type": "text", "id": "button_label", "label": "Texto do botão", "default": "Saiba mais" },
+    { "type": "url", "id": "link", "label": "Link do botão", "default": "https://www.gov.br/inca/pt-br/assuntos/cancer/tipos/mama" },
+    { "type": "checkbox", "id": "new_tab", "label": "Abrir em nova aba", "default": true }
+  ],
+  "presets": [{ "name": "Outubro Rosa" }]
+}
+{% endschema %}
