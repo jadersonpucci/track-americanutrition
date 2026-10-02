@@ -153,6 +153,24 @@ button,input{font-family:inherit}
 @keyframes landp{from{transform:translateY(-70px) rotate(-6deg);opacity:0}60%{transform:translateY(6px) rotate(5deg);opacity:1}to{transform:translateY(0) rotate(4deg);opacity:1}}
 @keyframes land{from{transform:translateY(-70px) rotate(-2deg);opacity:0}60%{transform:translateY(6px) rotate(9deg);opacity:1}to{transform:translateY(0) rotate(8deg);opacity:1}}
 @keyframes shine{from{background-position:120% 0}to{background-position:-30% 0}}
+/* ---- Outubro Rosa: liga sozinho em outubro (horario de Brasilia); ?rosa=1 forca pra testar ---- */
+.laco{display:none;align-items:center;gap:5px;margin-left:10px;padding:4px 9px 4px 7px;border-radius:99px;background:#FDE7EF;color:#C2185B;font-size:11.5px;font-weight:700;letter-spacing:.1px;white-space:nowrap}
+.laco svg,.selo svg,.card.rosa .rib svg{display:block}
+.hdr .marca{display:flex;align-items:center}
+.rosa .laco{display:inline-flex}
+.rosa .bars .on i,.rosa .bars .cur i{background:#E0457B}
+.rosa .bars .ok i{background:#17924A}
+.rosa .bars .err i{background:var(--live)}
+.rosa .dots span.on{background:#E0457B}
+.rosa .ev.past .d{background:#E0457B}
+.rosa .submit{box-shadow:0 0 0 3px #FDE7EF}
+.card.rosa{background:linear-gradient(160deg,#FFF0F5 0%,#FDE2EC 100%);border:1px solid #F8C9DA}
+.card.rosa .rib{width:44px;height:44px;border-radius:50%;background:#fff;color:#E0457B;display:grid;place-items:center;box-shadow:0 6px 16px -8px rgba(224,69,123,.6)}
+.card.rosa h3{font-family:Unbounded;font-weight:600;font-size:20px;margin-top:14px;letter-spacing:-.4px;line-height:1.2}
+.card.rosa h3 em{font-style:normal;color:#C2185B}
+.card.rosa p{color:var(--muted);font-size:14.5px;margin-top:8px;line-height:1.45}
+.card.rosa a{display:inline-flex;margin-top:18px;height:46px;padding:0 20px;border-radius:99px;background:#E0457B;color:#fff;font-weight:600;align-items:center;gap:8px;text-decoration:none;font-size:14.5px}
+.rosa .selo{display:flex;align-items:center;gap:6px;background:rgba(224,69,123,.9);border-color:#fff}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 @media (min-width:560px){.app{padding-top:40px}}
 /* ---- desktop: duas colunas (hero + cards | caminho todo) ---- */
@@ -192,7 +210,7 @@ button,input{font-family:inherit}
 <body>
 <div class="app">
   <div class="bars" id="bars" aria-hidden="true"><span><i></i></span><span><i></i></span><span><i></i></span><span><i></i></span><span><i></i></span></div>
-  <div class="hdr"><img src="https://cdn.shopify.com/s/files/1/0643/9000/4908/t/26/assets/logo-america-nutrition.png" alt="America Nutrition"><span id="hdr-dir"></span></div>
+  <div class="hdr"><span class="marca"><img src="https://cdn.shopify.com/s/files/1/0643/9000/4908/t/26/assets/logo-america-nutrition.png" alt="America Nutrition"><span class="laco" title="Outubro Rosa"><svg width="12" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 21 15 10.6c1-1.6 1.5-2.9 1.5-4.1C16.5 4 14.5 2 12 2S7.5 4 7.5 6.5c0 1.2.5 2.5 1.5 4.1L15.5 21" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Outubro Rosa</span></span><span id="hdr-dir"></span></div>
   <div class="etapa" id="etapa"></div>
 
   <section id="v-busca">
@@ -230,7 +248,7 @@ button,input{font-family:inherit}
 <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
 <script>
-const CONFIG={WEBHOOK_URL:'https://n8n.americanutrition.com/webhook/rastreio/buscar',WHATSAPP_NUM:'13472225493',WHATSAPP_MSG:'Olá Serena, preciso de ajuda com meu pedido',CATALOGO_URL:'https://americanutrition.com/products.json?limit=250',CATALOGO_TIMEOUT:2500};
+const CONFIG={WEBHOOK_URL:'https://n8n.americanutrition.com/webhook/rastreio/buscar',WHATSAPP_NUM:'13472225493',WHATSAPP_MSG:'Olá Serena, preciso de ajuda com meu pedido',CATALOGO_URL:'https://americanutrition.com/products.json?limit=250',CATALOGO_TIMEOUT:2500,ROSA_URL:'https://www.gov.br/inca/pt-br/assuntos/cancer/tipos/mama'};
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const wpp=m=>`https://wa.me/${CONFIG.WHATSAPP_NUM}?text=${encodeURIComponent(m||CONFIG.WHATSAPP_MSG)}`;
@@ -238,6 +256,11 @@ const MESES=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','
 const DIAS=['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
 const OCULTAR=/juros|parcelament|taxa/i;
 let modo='codigo',ultimoCodigo='',loadTimer=null;
+const LACO='<svg width="%s" height="%s" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 21 15 10.6c1-1.6 1.5-2.9 1.5-4.1C16.5 4 14.5 2 12 2S7.5 4 7.5 6.5c0 1.2.5 2.5 1.5 4.1L15.5 21" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const laco=t=>LACO.replace('%s',t).replace('%s',Math.round(t*1.15));
+// Outubro Rosa: mês 10 no fuso de Brasília, ou ?rosa=1 pra testar fora de outubro
+const ROSA=new URLSearchParams(location.search).get('rosa')==='1'||new Date().toLocaleDateString('en-CA',{timeZone:'America/Sao_Paulo'}).slice(5,7)==='10';
+if(ROSA){document.documentElement.classList.add('rosa');document.querySelector('meta[name=theme-color]').content='#FFF0F5'}
 
 function toast(t){const e=$('toast');e.textContent=t;e.classList.add('on');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('on'),1800)}
 function parseData(v){if(!v)return null;let s=String(v).trim();if(/^\d{4}-\d{2}-\d{2}$/.test(s)){const[a,m,d]=s.split('-').map(Number);return new Date(a,m-1,d,12)}if(!/[zZ]$|[+-]\d{2}:?\d{2}$/.test(s))s=s.replace(' ','T')+'-03:00';const t=Date.parse(s);return isNaN(t)?null:new Date(t)}
@@ -349,7 +372,7 @@ function render(d){
   const celebrar=st==='delivered'&&ent&&(Date.now()-ent)/36e5<=24;
   const bigTxt=st==='delivered'&&ent?(ent.getDate()+' de '+MESES[ent.getMonth()]+',<br>às '+hhmm(ent)):(dataLonga(R.previsao_entrega)||(st==='waiting'?'Assim que<br>postarem':'Em breve'));
   const nomeGarrafa=nomeGarrafaDe(prod1);
-  let cards=`<div class="card main ${vermelho?'alert':''}${celebrar?' cele':''}">${celebrar?'<div class="sweep"></div><div class="selo">Entregue</div>':''}
+  let cards=`<div class="card main ${vermelho?'alert':''}${celebrar?' cele':''}">${celebrar?'<div class="sweep"></div><div class="selo">'+(ROSA?laco(13):'')+'Entregue</div>':''}
     <small>${st==='delivered'?'Entregue em':'Previsão de entrega'}</small><div class="big">${bigTxt}</div>
     <div class="meta"><span>${esc(serv)}${cidade?' · '+esc(cidade)+(uf?', '+esc(uf):''):''}</span>${R.codigo?`<button class="code" onclick="copiar()"><i class="ti ti-copy"></i>${esc(R.codigo)}</button>`:''}</div>
     ${(()=>{const rod=prods.length>1?'+'+(prods.length-1)+' item'+(prods.length>2?'s':''):'America';const foto=prods[0]&&prods[0].img;
@@ -357,6 +380,7 @@ function render(d){
       const extra=prods.length>1?`<span class="qt">+${prods.length-1}</span>`:(prods[0].qtd>1?`<span class="qt">${prods[0].qtd}x</span>`:'');
       return `<div class="bottle photo" data-nome="${esc(prods[0].nome)}" data-rod="${esc(rod)}"><img src="${esc(imgTam(foto,480))}" alt="${esc(prods[0].nome)}" onerror="fotoFalhou(this.parentNode)">${extra}</div>`})()}</div>`;
   if(avaliacao){const url=String(avaliacao).replace('[AVALIACAO_CARD]','').trim();cards+=`<div class="card review"><div class="stars">★★★★★</div><h3>Como foi sua experiência?</h3><p>Avalie sua entrega e ganhe 5% OFF na próxima compra.</p><a href="${esc(url)}" target="_blank" rel="noopener">Avaliar agora<i class="ti ti-arrow-right"></i></a></div>`}
+  if(ROSA)cards+=`<div class="card rosa"><div class="rib">${laco(22)}</div><h3>Outubro <em>Rosa</em></h3><p>Um lembrete com carinho da America Nutrition: cuide de você. Faça o autoexame e converse com seu médico sobre a mamografia.</p><a href="${esc(CONFIG.ROSA_URL)}" target="_blank" rel="noopener">Saiba mais<i class="ti ti-arrow-right"></i></a></div>`;
   if(prods.length||dest.nome||dest.endereco_completo)cards+=`<div class="card white"><h3>Seu pedido ${esc(numPed)}</h3>${prods.map(p=>`<div class="prod"><span class="pn">${p.img?`<img src="${esc(imgTam(p.img,120))}" alt="" loading="lazy" onerror="this.remove()">`:''}<span>${esc(p.nome)}</span></span><span>${p.qtd?p.qtd+'x':''}</span></div>`).join('')||'<div class="prod"><span>Itens do pedido</span><span></span></div>'}
     ${dest.nome?`<div class="lbl">Pra quem</div><div class="val">${esc(mascNome(dest.nome))}</div>`:''}
     ${dest.endereco_completo?`<div class="lbl">Endereço</div><div class="val"><span class="reveal" onclick="this.classList.add('on')"><span class="txt">${esc(mascEnd(dest.endereco_completo))}</span><span class="hint"><i class="ti ti-eye"></i>Toque pra ver</span></span></div>`:''}</div>`;
