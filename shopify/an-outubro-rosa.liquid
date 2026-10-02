@@ -19,8 +19,9 @@
       <h2 class="aor-h">{{ section.settings.heading | escape }}{% if section.settings.heading_em != blank %} <em>{{ section.settings.heading_em | escape }}</em>{% endif %}</h2>
       {%- if section.settings.text != blank -%}<p class="aor-sub">{{ section.settings.text | escape }}</p>{%- endif -%}
     </div>
-    {%- if section.settings.button_label != blank and section.settings.link != blank -%}
-      <a class="aor-btn" href="{{ section.settings.link }}"{% if section.settings.new_tab %} target="_blank" rel="noopener"{% endif %}>{{ section.settings.button_label | escape }} <span aria-hidden="true">→</span></a>
+    {%- assign aor_link = section.settings.link | default: 'https://www.gov.br/inca/pt-br/assuntos/cancer/tipos/mama' -%}
+    {%- if section.settings.button_label != blank -%}
+      <a class="aor-btn" href="{{ aor_link }}"{% if section.settings.new_tab %} target="_blank" rel="noopener"{% endif %}>{{ section.settings.button_label | escape }} <span aria-hidden="true">→</span></a>
     {%- endif -%}
   </div>
 </section>
@@ -60,7 +61,7 @@
     { "type": "text", "id": "heading_em", "label": "Título (destaque rosa)", "default": "o nosso compromisso" },
     { "type": "textarea", "id": "text", "label": "Texto", "default": "Neste mês, a America Nutrition se veste de rosa pela conscientização sobre o câncer de mama. Faça o autoexame e converse com seu médico sobre a mamografia. O diagnóstico precoce salva vidas." },
     { "type": "text", "id": "button_label", "label": "Texto do botão", "default": "Saiba mais" },
-    { "type": "url", "id": "link", "label": "Link do botão", "default": "https://www.gov.br/inca/pt-br/assuntos/cancer/tipos/mama" },
+    { "type": "url", "id": "link", "label": "Link do botão", "info": "Vazio = página do INCA sobre câncer de mama." },
     { "type": "checkbox", "id": "new_tab", "label": "Abrir em nova aba", "default": true }
   ],
   "presets": [{ "name": "Outubro Rosa" }]
