@@ -35,7 +35,7 @@ class Demo {
     return s;
   }
   async semente() {
-    const r = await fetch('dados.json', { cache: 'no-cache' });
+    const r = await fetch('/admin/dados.json', { cache: 'no-cache' });
     if (!r.ok) throw new Error('Sem dados do build (admin/dados.json).');
     const d = await r.json();
     const s = { config: d.config, home: d.home, redirects: d.redirects || [], pedidos: [] };
