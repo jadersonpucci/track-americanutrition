@@ -9,3 +9,7 @@ Página de rastreio da America Nutrition (arquivo único: `index.html`).
 ## Financeiro (`/financeiro`)
 
 Sistema financeiro completo (contas a pagar/receber, extrato e conciliação, fluxo de caixa, DRE, relatórios, cadastros, multiempresa, Supabase + n8n). Documentação em [`financeiro/README.md`](financeiro/README.md).
+
+## Loja (`/loja`)
+
+Substituta da Shopify: clone estático de americanutrition.com (mesmas URLs, ids de variante e visual) + painel em `/admin`, com pedidos, cupons e catálogo no Supabase (`supabase/loja.sql`). Documentação em [`loja/README.md`](loja/README.md).

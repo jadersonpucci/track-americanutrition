@@ -1,0 +1,1559 @@
+
+        <section id="shopify-section-template--21678226145452__depoimentos_galeria_iWDDw3" class="shopify-section section-depoimentos">
+
+<style>
+  .depoimentos-section {
+    position: relative;
+    padding: 80px 20px;
+    background: #ffffff;
+    overflow: hidden;
+  }
+
+  .depoimentos-blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.25;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .depoimentos-blob-1 {
+    width: 500px;
+    height: 500px;
+    background: #08398e;
+    top: -150px;
+    left: -150px;
+  }
+
+  .depoimentos-blob-2 {
+    width: 400px;
+    height: 400px;
+    background: #ad0404;
+    bottom: -100px;
+    right: -100px;
+  }
+
+  .depoimentos-container {
+    position: relative;
+    max-width: 1280px;
+    margin: 0 auto;
+    z-index: 1;
+  }
+
+  .depoimentos-header {
+    text-align: center;
+    margin-bottom: 50px;
+  }
+
+  .depoimentos-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(8, 57, 142, 0.08);
+    border: 1px solid rgba(8, 57, 142, 0.15);
+    color: #08398e;
+    padding: 8px 16px;
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    backdrop-filter: blur(10px);
+  }
+
+  .depoimentos-badge-dot {
+    width: 8px;
+    height: 8px;
+    background: #22c55e;
+    border-radius: 50%;
+    animation: dep-pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes dep-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(0.9); }
+  }
+
+  .depoimentos-title {
+    font-size: clamp(28px, 4vw, 44px);
+    font-weight: 700;
+    background: linear-gradient(135deg, #08398e 0%, #ad0404 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin: 0 0 16px;
+    line-height: 1.2;
+  }
+
+  .depoimentos-description {
+    font-size: 16px;
+    color: #6b7280;
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  .depoimentos-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 40px;
+    flex-wrap: wrap;
+  }
+
+  .depoimentos-tab {
+    background: rgba(8, 57, 142, 0.05);
+    border: 1px solid rgba(8, 57, 142, 0.1);
+    color: #374151;
+    padding: 10px 20px;
+    border-radius: 100px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .depoimentos-tab:hover {
+    background: rgba(8, 57, 142, 0.1);
+  }
+
+  .depoimentos-tab.active {
+    background: #08398e;
+    color: white;
+    border-color: #08398e;
+  }
+
+  .depoimentos-tab-count {
+    display: inline-block;
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 100px;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    min-width: 20px;
+    text-align: center;
+    line-height: 1.4;
+  }
+
+  .depoimentos-tab:not(.active) .depoimentos-tab-count {
+    background: rgba(8, 57, 142, 0.1);
+    color: #08398e;
+  }
+
+  .depoimentos-gallery {
+    columns: 4;
+    column-gap: 16px;
+    min-height: 200px;
+  }
+
+  @media (max-width: 1024px) {
+    .depoimentos-gallery { columns: 3; }
+  }
+
+  @media (max-width: 768px) {
+    .depoimentos-gallery { columns: 1; column-gap: 0; }
+    .depoimentos-section { padding: 60px 16px; }
+  }
+
+  @media (max-width: 480px) {
+    .depoimentos-gallery { columns: 1; column-gap: 0; }
+    .depoimento-card { margin-bottom: 20px; }
+  }
+
+  /* Faixa de comunidades */
+  .depoimentos-comunidades {
+    margin: 0 auto 40px;
+    max-width: 760px;
+    text-align: center;
+    padding: 28px 24px;
+    background: rgba(8, 57, 142, 0.04);
+    border: 1px solid rgba(8, 57, 142, 0.1);
+    border-radius: 20px;
+  }
+
+  .depoimentos-comunidades-titulo {
+    font-size: 17px;
+    font-weight: 700;
+    color: #08398e;
+    margin: 0 0 6px;
+  }
+
+  .depoimentos-comunidades-texto {
+    font-size: 14px;
+    color: #6b7280;
+    margin: 0 0 20px;
+    line-height: 1.5;
+  }
+
+  .depoimentos-comunidades-botoes {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .depoimento-comunidade-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 20px;
+    border-radius: 100px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #ffffff;
+    text-decoration: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  }
+
+  .depoimento-comunidade-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
+    filter: brightness(1.05);
+    color: #ffffff;
+    text-decoration: none;
+  }
+
+  .depoimento-comunidade-btn svg {
+    flex-shrink: 0;
+  }
+
+  .depoimento-comunidade-btn--facebook { background: #1877F2; }
+  .depoimento-comunidade-btn--whatsapp { background: #25D366; }
+  .depoimento-comunidade-btn--telegram { background: #229ED9; }
+
+  @media (max-width: 480px) {
+    .depoimentos-comunidades-botoes { flex-direction: column; }
+    .depoimento-comunidade-btn { justify-content: center; }
+  }
+
+  /* Proteção anti-cópia */
+  .depoimento-card,
+  .depoimento-card img,
+  .depoimento-card video,
+  .depoimento-video-wrapper,
+  .depoimentos-lightbox-content img,
+  .depoimentos-lightbox-content video {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-user-drag: none;
+    -khtml-user-drag: none;
+    -moz-user-drag: none;
+    -o-user-drag: none;
+    user-drag: none;
+    -webkit-touch-callout: none;
+    pointer-events: auto;
+  }
+
+  .depoimento-card img,
+  .depoimento-card video,
+  .depoimentos-lightbox-content img,
+  .depoimentos-lightbox-content video {
+    -webkit-user-drag: none;
+  }
+
+  /* Marca d'agua opcional sobre imagens/videos */
+  .depoimentos-section.tem-marca .depoimento-card::before {
+    content: var(--marca-texto, 'americanutrition.com');
+    position: absolute;
+    bottom: 50%;
+    left: 50%;
+    transform: translate(-50%, 50%) rotate(-25deg);
+    color: rgba(255, 255, 255, 0.18);
+    font-size: 18px;
+    font-weight: 700;
+    pointer-events: none;
+    z-index: 5;
+    white-space: nowrap;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    letter-spacing: 1px;
+  }
+
+  /* ===== v10: Conversão ===== */
+
+  /* Card CTA intercalado na galeria - v11: fundo claro */
+  .depoimento-cta-card {
+    break-inside: avoid;
+    margin-bottom: 16px;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #ffffff;
+    border: 2px solid rgba(8, 57, 142, 0.12);
+    color: #1f2937;
+    padding: 34px 24px;
+    text-align: center;
+    position: relative;
+    box-shadow: 0 8px 28px rgba(8, 57, 142, 0.1);
+    opacity: 0;
+    animation: dep-fadeIn 0.5s ease forwards;
+  }
+
+  .depoimento-cta-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 5px;
+    background: linear-gradient(90deg, #08398e 0%, #ad0404 100%);
+    pointer-events: none;
+  }
+
+  .depoimento-cta-card-emoji {
+    font-size: 36px;
+    margin-bottom: 12px;
+  }
+
+  .depoimento-cta-card-titulo {
+    font-size: 19px;
+    font-weight: 700;
+    margin: 0 0 8px;
+    line-height: 1.3;
+    color: #08398e;
+    position: relative;
+  }
+
+  .depoimento-cta-card-texto {
+    font-size: 13px;
+    color: #6b7280;
+    margin: 0 0 20px;
+    line-height: 1.5;
+    position: relative;
+  }
+
+  .depoimento-cta-card-btn {
+    display: inline-block;
+    background: #ad0404;
+    color: #ffffff;
+    padding: 14px 30px;
+    border-radius: 100px;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 15px;
+    box-shadow: 0 6px 20px rgba(173, 4, 4, 0.35);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    position: relative;
+    animation: dep-btn-pulse 2.5s ease-in-out infinite;
+  }
+
+  .depoimento-cta-card-btn:hover {
+    background: #08398e;
+    transform: translateY(-2px) scale(1.04);
+    box-shadow: 0 10px 28px rgba(8, 57, 142, 0.4);
+    text-decoration: none;
+    color: #ffffff;
+    animation: none;
+  }
+
+  @keyframes dep-btn-pulse {
+    0%, 100% { box-shadow: 0 6px 20px rgba(173, 4, 4, 0.35); }
+    50% { box-shadow: 0 6px 20px rgba(173, 4, 4, 0.35), 0 0 0 8px rgba(173, 4, 4, 0.08); }
+  }
+
+  /* Botao Comprar no lightbox - v11: maior e com pulso */
+  .depoimentos-lightbox-cta {
+    position: absolute;
+    bottom: -74px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: #ad0404;
+    color: white;
+    padding: 17px 40px;
+    border-radius: 100px;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 16px;
+    white-space: nowrap;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+    transition: transform 0.2s ease, background 0.2s ease;
+    animation: dep-lb-pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes dep-lb-pulse {
+    0%, 100% { box-shadow: 0 8px 30px rgba(0,0,0,0.5); }
+    50% { box-shadow: 0 8px 30px rgba(0,0,0,0.5), 0 0 0 10px rgba(173, 4, 4, 0.18); }
+  }
+
+  .depoimentos-lightbox-cta:hover {
+    background: #08398e;
+    transform: translateX(-50%) translateY(-2px);
+    text-decoration: none;
+    color: white;
+    animation: none;
+  }
+
+  @media (max-width: 768px) {
+    .depoimentos-lightbox { padding: 20px 20px 100px; }
+    .depoimentos-lightbox-cta {
+      position: fixed;
+      bottom: 24px;
+      font-size: 15px;
+      padding: 15px 32px;
+    }
+  }
+
+  /* Skeleton screens */
+  .depoimento-skeleton {
+    break-inside: avoid;
+    margin-bottom: 16px;
+    border-radius: 16px;
+    overflow: hidden;
+    background: linear-gradient(90deg, #f3f4f6 0%, #e5e7eb 50%, #f3f4f6 100%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  }
+
+  @keyframes skeleton-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  .depoimento-card {
+    break-inside: avoid;
+    margin-bottom: 16px;
+    border-radius: 16px;
+    overflow: hidden;
+    position: relative;
+    cursor: pointer;
+    background: #f3f4f6;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    opacity: 0;
+    animation: dep-fadeIn 0.5s ease forwards;
+  }
+
+  @keyframes dep-fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .depoimento-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+  }
+
+  .depoimento-card img {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: cover;
+  }
+
+  /* Videos com altura mínima e fundo escuro pra mostrar enquanto carrega */
+  .depoimento-card video,
+  .depoimento-video-wrapper {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: cover;
+  }
+
+  .depoimento-video-wrapper {
+    position: relative;
+    background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+    aspect-ratio: 9 / 16;
+    min-height: 400px;
+    overflow: hidden;
+  }
+
+  .depoimento-video-wrapper img.depoimento-video-poster {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 1;
+  }
+
+  .depoimento-video-wrapper video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 2;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .depoimento-video-wrapper.loaded video {
+    opacity: 1;
+  }
+
+  /* Placeholder fallback quando não tem poster */
+  .depoimento-video-fallback {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255,255,255,0.5);
+    z-index: 0;
+    padding: 20px;
+    text-align: center;
+  }
+
+  .depoimento-video-fallback-icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+    opacity: 0.7;
+  }
+
+  .depoimento-video-fallback-text {
+    font-size: 13px;
+    opacity: 0.8;
+  }
+
+  @media (max-width: 1024px) {
+    .depoimento-video-wrapper { min-height: 350px; }
+  }
+
+  @media (max-width: 768px) {
+    .depoimento-video-wrapper { min-height: 450px; aspect-ratio: 9 / 16; }
+  }
+
+  .depoimento-info {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 70%, transparent 100%);
+    color: white;
+    padding: 20px 12px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    z-index: 3;
+  }
+
+  /* CTA produto clicável - v11: botao de verdade */
+  .depoimento-produto {
+    font-size: 13px;
+    font-weight: 700;
+    background: #ad0404;
+    padding: 10px 16px;
+    border-radius: 100px;
+    border: none;
+    color: white;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+    letter-spacing: 0.2px;
+  }
+
+  .depoimento-produto:hover {
+    background: #08398e;
+    transform: scale(1.06);
+    text-decoration: none;
+    color: white;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+  }
+
+  .depoimento-produto-arrow {
+    font-size: 10px;
+    opacity: 0.7;
+    transition: transform 0.2s ease;
+  }
+
+  .depoimento-produto:hover .depoimento-produto-arrow {
+    transform: translateX(2px);
+    opacity: 1;
+  }
+
+  .depoimento-tom {
+    font-size: 11px;
+    opacity: 0.9;
+    text-transform: capitalize;
+  }
+
+  /* Botão compartilhar */
+  .depoimento-share {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: rgba(0,0,0,0.5);
+    color: white;
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(10px);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    opacity: 0;
+    transform: scale(0.8);
+    z-index: 4;
+  }
+
+  .depoimento-card:hover .depoimento-share {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  @media (max-width: 768px) {
+    .depoimento-share { opacity: 1; transform: scale(1); }
+  }
+
+  .depoimento-share:hover {
+    background: rgba(0,0,0,0.8);
+    transform: scale(1.1);
+  }
+
+  .depoimento-video-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(0,0,0,0.6);
+    color: white;
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(10px);
+    z-index: 4;
+    border: 2px solid rgba(255,255,255,0.3);
+  }
+
+  .depoimentos-loader {
+    text-align: center;
+    padding: 40px 20px;
+    color: #9ca3af;
+  }
+
+  .depoimentos-spinner {
+    display: inline-block;
+    width: 32px;
+    height: 32px;
+    border: 3px solid rgba(8, 57, 142, 0.1);
+    border-top-color: #08398e;
+    border-radius: 50%;
+    animation: dep-spin 0.8s linear infinite;
+  }
+
+  @keyframes dep-spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .depoimentos-empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: #9ca3af;
+    font-size: 15px;
+  }
+
+  .depoimentos-end {
+    text-align: center;
+    padding: 30px 20px;
+    color: #9ca3af;
+    font-size: 13px;
+    font-style: italic;
+  }
+
+  /* CTA Final */
+  .depoimentos-final-cta {
+    text-align: center;
+    margin: 60px auto 0;
+    padding: 50px 30px;
+    background: linear-gradient(135deg, #08398e 0%, #ad0404 100%);
+    border-radius: 24px;
+    color: white;
+    max-width: 800px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .depoimentos-final-cta::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 20% 30%, rgba(255,255,255,0.15) 0%, transparent 50%);
+    pointer-events: none;
+  }
+
+  .depoimentos-final-cta-title {
+    font-size: clamp(22px, 3vw, 32px);
+    font-weight: 700;
+    margin: 0 0 12px;
+    position: relative;
+  }
+
+  .depoimentos-final-cta-text {
+    font-size: 16px;
+    opacity: 0.9;
+    margin: 0 0 28px;
+    position: relative;
+  }
+
+  .depoimentos-final-cta-btn {
+    display: inline-block;
+    background: white;
+    color: #08398e;
+    padding: 16px 36px;
+    border-radius: 100px;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 15px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+    position: relative;
+  }
+
+  .depoimentos-final-cta-btn:hover {
+    transform: translateY(-3px) scale(1.03);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+    text-decoration: none;
+    color: #08398e;
+  }
+
+  /* Lightbox */
+  .depoimentos-lightbox {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.92);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    backdrop-filter: blur(8px);
+  }
+
+  .depoimentos-lightbox.active {
+    display: flex;
+  }
+
+  .depoimentos-lightbox-content {
+    max-width: 90vw;
+    max-height: 90vh;
+    position: relative;
+  }
+
+  .depoimentos-lightbox-content img,
+  .depoimentos-lightbox-content video {
+    max-width: 100%;
+    max-height: 90vh;
+    display: block;
+    border-radius: 12px;
+  }
+
+  .depoimentos-lightbox-close {
+    position: absolute;
+    top: -50px;
+    right: 0;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(20px);
+  }
+
+  .depoimentos-lightbox-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: white;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(20px);
+  }
+
+  .depoimentos-lightbox-prev { left: 20px; }
+  .depoimentos-lightbox-next { right: 20px; }
+
+  /* Toast de feedback */
+  .depoimentos-toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: rgba(0,0,0,0.9);
+    color: white;
+    padding: 14px 24px;
+    border-radius: 100px;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+    backdrop-filter: blur(20px);
+    z-index: 10000;
+    opacity: 0;
+    transition: all 0.3s ease;
+    pointer-events: none;
+  }
+
+  .depoimentos-toast.visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+</style>
+
+<section class="depoimentos-section" style="--marca-texto: 'americanutrition.com';">
+  
+    <div class="depoimentos-blob depoimentos-blob-1"></div>
+    <div class="depoimentos-blob depoimentos-blob-2"></div>
+  
+
+  <div class="depoimentos-container">
+    <div class="depoimentos-header">
+      
+        <div class="depoimentos-badge">
+          <span class="depoimentos-badge-dot"></span>
+          VERIFICADO PELA AMERICA NUTRITION
+        </div>
+      
+
+      <h2 class="depoimentos-title">Histórias reais de quem confia na gente</h2>
+
+      
+        <p class="depoimentos-description">Depoimentos enviados por clientes reais. Cada imagem aqui representa uma vida transformada pelos nossos produtos.</p>
+      
+    </div>
+
+    <!-- Faixa de comunidades -->
+    
+    
+        <div class="depoimentos-comunidades">
+          
+            <p class="depoimentos-comunidades-titulo">Faça parte das nossas comunidades</p>
+          
+          
+            <p class="depoimentos-comunidades-texto">Entre nos nossos grupos e veja todos os dias depoimentos reais de quem usa os nossos produtos.</p>
+          
+          <div class="depoimentos-comunidades-botoes">
+            
+              <a href="https://www.facebook.com/groups/fosfoetanolamina" class="depoimento-comunidade-btn depoimento-comunidade-btn--facebook" target="_blank" rel="noopener">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M24 12.07C24 5.4 18.63 0 12 0S0 5.4 0 12.07c0 6.02 4.39 11.01 10.13 11.93v-8.44H7.08v-3.49h3.05V9.41c0-3.02 1.79-4.69 4.53-4.69 1.31 0 2.69.24 2.69.24v2.97h-1.52c-1.49 0-1.96.93-1.96 1.89v2.26h3.33l-.53 3.49h-2.8V24C19.61 23.08 24 18.09 24 12.07z"/>
+                </svg>
+                Facebook
+              </a>
+            
+            
+              <a href="https://grupo.americanutrition.com" class="depoimento-comunidade-btn depoimento-comunidade-btn--whatsapp" target="_blank" rel="noopener">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M17.47 14.38c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.95 1.17-.17.2-.35.22-.65.07-.3-.15-1.26-.46-2.4-1.48-.89-.79-1.49-1.77-1.66-2.07-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.07-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.51-.17-.01-.37-.01-.57-.01-.2 0-.52.07-.8.37-.27.3-1.04 1.02-1.04 2.48 0 1.46 1.07 2.88 1.22 3.08.15.2 2.1 3.2 5.08 4.49.71.31 1.26.49 1.69.62.71.23 1.36.2 1.87.12.57-.09 1.76-.72 2-1.41.25-.69.25-1.29.17-1.41-.07-.12-.27-.2-.57-.35zM12.04 21.5h-.01a9.5 9.5 0 01-4.84-1.33l-.35-.2-3.6.94.96-3.51-.23-.36a9.46 9.46 0 01-1.45-5.05c0-5.24 4.27-9.5 9.52-9.5 2.54 0 4.93.99 6.73 2.79a9.45 9.45 0 012.78 6.72c0 5.24-4.27 9.5-9.51 9.5zm8.1-17.6A11.36 11.36 0 0012.04.5C5.74.5.62 5.62.62 11.91c0 2.01.53 3.98 1.53 5.71L.5 23.5l6.04-1.58a11.4 11.4 0 005.5 1.4h.01c6.3 0 11.42-5.12 11.42-11.41a11.34 11.34 0 00-3.33-8.01z"/>
+                </svg>
+                WhatsApp
+              </a>
+            
+            
+              <a href="https://t.me/imunofosfo" class="depoimento-comunidade-btn depoimento-comunidade-btn--telegram" target="_blank" rel="noopener">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M11.94 0C5.35 0 0 5.37 0 12s5.35 12 11.94 12c6.6 0 11.95-5.37 11.95-12S18.54 0 11.94 0zm5.55 8.16c-.18 1.9-.96 6.5-1.36 8.62-.17.9-.5 1.2-.82 1.23-.7.06-1.23-.46-1.9-.9-1.06-.7-1.66-1.13-2.69-1.81-1.19-.78-.42-1.21.26-1.92.18-.18 3.25-2.98 3.31-3.23.01-.03.01-.15-.06-.21-.07-.06-.18-.04-.25-.02-.11.02-1.79 1.14-5.06 3.35-.48.33-.91.49-1.3.48-.43-.01-1.25-.24-1.86-.44-.75-.24-1.35-.37-1.3-.79.03-.21.32-.43.88-.65 3.43-1.5 5.72-2.48 6.87-2.96 3.27-1.36 3.95-1.6 4.39-1.6.1 0 .32.02.46.14.12.1.15.23.17.33.01.07.03.24.01.37z"/>
+                </svg>
+                Telegram
+              </a>
+            
+          </div>
+        </div>
+    
+
+    
+      <div class="depoimentos-tabs" id="depTabs-template--21678226145452__depoimentos_galeria_iWDDw3">
+        <button class="depoimentos-tab active" data-filter="todos">
+          Todos <span class="depoimentos-tab-count" data-count-todos>...</span>
+        </button>
+        <button class="depoimentos-tab" data-filter="imagem">
+          Imagens <span class="depoimentos-tab-count" data-count-imagem>...</span>
+        </button>
+        <button class="depoimentos-tab" data-filter="video">
+          Vídeos <span class="depoimentos-tab-count" data-count-video>...</span>
+        </button>
+      </div>
+    
+
+    <div class="depoimentos-gallery" id="depGallery-template--21678226145452__depoimentos_galeria_iWDDw3">
+      <!-- Skeletons iniciais -->
+      <div class="depoimento-skeleton" style="height: 320px;"></div>
+      <div class="depoimento-skeleton" style="height: 420px;"></div>
+      <div class="depoimento-skeleton" style="height: 280px;"></div>
+      <div class="depoimento-skeleton" style="height: 380px;"></div>
+      <div class="depoimento-skeleton" style="height: 340px;"></div>
+      <div class="depoimento-skeleton" style="height: 300px;"></div>
+      <div class="depoimento-skeleton" style="height: 400px;"></div>
+      <div class="depoimento-skeleton" style="height: 360px;"></div>
+    </div>
+
+    <div class="depoimentos-loader" id="depLoader-template--21678226145452__depoimentos_galeria_iWDDw3" style="display: none;">
+      <div class="depoimentos-spinner"></div>
+    </div>
+
+    <!-- CTA Final -->
+    <div class="depoimentos-final-cta" id="depFinalCta-template--21678226145452__depoimentos_galeria_iWDDw3" style="display: none;">
+      <h3 class="depoimentos-final-cta-title">Sua história pode ser a próxima 🌟</h3>
+      <p class="depoimentos-final-cta-text">Junte-se a quem já transformou a saúde com nossos suplementos</p>
+      <a href="/collections/all" class="depoimentos-final-cta-btn">
+        Comece sua jornada hoje →
+      </a>
+    </div>
+  </div>
+</section>
+
+<div class="depoimentos-lightbox" id="depLightbox-template--21678226145452__depoimentos_galeria_iWDDw3">
+  <div class="depoimentos-lightbox-content" id="depLightboxContent-template--21678226145452__depoimentos_galeria_iWDDw3"></div>
+  <button class="depoimentos-lightbox-close" data-close>×</button>
+  <button class="depoimentos-lightbox-nav depoimentos-lightbox-prev" data-prev>‹</button>
+  <button class="depoimentos-lightbox-nav depoimentos-lightbox-next" data-next>›</button>
+</div>
+
+<!-- Toast de feedback -->
+<div class="depoimentos-toast" id="depToast-template--21678226145452__depoimentos_galeria_iWDDw3">Link copiado! ✨</div>
+
+<script>
+(function() {
+  const SECTION_ID = 'template--21678226145452__depoimentos_galeria_iWDDw3';
+  const SHOPIFY_DOMAIN = 'imunofosfo.myshopify.com';
+  const STOREFRONT_TOKEN = '5d67469f488ffea95b24072a0b5ac98c';
+  const STOREFRONT_VERSION = '2024-10';
+  const PAGE_SIZE = 20;
+  const SITE_URL = 'https://www.americanutrition.com';
+  const PAGE_URL = SITE_URL + '/pages/depoimentos';
+
+  const gallery = document.getElementById('depGallery-' + SECTION_ID);
+  const loader = document.getElementById('depLoader-' + SECTION_ID);
+  const tabs = document.querySelectorAll('#depTabs-' + SECTION_ID + ' .depoimentos-tab');
+  const lightbox = document.getElementById('depLightbox-' + SECTION_ID);
+  const lightboxContent = document.getElementById('depLightboxContent-' + SECTION_ID);
+  const finalCta = document.getElementById('depFinalCta-' + SECTION_ID);
+  const toast = document.getElementById('depToast-' + SECTION_ID);
+
+  let cursor = null;
+  let hasNextPage = true;
+  let isLoading = false;
+  let currentFilter = 'todos';
+  let allLoadedCards = [];
+  let currentLightboxIndex = 0;
+  let totalCount = 0;
+  let firstLoad = true;
+  let allDepoimentos = [];
+  let cardsDesdeUltimoCta = 0;
+
+  const CTA_FREQUENCIA = 8;
+  const CTA_ATIVO = true;
+  const CTA_TITULO = "Quer resultados assim?";
+  const CTA_TEXTO = "Milhares de clientes já transformaram a saúde com nossos produtos.";
+  const CTA_BTN = "Comprar agora";
+  const CTA_LINK = "\/collections\/all";
+  const PRODUTO_PADRAO_NOME = "ImunoFosfo";
+  const PRODUTO_PADRAO_LINK = "\/products\/imunofosfo";
+
+  function createCtaCard() {
+    const el = document.createElement('div');
+    el.className = 'depoimento-cta-card';
+    el.innerHTML = `
+      <div class="depoimento-cta-card-emoji">✨</div>
+      <h3 class="depoimento-cta-card-titulo">${CTA_TITULO || 'Quer resultados assim?'}</h3>
+      <p class="depoimento-cta-card-texto">${CTA_TEXTO || 'Milhares de clientes já transformaram a saúde com nossos produtos.'}</p>
+      <a href="${CTA_LINK || '/collections/all'}" class="depoimento-cta-card-btn">${CTA_BTN || 'Comprar agora'} →</a>
+    `;
+    return el;
+  }
+
+  // ===== STOREFRONT API =====
+  async function fetchDepoimentos(after = null) {
+    const query = `
+      query GetDepoimentos($first: Int!, $after: String) {
+        metaobjects(type: "depoimento", first: $first, after: $after, sortKey: "id", reverse: true) {
+          edges {
+            cursor
+            node {
+              id
+              handle
+              tipo: field(key: "tipo") { value }
+              tom: field(key: "tom") { value }
+              midia: field(key: "midia") {
+                value
+                reference {
+                  ... on MediaImage {
+                    image { url altText }
+                  }
+                  ... on Video {
+                    sources { url mimeType }
+                    previewImage { url }
+                  }
+                }
+              }
+              produto: field(key: "produto") {
+                value
+                reference {
+                  ... on Product {
+                    title
+                    handle
+                  }
+                }
+              }
+            }
+          }
+          pageInfo { hasNextPage endCursor }
+        }
+      }
+    `;
+
+    const response = await fetch(
+      `https://${SHOPIFY_DOMAIN}/api/${STOREFRONT_VERSION}/graphql.json`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Shopify-Storefront-Access-Token': STOREFRONT_TOKEN
+        },
+        body: JSON.stringify({
+          query,
+          variables: { first: PAGE_SIZE, after }
+        })
+      }
+    );
+
+    const data = await response.json();
+    if (data.errors) {
+      console.error('Storefront API errors:', data.errors);
+      return { edges: [], pageInfo: { hasNextPage: false } };
+    }
+    return data.data.metaobjects;
+  }
+
+  // ===== BUSCAR TOTAIS =====
+  // CORRIGIDO v5: pagina por todos os depoimentos (resolve teto de 250 da API)
+  // e classifica pela MÍDIA REAL (mesma lógica do createCard), com o campo
+  // "tipo" apenas como fallback. Assim o número bate com os cards exibidos.
+  async function fetchTotais() {
+    const queryTotais = `
+      query GetTotais($after: String) {
+        metaobjects(type: "depoimento", first: 250, after: $after) {
+          nodes {
+            tipo: field(key: "tipo") { value }
+            midia: field(key: "midia") {
+              reference {
+                ... on MediaImage { image { url } }
+                ... on Video { sources { url } }
+              }
+            }
+          }
+          pageInfo { hasNextPage endCursor }
+        }
+      }
+    `;
+
+    let totalImagem = 0;
+    let totalVideo = 0;
+    let after = null;
+    let hasNext = true;
+    let guard = 0; // trava de segurança contra loop infinito
+
+    try {
+      while (hasNext && guard < 100) {
+        guard++;
+        const response = await fetch(
+          `https://${SHOPIFY_DOMAIN}/api/${STOREFRONT_VERSION}/graphql.json`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Shopify-Storefront-Access-Token': STOREFRONT_TOKEN
+            },
+            body: JSON.stringify({ query: queryTotais, variables: { after } })
+          }
+        );
+        const data = await response.json();
+
+        if (data.errors) {
+          console.error('Erro buscando totais:', data.errors);
+          break;
+        }
+
+        const mo = data?.data?.metaobjects;
+        const nodes = mo?.nodes || [];
+
+        nodes.forEach(n => {
+          const ref = n.midia?.reference;
+          const ehVideo = !!(ref && ref.sources && ref.sources.length > 0);
+          const ehImagem = !!(ref && ref.image);
+
+          if (ehVideo) {
+            totalVideo++;
+          } else if (ehImagem) {
+            totalImagem++;
+          } else if (n.tipo?.value === 'video') {
+            totalVideo++;
+          } else if (n.tipo?.value === 'imagem') {
+            totalImagem++;
+          }
+          // sem mídia válida e sem tipo reconhecido: não conta
+          // (mesma regra do createCard, que retorna null nesses casos)
+        });
+
+        hasNext = mo?.pageInfo?.hasNextPage || false;
+        after = mo?.pageInfo?.endCursor || null;
+      }
+
+      totalCount = totalImagem + totalVideo;
+
+      const elTodos = document.querySelector('#depTabs-' + SECTION_ID + ' [data-count-todos]');
+      const elImagem = document.querySelector('#depTabs-' + SECTION_ID + ' [data-count-imagem]');
+      const elVideo = document.querySelector('#depTabs-' + SECTION_ID + ' [data-count-video]');
+
+      if (elTodos) elTodos.textContent = totalCount;
+      if (elImagem) elImagem.textContent = totalImagem;
+      if (elVideo) elVideo.textContent = totalVideo;
+    } catch (err) {
+      console.error('Erro buscando totais:', err);
+    }
+  }
+
+  // ===== TOAST =====
+  function showToast(text) {
+    toast.textContent = text;
+    toast.classList.add('visible');
+    setTimeout(() => toast.classList.remove('visible'), 2000);
+  }
+
+  // ===== COMPARTILHAR =====
+  async function shareDepoimento(node) {
+    const produtoTitle = node.produto?.reference?.title || 'America Nutrition';
+    const shareText = `Olha esse depoimento real de ${produtoTitle} na America Nutrition 💙`;
+    const shareUrl = PAGE_URL;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Depoimento America Nutrition',
+          text: shareText,
+          url: shareUrl
+        });
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          fallbackShare(shareText, shareUrl);
+        }
+      }
+    } else {
+      fallbackShare(shareText, shareUrl);
+    }
+  }
+
+  function fallbackShare(text, url) {
+    const fullText = `${text}\n${url}`;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(fullText).then(() => {
+        showToast('Link copiado! ✨');
+      });
+    } else {
+      const textarea = document.createElement('textarea');
+      textarea.value = fullText;
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        showToast('Link copiado! ✨');
+      } catch (e) {
+        showToast('Não foi possível copiar 😕');
+      }
+      document.body.removeChild(textarea);
+    }
+  }
+
+  // ===== RENDER CARD =====
+  function createCard(node, index) {
+    const tipo = node.tipo?.value || 'imagem';
+    const tom = node.tom?.value || '';
+    const produtoTitle = node.produto?.reference?.title || 'America Nutrition';
+    const produtoHandle = node.produto?.reference?.handle;
+    const midiaRef = node.midia?.reference;
+
+    if (!midiaRef) {
+      console.warn('Sem referência de mídia:', node);
+      return null;
+    }
+
+    const card = document.createElement('div');
+    card.className = 'depoimento-card';
+    card.dataset.tipo = tipo;
+    card.dataset.index = index;
+
+    // v12: todo card tem link de compra. Sem produto marcado, usa o padrao (ImunoFosfo)
+    const compraLink = produtoHandle
+      ? `${SITE_URL}/products/${produtoHandle}`
+      : PRODUTO_PADRAO_LINK;
+    const compraNome = produtoHandle ? produtoTitle : PRODUTO_PADRAO_NOME;
+    card.dataset.produtoLink = compraLink;
+    card.dataset.produtoNome = compraNome;
+
+    let mediaHTML = '';
+
+    if (tipo === 'video' && midiaRef.sources && midiaRef.sources.length > 0) {
+      const videoSrc = midiaRef.sources[0].url;
+      const videoType = midiaRef.sources[0].mimeType;
+      const posterUrl = midiaRef.previewImage?.url || '';
+
+      // Wrapper com fallback visual + poster como img + video que aparece quando carrega
+      const posterHTML = posterUrl
+        ? `<img class="depoimento-video-poster" src="${posterUrl}" alt="Preview do depoimento" loading="lazy">`
+        : `<div class="depoimento-video-fallback">
+             <div class="depoimento-video-fallback-icon">🎥</div>
+             <div class="depoimento-video-fallback-text">Toque para assistir</div>
+           </div>`;
+
+      mediaHTML = `
+        <div class="depoimento-video-wrapper">
+          ${posterHTML}
+          <video muted playsinline preload="metadata" controlslist="nodownload noremoteplayback" disablepictureinpicture oncontextmenu="return false" ${posterUrl ? `poster="${posterUrl}"` : ''}>
+            <source src="${videoSrc}" type="${videoType}">
+          </video>
+        </div>
+        <div class="depoimento-video-badge">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
+            <path d="M8 5v14l11-7z"/>
+          </svg>
+        </div>
+      `;
+      card.dataset.videoSrc = videoSrc;
+      card.dataset.videoType = videoType;
+    } else if (midiaRef.image) {
+      const imgUrl = midiaRef.image.url;
+      const altText = midiaRef.image.altText || `Depoimento ${produtoTitle}`;
+      mediaHTML = `<img src="${imgUrl}" alt="${altText}" loading="lazy">`;
+      card.dataset.imgSrc = imgUrl;
+      card.dataset.imgAlt = altText;
+    } else {
+      console.warn('Tipo de mídia não reconhecido:', midiaRef);
+      return null;
+    }
+
+    const tomHTML = tom ? `<span class="depoimento-tom">${tom}</span>` : '';
+
+    const produtoHTML = `<a href="${compraLink}" class="depoimento-produto" onclick="event.stopPropagation();">
+           🛒 Comprar ${compraNome}
+           <span class="depoimento-produto-arrow">→</span>
+         </a>`;
+
+    const shareHTML = `
+      <button class="depoimento-share" aria-label="Compartilhar depoimento" data-share-index="${index}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+          <polyline points="16 6 12 2 8 6"></polyline>
+          <line x1="12" y1="2" x2="12" y2="15"></line>
+        </svg>
+      </button>
+    `;
+
+    card.innerHTML = `
+      ${mediaHTML}
+      ${shareHTML}
+      <div class="depoimento-info">
+        ${produtoHTML}
+        ${tomHTML}
+      </div>
+    `;
+
+    // Marca como "loaded" quando o vídeo carrega metadata
+    const videoEl = card.querySelector('video');
+    const wrapperEl = card.querySelector('.depoimento-video-wrapper');
+    if (videoEl && wrapperEl) {
+      videoEl.addEventListener('loadedmetadata', () => {
+        wrapperEl.classList.add('loaded');
+      });
+      // Força carregamento
+      videoEl.load();
+    }
+
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('.depoimento-produto') || e.target.closest('.depoimento-share')) {
+        return;
+      }
+      const visibleCards = allLoadedCards.filter(c =>
+        currentFilter === 'todos' || c.dataset.tipo === currentFilter
+      );
+      currentLightboxIndex = visibleCards.indexOf(card);
+      openLightbox(visibleCards);
+    });
+
+    const shareBtn = card.querySelector('.depoimento-share');
+    if (shareBtn) {
+      shareBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        shareDepoimento(node);
+      });
+    }
+
+    return card;
+  }
+
+  // ===== LOAD MORE =====
+  async function loadMore() {
+    if (isLoading || !hasNextPage) return;
+    isLoading = true;
+
+    if (firstLoad) {
+      gallery.innerHTML = '';
+      loader.style.display = 'block';
+    } else {
+      loader.style.display = 'block';
+    }
+
+    try {
+      const result = await fetchDepoimentos(cursor);
+
+      result.edges.forEach((edge, i) => {
+        const card = createCard(edge.node, allLoadedCards.length + i);
+        if (card) {
+          gallery.appendChild(card);
+          allLoadedCards.push(card);
+          allDepoimentos.push(edge.node);
+          cardsDesdeUltimoCta++;
+
+          // v10: intercala card de CTA a cada N depoimentos
+          if (CTA_ATIVO && cardsDesdeUltimoCta >= CTA_FREQUENCIA) {
+            gallery.appendChild(createCtaCard());
+            cardsDesdeUltimoCta = 0;
+          }
+        }
+      });
+
+      cursor = result.pageInfo.endCursor;
+      hasNextPage = result.pageInfo.hasNextPage;
+
+      applyFilter();
+
+      if (!hasNextPage) {
+        loader.innerHTML = '<div class="depoimentos-end">Você viu todos os depoimentos ✨</div>';
+        finalCta.style.display = 'block';
+      } else {
+        loader.innerHTML = '<div class="depoimentos-spinner"></div>';
+      }
+
+      if (allLoadedCards.length === 0) {
+        gallery.innerHTML = '<div class="depoimentos-empty">Em breve, depoimentos reais de quem confia na nossa marca.</div>';
+        loader.style.display = 'none';
+      }
+
+      if (firstLoad) {
+        injectSchemaMarkup();
+        firstLoad = false;
+      }
+    } catch (err) {
+      console.error('Erro carregando depoimentos:', err);
+      loader.innerHTML = '<div class="depoimentos-empty">Erro ao carregar depoimentos. Tente recarregar a página.</div>';
+    } finally {
+      isLoading = false;
+    }
+  }
+
+  // ===== SCHEMA MARKUP =====
+  function injectSchemaMarkup() {
+    if (allDepoimentos.length === 0) return;
+
+    const oldSchema = document.getElementById('dep-schema-' + SECTION_ID);
+    if (oldSchema) oldSchema.remove();
+
+    const reviews = allDepoimentos.slice(0, 20).map((node, i) => {
+      const tom = node.tom?.value || 'neutro';
+      const produtoTitle = node.produto?.reference?.title || 'America Nutrition';
+      const tomTexto = {
+        'cura': 'Experiência transformadora de cura',
+        'gratidao': 'Cliente extremamente grato pelos resultados',
+        'melhora': 'Notável melhora após uso',
+        'recomendacao': 'Recomenda fortemente para outros',
+        'neutro': 'Depoimento positivo do cliente'
+      }[tom] || 'Depoimento positivo';
+
+      return {
+        "@type": "Review",
+        "author": { "@type": "Person", "name": "Cliente verificado" },
+        "reviewRating": { "@type": "Rating", "ratingValue": "5", "bestRating": "5" },
+        "reviewBody": `${tomTexto} com ${produtoTitle}.`,
+        "itemReviewed": { "@type": "Product", "name": produtoTitle }
+      };
+    });
+
+    const schema = {
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      "name": "Depoimentos de clientes - America Nutrition",
+      "description": "Histórias reais de clientes que transformaram a saúde com nossos suplementos",
+      "numberOfItems": totalCount,
+      "itemListElement": reviews.map((review, i) => ({
+        "@type": "ListItem",
+        "position": i + 1,
+        "item": review
+      }))
+    };
+
+    const script = document.createElement('script');
+    script.type = 'application/ld+json';
+    script.id = 'dep-schema-' + SECTION_ID;
+    script.textContent = JSON.stringify(schema, null, 2);
+    document.head.appendChild(script);
+  }
+
+  // ===== FILTRO =====
+  function applyFilter() {
+    allLoadedCards.forEach(card => {
+      if (currentFilter === 'todos' || card.dataset.tipo === currentFilter) {
+        card.style.display = '';
+      } else {
+        card.style.display = 'none';
+      }
+    });
+  }
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      currentFilter = tab.dataset.filter;
+      applyFilter();
+    });
+  });
+
+  // ===== INTERSECTION OBSERVER =====
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting && hasNextPage && !isLoading) {
+        loadMore();
+      }
+    });
+  }, { rootMargin: '300px' });
+
+  observer.observe(loader);
+
+  // ===== LIGHTBOX =====
+  function openLightbox(visibleCards) {
+    const card = visibleCards[currentLightboxIndex];
+    if (!card) return;
+    const isVideo = card.dataset.tipo === 'video';
+    if (isVideo) {
+      lightboxContent.innerHTML = `<video controls autoplay controlslist="nodownload noremoteplayback" disablepictureinpicture oncontextmenu="return false"><source src="${card.dataset.videoSrc}" type="${card.dataset.videoType}"></video>`;
+    } else {
+      lightboxContent.innerHTML = `<img src="${card.dataset.imgSrc}" alt="${card.dataset.imgAlt}">`;
+    }
+
+    // v12: botao Comprar sempre presente (produto do depoimento ou padrao)
+    const cta = document.createElement('a');
+    cta.className = 'depoimentos-lightbox-cta';
+    cta.href = card.dataset.produtoLink || PRODUTO_PADRAO_LINK;
+    cta.innerHTML = `🛒 Comprar ${card.dataset.produtoNome || PRODUTO_PADRAO_NOME}`;
+    lightboxContent.appendChild(cta);
+
+    lightbox.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    lightbox._visibleCards = visibleCards;
+  }
+
+  function closeLightbox() {
+    lightbox.classList.remove('active');
+    lightboxContent.innerHTML = '';
+    document.body.style.overflow = '';
+  }
+
+  function navigateLightbox(direction) {
+    const visibleCards = lightbox._visibleCards || [];
+    if (visibleCards.length === 0) return;
+    currentLightboxIndex = (currentLightboxIndex + direction + visibleCards.length) % visibleCards.length;
+    openLightbox(visibleCards);
+  }
+
+  lightbox.querySelector('[data-close]').addEventListener('click', closeLightbox);
+  lightbox.querySelector('[data-prev]').addEventListener('click', () => navigateLightbox(-1));
+  lightbox.querySelector('[data-next]').addEventListener('click', () => navigateLightbox(1));
+
+  lightbox.addEventListener('click', (e) => {
+    if (e.target === lightbox) closeLightbox();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (!lightbox.classList.contains('active')) return;
+    if (e.key === 'Escape') closeLightbox();
+    if (e.key === 'ArrowLeft') navigateLightbox(-1);
+    if (e.key === 'ArrowRight') navigateLightbox(1);
+  });
+
+  // ===== PROTEÇÃO ANTI-CÓPIA =====
+  function setupProtecao() {
+    // Bloqueia menu de contexto (botao direito) na secao inteira
+    const section = document.querySelector('.depoimentos-section');
+    if (section) {
+      section.addEventListener('contextmenu', (e) => {
+        if (e.target.closest('.depoimento-card') ||
+            e.target.tagName === 'IMG' ||
+            e.target.tagName === 'VIDEO') {
+          e.preventDefault();
+          return false;
+        }
+      });
+    }
+
+    // Bloqueia menu de contexto no lightbox tambem
+    if (lightbox) {
+      lightbox.addEventListener('contextmenu', (e) => {
+        if (e.target.tagName === 'IMG' || e.target.tagName === 'VIDEO') {
+          e.preventDefault();
+          return false;
+        }
+      });
+    }
+
+    // Bloqueia arrastar imagem/video em toda a secao
+    document.addEventListener('dragstart', (e) => {
+      if (e.target.closest('.depoimento-card') ||
+          e.target.closest('.depoimentos-lightbox')) {
+        e.preventDefault();
+        return false;
+      }
+    });
+
+    // Bloqueia teclas comuns quando o lightbox esta aberto
+    document.addEventListener('keydown', (e) => {
+      if (!lightbox.classList.contains('active')) return;
+      // Ctrl+S, Ctrl+C, Ctrl+P, Ctrl+U, Cmd no Mac
+      const tecla = e.key.toLowerCase();
+      if ((e.ctrlKey || e.metaKey) && ['s','c','p','u','a'].includes(tecla)) {
+        e.preventDefault();
+        return false;
+      }
+    });
+  }
+
+  // ===== INICIA =====
+  setupProtecao();
+  fetchTotais();
+  loadMore();
+})();
+</script>
+
+</section>
+      
