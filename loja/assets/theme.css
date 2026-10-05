@@ -62,8 +62,9 @@ em.hl .scribble--circle{inset:-.25em -.4em;width:auto;height:auto}
 .button[disabled]{opacity:.5;pointer-events:none}
 
 /* ---------- barra de anúncio ---------- */
-.topbar{background:var(--tb-bg);color:var(--tb-fg);height:48px;font-size:.8125rem}
-.topbar__inner{height:100%;display:grid;grid-template-columns:1fr auto 1fr;align-items:center}
+/* a faixa colorida continua por trás do cabeçalho para aparecerem os cantos arredondados, como no tema atual */
+.topbar{background:var(--tb-bg);color:var(--tb-fg);height:calc(48px + var(--radius));margin-bottom:calc(-1 * var(--radius));padding-bottom:var(--radius);font-size:.8125rem}
+.topbar__inner{height:48px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center}
 .topbar__social{display:flex;gap:22px}
 .topbar__social a{display:flex;opacity:.95}.topbar__social .icon{width:20px;height:20px}
 .topbar__slides{display:flex;align-items:center;gap:40px}
@@ -76,7 +77,7 @@ em.hl .scribble--circle{inset:-.25em -.4em;width:auto;height:auto}
 @media (max-width:1023px){.topbar__inner{grid-template-columns:1fr}.topbar__social,.topbar__spacer{display:none}.topbar__slides{justify-content:center;gap:12px}.topbar__track{min-width:0;flex:1}.topbar__msg{white-space:normal;text-align:center;font-size:.75rem;line-height:1.2}}
 
 /* ---------- cabeçalho ---------- */
-.site-header{position:sticky;top:0;z-index:40;background:#fff;border-radius:var(--radius) var(--radius) 0 0;margin-top:-1px;transition:box-shadow .2s}
+.site-header{position:sticky;top:0;z-index:40;background:#fff;border-radius:var(--radius) var(--radius) 0 0;transition:box-shadow .2s}
 .site-header.is-stuck{border-radius:0;box-shadow:0 1px 0 var(--line)}
 .site-header.is-stuck .header__extra{display:none}
 .header__row{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;height:var(--header-h)}
@@ -486,3 +487,8 @@ em.hl .scribble--circle{inset:-.25em -.4em;width:auto;height:auto}
 .aor-btn{flex:none;display:inline-flex;align-items:center;gap:8px;padding:15px 30px;border-radius:999px;background:linear-gradient(180deg,#E95A8B,var(--pk-dk));color:#fff;font-family:"Barlow Semi Condensed",system-ui,sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.06em;font-size:.95rem;text-decoration:none;box-shadow:0 10px 26px rgba(184,35,90,.3);transition:transform .2s ease,box-shadow .2s ease}
 .aor-btn:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(184,35,90,.38);color:#fff}
 @media (max-width:749px){.aor-wrap{flex-direction:column;align-items:flex-start;gap:18px;padding:34px 20px}.aor-rib{width:64px;height:64px}.aor-rib svg{width:34px;height:38px}.aor-btn{width:100%;justify-content:center}}
+
+/* Galeria de depoimentos (colunas CSS): no Safari, cards com animação de transform dentro de
+   colunas deixam de ser desenhados da 2ª coluna em diante. Mantém o fade, sem deslocamento. */
+body .depoimento-card{display:inline-block;width:100%;vertical-align:top;-webkit-column-break-inside:avoid;break-inside:avoid;animation-name:an-dep-fade}
+@keyframes an-dep-fade{from{opacity:0}to{opacity:1}}

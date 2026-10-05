@@ -4,6 +4,7 @@ export function criarContexto(d, { versao = Date.now().toString(36), lerHtml = (
   const ativos = (d.produtos || []).filter((p) => p.status !== 'arquivado');
   for (const p of ativos) if (p.landing_html == null) p.landing_html = lerHtml(p.landing);
   for (const g of d.paginas || []) if (g.landing_html == null) g.landing_html = lerHtml(g.landing);
+  for (const c of d.colecoes || []) if (c.landing_html == null) c.landing_html = lerHtml(c.landing);
   for (const s of Object.values(d.home?.secoes || {})) if (s.tipo === 'html' && s.html && !s.html.includes('<')) s.html = lerHtml(s.html);
 
   const visiveis = ativos.filter((p) => p.status === 'ativo');

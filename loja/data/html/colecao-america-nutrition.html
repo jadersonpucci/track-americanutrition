@@ -1,0 +1,527 @@
+<div id="shopify-section-template--21678225588396__main" class="shopify-section">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&amp;family=Barlow:wght@400;500;600;700&amp;display=swap" rel="stylesheet" type="text/css" media="all" />
+
+<style>
+#ancol{--azul:#07388E;--azul-esc:#052A6B;--verm:#AD0404;--tinta:#14213D;--cinza:#5B6478;--gelo:#F4F7FC;--linha:#E3E9F4;font-family:'Barlow',sans-serif;color:var(--tinta);background:#fff}
+#ancol *{box-sizing:border-box;margin:0;padding:0}
+#ancol img{max-width:100%;display:block}
+#ancol .ancol-wrap{max-width:1240px;margin:0 auto;padding:0 16px}
+
+/* ===== HERO ===== */
+#ancol .ancol-hero{position:relative;padding:44px 0 30px;overflow:hidden;background:
+  linear-gradient(180deg,#fff 0%,var(--gelo) 100%)}
+#ancol .ancol-hero::after{content:"";position:absolute;right:-140px;top:-80px;width:460px;height:460px;border-radius:50%;background:radial-gradient(circle,rgba(7,56,142,.07) 0%,rgba(7,56,142,0) 70%)}
+#ancol .ancol-simbolo{height:30px;width:auto;margin-bottom:14px}
+@media(min-width:768px){#ancol .ancol-simbolo{height:38px}}
+#ancol .ancol-hero h1{font-family:'Barlow Condensed',sans-serif;font-weight:800;text-transform:uppercase;font-size:clamp(38px,7vw,68px);line-height:.95;letter-spacing:.5px;color:var(--azul)}
+#ancol .ancol-hero h1 em{font-style:normal;color:var(--verm)}
+#ancol .ancol-hero p{margin-top:12px;font-size:clamp(15px,2.4vw,18px);color:var(--cinza);max-width:560px}
+#ancol .ancol-trust{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin-top:24px;position:relative;z-index:1}
+#ancol .ancol-trust div{background:#fff;border:1px solid var(--linha);border-radius:12px;padding:11px 12px;display:flex;align-items:center;gap:8px;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:600;letter-spacing:.3px;line-height:1;white-space:nowrap;text-transform:uppercase}
+#ancol .ancol-trust .tf{display:none}
+#ancol .ancol-trust svg{flex:0 0 20px;width:20px;height:20px;fill:var(--azul)}
+@media(min-width:640px){#ancol .ancol-trust .tf{display:inline}#ancol .ancol-trust .ts{display:none}#ancol .ancol-trust div{font-size:16px;padding:12px 15px}}
+@media(min-width:1100px){#ancol .ancol-trust{grid-template-columns:repeat(4,1fr)}#ancol .ancol-trust div{font-size:17px;padding:13px 16px}}
+
+/* ===== CHIPS ===== */
+#ancol .ancol-chipbar{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-bottom:1px solid var(--linha)}
+#ancol .ancol-chips{display:flex;gap:8px;overflow-x:auto;padding:12px 16px;scrollbar-width:none;max-width:1240px;margin:0 auto}
+#ancol .ancol-chips::-webkit-scrollbar{display:none}
+#ancol .ancol-chip{flex:0 0 auto;font-family:'Barlow Condensed',sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.6px;font-size:15px;padding:9px 18px;border-radius:999px;border:1.5px solid var(--linha);background:#fff;color:var(--tinta);cursor:pointer;transition:all .18s;white-space:nowrap}
+#ancol .ancol-chip.is-on{background:var(--azul);border-color:var(--azul);color:#fff}
+#ancol .ancol-chip:not(.is-on):hover{border-color:var(--azul);color:var(--azul)}
+
+/* ===== GRID ===== */
+#ancol .ancol-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:22px 0 60px}
+@media(min-width:640px){#ancol .ancol-grid{grid-template-columns:repeat(3,1fr);gap:18px}}
+@media(min-width:1024px){#ancol .ancol-grid{grid-template-columns:repeat(4,1fr);gap:22px}}
+
+/* ===== CARD ===== */
+#ancol .ancol-card{position:relative;background:#fff;border:1px solid var(--linha);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;transition:transform .22s,box-shadow .22s;opacity:0;transform:translateY(14px)}
+#ancol .ancol-card.is-in{opacity:1;transform:translateY(0);transition:opacity .5s,transform .5s,box-shadow .22s}
+#ancol .ancol-card:hover{transform:translateY(-4px);box-shadow:0 14px 34px rgba(7,56,142,.13);border-color:#C9D6EE}
+#ancol .ancol-card.is-off{display:none}
+#ancol .ancol-media{position:relative;background:var(--gelo);aspect-ratio:1/1;overflow:hidden}
+#ancol .ancol-media img{width:100%;height:100%;object-fit:cover;transition:transform .4s}
+#ancol .ancol-card:hover .ancol-media img{transform:scale(1.05)}
+#ancol .ancol-media::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:linear-gradient(90deg,var(--verm) 0 33%,#fff 33% 38%,var(--verm) 38% 66%,#fff 66% 71%,var(--verm) 71% 100%);opacity:0;transition:opacity .25s}
+#ancol .ancol-card:hover .ancol-media::after{opacity:1}
+#ancol .ancol-badge{position:absolute;top:10px;left:10px;z-index:2;font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.5px;font-size:13px;padding:5px 10px;border-radius:7px;color:#fff;background:var(--verm)}
+#ancol .ancol-badge.b-top{background:var(--azul)}
+#ancol .ancol-badge.b-out{background:#7A8299}
+#ancol .ancol-body{display:flex;flex-direction:column;gap:6px;padding:12px 12px 14px;flex:1}
+#ancol .ancol-stars{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--cinza)}
+#ancol .ancol-stars svg{width:64px;height:12px;fill:#F5A623}
+#ancol .ancol-name{font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.3px;font-size:18px;line-height:1.05;color:var(--tinta)}
+#ancol .ancol-name a{color:inherit;text-decoration:none}
+#ancol .ancol-name a:hover{color:var(--azul)}
+#ancol .ancol-preco{margin-top:auto;padding-top:4px}
+#ancol .ancol-cmp{font-size:12.5px;color:#98A0B3;text-decoration:line-through}
+#ancol .ancol-val{font-size:20px;font-weight:700;color:var(--azul)}
+#ancol .ancol-val small{font-size:12px;font-weight:600;color:var(--cinza)}
+#ancol .ancol-parc{font-size:12px;color:var(--cinza)}
+#ancol .ancol-cta{margin-top:10px;width:100%;font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.8px;font-size:15.5px;padding:11px 8px;border-radius:10px;border:0;cursor:pointer;background:var(--azul);color:#fff;text-align:center;text-decoration:none;display:block;transition:background .18s}
+#ancol .ancol-cta:hover{background:var(--azul-esc)}
+#ancol .ancol-cta.c-alt{background:#fff;color:var(--azul);border:1.5px solid var(--azul)}
+#ancol .ancol-cta.c-alt:hover{background:var(--gelo)}
+#ancol .ancol-cta[disabled]{background:#C4CADA;cursor:not-allowed}
+#ancol .ancol-cta.is-ok{background:#0E8A3E}
+
+/* ===== VAZIO / FAIXA FINAL ===== */
+#ancol .ancol-empty{display:none;text-align:center;padding:50px 0;color:var(--cinza);font-size:15px}
+#ancol .ancol-final{background:linear-gradient(135deg,var(--azul) 0%,var(--azul-esc) 70%,#031C4A 100%);color:#fff;text-align:center;padding:84px 22px 60px;border-radius:22px;margin:0 16px 60px;position:relative;overflow:hidden}
+@media(min-width:1272px){#ancol .ancol-final{margin:0 auto 60px;max-width:1240px}}
+#ancol .ancol-final::before{content:"";position:absolute;left:-90px;top:-90px;width:340px;height:340px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.10) 0%,rgba(255,255,255,0) 70%)}
+#ancol .ancol-final::after{content:"";position:absolute;right:-40px;bottom:-60px;width:380px;height:380px;background:url('https://www.americanutrition.com/cdn/shop/t/27/assets/an-simbolo-ae.png?v=155844618296736736071789439654') no-repeat center/contain;opacity:.07;transform:rotate(-8deg);pointer-events:none}
+#ancol .ancol-fstripes{position:absolute;left:0;top:30px;display:flex;flex-direction:column;gap:5px}
+#ancol .ancol-fstripes span{display:block;height:6px;background:var(--verm)}
+#ancol .ancol-fstripes span:nth-child(1){width:52px}
+#ancol .ancol-fstripes span:nth-child(2){width:34px}
+#ancol .ancol-fstripes span:nth-child(3){width:52px}
+#ancol .ancol-final h2{font-family:'Barlow Condensed',sans-serif;font-weight:800;text-transform:uppercase;font-size:clamp(28px,5vw,44px);line-height:1;color:#fff;position:relative;z-index:1}
+#ancol .ancol-final h2 em{font-style:normal;color:#9DB8EA}
+#ancol .ancol-final p{margin:12px auto 26px;max-width:520px;font-size:15.5px;color:rgba(255,255,255,.82);position:relative;z-index:1}
+#ancol .ancol-fbtns{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;position:relative;z-index:1}
+#ancol .ancol-final a.f-pri{display:inline-flex;align-items:center;gap:9px;background:#fff;color:var(--azul);font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.8px;font-size:16.5px;padding:14px 30px;border-radius:999px;text-decoration:none;box-shadow:0 8px 24px rgba(0,0,0,.25);transition:transform .18s}
+#ancol .ancol-final a.f-pri:hover{transform:translateY(-2px)}
+#ancol .ancol-final a.f-pri svg{width:19px;height:19px;fill:#25D366}
+#ancol .ancol-final a.f-sec{display:inline-flex;align-items:center;background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.55);font-family:'Barlow Condensed',sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.8px;font-size:16.5px;padding:14px 26px;border-radius:999px;text-decoration:none;transition:background .18s,border-color .18s}
+#ancol .ancol-final a.f-sec:hover{background:rgba(255,255,255,.1);border-color:#fff}
+@media(prefers-reduced-motion:reduce){#ancol .ancol-card{opacity:1;transform:none;transition:none}#ancol .ancol-media img{transition:none}}
+</style>
+
+<div id="ancol">
+  <div class="ancol-hero">
+    <div class="ancol-wrap">
+      <img class="ancol-simbolo" src="https://www.americanutrition.com/cdn/shop/t/27/assets/an-simbolo-ae.png?v=155844618296736736071789439654" alt="America Nutrition" width="306" height="172" loading="eager">
+      <h1>Linha completa<br><em>America Nutrition</em></h1>
+      <p>Suplementos de alta pureza para metabolismo celular, equilíbrio da imunidade e longevidade. Ciência a favor da sua vida.</p>
+      <div class="ancol-trust">
+        <div><svg viewBox="0 0 24 24"><path d="M20 8h-3V4H1v13h2a3 3 0 0 0 6 0h6a3 3 0 0 0 6 0h2v-6l-3-3zM6 18.5A1.5 1.5 0 1 1 7.5 17 1.5 1.5 0 0 1 6 18.5zm12 0A1.5 1.5 0 1 1 19.5 17 1.5 1.5 0 0 1 18 18.5zM17 12V9.5h2.5L21.5 12z"/></svg><span class="ts">Frete grátis R$ 250+</span><span class="tf">Frete grátis acima de R$ 250</span></div>
+        <div><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm4.2 14.2L11 13V7h1.5v5.2l4.5 2.7z"/></svg><span class="ts">Envio no mesmo dia</span><span class="tf">Até 12h: envio no mesmo dia</span></div>
+        <div><svg viewBox="0 0 24 24"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 4H4V6h16zm0 10H4v-6h16z"/></svg><span class="ts">12x · 3x sem juros</span><span class="tf">Até 12x · 3x sem juros</span></div>
+        <div><svg viewBox="0 0 24 24"><path d="M12 17.3 6.2 20.7l1.5-6.5L2.6 9.9l6.6-.6L12 3.2l2.8 6.1 6.6.6-5.1 4.3 1.5 6.5z"/></svg><span class="ts">+42 mil avaliações</span><span class="tf">+42 mil avaliações · 4.97★</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ancol-chipbar">
+    <div class="ancol-chips" role="tablist" aria-label="Categorias">
+      <button class="ancol-chip is-on" data-cat="todos">Todos</button>
+      <button class="ancol-chip" data-cat="fosfo">ImunoFosfo</button>
+      <button class="ancol-chip" data-cat="vitaminas">Vitaminas &amp; Essenciais</button>
+      <button class="ancol-chip" data-cat="propolis">Própolis &amp; Detox</button>
+      <button class="ancol-chip" data-cat="performance">Performance</button>
+      <button class="ancol-chip" data-cat="pets">Pets</button>
+    </div>
+  </div>
+
+  <div class="ancol-wrap">
+    <div class="ancol-grid">
+      
+      
+<article class="ancol-card" data-cat="fosfo">
+          <a class="ancol-media" href="/collections/america-nutrition/products/imunofosfo-fosfoetanolamina-phospho" aria-label="ImunoFosfo"><span class="ancol-badge b-top">Mais vendido</span><img src="https://www.americanutrition.com/cdn/shop/files/ImunoFosfo_90_C_psulas.jpg?v=1771893996&amp;width=640" alt="ImunoFosfo" srcset="https://www.americanutrition.com/cdn/shop/files/ImunoFosfo_90_C_psulas.jpg?v=1771893996&amp;width=320 320w, https://www.americanutrition.com/cdn/shop/files/ImunoFosfo_90_C_psulas.jpg?v=1771893996&amp;width=480 480w, https://www.americanutrition.com/cdn/shop/files/ImunoFosfo_90_C_psulas.jpg?v=1771893996&amp;width=640 640w" width="640" height="640" loading="lazy">
+          </a>
+          <div class="ancol-body">
+            <div class="ancol-stars">
+              <svg viewBox="0 0 80 15"><path transform="translate(0,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(16,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(32,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(48,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(64,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/></svg>
+              5.0
+            </div>
+            <h3 class="ancol-name"><a href="/collections/america-nutrition/products/imunofosfo-fosfoetanolamina-phospho">ImunoFosfo</a></h3>
+            <div class="ancol-preco" data-anp="19700" data-anv="1" data-anpid="7783594754220" data-anvids="44436756234412,44511284920492,45198538277036,46173112041644,44436756267180" data-ancol="america-nutrition,imunofosfo"><span class="ancol-val"><small>a partir de</small> R$ 197,00</span>
+              <div class="ancol-parc">até 12x de R$ 16,41</div>
+            </div><a class="ancol-cta c-alt" href="/collections/america-nutrition/products/imunofosfo-fosfoetanolamina-phospho">Escolher opções</a></div>
+        </article>
+      
+<article class="ancol-card" data-cat="fosfo">
+          <a class="ancol-media" href="/collections/america-nutrition/products/imunofosfo-liquid" aria-label="ImunoFosfo Liquid"><span class="ancol-badge">30% OFF</span><img src="https://www.americanutrition.com/cdn/shop/files/Mockup_Liquid_201fcff5-5e85-48ff-a71f-3eb38443d47c.jpg?v=1771378027&amp;width=640" alt="ImunoFosfo Liquid" srcset="https://www.americanutrition.com/cdn/shop/files/Mockup_Liquid_201fcff5-5e85-48ff-a71f-3eb38443d47c.jpg?v=1771378027&amp;width=320 320w, https://www.americanutrition.com/cdn/shop/files/Mockup_Liquid_201fcff5-5e85-48ff-a71f-3eb38443d47c.jpg?v=1771378027&amp;width=480 480w, https://www.americanutrition.com/cdn/shop/files/Mockup_Liquid_201fcff5-5e85-48ff-a71f-3eb38443d47c.jpg?v=1771378027&amp;width=640 640w" width="640" height="640" loading="lazy">
+          </a>
+          <div class="ancol-body">
+            <div class="ancol-stars">
+              <svg viewBox="0 0 80 15"><path transform="translate(0,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(16,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(32,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(48,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(64,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/></svg>
+              5.0
+            </div>
+            <h3 class="ancol-name"><a href="/collections/america-nutrition/products/imunofosfo-liquid">ImunoFosfo Liquid</a></h3>
+            <div class="ancol-preco" data-anp="13700" data-anpid="8006262554796" data-anvids="45522481643692" data-ancol="america-nutrition,imunofosfo"><span class="ancol-cmp">R$ 197,00</span><br><span class="ancol-val">R$ 137,00</span>
+              <div class="ancol-parc">até 12x de R$ 11,41</div>
+            </div><form method="post" action="/cart/add" class="ancol-form">
+                <input type="hidden" name="id" value="45522481643692">
+                <button type="submit" class="ancol-cta" name="add">Adicionar ao carrinho</button>
+              </form></div>
+        </article>
+      
+<article class="ancol-card" data-cat="fosfo">
+          <a class="ancol-media" href="/collections/america-nutrition/products/imunofosfo-kids-fosfoetanolamina" aria-label="ImunoFosfo Kids"><img src="https://www.americanutrition.com/cdn/shop/files/ImunoFosfo_Kids_fosfoetanolamina.jpg?v=1771511298&amp;width=640" alt="ImunoFosfo Kids" srcset="https://www.americanutrition.com/cdn/shop/files/ImunoFosfo_Kids_fosfoetanolamina.jpg?v=1771511298&amp;width=320 320w, https://www.americanutrition.com/cdn/shop/files/ImunoFosfo_Kids_fosfoetanolamina.jpg?v=1771511298&amp;width=480 480w, https://www.americanutrition.com/cdn/shop/files/ImunoFosfo_Kids_fosfoetanolamina.jpg?v=1771511298&amp;width=640 640w" width="640" height="640" loading="lazy">
+          </a>
+          <div class="ancol-body">
+            <div class="ancol-stars">
+              <svg viewBox="0 0 80 15"><path transform="translate(0,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(16,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(32,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(48,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(64,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/></svg>
+              5.0
+            </div>
+            <h3 class="ancol-name"><a href="/collections/america-nutrition/products/imunofosfo-kids-fosfoetanolamina">ImunoFosfo Kids</a></h3>
+            <div class="ancol-preco" data-anp="16700" data-anpid="8032438190252" data-anvids="43736522653868" data-ancol="america-nutrition,imunofosfo"><span class="ancol-val">R$ 167,00</span>
+              <div class="ancol-parc">até 12x de R$ 13,91</div>
+            </div><form method="post" action="/cart/add" class="ancol-form">
+                <input type="hidden" name="id" value="43736522653868">
+                <button type="submit" class="ancol-cta" name="add">Adicionar ao carrinho</button>
+              </form></div>
+        </article>
+      
+<article class="ancol-card" data-cat="fosfo">
+          <a class="ancol-media" href="/collections/america-nutrition/products/imunofosfo-diabetes" aria-label="ImunoFosfo Diabetes"><span class="ancol-badge">10% OFF</span><img src="https://www.americanutrition.com/cdn/shop/files/diabetes_mocup.jpg?v=1769434468&amp;width=640" alt="ImunoFosfo Diabetes" srcset="https://www.americanutrition.com/cdn/shop/files/diabetes_mocup.jpg?v=1769434468&amp;width=320 320w, https://www.americanutrition.com/cdn/shop/files/diabetes_mocup.jpg?v=1769434468&amp;width=480 480w, https://www.americanutrition.com/cdn/shop/files/diabetes_mocup.jpg?v=1769434468&amp;width=640 640w" width="640" height="640" loading="lazy">
+          </a>
+          <div class="ancol-body">
+            <div class="ancol-stars">
+              <svg viewBox="0 0 80 15"><path transform="translate(0,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(16,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(32,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(48,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(64,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/></svg>
+              5.0
+            </div>
+            <h3 class="ancol-name"><a href="/collections/america-nutrition/products/imunofosfo-diabetes">ImunoFosfo Diabetes</a></h3>
+            <div class="ancol-preco" data-anp="26700" data-anpid="8428616908972" data-anvids="45117829218476" data-ancol="america-nutrition,imunofosfo"><span class="ancol-cmp">R$ 297,00</span><br><span class="ancol-val">R$ 267,00</span>
+              <div class="ancol-parc">até 12x de R$ 22,25</div>
+            </div><form method="post" action="/cart/add" class="ancol-form">
+                <input type="hidden" name="id" value="45117829218476">
+                <button type="submit" class="ancol-cta" name="add">Adicionar ao carrinho</button>
+              </form></div>
+        </article>
+      
+<article class="ancol-card" data-cat="pets">
+          <a class="ancol-media" href="/collections/america-nutrition/products/imunopet" aria-label="ImunoPet - Fosfo para Pets"><img src="https://www.americanutrition.com/cdn/shop/files/mockup-imunopet.jpg?v=1774835522&amp;width=640" alt="ImunoPet - Fosfo para Pets" srcset="https://www.americanutrition.com/cdn/shop/files/mockup-imunopet.jpg?v=1774835522&amp;width=320 320w, https://www.americanutrition.com/cdn/shop/files/mockup-imunopet.jpg?v=1774835522&amp;width=480 480w, https://www.americanutrition.com/cdn/shop/files/mockup-imunopet.jpg?v=1774835522&amp;width=640 640w" width="640" height="640" loading="lazy">
+          </a>
+          <div class="ancol-body">
+            <div class="ancol-stars">
+              <svg viewBox="0 0 80 15"><path transform="translate(0,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(16,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(32,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(48,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(64,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/></svg>
+              5.0
+            </div>
+            <h3 class="ancol-name"><a href="/collections/america-nutrition/products/imunopet">ImunoPet - Fosfo para Pets</a></h3>
+            <div class="ancol-preco" data-anp="15700" data-anv="1" data-anpid="8010079666348" data-anvids="45211644625068,45211644461228" data-ancol="america-nutrition,linha-pet-fosfoetanolamina"><span class="ancol-val"><small>a partir de</small> R$ 157,00</span>
+              <div class="ancol-parc">até 12x de R$ 13,08</div>
+            </div><a class="ancol-cta c-alt" href="/collections/america-nutrition/products/imunopet">Escolher opções</a></div>
+        </article>
+      
+<article class="ancol-card" data-cat="fosfo">
+          <a class="ancol-media" href="/collections/america-nutrition/products/imunofosfo-healing" aria-label="ImunoFosfo Healing"><img src="https://www.americanutrition.com/cdn/shop/files/IMUNOHEALING.jpg?v=1736989270&amp;width=640" alt="ImunoFosfo Healing" srcset="https://www.americanutrition.com/cdn/shop/files/IMUNOHEALING.jpg?v=1736989270&amp;width=320 320w, https://www.americanutrition.com/cdn/shop/files/IMUNOHEALING.jpg?v=1736989270&amp;width=480 480w, https://www.americanutrition.com/cdn/shop/files/IMUNOHEALING.jpg?v=1736989270&amp;width=640 640w" width="640" height="640" loading="lazy">
+          </a>
+          <div class="ancol-body">
+            <div class="ancol-stars">
+              <svg viewBox="0 0 80 15"><path transform="translate(0,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(16,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(32,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(48,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(64,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/></svg>
+              5.0
+            </div>
+            <h3 class="ancol-name"><a href="/collections/america-nutrition/products/imunofosfo-healing">ImunoFosfo Healing</a></h3>
+            <div class="ancol-preco" data-anp="8700" data-anpid="8010080518316" data-anvids="43671038656684" data-ancol="america-nutrition,imunofosfo"><span class="ancol-val">R$ 87,00</span>
+              <div class="ancol-parc">até 12x de R$ 7,25</div>
+            </div><form method="post" action="/cart/add" class="ancol-form">
+                <input type="hidden" name="id" value="43671038656684">
+                <button type="submit" class="ancol-cta" name="add">Adicionar ao carrinho</button>
+              </form></div>
+        </article>
+      
+<article class="ancol-card" data-cat="vitaminas">
+          <a class="ancol-media" href="/collections/america-nutrition/products/vitamins-minerals-premium" aria-label="Vitamins &amp; Minerals Premium"><span class="ancol-badge">16% OFF</span><img src="https://www.americanutrition.com/cdn/shop/files/Mockup---Multivitamin.jpg?v=1761152848&amp;width=640" alt="Vitamins &amp; Minerals Premium" srcset="https://www.americanutrition.com/cdn/shop/files/Mockup---Multivitamin.jpg?v=1761152848&amp;width=320 320w, https://www.americanutrition.com/cdn/shop/files/Mockup---Multivitamin.jpg?v=1761152848&amp;width=480 480w, https://www.americanutrition.com/cdn/shop/files/Mockup---Multivitamin.jpg?v=1761152848&amp;width=640 640w" width="640" height="640" loading="lazy">
+          </a>
+          <div class="ancol-body">
+            <div class="ancol-stars">
+              <svg viewBox="0 0 80 15"><path transform="translate(0,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(16,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(32,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(48,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(64,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/></svg>
+              5.0
+            </div>
+            <h3 class="ancol-name"><a href="/collections/america-nutrition/products/vitamins-minerals-premium">Vitamins & Minerals Premium</a></h3>
+            <div class="ancol-preco" data-anp="14700" data-anpid="8317494558892" data-anvids="44714532208812" data-ancol="america-nutrition,linha-suplementos"><span class="ancol-cmp">R$ 177,00</span><br><span class="ancol-val">R$ 147,00</span>
+              <div class="ancol-parc">até 12x de R$ 12,25</div>
+            </div><form method="post" action="/cart/add" class="ancol-form">
+                <input type="hidden" name="id" value="44714532208812">
+                <button type="submit" class="ancol-cta" name="add">Adicionar ao carrinho</button>
+              </form></div>
+        </article>
+      
+<article class="ancol-card" data-cat="vitaminas">
+          <a class="ancol-media" href="/collections/america-nutrition/products/omega-3-meg3" aria-label="Omega 3 - Ultra Pure Fish Oil - Com Vitamina E"><img src="https://www.americanutrition.com/cdn/shop/files/Mockup---Omega3-2025.jpg?v=1750164299&amp;width=640" alt="Omega 3 - Ultra Pure Fish Oil - Com Vitamina E" srcset="https://www.americanutrition.com/cdn/shop/files/Mockup---Omega3-2025.jpg?v=1750164299&amp;width=320 320w, https://www.americanutrition.com/cdn/shop/files/Mockup---Omega3-2025.jpg?v=1750164299&amp;width=480 480w, https://www.americanutrition.com/cdn/shop/files/Mockup---Omega3-2025.jpg?v=1750164299&amp;width=640 640w" width="640" height="640" loading="lazy">
+          </a>
+          <div class="ancol-body">
+            <div class="ancol-stars">
+              <svg viewBox="0 0 80 15"><path transform="translate(0,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(16,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(32,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(48,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(64,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/></svg>
+              5.0
+            </div>
+            <h3 class="ancol-name"><a href="/collections/america-nutrition/products/omega-3-meg3">Omega 3 - Ultra Pure Fish Oil - Com Vitamina E</a></h3>
+            <div class="ancol-preco" data-anp="7700" data-anpid="8072342470828" data-anvids="43843399712940" data-ancol="america-nutrition,linha-suplementos"><span class="ancol-val">R$ 77,00</span>
+              <div class="ancol-parc">até 12x de R$ 6,41</div>
+            </div><form method="post" action="/cart/add" class="ancol-form">
+                <input type="hidden" name="id" value="43843399712940">
+                <button type="submit" class="ancol-cta" name="add">Adicionar ao carrinho</button>
+              </form></div>
+        </article>
+      
+<article class="ancol-card" data-cat="propolis">
+          <a class="ancol-media" href="/collections/america-nutrition/products/green-propolis-premium-propolis-verde" aria-label="Green Propolis Premium (Própolis Verde)"><img src="https://www.americanutrition.com/cdn/shop/files/Mockup---Propolis-Verde-2025.jpg?v=1750164799&amp;width=640" alt="Green Propolis Premium (Própolis Verde)" srcset="https://www.americanutrition.com/cdn/shop/files/Mockup---Propolis-Verde-2025.jpg?v=1750164799&amp;width=320 320w, https://www.americanutrition.com/cdn/shop/files/Mockup---Propolis-Verde-2025.jpg?v=1750164799&amp;width=480 480w, https://www.americanutrition.com/cdn/shop/files/Mockup---Propolis-Verde-2025.jpg?v=1750164799&amp;width=640 640w" width="640" height="640" loading="lazy">
+          </a>
+          <div class="ancol-body">
+            <div class="ancol-stars">
+              <svg viewBox="0 0 80 15"><path transform="translate(0,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(16,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(32,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(48,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(64,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/></svg>
+              5.0
+            </div>
+            <h3 class="ancol-name"><a href="/collections/america-nutrition/products/green-propolis-premium-propolis-verde">Green Propolis Premium (Própolis Verde)</a></h3>
+            <div class="ancol-preco" data-anp="7700" data-anpid="8104946172076" data-anvids="43959807508652" data-ancol="america-nutrition,linha-suplementos"><span class="ancol-val">R$ 77,00</span>
+              <div class="ancol-parc">até 12x de R$ 6,41</div>
+            </div><form method="post" action="/cart/add" class="ancol-form">
+                <input type="hidden" name="id" value="43959807508652">
+                <button type="submit" class="ancol-cta" name="add">Adicionar ao carrinho</button>
+              </form></div>
+        </article>
+      
+<article class="ancol-card" data-cat="vitaminas">
+          <a class="ancol-media" href="/collections/america-nutrition/products/life-hair" aria-label="Life Hair - Biotina e Vitaminas"><span class="ancol-badge">38% OFF</span><img src="https://www.americanutrition.com/cdn/shop/files/lifehair.jpg?v=1760037313&amp;width=640" alt="Life Hair - Biotina e Vitaminas" srcset="https://www.americanutrition.com/cdn/shop/files/lifehair.jpg?v=1760037313&amp;width=320 320w, https://www.americanutrition.com/cdn/shop/files/lifehair.jpg?v=1760037313&amp;width=480 480w, https://www.americanutrition.com/cdn/shop/files/lifehair.jpg?v=1760037313&amp;width=640 640w" width="640" height="640" loading="lazy">
+          </a>
+          <div class="ancol-body">
+            <div class="ancol-stars">
+              <svg viewBox="0 0 80 15"><path transform="translate(0,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(16,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(32,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(48,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(64,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/></svg>
+              5.0
+            </div>
+            <h3 class="ancol-name"><a href="/collections/america-nutrition/products/life-hair">Life Hair - Biotina e Vitaminas</a></h3>
+            <div class="ancol-preco" data-anp="4700" data-anpid="8359840153772" data-anvids="44852610826412" data-ancol="america-nutrition,linha-suplementos"><span class="ancol-cmp">R$ 77,00</span><br><span class="ancol-val">R$ 47,00</span>
+              <div class="ancol-parc">até 12x de R$ 3,91</div>
+            </div><form method="post" action="/cart/add" class="ancol-form">
+                <input type="hidden" name="id" value="44852610826412">
+                <button type="submit" class="ancol-cta" name="add">Adicionar ao carrinho</button>
+              </form></div>
+        </article>
+      
+<article class="ancol-card" data-cat="vitaminas">
+          <a class="ancol-media" href="/collections/america-nutrition/products/vitamina-d3-50000-ui-k2-a-e" aria-label="D3 with K2, A and E - 50.000 UI"><span class="ancol-badge">41% OFF</span><img src="https://www.americanutrition.com/cdn/shop/files/Mockup---Vitamin-D3_e68dfc5f-4442-4f03-ba0b-cfe981eb6522.jpg?v=1770058482&amp;width=640" alt="D3 with K2, A and E - 50.000 UI" srcset="https://www.americanutrition.com/cdn/shop/files/Mockup---Vitamin-D3_e68dfc5f-4442-4f03-ba0b-cfe981eb6522.jpg?v=1770058482&amp;width=320 320w, https://www.americanutrition.com/cdn/shop/files/Mockup---Vitamin-D3_e68dfc5f-4442-4f03-ba0b-cfe981eb6522.jpg?v=1770058482&amp;width=480 480w, https://www.americanutrition.com/cdn/shop/files/Mockup---Vitamin-D3_e68dfc5f-4442-4f03-ba0b-cfe981eb6522.jpg?v=1770058482&amp;width=640 640w" width="640" height="640" loading="lazy">
+          </a>
+          <div class="ancol-body">
+            <div class="ancol-stars">
+              <svg viewBox="0 0 80 15"><path transform="translate(0,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(16,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(32,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(48,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(64,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/></svg>
+              5.0
+            </div>
+            <h3 class="ancol-name"><a href="/collections/america-nutrition/products/vitamina-d3-50000-ui-k2-a-e">D3 with K2, A and E - 50.000 UI</a></h3>
+            <div class="ancol-preco" data-anp="5700" data-anpid="8450180284588" data-anvids="45300915863724" data-ancol="america-nutrition,linha-suplementos"><span class="ancol-cmp">R$ 97,00</span><br><span class="ancol-val">R$ 57,00</span>
+              <div class="ancol-parc">até 12x de R$ 4,75</div>
+            </div><button class="ancol-cta" disabled>Sem estoque</button></div>
+        </article>
+      
+<article class="ancol-card" data-cat="vitaminas">
+          <a class="ancol-media" href="/collections/america-nutrition/products/d3-vitamin-with-k2-and-a" aria-label="D3 Vitamin with K2 and A"><img src="https://www.americanutrition.com/cdn/shop/files/Mockup---Vitamin-D3.jpg?v=1757015071&amp;width=640" alt="D3 Vitamin with K2 and A" srcset="https://www.americanutrition.com/cdn/shop/files/Mockup---Vitamin-D3.jpg?v=1757015071&amp;width=320 320w, https://www.americanutrition.com/cdn/shop/files/Mockup---Vitamin-D3.jpg?v=1757015071&amp;width=480 480w, https://www.americanutrition.com/cdn/shop/files/Mockup---Vitamin-D3.jpg?v=1757015071&amp;width=640 640w" width="640" height="640" loading="lazy">
+          </a>
+          <div class="ancol-body">
+            <div class="ancol-stars">
+              <svg viewBox="0 0 80 15"><path transform="translate(0,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(16,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(32,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(48,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(64,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/></svg>
+              5.0
+            </div>
+            <h3 class="ancol-name"><a href="/collections/america-nutrition/products/d3-vitamin-with-k2-and-a">D3 Vitamin with K2 and A</a></h3>
+            <div class="ancol-preco" data-anp="6700" data-anpid="8072346828972" data-anvids="44240381411500" data-ancol="america-nutrition,linha-suplementos"><span class="ancol-val">R$ 67,00</span>
+              <div class="ancol-parc">até 12x de R$ 5,58</div>
+            </div><form method="post" action="/cart/add" class="ancol-form">
+                <input type="hidden" name="id" value="44240381411500">
+                <button type="submit" class="ancol-cta" name="add">Adicionar ao carrinho</button>
+              </form></div>
+        </article>
+      
+<article class="ancol-card" data-cat="propolis">
+          <a class="ancol-media" href="/collections/america-nutrition/products/propolis-extract" aria-label="Propolis Extract"><img src="https://www.americanutrition.com/cdn/shop/files/PROPOLIS-MICK.jpg?v=1736989296&amp;width=640" alt="Propolis Extract" srcset="https://www.americanutrition.com/cdn/shop/files/PROPOLIS-MICK.jpg?v=1736989296&amp;width=320 320w, https://www.americanutrition.com/cdn/shop/files/PROPOLIS-MICK.jpg?v=1736989296&amp;width=480 480w, https://www.americanutrition.com/cdn/shop/files/PROPOLIS-MICK.jpg?v=1736989296&amp;width=640 640w" width="640" height="640" loading="lazy">
+          </a>
+          <div class="ancol-body">
+            <div class="ancol-stars">
+              <svg viewBox="0 0 80 15"><path transform="translate(0,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(16,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(32,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(48,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(64,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/></svg>
+              5.0
+            </div>
+            <h3 class="ancol-name"><a href="/collections/america-nutrition/products/propolis-extract">Propolis Extract</a></h3>
+            <div class="ancol-preco" data-anp="6700" data-anpid="8072351023276" data-anvids="43843418259628" data-ancol="america-nutrition,linha-suplementos"><span class="ancol-val">R$ 67,00</span>
+              <div class="ancol-parc">até 12x de R$ 5,58</div>
+            </div><form method="post" action="/cart/add" class="ancol-form">
+                <input type="hidden" name="id" value="43843418259628">
+                <button type="submit" class="ancol-cta" name="add">Adicionar ao carrinho</button>
+              </form></div>
+        </article>
+      
+<article class="ancol-card" data-cat="performance">
+          <a class="ancol-media" href="/collections/america-nutrition/products/life-gummy-creatina-em-gomas" aria-label="Life Gummy - Creatina em Gomas"><span class="ancol-badge">33% OFF</span><img src="https://www.americanutrition.com/cdn/shop/files/Mockup---Life-Gummy.jpg?v=1744723924&amp;width=640" alt="Life Gummy - Creatina em Gomas" srcset="https://www.americanutrition.com/cdn/shop/files/Mockup---Life-Gummy.jpg?v=1744723924&amp;width=320 320w, https://www.americanutrition.com/cdn/shop/files/Mockup---Life-Gummy.jpg?v=1744723924&amp;width=480 480w, https://www.americanutrition.com/cdn/shop/files/Mockup---Life-Gummy.jpg?v=1744723924&amp;width=640 640w" width="640" height="640" loading="lazy">
+          </a>
+          <div class="ancol-body">
+            <div class="ancol-stars">
+              <svg viewBox="0 0 80 15"><path transform="translate(0,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(16,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(32,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(48,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(64,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/></svg>
+              5.0
+            </div>
+            <h3 class="ancol-name"><a href="/collections/america-nutrition/products/life-gummy-creatina-em-gomas">Life Gummy - Creatina em Gomas</a></h3>
+            <div class="ancol-preco" data-anp="9990" data-anpid="8206046658732" data-anvids="44291546448044" data-ancol="america-nutrition,americanutrition-suplementos"><span class="ancol-cmp">R$ 149,90</span><br><span class="ancol-val">R$ 99,90</span>
+              <div class="ancol-parc">até 12x de R$ 8,32</div>
+            </div><form method="post" action="/cart/add" class="ancol-form">
+                <input type="hidden" name="id" value="44291546448044">
+                <button type="submit" class="ancol-cta" name="add">Adicionar ao carrinho</button>
+              </form></div>
+        </article>
+      
+<article class="ancol-card" data-cat="performance">
+          <a class="ancol-media" href="/collections/america-nutrition/products/creatine-ultra-micronized" aria-label="Creatina Ultra Micronizada"><span class="ancol-badge">23% OFF</span><img src="https://www.americanutrition.com/cdn/shop/files/Mockup---Creatina-em-Po-frente.jpg?v=1744047926&amp;width=640" alt="Creatina Ultra Micronizada" srcset="https://www.americanutrition.com/cdn/shop/files/Mockup---Creatina-em-Po-frente.jpg?v=1744047926&amp;width=320 320w, https://www.americanutrition.com/cdn/shop/files/Mockup---Creatina-em-Po-frente.jpg?v=1744047926&amp;width=480 480w, https://www.americanutrition.com/cdn/shop/files/Mockup---Creatina-em-Po-frente.jpg?v=1744047926&amp;width=640 640w" width="640" height="640" loading="lazy">
+          </a>
+          <div class="ancol-body">
+            <div class="ancol-stars">
+              <svg viewBox="0 0 80 15"><path transform="translate(0,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(16,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(32,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(48,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(64,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/></svg>
+              5.0
+            </div>
+            <h3 class="ancol-name"><a href="/collections/america-nutrition/products/creatine-ultra-micronized">Creatina Ultra Micronizada</a></h3>
+            <div class="ancol-preco" data-anp="9990" data-anpid="8198421414060" data-anvids="44268289982636" data-ancol="america-nutrition,americanutrition-suplementos"><span class="ancol-cmp">R$ 129,90</span><br><span class="ancol-val">R$ 99,90</span>
+              <div class="ancol-parc">até 12x de R$ 8,32</div>
+            </div><form method="post" action="/cart/add" class="ancol-form">
+                <input type="hidden" name="id" value="44268289982636">
+                <button type="submit" class="ancol-cta" name="add">Adicionar ao carrinho</button>
+              </form></div>
+        </article>
+      
+<article class="ancol-card" data-cat="performance">
+          <a class="ancol-media" href="/collections/america-nutrition/products/life-protein-proteina-vegetal" aria-label="Life Protein"><img src="https://www.americanutrition.com/cdn/shop/files/Mockup---Life-Protein.jpg?v=1763741133&amp;width=640" alt="Life Protein" srcset="https://www.americanutrition.com/cdn/shop/files/Mockup---Life-Protein.jpg?v=1763741133&amp;width=320 320w, https://www.americanutrition.com/cdn/shop/files/Mockup---Life-Protein.jpg?v=1763741133&amp;width=480 480w, https://www.americanutrition.com/cdn/shop/files/Mockup---Life-Protein.jpg?v=1763741133&amp;width=640 640w" width="640" height="768" loading="lazy">
+          </a>
+          <div class="ancol-body">
+            <div class="ancol-stars">
+              <svg viewBox="0 0 80 15"><path transform="translate(0,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(16,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(32,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(48,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/><path transform="translate(64,0)" d="M7.5 0l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L0 5.5l5.2-.8z"/></svg>
+              5.0
+            </div>
+            <h3 class="ancol-name"><a href="/collections/america-nutrition/products/life-protein-proteina-vegetal">Life Protein</a></h3>
+            <div class="ancol-preco" data-anp="10700" data-anpid="8414425350316" data-anvids="45035695866028" data-ancol="america-nutrition,americanutrition-suplementos"><span class="ancol-val">R$ 107,00</span>
+              <div class="ancol-parc">até 12x de R$ 8,91</div>
+            </div><form method="post" action="/cart/add" class="ancol-form">
+                <input type="hidden" name="id" value="45035695866028">
+                <button type="submit" class="ancol-cta" name="add">Adicionar ao carrinho</button>
+              </form></div>
+        </article>
+      
+      
+    </div>
+    <div class="ancol-empty">Nenhum produto nesta categoria.</div>
+  </div>
+
+  <div class="ancol-final">
+    <div class="ancol-fstripes"><span></span><span></span><span></span></div>
+    <h2>Não sabe por onde <em>começar?</em></h2>
+    <p>Fale com nossa equipe no WhatsApp e receba a indicação ideal para o seu objetivo. Ciência a favor da sua vida.</p>
+    <div class="ancol-fbtns">
+      <a class="f-pri" href="https://wa.me/13472225493?text=Ol%C3%A1!%20Quero%20uma%20indica%C3%A7%C3%A3o%20de%20produto" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm5.4 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.4-.7-2.9-1.2-4.7-4.1-4.9-4.3-.1-.2-1.1-1.5-1.1-2.9s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5s.8 1.9.8 2c.1.1.1.3 0 .5-.3.6-.7.9-.5 1.2.7 1.2 1.6 2 2.8 2.6.3.2.5.1.7-.1l.9-1c.2-.3.4-.2.7-.1l2 1c.3.1.5.2.5.3.1.1.1.7-.1 1.4z"/></svg>Falar no WhatsApp</a>
+      <a class="f-sec" href="https://grupo.americanutrition.com" target="_blank" rel="noopener">Entrar na comunidade</a>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var root=document.getElementById('ancol');if(!root)return;
+  var chips=root.querySelectorAll('.ancol-chip'),cards=root.querySelectorAll('.ancol-card'),empty=root.querySelector('.ancol-empty');
+  chips.forEach(function(c){c.addEventListener('click',function(){
+    chips.forEach(function(x){x.classList.remove('is-on')});c.classList.add('is-on');
+    var cat=c.dataset.cat,n=0;
+    cards.forEach(function(k){var on=(cat==='todos'||k.dataset.cat===cat);k.classList.toggle('is-off',!on);if(on)n++;});
+    empty.style.display=n?'none':'block';
+  });});
+  if('IntersectionObserver' in window && !window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('is-in');io.unobserve(e.target);}});},{rootMargin:'0px 0px -8% 0px'});
+    cards.forEach(function(k){io.observe(k)});
+  }else{cards.forEach(function(k){k.classList.add('is-in')});}
+  root.querySelectorAll('.ancol-form').forEach(function(f){
+    f.addEventListener('submit',function(ev){
+      ev.preventDefault();var b=f.querySelector('button');b.disabled=true;b.textContent='Adicionando…';
+      fetch('/cart/add.js',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:parseInt(f.querySelector('[name=id]').value,10),quantity:1})})
+      .then(function(r){if(!r.ok)throw 0;b.classList.add('is-ok');b.textContent='Adicionado ✓';setTimeout(function(){window.location.href='/cart'},500);})
+      .catch(function(){f.removeEventListener('submit',arguments.callee);f.submit();});
+    });
+  });
+})();
+</script>
+
+<style>
+.ancup-bar,#ancol .ancup-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 18px;padding:12px 16px;border-radius:14px;background:linear-gradient(90deg,#07388E 0%,#052A6B 100%);color:#fff;font-family:'Barlow',sans-serif;font-size:14.5px;line-height:1.25;box-shadow:0 8px 22px rgba(7,56,142,.18)}
+.ancup-bar b,#ancol .ancup-bar b{font-weight:700;letter-spacing:.4px}
+.ancup-bar .ancup-code,#ancol .ancup-bar .ancup-code{display:inline-block;padding:4px 10px;margin:0;border-radius:7px;background:#AD0404;font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:1px;font-size:15px}
+.ancup-bar .ancup-min,#ancol .ancup-bar .ancup-min{opacity:.82;font-size:13px;width:100%;margin:0;padding:0}
+.ancup-tag,#ancol .ancup-tag{display:inline-block;margin:4px 0 0;padding:3px 8px;border-radius:6px;background:#FDE7E7;color:#AD0404;font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.5px;font-size:12.5px;line-height:1.15}
+</style>
+
+<script>
+(function(){
+  var API='https://n8n.americanutrition.com/webhook/validar-cupom';
+
+  function ck(n){var m=document.cookie.match('(^|;)\\s*'+n+'\\s*=\\s*([^;]+)');return m?m.pop():'';}
+  function money(c){
+    var v=(c/100).toFixed(2).split('.');
+    return 'R$ '+v[0].replace(/\B(?=(\d{3})+(?!\d))/g,'.')+','+v[1];
+  }
+  function lista(box,attr){
+    var raw=(box.getAttribute(attr)||'').trim();
+    return raw?raw.split(',').map(function(x){return x.trim();}).filter(Boolean):[];
+  }
+  function cruza(a,b){
+    for(var i=0;i<a.length;i++){ if(b.indexOf(a[i])>=0) return true; }
+    return false;
+  }
+
+  var sp=new URLSearchParams(location.search);
+  var code=(sp.get('discount')||ck('an_cupom')||'').trim();
+  if(!code) return;
+
+  function boxes(){return document.querySelectorAll('[data-anp]');}
+
+  function barra(html){
+    var b0=boxes()[0];
+    var alvo=document.querySelector('[data-ancup-bar]')||(b0&&b0.closest('.ancol-wrap'));
+    if(!alvo) return;
+    var d=document.createElement('div');
+    d.className='ancup-bar';
+    d.innerHTML=html;
+    if(alvo.hasAttribute&&alvo.hasAttribute('data-ancup-bar')){alvo.appendChild(d);}
+    else{alvo.insertBefore(d,alvo.firstChild);}
+  }
+
+  // o cupom vale para este card?
+  function elegivel(box,j){
+    if(j.scope==='products'){
+      var pid=(box.getAttribute('data-anpid')||'').trim();
+      if(pid && (j.product_ids||[]).indexOf(pid)>=0) return true;
+      return cruza(lista(box,'data-anvids'), j.variant_ids||[]);
+    }
+    if(j.scope==='collections'){
+      return cruza(lista(box,'data-ancol'), j.collection_handles||[]);
+    }
+    return true; // scope 'all' ou desconhecido
+  }
+
+  function aplica(pct,j){
+    var n=0;
+    boxes().forEach(function(box){
+      var cents=parseInt(box.getAttribute('data-anp'),10);
+      if(!cents||cents<=0) return;
+      if(!elegivel(box,j)) return;
+      var varia=box.getAttribute('data-anv')==='1';
+      var novo=Math.round(cents*(100-pct)/100);
+      var pre=varia?'<small>a partir de</small> ':'';
+      box.innerHTML=
+        '<span class="ancol-cmp">'+money(cents)+'</span><br>'+
+        '<span class="ancol-val">'+pre+money(novo)+'</span>'+
+        '<span class="ancup-tag">'+pct+'% off &bull; cupom '+code.toUpperCase()+'</span>'+
+        '<div class="ancol-parc">até 12x de '+money(Math.round(novo/12))+'</div>';
+      n++;
+    });
+    return n;
+  }
+
+  fetch(API+'?code='+encodeURIComponent(code))
+  .then(function(r){return r.json();})
+  .then(function(j){
+    if(!j||!j.valid) return;
+
+    var nota;
+    if(j.min_subtotal>0){ nota='Válido em pedidos a partir de '+money(Math.round(j.min_subtotal*100))+'. Desconto confirmado no checkout.'; }
+    else if(j.scope&&j.scope!=='all'){ nota='Válido nos produtos participantes, destacados abaixo. Desconto confirmado no checkout.'; }
+    else { nota='Desconto já calculado abaixo e confirmado no checkout.'; }
+
+    if(j.value_type==='percentage'&&j.percent>0){
+      var n=aplica(j.percent,j);
+      if(!n) return; // nenhum produto elegível nesta página: não mostra nada
+      barra('<span class="ancup-code">'+code.toUpperCase()+'</span><b>'+j.percent+'% de desconto aplicado</b><span class="ancup-min">'+nota+'</span>');
+    }else if(j.amount>0){
+      barra('<span class="ancup-code">'+code.toUpperCase()+'</span><b>'+money(Math.round(j.amount*100))+' de desconto no seu pedido</b><span class="ancup-min">O valor é abatido no checkout.</span>');
+    }
+  })
+  .catch(function(){});
+})();
+</script>
+
+
+
+
+</div>

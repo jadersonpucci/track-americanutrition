@@ -42,6 +42,9 @@ const ORDENS = [['manual', 'Em destaque'], ['best-selling', 'Mais vendidos'], ['
 
 export function paginaColecao(ctx, col) {
   const lista = ctx.produtosDaColecao(col);
+  if (col.landing_html) {
+    return layout(ctx, { title: col.seo?.titulo || `${col.titulo} – ${ctx.config.nome}`, description: col.seo?.descricao || resumo(col.descricao_html) || ctx.config.descricao_home, image: col.imagem, canonical: `/collections/${col.handle}`, pageType: 'collection', body: `<div class="collection-landing">${col.landing_html}</div>` });
+  }
   const banner = col.banner || (col.handle === "all" ? ctx.config.banner_colecoes : null) || col.imagem;
   const precos = lista.map((p) => faixaPreco(p).min);
   const max = Math.ceil(Math.max(0, ...precos));

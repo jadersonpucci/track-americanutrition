@@ -115,6 +115,9 @@ for p in P:
 print(f'produtos: {len(produtos)} ({sum(1 for x in produtos if x["landing"])} com landing)')
 
 # ---------------------------------------------------------------- coleções
+def vazio(h):
+    if re.search(r'<(img|video|iframe|form)\b', h): return False
+    return not txt(re.sub(r'<(style|script)\b.*?</\1>', '', h, flags=re.S))
 C = rj('data/collections.json_limit_250')['collections']
 colecoes = []
 for c in C:
@@ -126,8 +129,15 @@ for c in C:
         doc = raw('/collections/' + c['handle']) or ''
         for h in re.findall(r'href="/(?:collections/[^/"]+/)?products/([a-z0-9-]+)', doc):
             if h not in hs: hs.append(h)
+    # coleções com template próprio (ex.: "Linha completa" em /collections/america-nutrition): guarda a landing
+    land = None
+    doc = raw('/collections/' + c['handle'])
+    if doc:
+        STD_COL = ('main-collection-banner', 'main-collection', 'rich_text', 'rich-text', 'images-with-text-overlay', 'image-banner', 'slideshow')
+        custom = [h for sid, _, h in secoes_template(doc) if not sid.startswith(STD_COL) and not vazio(h)]
+        if custom: land = put_html('colecao-' + c['handle'], '\n'.join(limpar_secao(h) for h in custom))
     colecoes.append({'id': str(c['id']), 'handle': c['handle'], 'titulo': c['title'], 'descricao_html': c.get('body_html') or '',
-                     'imagem': (c.get('image') or {}).get('src'), 'produtos': hs, 'ordem': 'manual', 'publicado_em': c.get('published_at')})
+                     'imagem': (c.get('image') or {}).get('src'), 'produtos': hs, 'ordem': 'manual', 'publicado_em': c.get('published_at'), 'landing': land})
 print(f'coleções: {len(colecoes)}')
 
 # ---------------------------------------------------------------- páginas
