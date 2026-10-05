@@ -2,12 +2,17 @@
 import { db } from '../db.js';
 import { esc, brl, num, slug, norm, $, $$, toast, abrirPainel, confirmar, fld, inp, area, sel, chk, lerForm, editorRico, ordenavel, statusBadge, thumb } from '../ui.js';
 import { htmlProduto, htmlColecao, montarFrame } from '../preview.js';
+import { niveisDe, disp, rastreia } from '../estoque-logica.js';
 
 const precoTxt = (p) => { const ps = (p.variantes || []).map((v) => v.preco); if (!ps.length) return '—'; const a = Math.min(...ps), b = Math.max(...ps); return a === b ? brl(a) : `${brl(a)} – ${brl(b)}`; };
+// como na Shopify: "475 em estoque para 4 variantes" (disponível em todos os locais)
 const estoqueTxt = (p) => {
   const vs = p.variantes || [];
-  const comEst = vs.filter((v) => v.estoque != null);
-  if (comEst.length) { const t = comEst.reduce((s, v) => s + Number(v.estoque || 0), 0); return `<span class="${t <= 15 ? 'badge amber' : ''}">${t} em estoque</span>`; }
+  const comEst = vs.filter((v) => rastreia(db.state, v));
+  if (comEst.length) {
+    const t = comEst.reduce((s, v) => s + niveisDe(db.state, v.id).reduce((a, n) => a + disp(n), 0), 0);
+    return `<span class="${t <= 0 ? 'badge red' : t <= 15 ? 'badge amber' : ''}">${t.toLocaleString('pt-BR')} em estoque${comEst.length > 1 ? ` para ${comEst.length} variantes` : ''}</span>`;
+  }
   const ok = vs.filter((v) => v.disponivel).length;
   return ok === vs.length ? '<span class="badge green">Disponível</span>' : ok ? `<span class="badge amber">${vs.length - ok} esgotada(s)</span>` : '<span class="badge red">Esgotado</span>';
 };
@@ -38,7 +43,7 @@ export function produtos(view, { args, crumb, acts }) {
 }
 
 export function editarProduto(orig) {
-  const p = structuredClone(orig || { id: String(Date.now()), titulo: '', handle: '', status: 'rascunho', fornecedor: 'America Nutrition', tipo: 'Suplementos', tags: [], descricao_html: '', imagens: [], opcoes: [{ nome: 'Title', valores: ['Default Title'] }], variantes: [{ id: novoId(), titulo: 'Default Title', opcoes: ['Default Title'], preco: 0, preco_comparacao: null, sku: '', disponivel: true, estoque: null, peso_g: 0 }], seo: {}, avaliacao: null, criado_em: new Date().toISOString() });
+  const p = structuredClone(orig || { id: String(Date.now()), titulo: '', handle: '', status: 'rascunho', fornecedor: 'America Nutrition', tipo: 'Suplementos', tags: [], descricao_html: '', imagens: [], opcoes: [{ nome: 'Title', valores: ['Default Title'] }], variantes: [{ id: novoId(), titulo: 'Default Title', opcoes: ['Default Title'], preco: 0, preco_comparacao: null, sku: '', disponivel: true, estoque: null, peso_g: 0, rastrear: true, vender_sem_estoque: false, custo: null }], seo: {}, avaliacao: null, criado_em: new Date().toISOString() });
   const novo = !orig;
   const cols = db.all('colecoes').filter((c) => !c.regras?.length);
   const temVariantes = (p.variantes || []).length > 1 || (p.variantes?.[0]?.titulo && p.variantes[0].titulo !== 'Default Title');
@@ -91,24 +96,36 @@ export function editarProduto(orig) {
     if (!multi) {
       const v = p.variantes[0];
       $('#vars', el).innerHTML = `<div class="row" style="--c:3">${fld('Preço', inp('v0_preco', v.preco, 'inputmode="decimal"'))}${fld('Preço comparativo (de)', inp('v0_comp', v.preco_comparacao ?? '', 'inputmode="decimal" placeholder="sem desconto"'))}${fld('SKU', inp('v0_sku', v.sku))}</div>
-      <div class="row" style="--c:3;margin-top:14px">${fld('Estoque', inp('v0_est', v.estoque ?? '', 'type="number" placeholder="não controlar"'))}${fld('Peso (g)', inp('v0_peso', v.peso_g || '', 'type="number"'))}<div class="fld"><span>&nbsp;</span>${chk('v0_disp', v.disponivel, 'Disponível para venda')}</div></div>
+      <div class="row" style="--c:3;margin-top:14px">${fld('Custo por item', inp('v0_custo', v.custo ?? '', 'inputmode="decimal" placeholder="R$"'), v.custo && v.preco ? `Margem ${Math.round((1 - v.custo / v.preco) * 100)}%` : '')}${fld('Peso (g)', inp('v0_peso', v.peso_g || '', 'type="number"'))}<div class="fld"><span>&nbsp;</span>${chk('v0_disp', v.disponivel, 'Disponível para venda')}</div></div>
+      <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line2)"><div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:8px">${chk('v0_rastrear', rastreia(db.state, v), 'Controlar quantidade')}${chk('v0_vse', !!v.vender_sem_estoque, 'Continuar vendendo quando esgotar')}</div><div id="v0_locais"></div></div>
       <p class="xs soft" style="margin-top:10px">ID da variante: <span class="mono">${esc(v.id)}</span> (é o que o checkout recebe).</p>`;
+      const locs = () => {
+        const on = $('[name=v0_rastrear]', el).checked;
+        $('[name=v0_disp]', el).closest('.fld').hidden = on;
+        const ns = (db.state.locais || []).filter((l) => l.ativo !== false).map((l) => [l, niveisDe(db.state, v.id).find((n) => n.local_id === l.id)]).filter(([l, n]) => n || l.online);
+        $('#v0_locais', el).innerHTML = !on ? '<small class="soft">Sem controle: a disponibilidade é a caixa "Disponível para venda".</small>'
+          : `<table class="t"><thead><tr><th>Local</th><th class="r">Comprometido</th><th class="r">Disponível</th><th class="r">Em mãos</th></tr></thead><tbody>${ns.map(([l, n]) => `<tr><td>${esc(l.nome)}${l.online ? ' <span class="tag">loja online</span>' : ''}</td><td class="r">${n?.comprometido || 0}</td><td class="r">${disp(n)}</td><td class="r">${n?.em_maos || 0}</td></tr>`).join('')}</tbody></table>
+            ${novo ? '<small class="soft">Salve o produto e lance as quantidades em Estoque → Receber mercadoria.</small>' : `<a class="btn sm" style="margin-top:8px" href="#/estoque/${esc(v.id)}"><i class="ti ti-building-warehouse"></i> Ajustar quantidades</a>`}`;
+      };
+      $('[name=v0_rastrear]', el).onchange = locs; locs();
       return;
     }
     $('#vars', el).innerHTML = `<div class="row" style="margin-bottom:14px">${fld('Nome da opção 1', inp('op1', p.opcoes?.[0]?.nome === 'Title' ? 'Tamanho' : p.opcoes?.[0]?.nome || 'Tamanho'))}${fld('Nome da opção 2 (opcional)', inp('op2', p.opcoes?.[1]?.nome || ''))}</div>
-    <div class="table-wrap vars"><table class="t"><thead><tr><th>Opção 1</th><th>Opção 2</th><th>Preço</th><th>De</th><th>SKU</th><th>Estoque</th><th>Disp.</th><th></th></tr></thead><tbody>${p.variantes.map((v, i) => `<tr data-v="${i}">
+    <div class="table-wrap vars"><table class="t"><thead><tr><th>Opção 1</th><th>Opção 2</th><th>Preço</th><th>De</th><th>SKU</th><th>Custo</th><th>Disponível</th><th>Disp.</th><th></th></tr></thead><tbody>${p.variantes.map((v, i) => `<tr data-v="${i}">
       <td><input class="in" data-k="o1" value="${esc(v.opcoes?.[0] ?? '')}"></td><td><input class="in" data-k="o2" value="${esc(v.opcoes?.[1] ?? '')}"></td>
       <td><input class="in" data-k="preco" value="${esc(v.preco)}" inputmode="decimal" style="width:90px"></td><td><input class="in" data-k="comp" value="${esc(v.preco_comparacao ?? '')}" inputmode="decimal" style="width:90px"></td>
-      <td><input class="in" data-k="sku" value="${esc(v.sku)}" style="width:120px"></td><td><input class="in" data-k="est" type="number" value="${esc(v.estoque ?? '')}" style="width:80px"></td>
-      <td><input type="checkbox" data-k="disp"${v.disponivel ? ' checked' : ''}></td><td><button type="button" class="btn sm ico ghost" data-rmv="${i}" title="Remover"><i class="ti ti-x"></i></button></td></tr>`).join('')}</tbody></table></div>
+      <td><input class="in" data-k="sku" value="${esc(v.sku)}" style="width:120px"></td><td><input class="in" data-k="custo" value="${esc(v.custo ?? '')}" inputmode="decimal" style="width:80px"></td>
+      <td>${rastreia(db.state, v) ? `<a href="#/estoque/${esc(v.id)}" title="Ajustar no estoque">${niveisDe(db.state, v.id).reduce((a, n) => a + disp(n), 0)}</a>` : '<span class="soft" title="Sem controle de quantidade">—</span>'}</td>
+      <td><input type="checkbox" data-k="disp"${v.disponivel ? ' checked' : ''}${rastreia(db.state, v) ? ' disabled title="Controlado pelo estoque"' : ''}></td><td><button type="button" class="btn sm ico ghost" data-rmv="${i}" title="Remover"><i class="ti ti-x"></i></button></td></tr>`).join('')}</tbody></table></div>
     <button type="button" class="btn sm" id="addv" style="margin-top:10px"><i class="ti ti-plus"></i> Adicionar variante</button>`;
-    $('#addv', el).onclick = () => { lerVars(); p.variantes.push({ id: novoId(), titulo: '', opcoes: [''], preco: p.variantes.at(-1)?.preco || 0, preco_comparacao: null, sku: '', disponivel: true, estoque: null }); drawVars(); };
+    $('#addv', el).onclick = () => { lerVars(); p.variantes.push({ id: novoId(), titulo: '', opcoes: [''], preco: p.variantes.at(-1)?.preco || 0, preco_comparacao: null, sku: '', disponivel: true, estoque: null, rastrear: true }); drawVars(); };
     $$('[data-rmv]', el).forEach((b) => b.onclick = () => { lerVars(); if (p.variantes.length > 1) { p.variantes.splice(+b.dataset.rmv, 1); drawVars(); } });
   };
   const lerVars = () => {
     if (!$('[name=_temvar]', el).checked) {
       const v = p.variantes[0];
-      Object.assign(v, { preco: num($('[name=v0_preco]', el)?.value), preco_comparacao: num($('[name=v0_comp]', el)?.value) || null, sku: $('[name=v0_sku]', el)?.value || '', estoque: $('[name=v0_est]', el)?.value === '' ? null : Number($('[name=v0_est]', el)?.value), peso_g: Number($('[name=v0_peso]', el)?.value) || 0, disponivel: $('[name=v0_disp]', el)?.checked });
+      Object.assign(v, { preco: num($('[name=v0_preco]', el)?.value), preco_comparacao: num($('[name=v0_comp]', el)?.value) || null, sku: $('[name=v0_sku]', el)?.value || '', peso_g: Number($('[name=v0_peso]', el)?.value) || 0, disponivel: $('[name=v0_disp]', el)?.checked,
+        custo: $('[name=v0_custo]', el)?.value ? num($('[name=v0_custo]', el).value) : null, rastrear: !!$('[name=v0_rastrear]', el)?.checked, vender_sem_estoque: !!$('[name=v0_vse]', el)?.checked });
       if (!p.variantes[0].titulo || p.variantes.length === 1) { p.variantes = [v]; v.titulo = 'Default Title'; v.opcoes = ['Default Title']; p.opcoes = [{ nome: 'Title', valores: ['Default Title'] }]; }
       return;
     }
@@ -117,8 +134,7 @@ export function editarProduto(orig) {
       const v = p.variantes[+tr.dataset.v]; const g = (k) => $(`[data-k=${k}]`, tr);
       v.opcoes = [g('o1').value, o2 ? g('o2').value : null].filter((x) => x != null && x !== '');
       v.titulo = v.opcoes.join(' / ');
-      Object.assign(v, { preco: num(g('preco').value), preco_comparacao: num(g('comp').value) || null, sku: g('sku').value, estoque: g('est').value === '' ? null : Number(g('est').value), disponivel: g('disp').checked });
-      if (v.estoque != null && v.estoque <= 0) v.disponivel = false;
+      Object.assign(v, { preco: num(g('preco').value), preco_comparacao: num(g('comp').value) || null, sku: g('sku').value, custo: g('custo').value ? num(g('custo').value) : null, disponivel: g('disp').checked });
     });
     p.opcoes = [{ nome: o1, valores: [...new Set(p.variantes.map((v) => v.opcoes[0]))] }, ...(o2 ? [{ nome: o2, valores: [...new Set(p.variantes.map((v) => v.opcoes[1]).filter(Boolean))] }] : [])];
   };

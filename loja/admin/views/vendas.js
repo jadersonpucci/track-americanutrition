@@ -67,6 +67,8 @@ export async function painel(view, { crumb }) {
   const s = db.state;
   const ativos = s.produtos.filter((p) => (p.status || 'ativo') === 'ativo');
   const esgotados = ativos.filter((p) => !(p.variantes || []).some((v) => v.disponivel));
+  // estoque baixo na loja online (variantes que controlam quantidade)
+  const baixos = ativos.flatMap((p) => (p.variantes || []).filter((v) => v.estoque != null && v.estoque > 0 && v.estoque <= (v.estoque_minimo ?? 10) && !v.vender_sem_estoque).map((v) => ({ p, v })));
   let r = null; try { r = await db.backend.resumo(); } catch (e) { toast(e.message, true); }
   view.innerHTML = `<div class="page">${aviso()}
   <div class="metrics" id="mx"></div>
@@ -84,8 +86,9 @@ export async function painel(view, { crumb }) {
       ${r ? `<div class="card card-b"><a href="#/pedidos/?aba=nao_processados" style="color:inherit;text-decoration:none;display:flex;align-items:center;gap:10px"><span class="badge amber"><span class="ring"></span>${r.a_enviar}</span><b style="flex:1">pedidos para processar</b><i class="ti ti-chevron-right soft"></i></a></div>` : ''}
       <div class="card"><div class="card-h"><h2 class="grow">Precisa de atenção</h2></div><div class="card-b stack" style="gap:10px">
         ${esgotados.map((p) => `<a class="cell" href="#/produtos/${esc(p.id)}" style="color:inherit"><img class="thumb" src="${esc(thumb(p.imagens?.[0]?.url))}" alt=""><div><b>${esc(p.titulo)}</b><span class="badge red">Esgotado</span></div></a>`).join('')}
+        ${baixos.map(({ p, v }) => `<a class="cell" href="#/estoque/${esc(v.id)}" style="color:inherit"><img class="thumb" src="${esc(thumb(p.imagens?.[0]?.url))}" alt=""><div><b>${esc(p.titulo)}${v.titulo !== 'Default Title' ? ' · ' + esc(v.titulo) : ''}</b><span class="badge amber">Restam ${v.estoque}</span></div></a>`).join('')}
         ${s.paginas.filter((g) => g.legado).length ? `<a href="#/paginas"><i class="ti ti-alert-triangle"></i> ${s.paginas.filter((g) => g.legado).length} páginas de campanha antigas para revisar</a>` : ''}
-        ${!esgotados.length ? '<p class="soft" style="margin:0">Tudo certo com o catálogo.</p>' : ''}
+        ${!esgotados.length && !baixos.length ? '<p class="soft" style="margin:0">Tudo certo com o catálogo.</p>' : ''}
       </div></div>
     </div>
   </div></div>`;
@@ -195,8 +198,8 @@ async function abrirPedido(id, redraw) {
   const corpo = `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">${pill(PAG, p.status_pagamento)} ${pill(ENT, p.status_entrega)} ${tagsDe(p).map((t) => `<span class="tag">${esc(t)}</span>`).join('')}<span class="soft" style="margin-left:auto">${quando(p.criado_em)} · ${esc(p.origem || '')}</span></div>
   <div class="grid2" style="grid-template-columns:minmax(0,1.7fr) minmax(240px,1fr)">
     <div class="stack" style="gap:12px">
-      <div class="card"><div class="card-h">${pill(ENT, p.status_entrega)}<span class="grow"></span>${p.rastreio ? `<a class="btn sm" target="_blank" href="https://track.americanutrition.com/${esc(p.rastreio)}"><i class="ti ti-truck"></i> ${esc(p.rastreio)}</a>` : ''}</div>
-        <table class="t"><tbody>${(p.itens || []).map((i) => `<tr><td class="wrap"><div class="cell"><img class="thumb" src="${esc(thumb(i.imagem))}" alt=""><div><b style="white-space:normal">${esc(i.titulo)}</b><small>${esc(i.variante && i.variante !== 'Default Title' ? i.variante : '')} ${i.sku ? 'SKU: ' + esc(i.sku) : ''}</small></div></div></td><td class="r soft">${brl(i.preco)} × ${i.qtd}</td><td class="r amt">${brl(i.qtd * i.preco)}</td></tr>`).join('')}</tbody></table>
+      <div class="card"><div class="card-h">${pill(ENT, p.status_entrega)}${{ reservado: '<span class="tag" title="Reservado no estoque (comprometido) até o envio"><i class="ti ti-lock"></i> Estoque reservado</span>', baixado: '<span class="tag" title="Saiu do estoque em mãos"><i class="ti ti-package-export"></i> Baixado do estoque</span>', devolvido: '<span class="tag"><i class="ti ti-package-import"></i> Devolvido ao estoque</span>' }[p.estoque_estado] || ''}<span class="grow"></span>${p.rastreio ? `<a class="btn sm" target="_blank" href="https://track.americanutrition.com/${esc(p.rastreio)}"><i class="ti ti-truck"></i> ${esc(p.rastreio)}</a>` : ''}</div>
+        <table class="t"><tbody>${(p.itens || []).map((i) => `<tr><td class="wrap"><div class="cell"><img class="thumb" src="${esc(thumb(i.imagem))}" alt=""><div><b style="white-space:normal">${esc(i.titulo)}</b><small>${esc(i.variante && i.variante !== 'Default Title' ? i.variante : '')} ${i.sku ? 'SKU: ' + esc(i.sku) : ''}${i.local_id ? ` · <i class="ti ti-building-warehouse"></i> ${esc((db.state.locais || []).find((l) => l.id === i.local_id)?.nome || i.local_id)}` : ''}</small></div></div></td><td class="r soft">${brl(i.preco)} × ${i.qtd}</td><td class="r amt">${brl(i.qtd * i.preco)}</td></tr>`).join('')}</tbody></table>
         <div class="card-b" style="border-top:1px solid var(--line2)"><div class="row">${fld('Código de rastreio', inp('rastreio', p.rastreio || '', 'style="text-transform:uppercase" placeholder="Ex.: AD123456789BR"'))}${fld('Status de processamento', sel('status_entrega', p.status_entrega, Object.entries(ENT).map(([k, [, t]]) => [k, t])))}</div>
         ${proximo ? `<div style="display:flex;justify-content:flex-end;margin-top:12px"><button class="btn pri" id="avancar" data-para="${proximo[0]}">${proximo[1]}</button></div>` : ''}</div></div>
       <div class="card"><div class="card-h">${pill(PAG, p.status_pagamento)}</div><div class="card-b"><dl class="kv" style="grid-template-columns:1fr auto">
@@ -223,8 +226,13 @@ async function abrirPedido(id, redraw) {
   const pn = abrirPainel({ titulo: nomePedido(p), largo: true, corpo, rodape: '<button class="btn" id="cancelar">Cancelar</button><button class="btn pri" id="salvar">Salvar</button>' });
   const salvar = async (extra = {}) => {
     const f = lerForm(pn.el);
+    const antes = db.state.produtos.flatMap((x) => x.variantes || []).filter((v) => !v.disponivel).length;
     await db.backend.pedidoAtualizar(p.id, { rastreio: f.rastreio.trim().toUpperCase() || null, status_entrega: f.status_entrega, status_pagamento: f.status_pagamento, notas: f.notas, tags: f.tags.split(',').map((t) => t.trim()).filter(Boolean), ...extra });
     toast('Pedido atualizado.'); pn.fechar(); redraw?.();
+    // reserva/baixa de estoque pode ter esgotado (ou devolvido) um produto na loja
+    if (!db.demo) await db.recarregarEstoque().catch(() => {});
+    if (db.state.produtos.flatMap((x) => x.variantes || []).filter((v) => !v.disponivel).length !== antes) { db.pendente(); toast('A disponibilidade de um produto mudou com este pedido. Publique a loja para atualizar o site.'); }
+    window.__contadores?.();
   };
   $('#salvar', pn.el).onclick = () => salvar();
   $('#cancelar', pn.el).onclick = () => pn.fechar();

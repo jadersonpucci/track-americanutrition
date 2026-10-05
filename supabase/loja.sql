@@ -97,6 +97,144 @@ create table if not exists loja_publicacoes (
 insert into checkout_config (chave, valor) values ('loja_deploy_hook', '') on conflict (chave) do nothing;
 
 -- ---------------------------------------------------------------------
+-- 2b) Estoque, no modelo da Shopify: por local, "em mãos" e "comprometido"
+--     (reservado para pedidos pagos ainda não enviados); disponível = em mãos − comprometido.
+--     Toda mudança passa por loja_estoque_mover e fica no histórico (loja_estoque_mov).
+--     A vitrine vende o disponível dos locais "online"; as variantes guardam o total em
+--     dados.variantes[].estoque / disponivel (o checkout lê pela view loja_variantes).
+-- ---------------------------------------------------------------------
+create table if not exists loja_locais (
+  id text primary key,
+  nome text not null,
+  ativo boolean not null default true,
+  online boolean not null default false,             -- atende os pedidos do site
+  ordem int not null default 0,
+  endereco jsonb,
+  atualizado_em timestamptz default now()
+);
+create table if not exists loja_estoque (
+  variante_id text not null,
+  local_id text not null references loja_locais (id) on update cascade,
+  em_maos int not null default 0,
+  comprometido int not null default 0,
+  atualizado_em timestamptz not null default now(),
+  primary key (variante_id, local_id)
+);
+create table if not exists loja_estoque_mov (
+  id bigserial primary key,
+  criado_em timestamptz not null default now(),
+  variante_id text not null,
+  local_id text not null,
+  em_maos int not null default 0,                    -- variação
+  comprometido int not null default 0,
+  saldo_em_maos int, saldo_comprometido int,
+  motivo text not null,                              -- correcao | contagem | recebido | danificado | perda | promocao | transferencia | devolucao | pedido | importado | outro
+  nota text,
+  pedido_id uuid, pedido_numero bigint,
+  usuario text
+);
+create index if not exists loja_estoque_mov_var on loja_estoque_mov (variante_id, criado_em desc);
+create index if not exists loja_estoque_mov_data on loja_estoque_mov (criado_em desc);
+alter table loja_pedidos add column if not exists estoque_estado text;   -- null | reservado | baixado | devolvido | importado (pedidos da Shopify: não mexem no saldo)
+
+create or replace function loja_estoque_mover(p_var text, p_local text, p_em_maos int, p_comp int, p_motivo text, p_nota text default null, p_pedido uuid default null, p_numero bigint default null, p_usuario text default null)
+returns void language plpgsql as $$
+declare e loja_estoque;
+begin
+  if coalesce(p_em_maos, 0) = 0 and coalesce(p_comp, 0) = 0 then return; end if;
+  insert into loja_estoque (variante_id, local_id, em_maos, comprometido) values (p_var, p_local, coalesce(p_em_maos, 0), greatest(0, coalesce(p_comp, 0)))
+  on conflict (variante_id, local_id) do update set em_maos = loja_estoque.em_maos + coalesce(p_em_maos, 0),
+     comprometido = greatest(0, loja_estoque.comprometido + coalesce(p_comp, 0)), atualizado_em = now()
+  returning * into e;
+  insert into loja_estoque_mov (variante_id, local_id, em_maos, comprometido, saldo_em_maos, saldo_comprometido, motivo, nota, pedido_id, pedido_numero, usuario)
+  values (p_var, p_local, coalesce(p_em_maos, 0), coalesce(p_comp, 0), e.em_maos, e.comprometido, p_motivo, p_nota, p_pedido, p_numero, p_usuario);
+end $$;
+
+-- controla quantidade? marcação explícita na variante; sem ela, só se já existe posição de estoque
+create or replace function loja_variante_rastreia(v jsonb) returns boolean language sql stable as $$
+  select coalesce((v->>'rastrear')::boolean, exists (select 1 from loja_estoque e where e.variante_id = v->>'id'));
+$$;
+
+-- recalcula estoque/disponivel das variantes (todas, ou só p_ids); devolve as que mudaram de disponibilidade
+create or replace function loja_estoque_sincronizar(p_ids text[] default null) returns jsonb language plpgsql as $$
+declare pr record; novo jsonb; mudou jsonb := '[]';
+begin
+  for pr in select p.id, p.titulo, p.dados from loja_produtos p
+             where p_ids is null or exists (select 1 from jsonb_array_elements(p.dados->'variantes') v where v->>'id' = any(p_ids)) loop
+    select jsonb_agg(case when (p_ids is null or v->>'id' = any(p_ids)) and loja_variante_rastreia(v) then
+        v || jsonb_build_object('estoque', q.disp, 'disponivel', coalesce((v->>'vender_sem_estoque')::boolean, false) or q.disp > 0)
+      else v end order by ord)
+      into novo
+      from jsonb_array_elements(pr.dados->'variantes') with ordinality x(v, ord)
+      cross join lateral (select coalesce(sum(e.em_maos - e.comprometido), 0)::int disp from loja_estoque e join loja_locais l on l.id = e.local_id and l.ativo and l.online where e.variante_id = v->>'id') q;
+    select mudou || coalesce(jsonb_agg(jsonb_build_object('produto', pr.titulo, 'variante', n->>'titulo', 'disponivel', (n->>'disponivel')::boolean)), '[]') into mudou
+      from jsonb_array_elements(novo) n join jsonb_array_elements(pr.dados->'variantes') o on o->>'id' = n->>'id'
+     where coalesce((o->>'disponivel')::boolean, true) is distinct from coalesce((n->>'disponivel')::boolean, true);
+    if novo is distinct from pr.dados->'variantes' then
+      update loja_produtos set dados = jsonb_set(dados, '{variantes}', novo) where id = pr.id;
+    end if;
+  end loop;
+  return mudou;
+end $$;
+
+-- aplica no estoque a diferença entre o estado atual do pedido e o que o status pede:
+--   pago e não enviado → reservado (comprometido); enviado/entregue → baixado (sai de em mãos);
+--   cancelado antes de enviar → nada (libera a reserva); devolvido depois de enviado → volta para em mãos
+create or replace function loja_pedido_estoque(p_id uuid, p_usuario text default null) returns jsonb language plpgsql as $$
+declare
+  ped loja_pedidos; de text; para text; a0 int; c0 int; a1 int; c1 int; it jsonb; novos jsonb := '[]'; vid text; loc text; q int; ids text[] := '{}'; v jsonb;
+  txt text;
+begin
+  select * into ped from loja_pedidos where id = p_id for update;
+  if not found or ped.estoque_estado = 'importado' then return '[]'; end if;
+  de := coalesce(ped.estoque_estado, '');
+  para := case
+    when ped.status_entrega = 'devolvido' then case when de in ('baixado', 'devolvido') then 'devolvido' else '' end
+    when ped.status_pagamento in ('pago', 'parcial') then case when ped.status_entrega in ('enviado', 'entregue') then 'baixado' else 'reservado' end
+    when de = 'baixado' then 'baixado'
+    else '' end;
+  if de = para then return '[]'; end if;
+  select x[1], x[2] into a0, c0 from (select case de when 'reservado' then array[0, 1] when 'baixado' then array[-1, 0] else array[0, 0] end x) z;
+  select x[1], x[2] into a1, c1 from (select case para when 'reservado' then array[0, 1] when 'baixado' then array[-1, 0] else array[0, 0] end x) z;
+  txt := case de || '>' || para when '>reservado' then 'Reservado para o pedido' when 'reservado>baixado' then 'Pedido enviado' when '>baixado' then 'Pedido enviado'
+    when 'reservado>' then 'Reserva liberada (pedido cancelado)' when 'baixado>devolvido' then 'Pedido devolvido' when 'devolvido>baixado' then 'Pedido reenviado' else 'Pedido' end;
+  for it in select * from jsonb_array_elements(ped.itens) loop
+    vid := it->>'variante_id'; q := coalesce((it->>'qtd')::int, 0); loc := it->>'local_id'; v := null;
+    select x into v from loja_produtos p, jsonb_array_elements(p.dados->'variantes') x where x->>'id' = vid limit 1;
+    if vid is not null and v is not null and loja_variante_rastreia(v) then
+      if loc is null then   -- o local online com mais disponível dessa variante
+        select l.id into loc from loja_locais l left join loja_estoque e on e.local_id = l.id and e.variante_id = vid
+         where l.ativo and l.online order by coalesce(e.em_maos - e.comprometido, 0) desc, l.ordem limit 1;
+        loc := coalesce(loc, (select id from loja_locais order by ordem limit 1));
+      end if;
+      if loc is not null then
+        perform loja_estoque_mover(vid, loc, (a1 - a0) * q, (c1 - c0) * q, case when para = 'devolvido' then 'devolucao' else 'pedido' end, txt, ped.id, ped.numero, p_usuario);
+        ids := ids || vid;
+        it := it || jsonb_build_object('local_id', loc);
+      end if;
+    end if;
+    novos := novos || jsonb_build_array(it);
+  end loop;
+  update loja_pedidos set estoque_estado = nullif(para, ''), itens = novos where id = ped.id;
+  return loja_estoque_sincronizar(ids);
+end $$;
+
+-- carga inicial (locais e saldos em mãos vindos da Shopify): {locais:[{id,nome,ativo,online,ordem}], estoque:[{variante_id,local_id,em_maos}]}
+create or replace function loja_estoque_importar(d jsonb) returns jsonb language plpgsql as $$
+declare l jsonb; e jsonb; atual int;
+begin
+  for l in select * from jsonb_array_elements(coalesce(d->'locais', '[]')) loop
+    insert into loja_locais (id, nome, ativo, online, ordem) values (l->>'id', l->>'nome', coalesce((l->>'ativo')::boolean, true), coalesce((l->>'online')::boolean, false), coalesce((l->>'ordem')::int, 0))
+    on conflict (id) do update set nome = excluded.nome, ativo = excluded.ativo, online = excluded.online, ordem = excluded.ordem, atualizado_em = now();
+  end loop;
+  for e in select * from jsonb_array_elements(coalesce(d->'estoque', '[]')) loop
+    select em_maos into atual from loja_estoque where variante_id = e->>'variante_id' and local_id = e->>'local_id';
+    perform loja_estoque_mover(e->>'variante_id', e->>'local_id', (e->>'em_maos')::int - coalesce(atual, 0), 0, 'importado', 'Saldo da Shopify');
+  end loop;
+  return loja_estoque_sincronizar(null);
+end $$;
+
+-- ---------------------------------------------------------------------
 -- 3) Pacote publicado (o build lê exatamente isto)
 -- ---------------------------------------------------------------------
 create or replace function loja_publicado() returns jsonb language sql stable as $$
@@ -122,6 +260,8 @@ begin
     insert into loja_produtos (id, handle, titulo, status, dados, landing_html, criado_em, atualizado_em)
     values (r->>'id', r->>'handle', r->>'titulo', coalesce(r->>'status', 'ativo'), r - 'landing_html' - 'landing', nullif(r->>'landing_html', ''), coalesce((r->>'criado_em')::timestamptz, now()), now())
     on conflict (id) do update set handle = excluded.handle, titulo = excluded.titulo, status = excluded.status, dados = excluded.dados, landing_html = excluded.landing_html, atualizado_em = now();
+    -- estoque/disponível vêm do saldo (o painel não sobrescreve)
+    if to_regclass('loja_estoque') is not null then perform loja_estoque_sincronizar(array(select jsonb_array_elements(r->'variantes')->>'id')); end if;
   elsif p_tabela = 'colecoes' then
     insert into loja_colecoes (id, handle, dados) values (r->>'id', r->>'handle', r) on conflict (id) do update set handle = excluded.handle, dados = excluded.dados, atualizado_em = now();
   elsif p_tabela = 'paginas' then
@@ -197,6 +337,7 @@ begin
       update loja_pedidos set status_pagamento = 'pago', pago_em = now(), atualizado_em = now(), eventos = eventos || jsonb_build_object('em', now(), 'texto', 'Pagamento confirmado')
        where id = ped.id returning * into ped;
       if ped.cupom is not null then update loja_cupons set usos = usos + 1 where codigo = ped.cupom; end if;
+      perform loja_pedido_estoque(ped.id, 'pagamento');
     end if;
     return jsonb_build_object('ok', true, 'duplicado', true, 'id', ped.id, 'numero', ped.numero, 'order_number', ped.numero, 'name', 'AN-' || ped.numero);
   end if;
@@ -212,22 +353,13 @@ begin
     nullif(p->>'shopify_id', ''), case when pago then now() end)
   returning * into ped;
   if pago and ped.cupom is not null then update loja_cupons set usos = usos + 1 where codigo = ped.cupom; end if;
-  -- baixa de estoque nas variantes que controlam quantidade
-  if pago then perform loja_estoque_baixar(ped.itens); end if;
+  -- estoque: pedido pago reserva (comprometido) no local online com saldo; pedidos importados da Shopify não mexem no saldo
+  if ped.origem = 'shopify' then update loja_pedidos set estoque_estado = 'importado' where id = ped.id;
+  else perform loja_pedido_estoque(ped.id, ped.origem); end if;
   return jsonb_build_object('ok', true, 'duplicado', false, 'id', ped.id, 'numero', ped.numero, 'order_number', ped.numero, 'name', 'AN-' || ped.numero, 'total', ped.total);
 end $$;
 
-create or replace function loja_estoque_baixar(p_itens jsonb) returns void language plpgsql as $$
-declare it jsonb;
-begin
-  for it in select * from jsonb_array_elements(p_itens) loop
-    update loja_produtos p set dados = jsonb_set(p.dados, '{variantes}', (
-        select jsonb_agg(case when v->>'id' = it->>'variante_id' and nullif(v->>'estoque', '') is not null
-          then v || jsonb_build_object('estoque', greatest(0, (v->>'estoque')::int - (it->>'qtd')::int), 'disponivel', ((v->>'estoque')::int - (it->>'qtd')::int) > 0)
-          else v end) from jsonb_array_elements(p.dados->'variantes') v)), atualizado_em = now()
-     where p.id = it->>'produto_id';
-  end loop;
-end $$;
+drop function if exists loja_estoque_baixar(jsonb);   -- substituída por loja_pedido_estoque
 
 -- Rastreio: o fluxo de etiqueta/rastreio grava o código; a página track.americanutrition.com pode consultar por aqui.
 create or replace function loja_pedido_rastreio(p_numero bigint, p_codigo text, p_transportadora text default null) returns jsonb language plpgsql as $$
@@ -237,6 +369,7 @@ begin
          eventos = eventos || jsonb_build_object('em', now(), 'texto', 'Enviado · ' || upper(p_codigo))
    where numero = p_numero returning * into ped;
   if not found then return jsonb_build_object('ok', false, 'erro', 'pedido_nao_encontrado'); end if;
+  perform loja_pedido_estoque(ped.id, 'rastreio');
   return jsonb_build_object('ok', true, 'id', ped.id, 'numero', ped.numero);
 end $$;
 
@@ -267,6 +400,8 @@ begin
   if op = 'load' then
     res := loja_publicado();
     res := jsonb_set(res, '{cupons}', coalesce((select jsonb_agg(dados || jsonb_build_object('id', id, 'codigo', codigo, 'usos', usos)) from loja_cupons), '[]'));
+    res := res || jsonb_build_object('locais', (select coalesce(jsonb_agg(to_jsonb(l) order by l.ordem, l.nome), '[]') from loja_locais l),
+                                     'estoque', (select coalesce(jsonb_agg(jsonb_build_object('variante_id', variante_id, 'local_id', local_id, 'em_maos', em_maos, 'comprometido', comprometido)), '[]') from loja_estoque));
     return jsonb_build_object('ok', true, 'data', res, 'user', jsonb_build_object('id', u.id, 'email', u.email, 'nome', u.nome));
   end if;
 
@@ -324,7 +459,9 @@ begin
         union all select jsonb_build_object('em', now(), 'por', coalesce(u.nome, u.email), 'texto', 'Pagamento: ' || (p->>'status_pagamento')) where p->>'status_pagamento' is distinct from ped.status_pagamento and p ? 'status_pagamento'
         union all select jsonb_build_object('em', now(), 'por', coalesce(u.nome, u.email), 'texto', 'Rastreio: ' || (p->>'rastreio')) where nullif(p->>'rastreio', '') is distinct from ped.rastreio and p ? 'rastreio') z)
      where id = ped.id returning * into ped;
-    return jsonb_build_object('ok', true, 'pedido', to_jsonb(ped));
+    res := loja_pedido_estoque(ped.id, coalesce(u.nome, u.email));
+    select * into ped from loja_pedidos where id = ped.id;
+    return jsonb_build_object('ok', true, 'pedido', to_jsonb(ped), 'mudou', res);
   end if;
 
   if op = 'pedido_criar' then
@@ -334,6 +471,7 @@ begin
       update loja_pedidos set eventos = eventos || jsonb_build_object('em', now(), 'texto', 'Criado no painel', 'por', coalesce(u.nome, u.email)),
              status_entrega = coalesce(p->>'status_entrega', status_entrega), notas = coalesce(p->>'note', notas)
        where id = (res->>'id')::uuid;
+      perform loja_pedido_estoque((res->>'id')::uuid, coalesce(u.nome, u.email));
     end if;
     return res;
   end if;
@@ -363,6 +501,43 @@ begin
        group by coalesce(nullif(lower(cliente->>'email'), ''), regexp_replace(coalesce(cliente->>'cpf', ''), '\D', '', 'g'), id::text)
        order by sum(total) desc limit 300) z;
     return jsonb_build_object('ok', true, 'clientes', res);
+  end if;
+
+  -- estoque ----------------------------------------------------------
+  if op in ('estoque', 'estoque_ajustar', 'estoque_transferir', 'locais_gravar') then
+    res := '[]';
+    if op = 'estoque_ajustar' then
+      -- itens: [{variante_id, local_id, em_maos (novo total) | delta, motivo, nota}]
+      for r in select * from jsonb_array_elements(coalesce(p->'itens', '[]')) loop
+        perform loja_estoque_mover(r->>'variante_id', r->>'local_id',
+          case when r ? 'em_maos' and r->>'em_maos' is not null then (r->>'em_maos')::int - coalesce((select em_maos from loja_estoque where variante_id = r->>'variante_id' and local_id = r->>'local_id'), 0) else coalesce((r->>'delta')::int, 0) end,
+          0, coalesce(nullif(r->>'motivo', ''), 'correcao'), nullif(r->>'nota', ''), null, null, coalesce(u.nome, u.email));
+      end loop;
+      res := loja_estoque_sincronizar(array(select jsonb_array_elements(p->'itens')->>'variante_id'));
+    elsif op = 'estoque_transferir' then
+      for r in select * from jsonb_array_elements(coalesce(p->'itens', '[]')) loop
+        perform loja_estoque_mover(r->>'variante_id', p->>'de', -(r->>'qtd')::int, 0, 'transferencia', 'Para ' || (select nome from loja_locais where id = p->>'para') || coalesce(' · ' || nullif(p->>'nota', ''), ''), null, null, coalesce(u.nome, u.email));
+        perform loja_estoque_mover(r->>'variante_id', p->>'para', (r->>'qtd')::int, 0, 'transferencia', 'De ' || (select nome from loja_locais where id = p->>'de') || coalesce(' · ' || nullif(p->>'nota', ''), ''), null, null, coalesce(u.nome, u.email));
+      end loop;
+      res := loja_estoque_sincronizar(array(select jsonb_array_elements(p->'itens')->>'variante_id'));
+    elsif op = 'locais_gravar' then
+      for r in select * from jsonb_array_elements(coalesce(p->'locais', '[]')) loop
+        insert into loja_locais (id, nome, ativo, online, ordem, endereco) values (r->>'id', r->>'nome', coalesce((r->>'ativo')::boolean, true), coalesce((r->>'online')::boolean, false), coalesce((r->>'ordem')::int, 0), r->'endereco')
+        on conflict (id) do update set nome = excluded.nome, ativo = excluded.ativo, online = excluded.online, ordem = excluded.ordem, endereco = excluded.endereco, atualizado_em = now();
+      end loop;
+      res := loja_estoque_sincronizar(null);
+    end if;
+    return jsonb_build_object('ok', true, 'mudou', res,
+      'locais', (select coalesce(jsonb_agg(to_jsonb(l) order by l.ordem, l.nome), '[]') from loja_locais l),
+      'niveis', (select coalesce(jsonb_agg(jsonb_build_object('variante_id', variante_id, 'local_id', local_id, 'em_maos', em_maos, 'comprometido', comprometido)), '[]') from loja_estoque),
+      'variantes', (select coalesce(jsonb_agg(jsonb_build_object('id', id, 'estoque', estoque, 'disponivel', disponivel)), '[]') from loja_variantes));
+  end if;
+
+  if op = 'estoque_mov' then
+    return jsonb_build_object('ok', true, 'itens', (select coalesce(jsonb_agg(to_jsonb(m) order by m.criado_em desc, m.id desc), '[]') from (
+      select * from loja_estoque_mov
+       where (nullif(p->>'variante_id', '') is null or variante_id = p->>'variante_id') and (nullif(p->>'local_id', '') is null or local_id = p->>'local_id')
+       order by criado_em desc, id desc limit least(coalesce((p->>'limite')::int, 200), 1000)) m));
   end if;
 
   if op = 'publicar' then

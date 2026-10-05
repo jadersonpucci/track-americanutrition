@@ -4,12 +4,14 @@ import * as vendas from './views/vendas.js';
 import * as catalogo from './views/catalogo.js';
 import * as conteudo from './views/conteudo.js';
 import * as tema from './views/tema.js';
+import * as estoque from './views/estoque.js';
 
 const LOGO = 'https://www.americanutrition.com/cdn/shop/files/LOGOTIPO_COLORIDO_FUNDO_TRANSPARENTE.png?width=300';
 const NAV = [
   ['painel', 'home', 'Início', vendas.painel],
   ['pedidos', 'inbox', 'Pedidos', vendas.pedidos, 'pend'],
   ['produtos', 'tag', 'Produtos', catalogo.produtos],
+  ['estoque', 'building-warehouse', 'Estoque', estoque.estoque, 'esg'],
   ['colecoes', 'category', 'Coleções', catalogo.colecoes],
   ['clientes', 'user', 'Clientes', vendas.clientes],
   ['cupons', 'discount-2', 'Descontos', vendas.cupons],
@@ -51,6 +53,7 @@ function shell() {
   $('#busca-global').onclick = buscar;
   document.addEventListener('keydown', (e) => { if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); buscar(); } });
   contadores();
+  db.on((t) => { if (t === 'estoque' || t === 'produtos') contadores(); });
 }
 
 // contador de pedidos pagos ainda não processados (como o número ao lado de "Pedidos" na Shopify)
@@ -59,6 +62,9 @@ export async function contadores() {
     const lista = await db.backend.pedidos({ entrega: '', limite: 2000 });
     const n = (lista || []).filter((p) => p.status_pagamento === 'pago' && ['nao_enviado', 'preparando'].includes(p.status_entrega)).length;
     $$('[data-cnt=pend]').forEach((el) => { el.textContent = n; el.hidden = !n; });
+    // esgotados na loja (produtos ativos que controlam quantidade e não vendem sem estoque)
+    const e = db.state.produtos.filter((p) => (p.status || 'ativo') === 'ativo').flatMap((p) => p.variantes || []).filter((v) => v.estoque != null && !v.disponivel).length;
+    $$('[data-cnt=esg]').forEach((el) => { el.textContent = e; el.hidden = !e; el.title = 'Variantes esgotadas na loja'; });
   } catch {}
 }
 window.__contadores = contadores;

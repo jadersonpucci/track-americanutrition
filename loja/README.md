@@ -31,16 +31,31 @@ Sem servidor configurado o painel abre em **modo demonstração** (dados do últ
 
 ## Banco (Supabase) e n8n
 
-`supabase/loja.sql` (idempotente, depois de `schema.sql`): tabelas `loja_produtos`, `loja_colecoes`, `loja_paginas`, `loja_blogs`, `loja_artigos`, `loja_depoimentos`, `loja_config`, `loja_pedidos`, `loja_cupons`, `loja_publicacoes`, view `loja_variantes` e as funções:
+`supabase/loja.sql` (idempotente, depois de `schema.sql`): tabelas `loja_produtos`, `loja_colecoes`, `loja_paginas`, `loja_blogs`, `loja_artigos`, `loja_depoimentos`, `loja_config`, `loja_pedidos`, `loja_cupons`, `loja_publicacoes`, `loja_locais`, `loja_estoque`, `loja_estoque_mov`, view `loja_variantes` e as funções:
 
 | Função | Uso |
 |---|---|
 | `loja_api(body)` | API do painel (login com `fin_usuarios`). Webhook n8n **Loja · API**: `POST /webhook/loja-api` → `select loja_api({{$json.body}}::jsonb)`; se a resposta trouxer `deploy_hook`, fazer `POST` nele (deploy hook da Vercel) e marcar `loja_publicacoes.status = 'ok'`. |
-| `loja_pedido_criar(payload)` | Cria o pedido no formato que os fluxos já montam para a Shopify (`customer`, `shipping_address`, `shopify_items`, `discount_code`, `payment`, `paid`, `ref`, `idempotency_key`). Idempotente por chave/transação; baixa estoque e soma uso do cupom. Devolve `{order_number, name}` como a Shopify. |
+| `loja_pedido_criar(payload)` | Cria o pedido no formato que os fluxos já montam para a Shopify (`customer`, `shipping_address`, `shopify_items`, `discount_code`, `payment`, `paid`, `ref`, `idempotency_key`). Idempotente por chave/transação; reserva o estoque (pedido pago) e soma uso do cupom. Devolve `{order_number, name}` como a Shopify. |
 | `loja_cupom_validar(code, subtotal, email, cpf)` | Mesma resposta do fluxo "Shopify — Validar Cupom": `{valid, kind, value, code}`. |
-| `loja_pedido_rastreio(numero, codigo)` | Grava o rastreio e marca como enviado. |
+| `loja_pedido_rastreio(numero, codigo)` | Grava o rastreio e marca como enviado (baixa o estoque reservado). |
+| `loja_estoque_importar({locais, estoque})` | Carga inicial dos locais e saldos em mãos (o `loja.json` traz os da Shopify). |
 
-Testado num Postgres 16 local com os dados reais: carga do catálogo, `load`/`upsert`/`set`, pedido com cupom (idempotência e duplicata), resumo, clientes, edição de rastreio pelo painel e build lendo do banco (mesmas páginas do build a partir do arquivo).
+### Estoque
+
+No modelo da Shopify: por **local**, *em mãos* e *comprometido*; disponível = em mãos − comprometido. A loja online vende o disponível dos locais marcados **loja online** (CD e Estados Unidos); revendedoras e Mercado Livre Full têm saldo próprio. O status do pedido move o estoque sozinho (`loja_pedido_estoque`):
+
+| Pedido | Estoque |
+|---|---|
+| pago, não enviado | reserva (comprometido +) no local online com mais saldo |
+| enviado / entregue | sai de em mãos e da reserva |
+| cancelado antes do envio | libera a reserva |
+| devolvido depois do envio | volta para em mãos |
+| importado da Shopify (`origem = shopify`) | não mexe (o saldo importado já considera) |
+
+Ajustes, recebimento de mercadoria e transferências ficam em `loja_estoque_mov` (quem, quando, motivo, saldo). Quando uma variante esgota ou volta, `estoque`/`disponivel` são recalculados no produto (o checkout lê pela `loja_variantes` na hora; o site estático muda na próxima publicação — o painel avisa). Variante com "continuar vendendo quando esgotar" não esgota.
+
+Testado num Postgres 16 local com os dados reais: carga do catálogo e do estoque, reserva/envio/cancelamento/devolução, ajuste, transferência, `load`/`upsert`/`set`, pedido com cupom (idempotência e duplicata), resumo, clientes, edição de rastreio pelo painel e build lendo do banco (mesmas páginas do build a partir do arquivo).
 
 Histórico: `python3 scripts/loja-importar-pedidos.py --loja 39c4f8-2.myshopify.com --token shpat_… --saida pedidos.sql` (pedidos com rastreio e status + cupons).
 

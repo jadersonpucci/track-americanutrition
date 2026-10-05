@@ -7,11 +7,12 @@ Entrada (pasta da captura, padrão ./captura):
   data/collections.json_limit_250 /collections.json
   data/pages.json                 /pages.json
   data/depoimentos.json           metaobjects "depoimento" (Storefront API)
+  data/estoque.json               (opcional) locais e saldo em mãos por variante (Admin API: inventoryLevels)
   home.html                       home renderizada
   index.json                      templates/index.json do tema (seções da home)
 
 Saída (loja/data):
-  loja.json      catálogo, coleções, páginas, blog, home, configurações
+  loja.json      catálogo, coleções, páginas, blog, home, configurações, locais e estoque
   html/*.html    landing pages próprias (seções customizadas copiadas do HTML renderizado)
 
 Uso (Mac):  python3 scripts/loja-importar.py --captura ./captura
@@ -347,9 +348,28 @@ for n in rj('data/depoimentos.json'):
     deps.append(item)
 print(f'depoimentos: {len(deps)}')
 
+# ---------------------------------------------------------------- estoque (locais e quantidades em mãos da Shopify)
+# data/estoque.json: {locais:[nome…], variantes:{id:{sku, vender_sem_estoque, custo, q:{local: em_maos}}}}
+# (Admin API: productVariants → inventoryItem.inventoryLevels on_hand, inventoryPolicy, unitCost)
+locais, estoque = [], []
+EST = rj('data/estoque.json') if os.path.exists(os.path.join(CAP, 'data/estoque.json')) else None
+if EST:
+    ONLINE = {'América Nutrition [CD]', 'Estados Unidos'}   # locais que atendem pedidos do site (como na Shopify)
+    lid = lambda n: re.sub(r'[^a-z0-9]+', '-', n.lower().replace('é', 'e').replace('ô', 'o').replace('ã', 'a')).strip('-')
+    locais = [{'id': lid(n), 'nome': n, 'ativo': True, 'online': n in ONLINE, 'ordem': i} for i, n in enumerate(EST['locais'])]
+    for p in produtos:
+        for v in p['variantes']:
+            x = EST['variantes'].get(v['id'])
+            if not x: continue
+            v.update({'rastrear': True, 'vender_sem_estoque': bool(x['vender_sem_estoque']), 'custo': x['custo'], 'estoque_minimo': None})
+            for n, q in x['q'].items():
+                if q: estoque.append({'variante_id': v['id'], 'local_id': lid(n), 'em_maos': q, 'comprometido': 0})
+            v['estoque'] = sum(q for n, q in x['q'].items() if n in ONLINE)
+    print(f'estoque: {len(locais)} locais, {len(estoque)} posições')
+
 loja = {'versao': 1, 'gerado_em': datetime.now(timezone.utc).isoformat(timespec='seconds'), 'config': config,
         'produtos': produtos, 'colecoes': colecoes, 'paginas': paginas, 'blogs': list(blogs.values()), 'artigos': artigos,
-        'home': {'ordem': ordem, 'secoes': secs}, 'depoimentos': deps,
+        'home': {'ordem': ordem, 'secoes': secs}, 'depoimentos': deps, 'locais': locais, 'estoque': estoque,
         'redirects': [{'de': '/stories', 'para': '/'}, {'de': '/collections/vendors', 'para': '/collections/all'}]}
 with open(os.path.join(OUT, 'loja.json'), 'w', encoding='utf-8') as f:
     json.dump(loja, f, ensure_ascii=False, indent=1)

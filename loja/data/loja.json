@@ -1,6 +1,6 @@
 {
  "versao": 1,
- "gerado_em": "2026-10-05T02:26:48+00:00",
+ "gerado_em": "2026-10-05T18:48:29+00:00",
  "config": {
   "nome": "America Nutrition",
   "dominio": "https://www.americanutrition.com",
@@ -135,9 +135,13 @@
      "preco_comparacao": null,
      "sku": "AN-IMFK-US",
      "disponivel": true,
-     "estoque": null,
+     "estoque": 65,
      "peso_g": 400,
-     "imagem": null
+     "imagem": null,
+     "rastrear": true,
+     "vender_sem_estoque": true,
+     "custo": 20,
+     "estoque_minimo": null
     }
    ],
    "avaliacao": {
@@ -212,9 +216,13 @@
      "preco_comparacao": 97.0,
      "sku": "AN-D3-50K-BR",
      "disponivel": false,
-     "estoque": null,
+     "estoque": 0,
      "peso_g": 300,
-     "imagem": "41478914408620"
+     "imagem": "41478914408620",
+     "rastrear": true,
+     "vender_sem_estoque": false,
+     "custo": 15.18,
+     "estoque_minimo": null
     }
    ],
    "avaliacao": {
@@ -297,9 +305,13 @@
      "preco_comparacao": 297.0,
      "sku": "IMFD-60-BR",
      "disponivel": true,
-     "estoque": null,
+     "estoque": 238,
      "peso_g": 300,
-     "imagem": null
+     "imagem": null,
+     "rastrear": true,
+     "vender_sem_estoque": false,
+     "custo": null,
+     "estoque_minimo": null
     }
    ],
    "avaliacao": {
@@ -375,9 +387,13 @@
      "preco_comparacao": 177.0,
      "sku": "VM-90-BR",
      "disponivel": true,
-     "estoque": null,
+     "estoque": 350,
      "peso_g": 300,
-     "imagem": null
+     "imagem": null,
+     "rastrear": true,
+     "vender_sem_estoque": false,
+     "custo": 24.9,
+     "estoque_minimo": null
     }
    ],
    "avaliacao": {
@@ -469,9 +485,13 @@
      "preco_comparacao": null,
      "sku": "AN-LP-BR",
      "disponivel": true,
-     "estoque": null,
+     "estoque": 2,
      "peso_g": 0,
-     "imagem": null
+     "imagem": null,
+     "rastrear": true,
+     "vender_sem_estoque": false,
+     "custo": null,
+     "estoque_minimo": null
     }
    ],
    "avaliacao": {
@@ -552,9 +572,13 @@
      "preco_comparacao": 77.0,
      "sku": "AN-LH",
      "disponivel": true,
-     "estoque": null,
+     "estoque": 126,
      "peso_g": 300,
-     "imagem": null
+     "imagem": null,
+     "rastrear": true,
+     "vender_sem_estoque": false,
+     "custo": null,
+     "estoque_minimo": null
     }
    ],
    "avaliacao": {
@@ -652,9 +676,13 @@
      "preco_comparacao": 149.9,
      "sku": "AN-LG-UV",
      "disponivel": true,
-     "estoque": null,
+     "estoque": 149,
      "peso_g": 400,
-     "imagem": null
+     "imagem": null,
+     "rastrear": true,
+     "vender_sem_estoque": false,
+     "custo": 45,
+     "estoque_minimo": null
     }
    ],
    "avaliacao": {
@@ -735,9 +763,13 @@
      "preco_comparacao": 129.9,
      "sku": "AN-CM",
      "disponivel": true,
-     "estoque": null,
+     "estoque": 180,
      "peso_g": 400,
-     "imagem": null
+     "imagem": null,
+     "rastrear": true,
+     "vender_sem_estoque": false,
+     "custo": 49.9,
+     "estoque_minimo": null
     }
    ],
    "avaliacao": {
@@ -809,9 +841,13 @@
      "preco_comparacao": null,
      "sku": "AN-GP-BR",
      "disponivel": true,
-     "estoque": null,
+     "estoque": 100,
      "peso_g": 300,
-     "imagem": null
+     "imagem": null,
+     "rastrear": true,
+     "vender_sem_estoque": true,
+     "custo": 16.5,
+     "estoque_minimo": null
     }
    ],
    "avaliacao": {
@@ -901,9 +937,13 @@
      "preco_comparacao": null,
      "sku": "AN-D3-BR",
      "disponivel": true,
-     "estoque": null,
+     "estoque": 264,
      "peso_g": 300,
-     "imagem": null
+     "imagem": null,
+     "rastrear": true,
+     "vender_sem_estoque": false,
+     "custo": 20,
+     "estoque_minimo": null
     }
    ],
    "avaliacao": {
@@ -993,9 +1033,13 @@
      "preco_comparacao": null,
      "sku": "SKDH15977",
      "disponivel": true,
-     "estoque": null,
+     "estoque": 100,
      "peso_g": 300,
-     "imagem": null
+     "imagem": null,
+     "rastrear": true,
+     "vender_sem_estoque": false,
+     "custo": 20,
+     "estoque_minimo": null
     }
    ],
    "avaliacao": {
@@ -1072,9 +1116,13 @@
      "preco_comparacao": null,
      "sku": "AN-OM3-BR",
      "disponivel": true,
-     "estoque": null,
+     "estoque": 80,
      "peso_g": 300,
-     "imagem": null
+     "imagem": null,
+     "rastrear": true,
+     "vender_sem_estoque": false,
+     "custo": 24.9,
+     "estoque_minimo": null
     }
    ],
    "avaliacao": {
@@ -1144,9 +1192,13 @@
      "preco_comparacao": null,
      "sku": "YDUFXGYHXF",
      "disponivel": true,
-     "estoque": null,
+     "estoque": 3,
      "peso_g": 300,
-     "imagem": null
+     "imagem": null,
+     "rastrear": true,
+     "vender_sem_estoque": false,
+     "custo": 30,
+     "estoque_minimo": null
     }
    ],
    "avaliacao": {
@@ -1222,9 +1274,13 @@
      "preco_comparacao": null,
      "sku": "IMF-PET-L-BR",
      "disponivel": true,
-     "estoque": null,
+     "estoque": 157,
      "peso_g": 300,
-     "imagem": "41678907932844"
+     "imagem": "41678907932844",
+     "rastrear": true,
+     "vender_sem_estoque": true,
+     "custo": 50,
+     "estoque_minimo": null
     },
     {
      "id": "45211644461228",
@@ -1236,9 +1292,13 @@
      "preco_comparacao": null,
      "sku": "IMF-PET-BR",
      "disponivel": true,
-     "estoque": null,
+     "estoque": 324,
      "peso_g": 300,
-     "imagem": "41316023566508"
+     "imagem": "41316023566508",
+     "rastrear": true,
+     "vender_sem_estoque": false,
+     "custo": 50,
+     "estoque_minimo": null
     }
    ],
    "avaliacao": {
@@ -1314,9 +1374,13 @@
      "preco_comparacao": 197.0,
      "sku": "AN-IFL-BR",
      "disponivel": true,
-     "estoque": null,
+     "estoque": 90,
      "peso_g": 300,
-     "imagem": null
+     "imagem": null,
+     "rastrear": true,
+     "vender_sem_estoque": false,
+     "custo": 10,
+     "estoque_minimo": null
     }
    ],
    "avaliacao": {
@@ -1437,9 +1501,13 @@
      "preco_comparacao": null,
      "sku": "IMF-90-BR",
      "disponivel": true,
-     "estoque": null,
+     "estoque": 475,
      "peso_g": 300,
-     "imagem": "39201847443628"
+     "imagem": "39201847443628",
+     "rastrear": true,
+     "vender_sem_estoque": false,
+     "custo": 100,
+     "estoque_minimo": null
     },
     {
      "id": "44511284920492",
@@ -1452,9 +1520,13 @@
      "preco_comparacao": null,
      "sku": "IMF-60-BR",
      "disponivel": false,
-     "estoque": null,
+     "estoque": 0,
      "peso_g": 300,
-     "imagem": "39554069233836"
+     "imagem": "39554069233836",
+     "rastrear": true,
+     "vender_sem_estoque": false,
+     "custo": 100,
+     "estoque_minimo": null
     },
     {
      "id": "45198538277036",
@@ -1467,9 +1539,13 @@
      "preco_comparacao": null,
      "sku": "IMF-42-BR",
      "disponivel": true,
-     "estoque": null,
+     "estoque": 10,
      "peso_g": 300,
-     "imagem": "41398453207212"
+     "imagem": "41398453207212",
+     "rastrear": true,
+     "vender_sem_estoque": false,
+     "custo": 100,
+     "estoque_minimo": null
     },
     {
      "id": "46173112041644",
@@ -1482,9 +1558,13 @@
      "preco_comparacao": 654.0,
      "sku": "IMF-180-BR",
      "disponivel": true,
-     "estoque": null,
+     "estoque": 120,
      "peso_g": 300,
-     "imagem": "42211090923692"
+     "imagem": "42211090923692",
+     "rastrear": true,
+     "vender_sem_estoque": false,
+     "custo": 100,
+     "estoque_minimo": null
     },
     {
      "id": "44436756267180",
@@ -1497,9 +1577,13 @@
      "preco_comparacao": 347.0,
      "sku": "IMF-90-BR-VG",
      "disponivel": true,
-     "estoque": null,
+     "estoque": 390,
      "peso_g": 300,
-     "imagem": "39203037642924"
+     "imagem": "39203037642924",
+     "rastrear": true,
+     "vender_sem_estoque": false,
+     "custo": 114,
+     "estoque_minimo": null
     }
    ],
    "avaliacao": {
@@ -10889,6 +10973,386 @@
    "imagem": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/dep_20260518015123_5186.jpg?v=1779069088",
    "largura": 1178,
    "altura": 2560
+  }
+ ],
+ "locais": [
+  {
+   "id": "america-nutrition-cd",
+   "nome": "América Nutrition [CD]",
+   "ativo": true,
+   "online": true,
+   "ordem": 0
+  },
+  {
+   "id": "estados-unidos",
+   "nome": "Estados Unidos",
+   "ativo": true,
+   "online": true,
+   "ordem": 1
+  },
+  {
+   "id": "mercado-livre-full",
+   "nome": "Mercado Livre Full",
+   "ativo": true,
+   "online": false,
+   "ordem": 2
+  },
+  {
+   "id": "adriana-bonin",
+   "nome": "Adriana Bonin",
+   "ativo": true,
+   "online": false,
+   "ordem": 3
+  },
+  {
+   "id": "nair",
+   "nome": "Nair",
+   "ativo": true,
+   "online": false,
+   "ordem": 4
+  },
+  {
+   "id": "sonia-terezinha",
+   "nome": "Sônia Terezinha",
+   "ativo": true,
+   "online": false,
+   "ordem": 5
+  },
+  {
+   "id": "sonia-cintra",
+   "nome": "Sônia Cintra",
+   "ativo": true,
+   "online": false,
+   "ordem": 6
+  },
+  {
+   "id": "cristina-matias",
+   "nome": "Cristina Matias",
+   "ativo": true,
+   "online": false,
+   "ordem": 7
+  },
+  {
+   "id": "ass-maracajuense",
+   "nome": "Ass. Maracajuense",
+   "ativo": true,
+   "online": false,
+   "ordem": 8
+  },
+  {
+   "id": "miriam-purnhagen",
+   "nome": "MIRIAM PURNHAGEN",
+   "ativo": true,
+   "online": false,
+   "ordem": 9
+  }
+ ],
+ "estoque": [
+  {
+   "variante_id": "43736522653868",
+   "local_id": "america-nutrition-cd",
+   "em_maos": 65,
+   "comprometido": 0
+  },
+  {
+   "variante_id": "43736522653868",
+   "local_id": "nair",
+   "em_maos": 1,
+   "comprometido": 0
+  },
+  {
+   "variante_id": "45300915863724",
+   "local_id": "nair",
+   "em_maos": 5,
+   "comprometido": 0
+  },
+  {
+   "variante_id": "45117829218476",
+   "local_id": "america-nutrition-cd",
+   "em_maos": 238,
+   "comprometido": 0
+  },
+  {
+   "variante_id": "45117829218476",
+   "local_id": "nair",
+   "em_maos": 10,
+   "comprometido": 0
+  },
+  {
+   "variante_id": "44714532208812",
+   "local_id": "america-nutrition-cd",
+   "em_maos": 350,
+   "comprometido": 0
+  },
+  {
+   "variante_id": "45035695866028",
+   "local_id": "america-nutrition-cd",
+   "em_maos": 2,
+   "comprometido": 0
+  },
+  {
+   "variante_id": "45035695866028",
+   "local_id": "nair",
+   "em_maos": 2,
+   "comprometido": 0
+  },
+  {
+   "variante_id": "44852610826412",
+   "local_id": "adriana-bonin",
+   "em_maos": 2,
+   "comprometido": 0
+  },
+  {
+   "variante_id": "44852610826412",
+   "local_id": "america-nutrition-cd",
+   "em_maos": 126,
+   "comprometido": 0
+  },
+  {
+   "variante_id": "44852610826412",
+   "local_id": "nair",
+   "em_maos": 8,
+   "comprometido": 0
+  },
+  {
+   "variante_id": "44291546448044",
+   "local_id": "adriana-bonin",
+   "em_maos": 3,
+   "comprometido": 0
+  },
+  {
+   "variante_id": "44291546448044",
+   "local_id": "america-nutrition-cd",
+   "em_maos": 149,
+   "comprometido": 0
+  },
+  {
+   "variante_id": "44291546448044",
+   "local_id": "nair",
+   "em_maos": 7,
+   "comprometido": 0
+  },
+  {
+   "variante_id": "44268289982636",
+   "local_id": "adriana-bonin",
+   "em_maos": 3,
+   "comprometido": 0
+  },
+  {
+   "variante_id": "44268289982636",
+   "local_id": "america-nutrition-cd",
+   "em_maos": 180,
+   "comprometido": 0
+  },
+  {
+   "variante_id": "44268289982636",
+   "local_id": "nair",
+   "em_maos": 1,
+   "comprometido": 0
+  },
+  {
+   "variante_id": "43959807508652",
+   "local_id": "adriana-bonin",
+   "em_maos": 8,
+   "comprometido": 0
+  },
+  {
+   "variante_id": "43959807508652",
+   "local_id": "america-nutrition-cd",
+   "em_maos": 100,
+   "comprometido": 0
+  },
+  {
+   "variante_id": "43959807508652",
+   "local_id": "mercado-livre-full",
+   "em_maos": 7,
+   "comprometido": 0
+  },
+  {
+   "variante_id": "43959807508652",
+   "local_id": "cristina-matias",
+   "em_maos": 35,
+   "comprometido": 0
+  },
+  {
+   "variante_id": "44240381411500",
+   "local_id": "adriana-bonin",
+   "em_maos": 12,
+   "comprometido": 0
+  },
+  {
+   "variante_id": "44240381411500",
+   "local_id": "america-nutrition-cd",
+   "em_maos": 264,
+   "comprometido": 0
+  },
+  {
+   "variante_id": "44240381411500",
+   "local_id": "nair",
+   "em_maos": 3,
+   "comprometido": 0
+  },
+  {
+   "variante_id": "43843418259628",
+   "local_id": "adriana-bonin",
+   "em_maos": 7,
+   "comprometido": 0
+  },
+  {
+   "variante_id": "43843418259628",
+   "local_id": "america-nutrition-cd",
+   "em_maos": 100,
+   "comprometido": 0
+  },
+  {
+   "variante_id": "43843418259628",
+   "local_id": "nair",
+   "em_maos": 3,
+   "comprometido": 0
+  },
+  {
+   "variante_id": "43843399712940",
+   "local_id": "adriana-bonin",
+   "em_maos": 1,
+   "comprometido": 0
+  },
+  {
+   "variante_id": "43843399712940",
+   "local_id": "america-nutrition-cd",
+   "em_maos": 80,
+   "comprometido": 0
+  },
+  {
+   "variante_id": "43843399712940",
+   "local_id": "sonia-terezinha",
+   "em_maos": 2,
+   "comprometido": 0
+  },
+  {
+   "variante_id": "43843399712940",
+   "local_id": "mercado-livre-full",
+   "em_maos": 32,
+   "comprometido": 0
+  },
+  {
+   "variante_id": "43671038656684",
+   "local_id": "america-nutrition-cd",
+   "em_maos": 3,
+   "comprometido": 0
+  },
+  {
+   "variante_id": "43671038656684",
+   "local_id": "nair",
+   "em_maos": 13,
+   "comprometido": 0
+  },
+  {
+   "variante_id": "45211644625068",
+   "local_id": "america-nutrition-cd",
+   "em_maos": 157,
+   "comprometido": 0
+  },
+  {
+   "variante_id": "45211644625068",
+   "local_id": "nair",
+   "em_maos": 3,
+   "comprometido": 0
+  },
+  {
+   "variante_id": "45211644461228",
+   "local_id": "america-nutrition-cd",
+   "em_maos": 324,
+   "comprometido": 0
+  },
+  {
+   "variante_id": "45211644461228",
+   "local_id": "nair",
+   "em_maos": 3,
+   "comprometido": 0
+  },
+  {
+   "variante_id": "45522481643692",
+   "local_id": "america-nutrition-cd",
+   "em_maos": 90,
+   "comprometido": 0
+  },
+  {
+   "variante_id": "45522481643692",
+   "local_id": "nair",
+   "em_maos": 3,
+   "comprometido": 0
+  },
+  {
+   "variante_id": "45522481643692",
+   "local_id": "sonia-terezinha",
+   "em_maos": 1,
+   "comprometido": 0
+  },
+  {
+   "variante_id": "44436756234412",
+   "local_id": "adriana-bonin",
+   "em_maos": 3,
+   "comprometido": 0
+  },
+  {
+   "variante_id": "44436756234412",
+   "local_id": "america-nutrition-cd",
+   "em_maos": 475,
+   "comprometido": 0
+  },
+  {
+   "variante_id": "44436756234412",
+   "local_id": "ass-maracajuense",
+   "em_maos": 39,
+   "comprometido": 0
+  },
+  {
+   "variante_id": "44436756234412",
+   "local_id": "nair",
+   "em_maos": 71,
+   "comprometido": 0
+  },
+  {
+   "variante_id": "44436756234412",
+   "local_id": "sonia-terezinha",
+   "em_maos": 10,
+   "comprometido": 0
+  },
+  {
+   "variante_id": "44436756234412",
+   "local_id": "mercado-livre-full",
+   "em_maos": 39,
+   "comprometido": 0
+  },
+  {
+   "variante_id": "44436756234412",
+   "local_id": "cristina-matias",
+   "em_maos": 5,
+   "comprometido": 0
+  },
+  {
+   "variante_id": "44436756234412",
+   "local_id": "sonia-cintra",
+   "em_maos": 6,
+   "comprometido": 0
+  },
+  {
+   "variante_id": "45198538277036",
+   "local_id": "america-nutrition-cd",
+   "em_maos": 10,
+   "comprometido": 0
+  },
+  {
+   "variante_id": "46173112041644",
+   "local_id": "america-nutrition-cd",
+   "em_maos": 120,
+   "comprometido": 0
+  },
+  {
+   "variante_id": "44436756267180",
+   "local_id": "america-nutrition-cd",
+   "em_maos": 390,
+   "comprometido": 0
   }
  ],
  "redirects": [

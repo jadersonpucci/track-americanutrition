@@ -2,6 +2,7 @@
 //  - servidor: webhook n8n "loja-api" → função loja_api no Postgres (login com os mesmos usuários do Financeiro)
 //  - demonstração: IndexedDB do navegador, começando dos dados do último build (admin/dados.json)
 import * as demo from './demo-pedidos.js';
+import * as est from './estoque-logica.js';
 
 export const CONFIG = {
   gateway: '', // ex.: 'https://n8n.americanutrition.com/webhook/loja-api' (deixe vazio para o modo demonstração)
@@ -46,6 +47,16 @@ class Demo {
       ];
       await idbSet('estado', s);
     }
+    // estoque (locais e quantidades reais da Shopify); estados antigos do navegador ganham na primeira abertura
+    if (!s.locais) await this.migrarEstoque(s);
+    if (s.pedidos.some((p) => p.estoque_estado === undefined)) {
+      for (const p of [...s.pedidos].reverse()) {
+        if (p.estoque_estado !== undefined) continue;
+        if (['enviado', 'entregue', 'devolvido'].includes(p.status_entrega)) p.estoque_estado = 'importado';   // histórico: já saiu antes do saldo atual
+        else est.pedidoEstoque(s, p, 'Demonstração');
+      }
+      await idbSet('estado', s);
+    }
     this.s = s;
     return s;
   }
@@ -55,8 +66,20 @@ class Demo {
     const d = await r.json();
     const s = { config: d.config, home: d.home, redirects: d.redirects || [], pedidos: [] };
     for (const c of COLECOES) s[c] = d[c] || [];
+    s.locais = d.locais || []; s.estoque = d.estoque || []; s.estoque_mov = [];
     await idbSet('estado', s);
     return s;
+  }
+  async migrarEstoque(s) {
+    const d = await fetch('/admin/dados.json', { cache: 'no-cache' }).then((r) => r.json()).catch(() => ({}));
+    s.locais = d.locais || []; s.estoque = d.estoque || []; s.estoque_mov = [];
+    const orig = new Map((d.produtos || []).flatMap((p) => p.variantes || []).map((v) => [String(v.id), v]));
+    for (const p of s.produtos || []) for (const v of p.variantes || []) {
+      const o = orig.get(String(v.id)); if (!o) continue;
+      for (const k of ['rastrear', 'vender_sem_estoque', 'custo', 'estoque_minimo']) if (v[k] === undefined && o[k] !== undefined) v[k] = o[k];
+    }
+    est.sincronizar(s);
+    await idbSet('estado', s);
   }
   async salvar(state) { await idbSet('estado', state); }
   async upsert(_t, _rows, state) { await this.salvar(state); }
@@ -72,10 +95,19 @@ class Demo {
     if (c.status_pagamento && c.status_pagamento !== p.status_pagamento) ev('Pagamento: ' + c.status_pagamento);
     if ('rastreio' in c && c.rastreio !== p.rastreio && c.rastreio) ev('Rastreio: ' + c.rastreio);
     Object.assign(p, c, { atualizado_em: new Date().toISOString() });
+    est.pedidoEstoque(this.s, p, 'Demonstração');
     await this.salvar(this.s); return p;
   }
   async resumo() { return demo.resumo(this.s.pedidos); }
-  async pedidoCriar(payload) { const p = demo.criar(this.s.pedidos, payload, this.s.produtos); await this.salvar(this.s); return p; }
+  async pedidoCriar(payload) { const p = demo.criar(this.s.pedidos, payload, this.s.produtos); est.pedidoEstoque(this.s, p, 'Demonstração'); await this.salvar(this.s); return p; }
+  // estoque: aqui o estado do navegador é o próprio db.state, então as funções já atualizam a tela
+  async estoque() { return { locais: this.s.locais, niveis: this.s.estoque }; }
+  async estoqueAjustar(itens) { const mudou = est.ajustar(this.s, itens, 'Demonstração'); await this.salvar(this.s); return { mudou }; }
+  async estoqueTransferir(t) { const mudou = est.transferir(this.s, t, 'Demonstração'); await this.salvar(this.s); return { mudou }; }
+  async estoqueMov(f = {}) {
+    return (this.s.estoque_mov || []).filter((m) => (!f.variante_id || m.variante_id === String(f.variante_id)) && (!f.local_id || m.local_id === f.local_id)).slice(0, f.limite || 200);
+  }
+  async locaisGravar(locais) { this.s.locais = locais; const mudou = est.sincronizar(this.s); await this.salvar(this.s); return { mudou }; }
   async clientes(f) { return demo.clientes(this.s.pedidos, f); }
 }
 
@@ -111,6 +143,11 @@ class Servidor {
   async resumo() { return (await this.call('resumo')).resumo; }
   async pedidoCriar(payload) { return this.call('pedido_criar', payload); }
   async clientes(f) { return (await this.call('clientes', f)).clientes; }
+  async estoque() { const j = await this.call('estoque'); return { locais: j.locais, niveis: j.niveis, variantes: j.variantes }; }
+  async estoqueAjustar(itens) { return this.call('estoque_ajustar', { itens }); }
+  async estoqueTransferir(t) { return this.call('estoque_transferir', t); }
+  async estoqueMov(f = {}) { return (await this.call('estoque_mov', f)).itens; }
+  async locaisGravar(locais) { return this.call('locais_gravar', { locais }); }
   async publicar(nota) { return this.call('publicar', { nota }); }
   async publicacoes() { return (await this.call('publicacoes')).itens; }
 }
@@ -123,6 +160,7 @@ export const db = {
     this.backend = CONFIG.gateway ? new Servidor(CONFIG.gateway) : new Demo();
     this.state = await this.backend.load();
     for (const c of COLECOES) this.state[c] = this.state[c] || [];
+    this.state.locais = this.state.locais || []; this.state.estoque = this.state.estoque || [];
     return this;
   },
   get demo() { return this.backend.modo === 'demo'; },
@@ -137,6 +175,8 @@ export const db = {
       const i = this.state[t].findIndex((x) => String(x.id) === String(r.id));
       if (i >= 0) this.state[t][i] = r; else this.state[t].push(r);
     }
+    // estoque/disponível das variantes vêm do saldo (controle de estoque), não do formulário
+    if (t === 'produtos') est.sincronizar(this.state, rows.flatMap((r) => (r.variantes || []).map((v) => String(v.id))));
     await this.backend.upsert(t, rows, this.state);
     this.pendente(); this.emit(t);
     return row;
@@ -148,6 +188,24 @@ export const db = {
     this.pendente(); this.emit(t);
   },
   async set(k, v) { this.state[k] = v; await this.backend.setUnico(k, v, this.state); this.pendente(); this.emit(k); },
+  // estoque: busca o saldo atual e aplica (no servidor também atualiza estoque/disponível das variantes)
+  async recarregarEstoque() { this.aplicarEstoque(await this.backend.estoque()); return this.state; },
+  aplicarEstoque(r) {
+    if (!r || this.demo) return r;
+    if (r.locais) this.state.locais = r.locais;
+    if (r.niveis) {
+      const ids = new Set((r.variantes_afetadas || r.niveis.map((n) => n.variante_id)).map(String));
+      this.state.estoque = r.variantes_afetadas ? [...(this.state.estoque || []).filter((n) => !ids.has(String(n.variante_id))), ...r.niveis] : r.niveis;
+    }
+    const vs = new Map((r.variantes || []).map((v) => [String(v.id), v]));
+    if (vs.size) for (const p of this.state.produtos) for (const v of p.variantes || []) { const x = vs.get(String(v.id)); if (x) Object.assign(v, { estoque: x.estoque, disponivel: x.disponivel }); }
+    return r;
+  },
+  async estoqueAjustar(itens) { const r = this.aplicarEstoque(await this.backend.estoqueAjustar(itens)); this.pendenteSe(r); this.emit('estoque'); return r; },
+  async estoqueTransferir(t) { const r = this.aplicarEstoque(await this.backend.estoqueTransferir(t)); this.pendenteSe(r); this.emit('estoque'); return r; },
+  async locaisGravar(l) { const r = this.aplicarEstoque(await this.backend.locaisGravar(l)); if (!this.demo) this.state.locais = l; this.pendenteSe(r); this.emit('estoque'); return r; },
+  // a vitrine é estática: quando um produto esgota ou volta, precisa publicar de novo
+  pendenteSe(r) { if (r?.mudou?.length) this.pendente(); },
   pendente() { pref.set('alteracoes', (pref.get('alteracoes', 0) || 0) + 1); },
   // pacote no formato de loja/data/loja.json (o mesmo que o build lê)
   exportar() {
