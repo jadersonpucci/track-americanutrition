@@ -34,7 +34,9 @@ class Demo {
     let s = await idbGet('estado').catch(() => null);
     if (!s) s = await this.semente();
     // pedidos e cupons FICTÍCIOS, só para ver o painel funcionando (marcados com a tag "demonstração")
-    if (!s.pedidos?.length) {
+    // versão 2 dos fictícios: numeração AN-157xx/158xx (a anterior usava 50001…)
+    if (!s.pedidos?.length || (s.pedidos.some((p) => (p.tags || []).includes('demonstração')) && s.demoVersao !== 2)) {
+      s.demoVersao = 2;
       s.pedidos = demo.gerarPedidos(s.produtos || []);
       if (!(s.cupons || []).length) s.cupons = [
         { id: 'demo-c1', codigo: 'BEMVINDO10', descricao: 'Primeira compra (exemplo)', tipo: 'percentual', valor: 10, minimo: 100, ativo: true, usos: s.pedidos.filter((p) => p.cupom === 'BEMVINDO10').length, criado_em: '2026-09-01T12:00:00Z' },
