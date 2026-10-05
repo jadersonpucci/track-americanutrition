@@ -496,3 +496,25 @@ body .depoimento-card{display:inline-block;width:100%;vertical-align:top;-webkit
    antes do play, e ele cobria a capa com um retângulo branco. O vídeo toca no lightbox, ao clicar. */
 body .depoimento-video-wrapper video{display:none!important}
 body .depoimento-video-wrapper img.depoimento-video-poster{z-index:3}
+
+/* Minha conta */
+.account__msg{margin-top:12px;font-weight:500}.account__msg.is-erro{color:#b42318}
+.account__rastreio{margin-top:28px;color:var(--muted)}.account__rastreio summary{cursor:pointer;font-weight:500}
+.account__codigo{letter-spacing:.5em;font-size:1.4rem!important;text-align:center;max-width:240px}
+.account__topo{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:24px}
+.account .link{background:none;border:0;padding:0;color:inherit;text-decoration:underline;cursor:pointer;font:inherit}
+.pedido{border:1px solid var(--line);border-radius:18px;margin:0 0 16px;overflow:hidden;background:#fff}
+.pedido__h,.pedido__f{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 18px;flex-wrap:wrap}
+.pedido__h{border-bottom:1px solid var(--line)}.pedido__h span{display:block;color:var(--muted);font-size:.9rem}
+.pedido__st{display:inline-block!important;border-radius:999px;padding:4px 12px;font-size:.85rem!important;font-weight:600;background:#eef2f7;color:#334155!important}
+.pedido__st--green{background:#dcfce7;color:#166534!important}.pedido__st--blue{background:#e0ecff;color:#1e40af!important}.pedido__st--amber{background:#fef3c7;color:#92400e!important}.pedido__st--red{background:#fee2e2;color:#991b1b!important}
+.pedido__itens{list-style:none;margin:0;padding:6px 18px}
+.pedido__itens li{display:flex;gap:12px;align-items:center;padding:8px 0}.pedido__itens li+li{border-top:1px dashed var(--line)}
+.pedido__itens img{width:56px;height:56px;object-fit:contain;border-radius:10px;background:#f6f7f9}
+.pedido__itens a{font-weight:600;color:inherit;text-decoration:none}.pedido__itens small{display:block;color:var(--muted)}
+.pedido__f{border-top:1px solid var(--line);background:#fafbfc}.pedido__acoes{display:flex;gap:8px;flex-wrap:wrap}
+.account__avaliar{display:grid;gap:12px}
+.account__avaliar-item{display:flex;align-items:center;gap:14px;border:1px solid var(--line);border-radius:16px;padding:12px 16px;color:inherit;text-decoration:none;font-weight:600}
+.account__avaliar-item img{width:72px;height:72px;object-fit:contain;border-radius:12px;background:#f6f7f9}.account__avaliar-item span:nth-child(2){flex:1}
+@media (max-width:600px){.pedido__f{flex-direction:column;align-items:stretch}.pedido__acoes .button{flex:1}}
+.button--sm{min-height:40px;padding:0 18px;font-size:.9rem}

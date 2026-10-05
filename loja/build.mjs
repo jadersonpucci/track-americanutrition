@@ -32,6 +32,21 @@ async function carregar() {
 }
 
 const d = await carregar();
+
+// Estrelas dos cards e páginas: nota e total atuais do sistema próprio de avaliações (Supabase reviews,
+// webhook reviews-api). Sem rede ou com LOJA_AVALIACOES=0, fica o que está nos dados.
+async function atualizarAvaliacoes() {
+  if (process.env.LOJA_AVALIACOES === '0') return;
+  const api = process.env.LOJA_REVIEWS_API || 'https://n8n.americanutrition.com/webhook/reviews-api';
+  await Promise.all((d.produtos || []).map(async (p) => {
+    try {
+      const r = await fetch(`${api}?handle=${encodeURIComponent(p.handle)}&per=1`, { signal: AbortSignal.timeout(8000), headers: { 'User-Agent': 'loja-build' } });
+      const j = await r.json();
+      if (j?.ok && j.summary?.total > 0) p.avaliacao = { nota: Math.round(j.summary.media * 100) / 100, total: j.summary.total };
+    } catch {}
+  }));
+}
+await atualizarAvaliacoes();
 const lerHtml = (ref) => (ref && !ref.includes('<') && fs.existsSync(path.join(ROOT, 'data', ref))) ? fs.readFileSync(path.join(ROOT, 'data', ref), 'utf8') : (ref && ref.includes('<') ? ref : '');
 
 const ctx = criarContexto(d, { lerHtml });
@@ -73,6 +88,7 @@ if (ctx.blogs.length && !ctx.blogs.some((b) => b.handle === 'news')) w('blogs/ne
 page('/search', P.paginaBusca(ctx));
 page('/cart', P.paginaCarrinho(ctx));
 page('/account', P.paginaConta(ctx));
+for (const a of ['/account/login', '/account/register', '/account/orders']) page(a, P.paginaConta(ctx));   // endereços da Shopify
 w('404.html', P.pagina404(ctx));
 
 // ---------------------------------------------------------------- dados públicos (JSON)

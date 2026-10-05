@@ -141,6 +141,12 @@
     var p = u.pathname.replace(/^\/[a-z]{2}(-[a-z]{2})?(?=\/cart)/i, '');
     return /^\/cart(\.js|\.json|\/.*)?$/.test(p) ? { path: p, search: u.searchParams } : null;
   }
+  // eventos para os pixels (assets/rastreio.js)
+  function emitir(nome, det) { try { setTimeout(function () { document.dispatchEvent(new CustomEvent(nome, { detail: det })); }, 0); } catch (e) {} }
+  document.addEventListener('click', function (ev) {
+    var a = ev.target.closest && ev.target.closest('a[data-an-checkout], [name="checkout"], a[href*="checkout.americanutrition.com"], [data-checkout]');
+    if (a) carregarCatalogo().then(function () { var c = cartJson(); if (c.item_count) emitir('an:checkout', c); });
+  }, true);
   function tratarCarrinho(r, init) {
     var metodo = ((init && init.method) || 'GET').toUpperCase();
     return carregarCatalogo().then(function () {
@@ -149,14 +155,14 @@
         if (p === '/cart.js' || p === '/cart.json' || (p === '/cart' && metodo === 'GET')) return resp(cartJson());
         if (/^\/cart\/add(\.js)?$/.test(p)) {
           var lista = b.items || [{ id: b.id, quantity: b.quantity, properties: b.properties }];
-          var add = adicionar(lista); notificar();
+          var add = adicionar(lista); notificar(); emitir('an:add', add);
           return resp(b.items ? { items: add } : add[0]);
         }
         if (/^\/cart\/change(\.js)?$/.test(p)) { alterar(b); notificar(); return resp(cartJson()); }
         if (/^\/cart\/update(\.js)?$/.test(p)) { atualizar(b); notificar(); return resp(cartJson()); }
         if (/^\/cart\/clear(\.js)?$/.test(p)) { limpar(); notificar(); return resp(cartJson()); }
         var m = /^\/cart\/([\d:,]+)$/.exec(p);
-        if (m) { adicionar(m[1].split(',').map(function (s) { var a = s.split(':'); return { id: a[0], quantity: a[1] || 1 }; })); notificar(); return resp(cartJson()); }
+        if (m) { emitir('an:add', adicionar(m[1].split(',').map(function (s) { var a = s.split(':'); return { id: a[0], quantity: a[1] || 1 }; }))); notificar(); return resp(cartJson()); }
         if (/^\/cart\/shipping_rates/.test(p)) return resp({ shipping_rates: [] });
         return resp(cartJson());
       } catch (e) { return resp({ status: e.status || 422, message: e.message, description: e.description || e.message }, e.status || 422); }
@@ -236,7 +242,6 @@
       var vs = itens.map(function (i) { var m = catalogo.porVar[String(i.id)]; return m ? { item_id: m.v.sku || String(i.id), item_name: m.p.t, item_variant: m.v.t, price: m.v.p / 100, quantity: i.quantity } : null; }).filter(Boolean);
       window.dataLayer.push({ ecommerce: null });
       window.dataLayer.push({ event: evento, ecommerce: { currency: 'BRL', value: vs.reduce(function (s, x) { return s + x.price * x.quantity; }, 0), items: vs } });
-      if (window.fbq && evento === 'add_to_cart') window.fbq('track', 'AddToCart', { currency: 'BRL', value: vs.reduce(function (s, x) { return s + x.price * x.quantity; }, 0), content_ids: vs.map(function (x) { return x.item_id; }), content_type: 'product' });
     } catch (e) {}
   }
 

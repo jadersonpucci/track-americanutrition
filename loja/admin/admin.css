@@ -181,3 +181,4 @@ table.t{width:100%;border-collapse:collapse}
 /* o título da tela fica na barra de cima (como na Shopify) */
 .page-head h1{display:none}
 .page-head:not(:has(p,.seg,.btn,a,span.soft)){display:none}
+body.sem-valores .amt,body.sem-valores .metrics{visibility:hidden}

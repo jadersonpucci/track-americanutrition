@@ -301,6 +301,27 @@ def logo(cls):
     m = re.search(r'<img src="([^"?]+)[^"]*"[^>]*class="' + cls, hdr.get('header', ''))
     return ('https:' + m.group(1)) if m and m.group(1).startswith('//') else (m.group(1) if m else None)
 
+# pixels que a Shopify injetava pelos apps (webPixelsConfigList da home): Meta, TikTok, Google (GA4 + Ads), Klaviyo
+def pixels(doc):
+    t = doc
+    for _ in range(4):   # o JSON vem escapado em várias camadas
+        t = t.replace('\\\\', '\\').replace('\\"', '"').replace('\\/', '/')
+    r = {}
+    m = re.search(r'"pixel_id":"(\d+)","pixel_type":"facebook_pixel"', t); r['meta'] = m.group(1) if m else None
+    m = re.search(r'"pixelCode":"([A-Z0-9]+)"', t); r['tiktok'] = m.group(1) if m else None
+    m = re.search(r'"google_tag_ids":\[([^\]]*)\]', t)
+    ids = re.findall(r'"([^"]+)"', m.group(1)) if m else []
+    r['ga4'] = next((x for x in ids if x.startswith('G-')), None)
+    ads = {}
+    for ev, lab in re.findall(r'"type":"(\w+)","action_label":(\[[^\]]*\]|"[^"]*")', t):
+        aw = next((x.replace('\\', '') for x in re.findall(r'"([^"]+)"', lab) if x.startswith('AW-')), None)
+        if aw and ev != 'purchase' and ev != 'add_payment_info': ads[ev] = aw   # compra e pagamento: o checkout dispara
+    r['google_ads'] = ads
+    m = re.search(r'klaviyo\.com/onsite/js/(\w+)/', t) or re.search(r'"accountID":"(\w+)"', t); r['klaviyo'] = m.group(1) if m else None
+    return {k: v for k, v in r.items() if v}
+RASTREIO = pixels(rd('home.html'))
+print('pixels:', RASTREIO)
+
 config = {
     'nome': 'America Nutrition',
     'dominio': 'https://www.americanutrition.com',
@@ -324,6 +345,7 @@ config = {
     'carrinho_colecoes': ['imunofosfo', 'linha-suplementos'],
     'header_html': header_html,
     'footer_html': footer_html,
+    'rastreio': RASTREIO,
     'scripts_head': '\n'.join(scripts_head),
     'scripts_body': '\n'.join(scripts_body),
 }
@@ -374,3 +396,7 @@ loja = {'versao': 1, 'gerado_em': datetime.now(timezone.utc).isoformat(timespec=
 with open(os.path.join(OUT, 'loja.json'), 'w', encoding='utf-8') as f:
     json.dump(loja, f, ensure_ascii=False, indent=1)
 print('ok →', os.path.join(OUT, 'loja.json'))
+# links de mídia: troca os da Shopify pelos do CDN próprio (só os já copiados por scripts/loja-midia.py)
+if os.path.exists(os.path.join(OUT, 'midia.json')):
+    import subprocess
+    subprocess.run([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'loja-midia.py'), 'reescrever'], check=False)

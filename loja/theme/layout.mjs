@@ -121,6 +121,7 @@ ${og ? `<meta property="og:image" content="${esc(img(og, 1200))}">\n<meta name="
 <link rel="stylesheet" href="/assets/theme.css?v=${ctx.versao}">
 <script>document.documentElement.classList.replace('no-js','js');window.AN_LOJA=${JSON.stringify({ checkout: cfg.checkout_url, frete: Number(cfg.frete_gratis_min) || 0, v: ctx.versao, page: pageType })};</script>
 <script src="/assets/theme.js?v=${ctx.versao}"></script>
+${cfg.rastreio && Object.keys(cfg.rastreio).length ? `<script>window.AN_RASTREIO=${JSON.stringify(cfg.rastreio)};</script><script src="/assets/rastreio.js?v=${ctx.versao}" defer></script>` : ''}
 ${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld).replace(/</g, '\\u003c')}</script>` : ''}
 ${cfg.scripts_head || ''}
 ${head}

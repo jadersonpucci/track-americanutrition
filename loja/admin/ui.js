@@ -7,7 +7,12 @@ export const slug = (s) => String(s || '').toLowerCase().normalize('NFD').replac
 export const norm = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 export const $ = (s, r = document) => r.querySelector(s);
 export const $$ = (s, r = document) => [...r.querySelectorAll(s)];
-export const thumb = (u, w = 120) => !u ? '' : /cdn\.shopify\.com|\/cdn\/shop\//.test(u) ? u + (u.includes('?') ? '&' : '?') + 'width=' + w : u;
+export const thumb = (u, w = 120) => {
+  if (!u) return '';
+  const m = u.match(/^(https:\/\/cdn\.americanutrition\.com\/imagens\/loja\/)(?!w\d+\/)(.+)\.(jpe?g|png|webp)$/i);   // versões WebP do CDN próprio
+  if (m) return `${m[1]}w${[300, 600, 1000, 1600].find((x) => x >= w) || 1600}/${m[2]}.webp`;
+  return /cdn\.shopify\.com|\/cdn\/shop\//.test(u) ? u + (u.includes('?') ? '&' : '?') + 'width=' + w : u;
+};
 
 export function toast(msg, err = false) {
   const t = document.createElement('div'); t.className = 'toast' + (err ? ' err' : ''); t.textContent = msg;

@@ -2,7 +2,7 @@
 import { db } from '../db.js';
 import { esc, brl, num, slug, norm, $, $$, toast, abrirPainel, confirmar, fld, inp, area, sel, chk, lerForm, editorRico, ordenavel, statusBadge, thumb } from '../ui.js';
 import { htmlProduto, htmlColecao, montarFrame } from '../preview.js';
-import { niveisDe, disp, rastreia } from '../estoque-logica.js';
+import { niveisDe, disp, rastreia, ehKit } from '../estoque-logica.js';
 
 const precoTxt = (p) => { const ps = (p.variantes || []).map((v) => v.preco); if (!ps.length) return '—'; const a = Math.min(...ps), b = Math.max(...ps); return a === b ? brl(a) : `${brl(a)} – ${brl(b)}`; };
 // como na Shopify: "475 em estoque para 4 variantes" (disponível em todos os locais)
@@ -97,9 +97,28 @@ export function editarProduto(orig) {
       const v = p.variantes[0];
       $('#vars', el).innerHTML = `<div class="row" style="--c:3">${fld('Preço', inp('v0_preco', v.preco, 'inputmode="decimal"'))}${fld('Preço comparativo (de)', inp('v0_comp', v.preco_comparacao ?? '', 'inputmode="decimal" placeholder="sem desconto"'))}${fld('SKU', inp('v0_sku', v.sku))}</div>
       <div class="row" style="--c:3;margin-top:14px">${fld('Custo por item', inp('v0_custo', v.custo ?? '', 'inputmode="decimal" placeholder="R$"'), v.custo && v.preco ? `Margem ${Math.round((1 - v.custo / v.preco) * 100)}%` : '')}${fld('Peso (g)', inp('v0_peso', v.peso_g || '', 'type="number"'))}<div class="fld"><span>&nbsp;</span>${chk('v0_disp', v.disponivel, 'Disponível para venda')}</div></div>
-      <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line2)"><div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:8px">${chk('v0_rastrear', rastreia(db.state, v), 'Controlar quantidade')}${chk('v0_vse', !!v.vender_sem_estoque, 'Continuar vendendo quando esgotar')}</div><div id="v0_locais"></div></div>
+      <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line2)"><div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:8px">${chk('v0_kit', ehKit(v), 'É um kit / combo')}<span data-nao-kit style="display:contents">${chk('v0_rastrear', rastreia(db.state, v), 'Controlar quantidade')}</span>${chk('v0_vse', !!v.vender_sem_estoque, 'Continuar vendendo quando esgotar')}</div><div id="v0_kit"></div><div id="v0_locais"></div></div>
       <p class="xs soft" style="margin-top:10px">ID da variante: <span class="mono">${esc(v.id)}</span> (é o que o checkout recebe).</p>`;
+      // kit: o estoque é o dos produtos que compõem (vende enquanto der para montar um kit completo)
+      v.componentes = v.componentes || [];
+      const opcoesVar = db.state.produtos.flatMap((pp) => (pp.variantes || []).filter((x) => !ehKit(x) && x.id !== v.id).map((x) => [x.id, pp.titulo + (x.titulo !== 'Default Title' ? ' · ' + x.titulo : '')]));
+      const kit = () => {
+        const on = $('[name=v0_kit]', el).checked;
+        $('[data-nao-kit]', el).hidden = on; $('[data-nao-kit]', el).style.display = on ? 'none' : 'contents';
+        if (!on) { $('#v0_kit', el).innerHTML = ''; return locs(); }
+        $('#v0_locais', el).innerHTML = '';
+        if (!v.componentes.length) v.componentes.push({ variante_id: opcoesVar[0]?.[0], qtd: 1 });
+        $('#v0_kit', el).innerHTML = `<table class="t"><thead><tr><th>Produto do kit</th><th style="width:90px">Qtd</th><th class="r">Disponível</th><th></th></tr></thead><tbody>${v.componentes.map((c, i) => `<tr><td><select class="in" data-kv="${i}">${opcoesVar.map(([id, t]) => `<option value="${esc(id)}"${String(id) === String(c.variante_id) ? ' selected' : ''}>${esc(t)}</option>`).join('')}</select></td>
+          <td><input class="in" type="number" min="1" data-kq="${i}" value="${c.qtd || 1}"></td><td class="r">${niveisDe(db.state, c.variante_id).reduce((a, n) => a + disp(n), 0)}</td><td><button type="button" class="btn sm ico ghost" data-kr="${i}"><i class="ti ti-x"></i></button></td></tr>`).join('')}</tbody></table>
+          <button type="button" class="btn sm" id="kadd" style="margin-top:8px"><i class="ti ti-plus"></i> Adicionar produto ao kit</button>
+          <p class="xs soft" style="margin:8px 0 0">Cada kit vendido reserva e baixa os produtos acima no estoque. O kit esgota quando faltar qualquer um deles.</p>`;
+        $$('[data-kv]', el).forEach((x) => x.onchange = () => { v.componentes[+x.dataset.kv].variante_id = x.value; kit(); });
+        $$('[data-kq]', el).forEach((x) => x.oninput = () => { v.componentes[+x.dataset.kq].qtd = Math.max(1, Number(x.value) || 1); });
+        $$('[data-kr]', el).forEach((x) => x.onclick = () => { v.componentes.splice(+x.dataset.kr, 1); kit(); });
+        $('#kadd', el).onclick = () => { v.componentes.push({ variante_id: opcoesVar[0]?.[0], qtd: 1 }); kit(); };
+      };
       const locs = () => {
+        if ($('[name=v0_kit]', el).checked) return;
         const on = $('[name=v0_rastrear]', el).checked;
         $('[name=v0_disp]', el).closest('.fld').hidden = on;
         const ns = (db.state.locais || []).filter((l) => l.ativo !== false).map((l) => [l, niveisDe(db.state, v.id).find((n) => n.local_id === l.id)]).filter(([l, n]) => n || l.online);
@@ -107,7 +126,7 @@ export function editarProduto(orig) {
           : `<table class="t"><thead><tr><th>Local</th><th class="r">Comprometido</th><th class="r">Disponível</th><th class="r">Em mãos</th></tr></thead><tbody>${ns.map(([l, n]) => `<tr><td>${esc(l.nome)}${l.online ? ' <span class="tag">loja online</span>' : ''}</td><td class="r">${n?.comprometido || 0}</td><td class="r">${disp(n)}</td><td class="r">${n?.em_maos || 0}</td></tr>`).join('')}</tbody></table>
             ${novo ? '<small class="soft">Salve o produto e lance as quantidades em Estoque → Receber mercadoria.</small>' : `<a class="btn sm" style="margin-top:8px" href="#/estoque/${esc(v.id)}"><i class="ti ti-building-warehouse"></i> Ajustar quantidades</a>`}`;
       };
-      $('[name=v0_rastrear]', el).onchange = locs; locs();
+      $('[name=v0_rastrear]', el).onchange = locs; $('[name=v0_kit]', el).onchange = kit; kit();
       return;
     }
     $('#vars', el).innerHTML = `<div class="row" style="margin-bottom:14px">${fld('Nome da opção 1', inp('op1', p.opcoes?.[0]?.nome === 'Title' ? 'Tamanho' : p.opcoes?.[0]?.nome || 'Tamanho'))}${fld('Nome da opção 2 (opcional)', inp('op2', p.opcoes?.[1]?.nome || ''))}</div>
@@ -126,6 +145,7 @@ export function editarProduto(orig) {
       const v = p.variantes[0];
       Object.assign(v, { preco: num($('[name=v0_preco]', el)?.value), preco_comparacao: num($('[name=v0_comp]', el)?.value) || null, sku: $('[name=v0_sku]', el)?.value || '', peso_g: Number($('[name=v0_peso]', el)?.value) || 0, disponivel: $('[name=v0_disp]', el)?.checked,
         custo: $('[name=v0_custo]', el)?.value ? num($('[name=v0_custo]', el).value) : null, rastrear: !!$('[name=v0_rastrear]', el)?.checked, vender_sem_estoque: !!$('[name=v0_vse]', el)?.checked });
+      if ($('[name=v0_kit]', el)?.checked) { v.componentes = (v.componentes || []).filter((c) => c.variante_id); v.rastrear = false; } else delete v.componentes;
       if (!p.variantes[0].titulo || p.variantes.length === 1) { p.variantes = [v]; v.titulo = 'Default Title'; v.opcoes = ['Default Title']; p.opcoes = [{ nome: 'Title', valores: ['Default Title'] }]; }
       return;
     }

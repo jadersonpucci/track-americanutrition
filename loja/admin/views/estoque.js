@@ -2,7 +2,7 @@
 // recebimento de mercadoria, transferência entre locais e histórico de cada movimentação.
 import { db } from '../db.js';
 import { esc, brl, num, norm, $, $$, toast, abrirPainel, fld, inp, sel, chk, thumb } from '../ui.js';
-import { MOTIVOS, nivel, niveisDe, disp, locaisOnline, rastreia } from '../estoque-logica.js';
+import { MOTIVOS, nivel, niveisDe, disp, locaisOnline, rastreia, ehKit, cobertura } from '../estoque-logica.js';
 
 const MINIMO_PADRAO = 10;
 const nomeVar = (v) => (v.titulo && v.titulo !== 'Default Title' ? v.titulo : '');
@@ -16,10 +16,12 @@ function linhas(local) {
   for (const p of s.produtos) {
     if ((p.status || 'ativo') === 'arquivado') continue;
     for (const v of p.variantes || []) {
+      if (ehKit(v)) continue;   // kit não tem estoque próprio (segue os componentes)
       const ns = niveisDe(s, v.id).filter((n) => !local || n.local_id === local);
       const em = ns.reduce((t, n) => t + n.em_maos, 0), com = ns.reduce((t, n) => t + n.comprometido, 0);
       const online = niveisDe(s, v.id).filter((n) => on.includes(n.local_id)).reduce((t, n) => t + disp(n), 0);
-      out.push({ p, v, em, com, d: em - com, online, rastreia: rastreia(s, v) });
+      const v30 = (s.vendas_30d || {})[v.id] || 0;
+      out.push({ p, v, em, com, d: em - com, online, rastreia: rastreia(s, v), v30, dias: cobertura(online, v30) });
     }
   }
   return out;
@@ -28,6 +30,7 @@ const ABAS = [
   ['todos', 'Todos', () => true],
   ['baixo', 'Estoque baixo', (r) => r.rastreia && r.d > 0 && r.d <= minimo(r.v)],
   ['esgotados', 'Esgotados', (r) => r.rastreia && r.d <= 0],
+  ['acabando', 'Vai acabar (30 dias)', (r) => r.rastreia && r.dias != null && r.dias <= 30],
   ['sem_estoque', 'Vendendo sem estoque', (r) => r.rastreia && r.v.vender_sem_estoque],
   ['sem_controle', 'Sem controle', (r) => !r.rastreia],
 ];
@@ -66,6 +69,7 @@ export async function estoque(view, { args, crumb, acts }) {
       ['Valor em estoque (custo)', brl(valor)],
       ['Estoque baixo', rs.filter(ABAS[1][2]).length],
       ['Esgotados', rs.filter(ABAS[2][2]).length],
+      ['Acabam em até 30 dias', rs.filter(ABAS[3][2]).length],
     ];
     $('#mx', view).innerHTML = ms.map(([l, v]) => `<div class="metric"><span class="l">${esc(l)}</span><span class="v">${v}</span></div>`).join('');
   }
@@ -75,7 +79,7 @@ export async function estoque(view, { args, crumb, acts }) {
     const fn = ABAS.find((a) => a[0] === st.aba)[2];
     const lista = linhas(st.local).filter(fn).filter((r) => !st.q || norm(r.p.titulo + ' ' + r.v.titulo + ' ' + (r.v.sku || '')).includes(norm(st.q)));
     const edita = !!st.local;
-    $('#lista', view).innerHTML = lista.length ? `<table class="t"><thead><tr><th>Produto</th><th class="hide-sm">SKU</th><th class="r">Comprometido</th><th class="r">Disponível</th><th class="r" style="width:120px">Em mãos</th>${edita ? '' : '<th>Loja online</th>'}</tr></thead><tbody>${lista.map((r) => {
+    $('#lista', view).innerHTML = lista.length ? `<table class="t"><thead><tr><th>Produto</th><th class="hide-sm">SKU</th><th class="r">Comprometido</th><th class="r">Disponível</th><th class="r" style="width:120px">Em mãos</th>${edita ? '' : '<th class="r hide-sm" title="Unidades vendidas nos últimos 30 dias">Vendas 30d</th><th class="hide-sm" title="No ritmo dos últimos 30 dias">Acaba em</th><th>Loja online</th>'}</tr></thead><tbody>${lista.map((r) => {
       const ch = st.sujo.get(r.v.id);
       const alerta = !r.rastreia ? '' : r.d <= 0 ? ' red' : r.d <= minimo(r.v) ? ' amber' : '';
       return `<tr class="click" data-v="${esc(r.v.id)}">
@@ -84,7 +88,7 @@ export async function estoque(view, { args, crumb, acts }) {
       <td class="r">${r.rastreia ? fmt(r.com) : '<span class="soft">—</span>'}</td>
       <td class="r">${r.rastreia ? `<span class="badge${alerta}" style="${alerta ? '' : 'background:none;padding:0'}">${fmt(r.d)}</span>` : '<span class="soft">Sem controle</span>'}</td>
       <td class="r" data-stop>${edita && r.rastreia ? `<input class="in" type="number" data-em="${esc(r.v.id)}" value="${ch ?? r.em}" style="width:96px;text-align:right${ch != null ? ';border-color:#005bd3;box-shadow:0 0 0 1px #005bd3' : ''}">` : r.rastreia ? fmt(r.em) : '<span class="soft">—</span>'}</td>
-      ${edita ? '' : `<td>${!r.rastreia ? (r.v.disponivel ? '<span class="badge green"><span class="dot"></span>À venda</span>' : '<span class="badge"><span class="dot"></span>Indisponível</span>') : r.online > 0 ? `<span class="badge green"><span class="dot"></span>${fmt(r.online)} à venda</span>` : r.v.vender_sem_estoque ? '<span class="badge blue"><span class="ring"></span>Vende sem estoque</span>' : '<span class="badge red"><span class="dot"></span>Esgotado</span>'}</td>`}</tr>`;
+      ${edita ? '' : `<td class="r hide-sm">${r.v30 ? fmt(r.v30) : '<span class="soft">—</span>'}</td><td class="hide-sm">${r.dias == null ? '<span class="soft">—</span>' : `<span class="badge${r.dias <= 15 ? ' red' : r.dias <= 30 ? ' amber' : ''}" style="${r.dias > 30 ? 'background:none;padding:0' : ''}">${r.dias === 0 ? 'esgotado' : r.dias > 365 ? 'mais de 1 ano' : '~' + fmt(r.dias) + ' dias'}</span>`}</td><td>${!r.rastreia ? (r.v.disponivel ? '<span class="badge green"><span class="dot"></span>À venda</span>' : '<span class="badge"><span class="dot"></span>Indisponível</span>') : r.online > 0 ? `<span class="badge green"><span class="dot"></span>${fmt(r.online)} à venda</span>` : r.v.vender_sem_estoque ? '<span class="badge blue"><span class="ring"></span>Vende sem estoque</span>' : '<span class="badge red"><span class="dot"></span>Esgotado</span>'}</td>`}</tr>`;
     }).join('')}</tbody></table>` : `<div class="empty"><i class="ti ti-building-warehouse"></i>${st.q ? 'Nada encontrado.' : 'Nenhum item nesta aba.'}</div>`;
     $('#rodape', view).innerHTML = `<span>${lista.length} ${lista.length === 1 ? 'variante' : 'variantes'}${edita ? '' : ' · escolha um local para editar as quantidades'}</span>`;
     $$('tr[data-v]', view).forEach((tr) => tr.onclick = (e) => { if (e.target.closest('[data-stop]')) return; abrirVariante(tr.dataset.v, draw); });
@@ -113,7 +117,7 @@ export async function estoque(view, { args, crumb, acts }) {
 }
 
 function avisoVitrine(r) {
-  for (const m of r?.mudou || []) toast(`${m.produto}${m.variante && m.variante !== 'Default Title' ? ' · ' + m.variante : ''}: ${m.disponivel ? 'voltou ao estoque' : 'esgotou'} na loja. Publique para atualizar o site.`);
+  for (const m of r?.mudou || []) toast(`${m.produto}${m.variante && m.variante !== 'Default Title' ? ' · ' + m.variante : ''}: ${m.disponivel ? 'voltou ao estoque' : 'esgotou'} na loja. ${db.avisoVitrine}`);
 }
 const acharVar = (vid) => { for (const p of db.state.produtos) { const v = (p.variantes || []).find((x) => String(x.id) === String(vid)); if (v) return { p, v }; } return {}; };
 const nomeLocal = (id) => (db.state.locais.find((l) => l.id === id) || {}).nome || id;
@@ -127,6 +131,8 @@ async function abrirVariante(vid, redraw) {
     <div class="card"><div class="card-h"><h3 class="grow">Quantidades por local</h3><span class="soft xs">Em mãos é o que existe fisicamente; comprometido está reservado para pedidos pagos ainda não enviados.</span></div>
       <table class="t"><thead><tr><th>Local</th><th class="r">Comprometido</th><th class="r">Disponível</th><th class="r" style="width:120px">Em mãos</th></tr></thead><tbody>${(s.locais || []).filter((l) => l.ativo !== false).map((l) => { const n = nivel(s, v.id, l.id); return `<tr><td>${esc(l.nome)}${l.online ? ' <span class="tag">loja online</span>' : ''}</td><td class="r">${fmt(n?.comprometido)}</td><td class="r">${fmt(disp(n))}</td><td class="r"><input class="in" type="number" data-loc="${esc(l.id)}" value="${n?.em_maos || 0}" style="width:96px;text-align:right"></td></tr>`; }).join('')}</tbody></table>
       <div class="card-b" style="border-top:1px solid var(--line2);display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="soft">Motivo</span>${sel('motivo', 'correcao', ['correcao', 'contagem', 'recebido', 'danificado', 'perda', 'promocao', 'outro'].map((k) => [k, MOTIVOS[k]])).replace('<select class="in"', '<select class="in" style="width:auto"')}<input class="in" name="nota" placeholder="Observação (opcional)" style="flex:1;min-width:160px"><button class="btn pri sm" id="aj">Salvar quantidades</button></div></div>
+    ${(() => { const v30 = (s.vendas_30d || {})[v.id] || 0; if (!v30) return ''; const on = niveisDe(s, v.id).filter((n) => locaisOnline(s).includes(n.local_id)).reduce((t, n) => t + disp(n), 0); const dia = v30 / 30, d = cobertura(on, v30), repor = Math.max(0, Math.ceil(dia * 60 - on));
+      return `<div class="card card-b"><h3 style="margin:0 0 6px">Previsão</h3><p style="margin:0">Vendeu <b>${fmt(v30)}</b> nos últimos 30 dias (~${dia.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} por dia). No ritmo atual, o disponível na loja (${fmt(on)}) dura <b>${d === 0 ? 'nada — já esgotou' : '~' + fmt(d) + ' dias'}</b>.${repor ? ` Para ter estoque para 60 dias, repor <b>${fmt(repor)} unidades</b>.` : ''}</p></div>`; })()}
     <div class="card card-b stack"><h3>Configurações</h3>
       ${chk('rastrear', rastreia(s, v), 'Controlar quantidade (esgota sozinho quando acaba)')}
       ${chk('vender_sem_estoque', !!v.vender_sem_estoque, 'Continuar vendendo quando esgotar')}
@@ -151,7 +157,7 @@ async function abrirVariante(vid, redraw) {
     const antes = nv.disponivel;
     await db.upsert('produtos', np);
     const depois = acharVar(v.id).v?.disponivel;
-    toast('Configurações salvas.' + (antes !== depois ? ' A disponibilidade na loja mudou: publique para atualizar o site.' : ''));
+    toast('Configurações salvas.' + (antes !== depois ? ' A disponibilidade na loja mudou. ' + db.avisoVitrine : ''));
     pn.fechar(); redraw?.();
   };
 }

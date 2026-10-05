@@ -82,9 +82,9 @@ class Demo {
     await idbSet('estado', s);
   }
   async salvar(state) { await idbSet('estado', state); }
-  async upsert(_t, _rows, state) { await this.salvar(state); }
-  async remove(_t, _ids, state) { await this.salvar(state); }
-  async setUnico(_k, _v, state) { await this.salvar(state); }
+  async upsert(t, rows, state) { this.registrar('upsert', `Salvou ${t}: ${rows.map((r) => r.titulo || r.codigo || r.handle || r.id).join(', ')}`); await this.salvar(state); }
+  async remove(t, ids, state) { this.registrar('remove', `Excluiu ${t}: ${ids.join(', ')}`); await this.salvar(state); }
+  async setUnico(k, _v, state) { this.registrar('set', `Alterou ${k}`); await this.salvar(state); }
   async resetar() { await idbSet('estado', null); }
   async pedidos(f) { return demo.filtrarPedidos(this.s.pedidos, f); }
   async pedido(id) { return this.s.pedidos.find((p) => p.id === id); }
@@ -96,13 +96,22 @@ class Demo {
     if ('rastreio' in c && c.rastreio !== p.rastreio && c.rastreio) ev('Rastreio: ' + c.rastreio);
     Object.assign(p, c, { atualizado_em: new Date().toISOString() });
     est.pedidoEstoque(this.s, p, 'Demonstração');
+    this.registrar('pedido_atualizar', `Pedido AN-${p.numero}: ${Object.entries(c).filter(([k]) => ['status_entrega', 'status_pagamento', 'rastreio'].includes(k)).map(([k, v]) => `${k.replace('status_', '')} ${v || '—'}`).join(', ')}`);
     await this.salvar(this.s); return p;
   }
   async resumo() { return demo.resumo(this.s.pedidos); }
   async pedidoCriar(payload) { const p = demo.criar(this.s.pedidos, payload, this.s.produtos); est.pedidoEstoque(this.s, p, 'Demonstração'); await this.salvar(this.s); return p; }
   // estoque: aqui o estado do navegador é o próprio db.state, então as funções já atualizam a tela
-  async estoque() { return { locais: this.s.locais, niveis: this.s.estoque }; }
-  async estoqueAjustar(itens) { const mudou = est.ajustar(this.s, itens, 'Demonstração'); await this.salvar(this.s); return { mudou }; }
+  async estoque() { this.s.vendas_30d = est.vendas(this.s, 30); return { locais: this.s.locais, niveis: this.s.estoque, vendas_30d: this.s.vendas_30d }; }
+  async relatorio({ desde, ate } = {}) {
+    const a = desde ? new Date(desde) : new Date(Date.now() - 30 * 864e5), b = ate ? new Date(ate) : new Date(Date.now() + 864e5);
+    return this.s.pedidos.filter((p) => new Date(p.criado_em) >= a && new Date(p.criado_em) < b).map((p) => ({ ...p, uf: p.endereco?.uf, cliente: (p.cliente?.email || p.cliente?.cpf || p.id || '').toLowerCase() }));
+  }
+  async usuarios() { return { eu: 'demo', papel_padrao: 'dono', usuarios: [{ id: 'demo', nome: 'Demonstração', email: 'local', ativo: true, papel: 'dono', ultimo_acesso: new Date().toISOString() }, { id: 'demo-2', nome: 'Expedição (exemplo)', email: 'expedicao@exemplo.com', ativo: true, papel: 'expedicao' }, { id: 'demo-3', nome: 'Marketing (exemplo)', email: 'marketing@exemplo.com', ativo: true, papel: 'conteudo' }] }; }
+  async usuariosGravar() { throw new Error('No modo demonstração os papéis não são gravados.'); }
+  async atividade() { return (this.s.atividade || []).slice(0, 300); }
+  registrar(op, resumo) { this.s.atividade = [{ em: new Date().toISOString(), usuario: 'Demonstração', op, resumo }, ...(this.s.atividade || [])].slice(0, 1000); }
+  async estoqueAjustar(itens) { this.registrar('estoque_ajustar', `Ajustou estoque de ${itens.length} item(ns)`); const mudou = est.ajustar(this.s, itens, 'Demonstração'); await this.salvar(this.s); return { mudou }; }
   async estoqueTransferir(t) { const mudou = est.transferir(this.s, t, 'Demonstração'); await this.salvar(this.s); return { mudou }; }
   async estoqueMov(f = {}) {
     return (this.s.estoque_mov || []).filter((m) => (!f.variante_id || m.variante_id === String(f.variante_id)) && (!f.local_id || m.local_id === f.local_id)).slice(0, f.limite || 200);
@@ -132,6 +141,7 @@ class Servidor {
   async load() {
     if (!this.sess?.token) { const e = new Error('login'); e.code = 'login'; throw e; }
     const j = await this.call('load');
+    if (j.user) { this.sess.user = j.user; pref.set('sessao', this.sess); }   // traz o papel atualizado
     return j.data;
   }
   async upsert(t, rows) { for (let i = 0; i < rows.length; i += 50) await this.call('upsert', { table: t, rows: rows.slice(i, i + 50) }); }
@@ -143,7 +153,11 @@ class Servidor {
   async resumo() { return (await this.call('resumo')).resumo; }
   async pedidoCriar(payload) { return this.call('pedido_criar', payload); }
   async clientes(f) { return (await this.call('clientes', f)).clientes; }
-  async estoque() { const j = await this.call('estoque'); return { locais: j.locais, niveis: j.niveis, variantes: j.variantes }; }
+  async estoque() { const j = await this.call('estoque'); return { locais: j.locais, niveis: j.niveis, variantes: j.variantes, vendas_30d: j.vendas_30d }; }
+  async relatorio(f) { return (await this.call('relatorio', f)).pedidos; }
+  async usuarios() { return this.call('usuarios'); }
+  async usuariosGravar(usuario_id, papel) { return this.call('usuarios_gravar', { usuario_id, papel }); }
+  async atividade(f = {}) { return (await this.call('atividade', f)).itens; }
   async estoqueAjustar(itens) { return this.call('estoque_ajustar', { itens }); }
   async estoqueTransferir(t) { return this.call('estoque_transferir', t); }
   async estoqueMov(f = {}) { return (await this.call('estoque_mov', f)).itens; }
@@ -164,6 +178,10 @@ export const db = {
     return this;
   },
   get demo() { return this.backend.modo === 'demo'; },
+  // papel do usuário no painel: dono | gerente | expedicao | conteudo (o servidor confere cada operação)
+  // texto quando a disponibilidade de um produto muda: no servidor a publicação é automática (fila de eventos)
+  get avisoVitrine() { return this.demo ? 'Publique a loja para atualizar o site.' : 'O site se atualiza sozinho em cerca de 1 minuto.'; },
+  get papel() { return this.backend.user?.papel || 'dono'; },
   all(t) { return this.state[t] || []; },
   get(t, id) { return this.all(t).find((x) => String(x.id) === String(id)) || null; },
   async upsert(t, row) {
@@ -191,6 +209,7 @@ export const db = {
   // estoque: busca o saldo atual e aplica (no servidor também atualiza estoque/disponível das variantes)
   async recarregarEstoque() { this.aplicarEstoque(await this.backend.estoque()); return this.state; },
   aplicarEstoque(r) {
+    if (r?.vendas_30d) this.state.vendas_30d = r.vendas_30d;
     if (!r || this.demo) return r;
     if (r.locais) this.state.locais = r.locais;
     if (r.niveis) {

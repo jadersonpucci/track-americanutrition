@@ -5,11 +5,16 @@ export const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&a
 // R$ 1.234,56
 export const brl = (v) => 'R$ ' + Number(v || 0).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 
-// Redimensiona imagens das CDNs que aceitam parâmetro de largura (Shopify hoje; Supabase com /render/image).
+// Largura certa da imagem. No CDN próprio (cdn.americanutrition.com/imagens/loja/…) cada imagem tem
+// versões WebP prontas de 300/600/1000/1600 px (scripts/loja-midia.py); na Shopify, ?width=.
+export const LARGURAS = [300, 600, 1000, 1600];
+const CDN_LOJA = /^(https:\/\/cdn\.americanutrition\.com\/imagens\/loja\/)(?!w\d+\/)(.+)\.(jpe?g|png|webp)$/i;
 export function img(url, w) {
   if (!url) return '';
   let u = url.startsWith('//') ? 'https:' + url : url;
   if (!w) return u;
+  const m = u.match(CDN_LOJA);
+  if (m) { const alvo = LARGURAS.find((x) => x >= w); return alvo ? `${m[1]}w${alvo}/${m[2]}.webp` : u; }
   if (/cdn\.shopify\.com|\/cdn\/shop\//.test(u)) return u + (u.includes('?') ? '&' : '?') + 'width=' + w;
   return u;
 }

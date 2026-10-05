@@ -33,7 +33,7 @@ ${rel.length ? `<section class="section"><div class="page-width">${sectionHeader
     title: p.seo?.titulo || `${p.titulo} – ${ctx.config.nome}`, description: p.seo?.descricao || resumo(p.descricao_html, 160),
     image: p.imagens?.[0]?.url, canonical: url, pageType: 'product', body, jsonld,
     head: `<meta property="product:price:amount" content="${f.min.toFixed(2)}"><meta property="product:price:currency" content="BRL">
-<script>window.AN_PRODUTO=${JSON.stringify({ id: p.id, handle: p.handle, titulo: p.titulo, variantes: (p.variantes || []).map((v) => ({ id: v.id, titulo: v.titulo, preco: v.preco, disponivel: v.disponivel })) })};</script>`,
+<script>window.AN_PRODUTO=${JSON.stringify({ id: p.id, handle: p.handle, titulo: p.titulo, imagem: img(p.imagens?.[0]?.url, 600), variantes: (p.variantes || []).map((v) => ({ id: v.id, titulo: v.titulo, preco: v.preco, sku: v.sku, disponivel: v.disponivel })) }).replace(/</g, '\\u003c')};</script>`,
   });
 }
 
@@ -184,17 +184,51 @@ export function paginaCarrinho(ctx) {
   return layout(ctx, { title: `Carrinho – ${ctx.config.nome}`, canonical: '/cart', pageType: 'cart', body, head: '<meta name="robots" content="noindex">' });
 }
 
+// Minha conta: entra com e-mail ou celular + código (enviado por e-mail e WhatsApp); lista os pedidos com
+// rastreio, "comprar de novo" e avaliar. Sem a API pública configurada, roda em modo demonstração.
 export function paginaConta(ctx) {
-  const body = `<section class="section"><div class="page-width page-width--narrow account">
-  <h1 class="title-lg">Meus pedidos</h1>
-  <p class="account__lead">Digite o código de rastreio que enviamos por e-mail e WhatsApp para acompanhar a entrega.</p>
-  <form class="account__form" data-track-form action="${esc(ctx.config.rastreio_url)}" method="get">
-    <input name="codigo" placeholder="Ex.: AD123456789BR" required autocomplete="off" aria-label="Código de rastreio">
-    <button class="button button--primary">Rastrear</button>
-  </form>
-  <p class="account__help">Não encontrou o código? <a href="https://wa.me/13472225493" target="_blank" rel="noopener">Fale com o atendimento</a>.</p>
-</div></section>`;
-  return layout(ctx, { title: `Meus pedidos – ${ctx.config.nome}`, canonical: '/account', pageType: 'customers/account', body, head: '<meta name="robots" content="noindex">' });
+  const cfg = ctx.config;
+  const body = `<section class="section"><div class="page-width page-width--narrow account" data-conta>
+  <div data-etapa="login">
+    <h1 class="title-lg">Minha conta</h1>
+    <p class="account__lead">Acompanhe seus pedidos, rastreie entregas e compre de novo. Digite o e-mail ou o celular que você usou na compra: enviamos um código de acesso.</p>
+    <form class="account__form" data-conta-login>
+      <input name="login" placeholder="E-mail ou celular com DDD" required autocomplete="username" inputmode="email" aria-label="E-mail ou celular" style="text-transform:none">
+      <button class="button button--primary">Receber código</button>
+    </form>
+    <p class="account__msg" data-conta-msg hidden></p>
+    <details class="account__rastreio"><summary>Só quer rastrear uma entrega?</summary>
+      <form class="account__form" data-track-form action="${esc(cfg.rastreio_url)}" method="get" style="margin-top:14px">
+        <input name="codigo" placeholder="Ex.: AD123456789BR" required autocomplete="off" aria-label="Código de rastreio">
+        <button class="button button--secondary">Rastrear</button>
+      </form>
+    </details>
+  </div>
+  <div data-etapa="codigo" hidden>
+    <h1 class="title-lg">Digite o código</h1>
+    <p class="account__lead" data-conta-enviado></p>
+    <form class="account__form" data-conta-codigo>
+      <input name="codigo" placeholder="000000" required inputmode="numeric" autocomplete="one-time-code" maxlength="6" aria-label="Código de 6 dígitos" class="account__codigo">
+      <button class="button button--primary">Entrar</button>
+    </form>
+    <p class="account__msg" data-conta-msg2 hidden></p>
+    <p class="account__help"><button type="button" class="link" data-conta-voltar>Usar outro e-mail ou celular</button></p>
+  </div>
+  <div data-etapa="conta" hidden>
+    <div class="account__topo"><div><h1 class="title-lg" data-conta-ola>Olá!</h1><p class="account__lead" data-conta-quem style="margin:6px 0 0"></p></div>
+      <button type="button" class="button button--secondary button--sm" data-conta-sair>Sair</button></div>
+    <div data-conta-pedidos></div>
+  </div>
+  <div data-etapa="avaliar" hidden>
+    <h1 class="title-lg" data-avaliar-ola>Conte como foi!</h1>
+    <p class="account__lead">Sua opinião ajuda outras pessoas a escolher. Escolha o produto para avaliar:</p>
+    <div class="account__avaliar" data-avaliar-itens></div>
+  </div>
+  <p class="account__help">Precisa de ajuda? <a href="https://wa.me/13472225493" target="_blank" rel="noopener">Fale com o atendimento</a>.</p>
+</div></section>
+<script>window.AN_CONTA=${JSON.stringify({ api: cfg.api_publica || '', rastreio: cfg.rastreio_url || 'https://track.americanutrition.com/' })};</script>
+<script src="/assets/conta.js?v=${ctx.versao}" defer></script>`;
+  return layout(ctx, { title: `Minha conta – ${cfg.nome}`, canonical: '/account', pageType: 'customers/account', body, head: '<meta name="robots" content="noindex">' });
 }
 
 export function pagina404(ctx) {

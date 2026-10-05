@@ -59,6 +59,24 @@ Testado num Postgres 16 local com os dados reais: carga do catálogo e do estoqu
 
 Histórico: `python3 scripts/loja-importar-pedidos.py --loja 39c4f8-2.myshopify.com --token shpat_… --saida pedidos.sql` (pedidos com rastreio e status + cupons).
 
+## Fora da Shopify (mídia, pixels, Klaviyo, Minha conta)
+
+- **Mídia**: `scripts/loja-midia.py` copia imagens e vídeos do CDN da Shopify para `cdn.americanutrition.com/imagens/loja/…` (fluxos n8n "Loja · Migrar mídia" e "Loja · Subir arquivo") e troca os links nos dados; cada imagem tem versões WebP de 300/600/1000/1600 px (o tema escolhe a largura). Registro do que já foi copiado: `loja/data/midia.json`. Vídeos acima de 50 MB foram comprimidos para 720p antes.
+- **Pixels** (`assets/rastreio.js`, IDs em `config.rastreio`): Meta, TikTok, GA4 e conversões do Google Ads com os mesmos eventos que os apps da Shopify mandavam (PageView, ViewContent, AddToCart, InitiateCheckout, Search). A compra continua no checkout próprio.
+- **Klaviyo**: a fila `loja_eventos` + fluxo `n8n/loja-eventos.js` mandam Placed Order, Ordered Product, Fulfilled Order, Delivered Order, Cancelled Order, Refunded Order (mesmos nomes e propriedades da integração da Shopify) e "Codigo de Acesso". No Klaviyo, os fluxos que hoje disparam pela métrica da Shopify precisam ser apontados para a métrica nova (fonte API) e é preciso criar o fluxo do e-mail com `{{ event.codigo }}`.
+- **Minha conta** (`/account`, `assets/conta.js`): entra com e-mail ou celular + código (e-mail pelo Klaviyo e WhatsApp pelo Samuel); pedidos, rastreio, comprar de novo e avaliar (link `?avaliar=<token>` também vai no evento de entrega). Webhook público: `n8n/loja-publico.js` → `loja_publico()`.
+- **Avaliações**: as landings já usam o sistema próprio (`reviews-api`/`reviews-submit`); o build atualiza nota e total dos cards a cada publicação.
+- **Avisos** no Telegram (pedido pago, produto esgotou, estoque baixo) e **publicação automática** quando um produto esgota ou volta (deploy hook) — tudo pela mesma fila.
+
+## Painel
+
+- **Estoque**: por local (em mãos, comprometido, disponível), ajustes com motivo, recebimento, transferência, histórico; **previsão** (vendas 30 dias, "acaba em", sugestão de reposição para 60 dias); **kits/combos** baixam os produtos que os compõem.
+- **Relatórios**: receita, ticket, lucro bruto e margem (pelo custo de cada variante) por produto, afiliado, cupom, origem e estado.
+- **Equipe e atividade**: papéis (dono, gerente, expedição sem valores, conteúdo) sobre os usuários do Financeiro; todo o que muda algo fica registrado.
+- **App no iPhone**: Safari → Compartilhar → Adicionar à Tela de Início; o sino liga notificações de pedido pago no aparelho.
+
+Fluxos n8n desta pasta (`n8n/*.js`, SDK do n8n): `loja-api` (painel), `loja-publico` (Minha conta), `loja-eventos` (fila). Criar na Etapa 1, quando o banco estiver no ar.
+
 ## Deploy
 
 Projeto novo na Vercel ligado a este repositório, **Root Directory `loja`** (o `vercel.json` daqui já define build `node build.mjs` e saída `dist`). Variáveis `LOJA_API` e `LOJA_BUILD_TOKEN` quando o banco estiver no ar. Criar um Deploy Hook e gravar em `checkout_config.loja_deploy_hook`.

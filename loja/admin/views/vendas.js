@@ -68,6 +68,11 @@ export async function painel(view, { crumb }) {
   const ativos = s.produtos.filter((p) => (p.status || 'ativo') === 'ativo');
   const esgotados = ativos.filter((p) => !(p.variantes || []).some((v) => v.disponivel));
   // estoque baixo na loja online (variantes que controlam quantidade)
+  try { await db.recarregarEstoque(); } catch {}
+  // previsão: vai acabar em até 15 dias no ritmo dos últimos 30
+  const acabando = ativos.flatMap((p) => (p.variantes || []).map((v) => ({ p, v, v30: (s.vendas_30d || {})[v.id] || 0 })))
+    .filter((x) => x.v.estoque != null && x.v.estoque > 0 && x.v30 > 0 && !(x.v.componentes || []).length && x.v.estoque / (x.v30 / 30) <= 15)
+    .map((x) => ({ ...x, dias: Math.floor(x.v.estoque / (x.v30 / 30)) })).sort((a, b) => a.dias - b.dias);
   const baixos = ativos.flatMap((p) => (p.variantes || []).filter((v) => v.estoque != null && v.estoque > 0 && v.estoque <= (v.estoque_minimo ?? 10) && !v.vender_sem_estoque).map((v) => ({ p, v })));
   let r = null; try { r = await db.backend.resumo(); } catch (e) { toast(e.message, true); }
   view.innerHTML = `<div class="page">${aviso()}
@@ -86,9 +91,10 @@ export async function painel(view, { crumb }) {
       ${r ? `<div class="card card-b"><a href="#/pedidos/?aba=nao_processados" style="color:inherit;text-decoration:none;display:flex;align-items:center;gap:10px"><span class="badge amber"><span class="ring"></span>${r.a_enviar}</span><b style="flex:1">pedidos para processar</b><i class="ti ti-chevron-right soft"></i></a></div>` : ''}
       <div class="card"><div class="card-h"><h2 class="grow">Precisa de atenção</h2></div><div class="card-b stack" style="gap:10px">
         ${esgotados.map((p) => `<a class="cell" href="#/produtos/${esc(p.id)}" style="color:inherit"><img class="thumb" src="${esc(thumb(p.imagens?.[0]?.url))}" alt=""><div><b>${esc(p.titulo)}</b><span class="badge red">Esgotado</span></div></a>`).join('')}
-        ${baixos.map(({ p, v }) => `<a class="cell" href="#/estoque/${esc(v.id)}" style="color:inherit"><img class="thumb" src="${esc(thumb(p.imagens?.[0]?.url))}" alt=""><div><b>${esc(p.titulo)}${v.titulo !== 'Default Title' ? ' · ' + esc(v.titulo) : ''}</b><span class="badge amber">Restam ${v.estoque}</span></div></a>`).join('')}
+        ${acabando.map(({ p, v, dias }) => `<a class="cell" href="#/estoque/${esc(v.id)}" style="color:inherit"><img class="thumb" src="${esc(thumb(p.imagens?.[0]?.url))}" alt=""><div><b>${esc(p.titulo)}${v.titulo !== 'Default Title' ? ' · ' + esc(v.titulo) : ''}</b><span class="badge ${dias <= 7 ? 'red' : 'amber'}">Acaba em ~${dias} dia${dias === 1 ? '' : 's'}</span></div></a>`).join('')}
+        ${baixos.filter((b) => !acabando.some((a) => a.v.id === b.v.id)).map(({ p, v }) => `<a class="cell" href="#/estoque/${esc(v.id)}" style="color:inherit"><img class="thumb" src="${esc(thumb(p.imagens?.[0]?.url))}" alt=""><div><b>${esc(p.titulo)}${v.titulo !== 'Default Title' ? ' · ' + esc(v.titulo) : ''}</b><span class="badge amber">Restam ${v.estoque}</span></div></a>`).join('')}
         ${s.paginas.filter((g) => g.legado).length ? `<a href="#/paginas"><i class="ti ti-alert-triangle"></i> ${s.paginas.filter((g) => g.legado).length} páginas de campanha antigas para revisar</a>` : ''}
-        ${!esgotados.length && !baixos.length ? '<p class="soft" style="margin:0">Tudo certo com o catálogo.</p>' : ''}
+        ${!esgotados.length && !baixos.length && !acabando.length ? '<p class="soft" style="margin:0">Tudo certo com o catálogo.</p>' : ''}
       </div></div>
     </div>
   </div></div>`;
@@ -231,7 +237,7 @@ async function abrirPedido(id, redraw) {
     toast('Pedido atualizado.'); pn.fechar(); redraw?.();
     // reserva/baixa de estoque pode ter esgotado (ou devolvido) um produto na loja
     if (!db.demo) await db.recarregarEstoque().catch(() => {});
-    if (db.state.produtos.flatMap((x) => x.variantes || []).filter((v) => !v.disponivel).length !== antes) { db.pendente(); toast('A disponibilidade de um produto mudou com este pedido. Publique a loja para atualizar o site.'); }
+    if (db.state.produtos.flatMap((x) => x.variantes || []).filter((v) => !v.disponivel).length !== antes) { db.pendente(); toast('A disponibilidade de um produto mudou com este pedido. ' + db.avisoVitrine); }
     window.__contadores?.();
   };
   $('#salvar', pn.el).onclick = () => salvar();
