@@ -73,6 +73,7 @@ class Demo {
     await this.salvar(this.s); return p;
   }
   async resumo() { return demo.resumo(this.s.pedidos); }
+  async pedidoCriar(payload) { const p = demo.criar(this.s.pedidos, payload, this.s.produtos); await this.salvar(this.s); return p; }
   async clientes(f) { return demo.clientes(this.s.pedidos, f); }
 }
 
@@ -106,6 +107,7 @@ class Servidor {
   async pedido(id) { return (await this.call('pedido', { id })).pedido; }
   async pedidoAtualizar(id, campos) { return (await this.call('pedido_atualizar', { id, ...campos })).pedido; }
   async resumo() { return (await this.call('resumo')).resumo; }
+  async pedidoCriar(payload) { return this.call('pedido_criar', payload); }
   async clientes(f) { return (await this.call('clientes', f)).clientes; }
   async publicar(nota) { return this.call('publicar', { nota }); }
   async publicacoes() { return (await this.call('publicacoes')).itens; }

@@ -13,7 +13,7 @@ read_orders, read_all_orders, read_customers, read_discounts):
 Depois ajuste a numeração para continuar de onde a Shopify parou:
     select setval('loja_pedido_numero', (select max(numero) from loja_pedidos));
 """
-import argparse, json, ssl, sys, time, urllib.request
+import argparse, json, re, ssl, sys, time, urllib.request
 
 ap = argparse.ArgumentParser()
 ap.add_argument('--loja', required=True)
@@ -69,7 +69,7 @@ while True:
             'total': float(o['totalPriceSet']['shopMoney']['amount']), 'payment': {'gateway': tx.get('gateway'), 'method': tx.get('gateway')},
             'ref': attrs.get('ref') or attrs.get('afiliado'), 'note': o.get('note'), 'tags': o.get('tags') or [],
         }
-        numero = o['name'].lstrip('#').split('-')[0]
+        numero = (re.findall(r'\d+', o['name']) or [''])[-1]   # AN-15844 → 15844
         out.write(f"select loja_pedido_criar({sql(payload)}::jsonb);\n")
         st = PAG.get(o['displayFinancialStatus'], 'pendente')
         if o.get('cancelledAt'): st = 'cancelado'
@@ -109,6 +109,6 @@ while True:
             k += 1
     if not d['pageInfo']['hasNextPage']: break
     cur = d['pageInfo']['endCursor']
-out.write("select setval('loja_pedido_numero', greatest((select coalesce(max(numero), 0) from loja_pedidos), 50000));\ncommit;\n")
+out.write("select setval('loja_pedido_numero', greatest((select coalesce(max(numero), 0) from loja_pedidos), 15000));\ncommit;\n")
 out.close()
 print(f'ok: {n} pedidos e {k} cupons em {a.saida}', file=sys.stderr)

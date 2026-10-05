@@ -70,7 +70,7 @@ export function gerarPedidos(produtos) {
     });
   }
   // numeração em ordem de data, como no checkout
-  pedidos.sort((a, b) => b.criado_em.localeCompare(a.criado_em)).forEach((p, i) => { p.numero = 50000 + pedidos.length - i; });
+  pedidos.sort((a, b) => b.criado_em.localeCompare(a.criado_em)).forEach((p, i) => { p.numero = 15780 + pedidos.length - i; });
   return pedidos;
 }
 
@@ -81,9 +81,9 @@ const inicioMes = () => { const d = new Date(); d.setDate(1); d.setHours(0, 0, 0
 export function filtrarPedidos(lista, f = {}) {
   const q = (f.q || '').trim().toLowerCase();
   return lista.filter((p) => (!f.pagamento || p.status_pagamento === f.pagamento) && (!f.entrega || p.status_entrega === f.entrega) && (!q
-    || String(p.numero) === q.replace('#', '') || (p.rastreio || '').toLowerCase().startsWith(q) || (p.cliente.nome || '').toLowerCase().includes(q) || (p.cliente.email || '').includes(q)
+    || (dig(q) && String(p.numero) === dig(q)) || (p.rastreio || '').toLowerCase().startsWith(q) || (p.cliente.nome || '').toLowerCase().includes(q) || (p.cliente.email || '').includes(q)
     || (dig(q) && (dig(p.cliente.cpf) === dig(q) || dig(p.cliente.telefone).includes(dig(q))))))
-    .slice(0, f.limite || 100).map(({ itens, eventos, ...x }) => x);
+    .filter((p) => !f.desde || p.criado_em >= f.desde).slice(0, f.limite || 100).map(({ eventos, ...x }) => x);
 }
 
 export function resumo(lista) {
@@ -107,4 +107,20 @@ export function clientes(lista, f = {}) {
     g.set(k, c);
   }
   return [...g.values()].filter((c) => !q || c.nome.toLowerCase().includes(q) || (c.email || '').includes(q) || (dig(q) && dig(c.telefone).includes(dig(q)))).sort((a, b) => b.total - a.total);
+}
+
+// pedido manual no modo demonstração (mesmo formato de entrada da loja_pedido_criar)
+export function criar(lista, x, produtos) {
+  const vs = new Map(produtos.flatMap((p) => (p.variantes || []).map((v) => [String(v.id), { p, v }])));
+  const itens = (x.shopify_items || []).map((i) => { const m = vs.get(String(i.variant_id)) || {}; return { variante_id: String(i.variant_id), produto_id: m.p?.id, titulo: m.p?.titulo || 'Produto', variante: m.v?.titulo, sku: m.v?.sku, qtd: i.quantity, preco: i.price, imagem: m.p?.imagens?.[0]?.url }; });
+  const subtotal = +itens.reduce((s, i) => s + i.preco * i.qtd, 0).toFixed(2);
+  const agora = new Date().toISOString();
+  const p = { id: 'demo-m' + Date.now(), numero: Math.max(15780, ...lista.map((y) => y.numero)) + 1, criado_em: agora, atualizado_em: agora, origem: 'manual',
+    cliente: { nome: x.customer?.name, email: x.customer?.email, telefone: x.customer?.phone, cpf: x.customer?.cpf },
+    endereco: { cep: x.shipping_address?.zip, logradouro: x.shipping_address?.address1, numero: x.shipping_address?.number, bairro: x.shipping_address?.neighborhood, cidade: x.shipping_address?.city, uf: x.shipping_address?.province_code },
+    itens, subtotal, desconto: x.discount_amount || 0, frete: x.shipping_price || 0, frete_servico: x.shipping_price ? 'Manual' : 'Sem frete', total: +(subtotal - (x.discount_amount || 0) + (x.shipping_price || 0)).toFixed(2),
+    cupom: x.discount_code ? String(x.discount_code).toUpperCase() : null, pagamento: { metodo: x.payment?.method, gateway: 'manual' }, status_pagamento: x.paid ? 'pago' : 'pendente', status_entrega: 'nao_enviado',
+    rastreio: null, ref: null, notas: x.note || '', tags: ['demonstração'], eventos: [{ em: agora, texto: 'Criado no painel', por: 'Demonstração' }] };
+  lista.unshift(p);
+  return p;
 }

@@ -44,7 +44,7 @@ create or replace view loja_variantes as
 -- ---------------------------------------------------------------------
 -- 2) Pedidos, cupons, publicações
 -- ---------------------------------------------------------------------
-create sequence if not exists loja_pedido_numero start 50001;   -- ajuste com setval() para continuar a numeração da Shopify
+create sequence if not exists loja_pedido_numero start 15845;   -- continua a numeração da Shopify (AN-15844…); o import de pedidos ajusta com setval()
 create table if not exists loja_pedidos (
   id uuid primary key default gen_random_uuid(),
   numero bigint not null unique default nextval('loja_pedido_numero'),
@@ -198,7 +198,7 @@ begin
        where id = ped.id returning * into ped;
       if ped.cupom is not null then update loja_cupons set usos = usos + 1 where codigo = ped.cupom; end if;
     end if;
-    return jsonb_build_object('ok', true, 'duplicado', true, 'id', ped.id, 'numero', ped.numero, 'order_number', ped.numero, 'name', '#' || ped.numero);
+    return jsonb_build_object('ok', true, 'duplicado', true, 'id', ped.id, 'numero', ped.numero, 'order_number', ped.numero, 'name', 'AN-' || ped.numero);
   end if;
 
   insert into loja_pedidos (origem, idempotency_key, cliente, endereco, itens, subtotal, desconto, frete, frete_servico, total, cupom, pagamento, status_pagamento, ref, atribuicao, notas, tags, eventos, shopify_id, pago_em)
@@ -214,7 +214,7 @@ begin
   if pago and ped.cupom is not null then update loja_cupons set usos = usos + 1 where codigo = ped.cupom; end if;
   -- baixa de estoque nas variantes que controlam quantidade
   if pago then perform loja_estoque_baixar(ped.itens); end if;
-  return jsonb_build_object('ok', true, 'duplicado', false, 'id', ped.id, 'numero', ped.numero, 'order_number', ped.numero, 'name', '#' || ped.numero, 'total', ped.total);
+  return jsonb_build_object('ok', true, 'duplicado', false, 'id', ped.id, 'numero', ped.numero, 'order_number', ped.numero, 'name', 'AN-' || ped.numero, 'total', ped.total);
 end $$;
 
 create or replace function loja_estoque_baixar(p_itens jsonb) returns void language plpgsql as $$
@@ -291,13 +291,14 @@ begin
 
   if op = 'pedidos' then
     q := nullif(trim(p->>'q'), '');
-    select coalesce(jsonb_agg(to_jsonb(x) - 'itens' - 'eventos' order by x.criado_em desc), '[]') into res from (
+    select coalesce(jsonb_agg(to_jsonb(x) - 'eventos' order by x.criado_em desc), '[]') into res from (
       select * from loja_pedidos
        where (nullif(p->>'pagamento', '') is null or status_pagamento = p->>'pagamento')
+         and (nullif(p->>'desde', '') is null or criado_em >= (p->>'desde')::timestamptz)
          and (nullif(p->>'entrega', '') is null or status_entrega = p->>'entrega')
-         and (q is null or numero::text = ltrim(q, '#') or rastreio ilike q || '%' or cliente->>'nome' ilike '%' || q || '%' or cliente->>'email' ilike '%' || q || '%'
+         and (q is null or numero::text = regexp_replace(q, '\D', '', 'g') or rastreio ilike q || '%' or cliente->>'nome' ilike '%' || q || '%' or cliente->>'email' ilike '%' || q || '%'
               or regexp_replace(coalesce(cliente->>'cpf', ''), '\D', '', 'g') = regexp_replace(q, '\D', '', 'g') or regexp_replace(coalesce(cliente->>'telefone', ''), '\D', '', 'g') like '%' || nullif(regexp_replace(q, '\D', '', 'g'), '') || '%')
-       order by criado_em desc limit least(coalesce((p->>'limite')::int, 100), 500)) x;
+       order by criado_em desc limit least(coalesce((p->>'limite')::int, 100), 2000)) x;
     return jsonb_build_object('ok', true, 'pedidos', res);
   end if;
 
@@ -324,6 +325,17 @@ begin
         union all select jsonb_build_object('em', now(), 'por', coalesce(u.nome, u.email), 'texto', 'Rastreio: ' || (p->>'rastreio')) where nullif(p->>'rastreio', '') is distinct from ped.rastreio and p ? 'rastreio') z)
      where id = ped.id returning * into ped;
     return jsonb_build_object('ok', true, 'pedido', to_jsonb(ped));
+  end if;
+
+  if op = 'pedido_criar' then
+    -- pedido manual pelo painel (mesma função do checkout)
+    res := loja_pedido_criar(p || jsonb_build_object('origem', coalesce(p->>'origem', 'manual')));
+    if (res->>'ok')::boolean then
+      update loja_pedidos set eventos = eventos || jsonb_build_object('em', now(), 'texto', 'Criado no painel', 'por', coalesce(u.nome, u.email)),
+             status_entrega = coalesce(p->>'status_entrega', status_entrega), notas = coalesce(p->>'note', notas)
+       where id = (res->>'id')::uuid;
+    end if;
+    return res;
   end if;
 
   if op = 'resumo' then
