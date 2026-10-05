@@ -17,6 +17,8 @@ function semServidor(view, titulo, texto) {
   </ol></div></div>`;
 }
 
+const aviso = () => db.demo ? '<div class="help amber" style="margin-bottom:16px"><b>Pedidos fictícios.</b> Modo demonstração: clientes, endereços e CPFs são inventados para mostrar como o painel fica. Os produtos e preços são os reais. Quando o painel for ligado ao banco, aparecem os pedidos de verdade.</div>' : '';
+
 // ------------------------------------------------------------------ visão geral
 export async function painel(view, { crumb }) {
   crumb('<b>Visão geral</b>');
@@ -25,9 +27,9 @@ export async function painel(view, { crumb }) {
   const esgotados = ativos.filter((p) => !(p.variantes || []).some((v) => v.disponivel));
   const baixo = ativos.filter((p) => (p.variantes || []).some((v) => v.estoque != null && v.estoque <= 15 && v.estoque > 0));
   let r = null;
-  if (!db.demo) { try { r = await db.backend.resumo(); } catch (e) { toast(e.message, true); } }
+  try { r = await db.backend.resumo(); } catch (e) { toast(e.message, true); }
   view.innerHTML = `<div class="page"><div class="page-head"><div class="grow"><div class="eyebrow">${new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</div><h1>Visão geral</h1></div><a class="btn" href="/" target="_blank"><i class="ti ti-external-link"></i> Ver loja</a></div>
-  ${r ? `<div class="kpis">
+  ${aviso()}${r ? `<div class="kpis">
     <div class="card kpi"><div class="l">Vendas hoje</div><div class="v">${brl(r.hoje_total)}</div><div class="d">${r.hoje_pedidos} pedidos</div></div>
     <div class="card kpi"><div class="l">Últimos 7 dias</div><div class="v">${brl(r.sem_total)}</div><div class="d">${r.sem_pedidos} pedidos</div></div>
     <div class="card kpi"><div class="l">Este mês</div><div class="v">${brl(r.mes_total)}</div><div class="d">ticket médio ${brl(r.mes_ticket)}</div></div>
@@ -61,9 +63,8 @@ export async function painel(view, { crumb }) {
 // ------------------------------------------------------------------ pedidos
 export async function pedidos(view, { args, crumb, acts }) {
   crumb('<b>Pedidos</b>');
-  if (db.demo) return semServidor(view, 'Pedidos', 'Os pedidos ficam no banco (tabela <code>loja_pedidos</code>). Hoje o checkout ainda cria os pedidos na Shopify; quando a loja for ligada ao servidor, eles aparecem aqui com rastreio, status e cliente.');
   const f = { q: '', pagamento: '', entrega: '', limite: 100 };
-  view.innerHTML = `<div class="page"><div class="page-head"><div class="grow"><div class="eyebrow">Vendas</div><h1>Pedidos</h1></div></div>
+  view.innerHTML = `<div class="page"><div class="page-head"><div class="grow"><div class="eyebrow">Vendas</div><h1>Pedidos</h1></div></div>${aviso()}
   <div class="card"><div class="card-h" style="flex-wrap:wrap"><div class="search"><i class="ti ti-search"></i><input class="in" id="q" placeholder="Número, nome, e-mail, CPF ou rastreio"></div><div class="grow"></div>
   <select class="in" id="fp" style="width:auto"><option value="">Pagamento: todos</option>${Object.entries(PAG).map(([k, [, t]]) => `<option value="${k}">${t}</option>`).join('')}</select>
   <select class="in" id="fe" style="width:auto"><option value="">Entrega: todas</option>${Object.entries(ENT).map(([k, [, t]]) => `<option value="${k}">${t}</option>`).join('')}</select></div>
@@ -92,7 +93,7 @@ async function abrirPedido(id, redraw) {
       <tr><td colspan="2" class="r"><b>Total</b></td><td class="r amt">${brl(p.total)}</td></tr></tbody></table></div>
     <div class="row">
       <div class="card card-b"><h5 style="margin-top:0">Cliente</h5><b>${esc(c.nome || '')}</b><div class="sm">${esc(c.email || '')}</div><div class="sm">${esc(c.telefone || '')}</div><div class="sm soft">CPF ${esc(c.cpf || '—')}</div>
-        ${c.telefone ? `<a class="btn sm" style="margin-top:10px" target="_blank" href="https://wa.me/${esc(String(c.telefone).replace(/\D/g, ''))}"><i class="ti ti-brand-whatsapp"></i> WhatsApp</a>` : ''}</div>
+        ${c.telefone && !(p.tags || []).includes('demonstração') ? `<a class="btn sm" style="margin-top:10px" target="_blank" href="https://wa.me/${esc(String(c.telefone).replace(/\D/g, ''))}"><i class="ti ti-brand-whatsapp"></i> WhatsApp</a>` : ''}</div>
       <div class="card card-b"><h5 style="margin-top:0">Entrega</h5><div class="sm">${esc([e.logradouro, e.numero].filter(Boolean).join(', '))}${e.complemento ? ' – ' + esc(e.complemento) : ''}<br>${esc(e.bairro || '')}<br>${esc(e.cidade || '')}${e.uf ? '/' + esc(e.uf) : ''} · ${esc(e.cep || '')}</div></div>
     </div>
     <div class="card card-b stack"><h5 style="margin-top:0">Envio</h5>
@@ -114,9 +115,8 @@ async function abrirPedido(id, redraw) {
 // ------------------------------------------------------------------ clientes
 export async function clientes(view, { crumb }) {
   crumb('<b>Clientes</b>');
-  if (db.demo) return semServidor(view, 'Clientes', 'Os clientes vêm dos pedidos (nome, e-mail, telefone, CPF), agrupados por e-mail/CPF: total gasto, nº de pedidos, primeiro e último pedido.');
   const f = { q: '' };
-  view.innerHTML = `<div class="page"><div class="page-head"><div class="grow"><div class="eyebrow">Vendas</div><h1>Clientes</h1></div></div>
+  view.innerHTML = `<div class="page"><div class="page-head"><div class="grow"><div class="eyebrow">Vendas</div><h1>Clientes</h1></div></div>${aviso()}
   <div class="card"><div class="card-h"><div class="search"><i class="ti ti-search"></i><input class="in" id="q" placeholder="Nome, e-mail, telefone ou CPF"></div></div><div class="table-wrap" id="lista"></div></div></div>`;
   const draw = async () => {
     const lista = await db.backend.clientes(f);

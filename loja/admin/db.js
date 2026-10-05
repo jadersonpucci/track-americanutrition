@@ -1,6 +1,8 @@
 // Dados do painel. Dois modos com a mesma interface:
 //  - servidor: webhook n8n "loja-api" → função loja_api no Postgres (login com os mesmos usuários do Financeiro)
 //  - demonstração: IndexedDB do navegador, começando dos dados do último build (admin/dados.json)
+import * as demo from './demo-pedidos.js';
+
 export const CONFIG = {
   gateway: '', // ex.: 'https://n8n.americanutrition.com/webhook/loja-api' (deixe vazio para o modo demonstração)
 };
@@ -31,7 +33,18 @@ class Demo {
   async load() {
     let s = await idbGet('estado').catch(() => null);
     if (!s) s = await this.semente();
-    s.pedidos = s.pedidos || [];
+    // pedidos e cupons FICTÍCIOS, só para ver o painel funcionando (marcados com a tag "demonstração")
+    if (!s.pedidos?.length) {
+      s.pedidos = demo.gerarPedidos(s.produtos || []);
+      if (!(s.cupons || []).length) s.cupons = [
+        { id: 'demo-c1', codigo: 'BEMVINDO10', descricao: 'Primeira compra (exemplo)', tipo: 'percentual', valor: 10, minimo: 100, ativo: true, usos: s.pedidos.filter((p) => p.cupom === 'BEMVINDO10').length, criado_em: '2026-09-01T12:00:00Z' },
+        { id: 'demo-c2', codigo: 'OUTUBRO15', descricao: 'Outubro Rosa (exemplo)', tipo: 'percentual', valor: 15, minimo: null, fim: '2026-10-31T23:59:00-03:00', ativo: true, usos: s.pedidos.filter((p) => p.cupom === 'OUTUBRO15').length, criado_em: '2026-10-01T12:00:00Z' },
+        { id: 'demo-c3', codigo: 'VOLTA10', descricao: 'Recompra (exemplo)', tipo: 'percentual', valor: 10, limite: 200, ativo: true, usos: s.pedidos.filter((p) => p.cupom === 'VOLTA10').length, criado_em: '2026-08-15T12:00:00Z' },
+        { id: 'demo-c4', codigo: 'FRETEGRATIS', descricao: 'Frete grátis (exemplo)', tipo: 'frete', valor: 0, minimo: 150, ativo: false, usos: 0, criado_em: '2026-07-10T12:00:00Z' },
+      ];
+      await idbSet('estado', s);
+    }
+    this.s = s;
     return s;
   }
   async semente() {
@@ -48,7 +61,19 @@ class Demo {
   async remove(_t, _ids, state) { await this.salvar(state); }
   async setUnico(_k, _v, state) { await this.salvar(state); }
   async resetar() { await idbSet('estado', null); }
-  async pedidos() { return null; }
+  async pedidos(f) { return demo.filtrarPedidos(this.s.pedidos, f); }
+  async pedido(id) { return this.s.pedidos.find((p) => p.id === id); }
+  async pedidoAtualizar(id, c) {
+    const p = this.s.pedidos.find((x) => x.id === id); if (!p) throw new Error('Pedido não encontrado');
+    const ev = (t) => p.eventos.push({ em: new Date().toISOString(), texto: t, por: 'Demonstração' });
+    if (c.status_entrega && c.status_entrega !== p.status_entrega) ev('Entrega: ' + c.status_entrega);
+    if (c.status_pagamento && c.status_pagamento !== p.status_pagamento) ev('Pagamento: ' + c.status_pagamento);
+    if ('rastreio' in c && c.rastreio !== p.rastreio && c.rastreio) ev('Rastreio: ' + c.rastreio);
+    Object.assign(p, c, { atualizado_em: new Date().toISOString() });
+    await this.salvar(this.s); return p;
+  }
+  async resumo() { return demo.resumo(this.s.pedidos); }
+  async clientes(f) { return demo.clientes(this.s.pedidos, f); }
 }
 
 // ------------------------------------------------------------------ servidor (n8n → loja_api)
