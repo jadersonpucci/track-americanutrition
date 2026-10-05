@@ -166,6 +166,15 @@
   // Depoimentos da Storefront API (metaobjects) servidos pela própria loja
   var deps = null;
   function carregarDeps() { if (deps) return deps; deps = nativeFetch('/depoimentos.json').then(function (r) { return r.json(); }).then(function (j) { return j.depoimentos || []; }); return deps; }
+  // As seções tocam a PRIMEIRA fonte da lista. HLS (.m3u8) só toca no Safari; nos outros navegadores
+  // vai primeiro o MP4 de 720p (o de 1080p chega a ~80 MB por vídeo).
+  var tocaHls = (function () { try { return !!document.createElement('video').canPlayType('application/vnd.apple.mpegurl'); } catch (e) { return false; } })();
+  function fontesVideo(d) {
+    var fs = (d.fontes && d.fontes.length ? d.fontes : [{ url: d.video, tipo: 'video/mp4' }]).map(function (f) { return { url: f.url, mimeType: f.tipo || 'video/mp4', height: f.altura || 0 }; });
+    var hls = fs.filter(function (f) { return /mpegurl/i.test(f.mimeType); });
+    var mp4 = fs.filter(function (f) { return !/mpegurl/i.test(f.mimeType); }).sort(function (a, b) { return Math.abs(a.height - 720) - Math.abs(b.height - 720); });
+    return tocaHls ? hls.concat(mp4) : mp4.concat(hls);
+  }
   function tratarStorefront(init) {
     var b = corpo(init); var q = b.query || ''; var vars = b.variables || {};
     if (!/metaobjects\s*\(\s*type\s*:\s*"depoimento"/.test(q)) return null;
@@ -177,7 +186,7 @@
       var fatia = lista.slice(after, after + first);
       function ref(d, k) {
         if (k === 'midia') {
-          if (d.video) return { __typename: 'Video', sources: [{ url: d.video, mimeType: 'video/mp4' }], previewImage: d.poster ? { url: d.poster } : null };
+          if (d.video) return { __typename: 'Video', sources: fontesVideo(d), previewImage: d.poster ? { url: d.poster } : null };
           if (d.imagem) return { __typename: 'MediaImage', image: { url: d.imagem, width: d.largura, height: d.altura, altText: '' }, previewImage: { url: d.imagem } };
           return null;
         }

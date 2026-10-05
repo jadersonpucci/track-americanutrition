@@ -1,6 +1,6 @@
 {
  "versao": 1,
- "gerado_em": "2026-10-05T02:19:21+00:00",
+ "gerado_em": "2026-10-05T02:26:48+00:00",
  "config": {
   "nome": "America Nutrition",
   "dominio": "https://www.americanutrition.com",
@@ -4548,7 +4548,29 @@
    "produto": null,
    "atualizado_em": "2026-09-29T11:55:14Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/1eb95438fae4440fb3c57276badea067/1eb95438fae4440fb3c57276badea067.HD-1080p-2.5Mbps-95885454.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/1eb95438fae4440fb3c57276badea067.thumbnail.0000000000.jpg?v=1790683038"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/1eb95438fae4440fb3c57276badea067.thumbnail.0000000000.jpg?v=1790683038",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/1eb95438fae4440fb3c57276badea067/1eb95438fae4440fb3c57276badea067.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/1eb95438fae4440fb3c57276badea067/1eb95438fae4440fb3c57276badea067.HD-1080p-2.5Mbps-95885454.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/1eb95438fae4440fb3c57276badea067/1eb95438fae4440fb3c57276badea067.HD-720p-1.6Mbps-95885454.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/1eb95438fae4440fb3c57276badea067/1eb95438fae4440fb3c57276badea067.SD-480p-0.9Mbps-95885454.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "611488202924",
@@ -4583,7 +4605,29 @@
    "produto": null,
    "atualizado_em": "2026-09-23T21:35:19Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/1745151cdebd47338084ccacd4af89c3/1745151cdebd47338084ccacd4af89c3.HD-1080p-2.5Mbps-95363379.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/1745151cdebd47338084ccacd4af89c3.thumbnail.0000000000.jpg?v=1790199344"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/1745151cdebd47338084ccacd4af89c3.thumbnail.0000000000.jpg?v=1790199344",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/1745151cdebd47338084ccacd4af89c3/1745151cdebd47338084ccacd4af89c3.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/1745151cdebd47338084ccacd4af89c3/1745151cdebd47338084ccacd4af89c3.HD-1080p-2.5Mbps-95363379.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/1745151cdebd47338084ccacd4af89c3/1745151cdebd47338084ccacd4af89c3.HD-720p-1.6Mbps-95363379.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/1745151cdebd47338084ccacd4af89c3/1745151cdebd47338084ccacd4af89c3.SD-480p-0.9Mbps-95363379.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "252057780396",
@@ -4594,7 +4638,29 @@
    "produto": null,
    "atualizado_em": "2026-09-22T16:16:48Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/676842162a17470cafd36880320128af/676842162a17470cafd36880320128af.HD-1080p-2.5Mbps-95222405.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/676842162a17470cafd36880320128af.thumbnail.0000000000.jpg?v=1790093833"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/676842162a17470cafd36880320128af.thumbnail.0000000000.jpg?v=1790093833",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/676842162a17470cafd36880320128af/676842162a17470cafd36880320128af.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/676842162a17470cafd36880320128af/676842162a17470cafd36880320128af.HD-1080p-2.5Mbps-95222405.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/676842162a17470cafd36880320128af/676842162a17470cafd36880320128af.HD-720p-1.6Mbps-95222405.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/676842162a17470cafd36880320128af/676842162a17470cafd36880320128af.SD-480p-0.9Mbps-95222405.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "251716763820",
@@ -4617,7 +4683,29 @@
    "produto": null,
    "atualizado_em": "2026-09-20T11:31:13Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/d803e024fe374249bb4fee4ee8ba1ac7/d803e024fe374249bb4fee4ee8ba1ac7.HD-1080p-2.5Mbps-94986514.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/d803e024fe374249bb4fee4ee8ba1ac7.thumbnail.0000000000.jpg?v=1789903909"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/d803e024fe374249bb4fee4ee8ba1ac7.thumbnail.0000000000.jpg?v=1789903909",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/d803e024fe374249bb4fee4ee8ba1ac7/d803e024fe374249bb4fee4ee8ba1ac7.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/d803e024fe374249bb4fee4ee8ba1ac7/d803e024fe374249bb4fee4ee8ba1ac7.HD-1080p-2.5Mbps-94986514.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/d803e024fe374249bb4fee4ee8ba1ac7/d803e024fe374249bb4fee4ee8ba1ac7.HD-720p-1.6Mbps-94986514.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/d803e024fe374249bb4fee4ee8ba1ac7/d803e024fe374249bb4fee4ee8ba1ac7.SD-480p-0.9Mbps-94986514.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "249147457708",
@@ -4628,7 +4716,29 @@
    "produto": null,
    "atualizado_em": "2026-09-19T19:18:29Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/bf593937338b489585c9266d28ed2db4/bf593937338b489585c9266d28ed2db4.HD-1080p-2.5Mbps-94947917.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/bf593937338b489585c9266d28ed2db4.thumbnail.0000000000.jpg?v=1789845542"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/bf593937338b489585c9266d28ed2db4.thumbnail.0000000000.jpg?v=1789845542",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/bf593937338b489585c9266d28ed2db4/bf593937338b489585c9266d28ed2db4.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/bf593937338b489585c9266d28ed2db4/bf593937338b489585c9266d28ed2db4.HD-1080p-2.5Mbps-94947917.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/bf593937338b489585c9266d28ed2db4/bf593937338b489585c9266d28ed2db4.HD-720p-1.6Mbps-94947917.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/bf593937338b489585c9266d28ed2db4/bf593937338b489585c9266d28ed2db4.SD-480p-0.9Mbps-94947917.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "248986370220",
@@ -4639,7 +4749,29 @@
    "produto": null,
    "atualizado_em": "2026-09-19T13:04:19Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/adca63e7d68c43bfac2f0e56b183d384/adca63e7d68c43bfac2f0e56b183d384.HD-1080p-2.5Mbps-94928411.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/adca63e7d68c43bfac2f0e56b183d384.thumbnail.0000000000.jpg?v=1789823090"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/adca63e7d68c43bfac2f0e56b183d384.thumbnail.0000000000.jpg?v=1789823090",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/adca63e7d68c43bfac2f0e56b183d384/adca63e7d68c43bfac2f0e56b183d384.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/adca63e7d68c43bfac2f0e56b183d384/adca63e7d68c43bfac2f0e56b183d384.HD-1080p-2.5Mbps-94928411.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/adca63e7d68c43bfac2f0e56b183d384/adca63e7d68c43bfac2f0e56b183d384.HD-720p-1.6Mbps-94928411.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/adca63e7d68c43bfac2f0e56b183d384/adca63e7d68c43bfac2f0e56b183d384.SD-480p-0.9Mbps-94928411.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "248918442156",
@@ -4650,7 +4782,29 @@
    "produto": null,
    "atualizado_em": "2026-09-19T11:19:45Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/a2f6eb953cf744c68146efc1266eada2/a2f6eb953cf744c68146efc1266eada2.HD-1080p-2.5Mbps-94922863.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/a2f6eb953cf744c68146efc1266eada2.thumbnail.0000000000.jpg?v=1789816832"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/a2f6eb953cf744c68146efc1266eada2.thumbnail.0000000000.jpg?v=1789816832",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/a2f6eb953cf744c68146efc1266eada2/a2f6eb953cf744c68146efc1266eada2.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/a2f6eb953cf744c68146efc1266eada2/a2f6eb953cf744c68146efc1266eada2.HD-1080p-2.5Mbps-94922863.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/a2f6eb953cf744c68146efc1266eada2/a2f6eb953cf744c68146efc1266eada2.HD-720p-1.6Mbps-94922863.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/a2f6eb953cf744c68146efc1266eada2/a2f6eb953cf744c68146efc1266eada2.SD-480p-0.9Mbps-94922863.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "248008278188",
@@ -4661,7 +4815,29 @@
    "produto": null,
    "atualizado_em": "2026-09-18T21:00:55Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/09bda8b5645c4535b6b78f4154c5154c/09bda8b5645c4535b6b78f4154c5154c.HD-1080p-2.5Mbps-94878759.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/09bda8b5645c4535b6b78f4154c5154c.thumbnail.0000000000.jpg?v=1789765274"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/09bda8b5645c4535b6b78f4154c5154c.thumbnail.0000000000.jpg?v=1789765274",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/09bda8b5645c4535b6b78f4154c5154c/09bda8b5645c4535b6b78f4154c5154c.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/09bda8b5645c4535b6b78f4154c5154c/09bda8b5645c4535b6b78f4154c5154c.HD-1080p-2.5Mbps-94878759.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/09bda8b5645c4535b6b78f4154c5154c/09bda8b5645c4535b6b78f4154c5154c.HD-720p-1.6Mbps-94878759.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/09bda8b5645c4535b6b78f4154c5154c/09bda8b5645c4535b6b78f4154c5154c.SD-480p-0.9Mbps-94878759.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "247599333548",
@@ -4744,7 +4920,29 @@
    "produto": null,
    "atualizado_em": "2026-09-14T00:10:16Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/97fea6abf9504296832ee954eb559396/97fea6abf9504296832ee954eb559396.HD-1080p-2.5Mbps-94300922.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/97fea6abf9504296832ee954eb559396.thumbnail.0000000000.jpg?v=1789344668"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/97fea6abf9504296832ee954eb559396.thumbnail.0000000000.jpg?v=1789344668",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/97fea6abf9504296832ee954eb559396/97fea6abf9504296832ee954eb559396.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/97fea6abf9504296832ee954eb559396/97fea6abf9504296832ee954eb559396.HD-1080p-2.5Mbps-94300922.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/97fea6abf9504296832ee954eb559396/97fea6abf9504296832ee954eb559396.HD-720p-1.6Mbps-94300922.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/97fea6abf9504296832ee954eb559396/97fea6abf9504296832ee954eb559396.SD-480p-0.9Mbps-94300922.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "242711330988",
@@ -4755,7 +4953,29 @@
    "produto": null,
    "atualizado_em": "2026-09-13T20:32:56Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/eee34cf1929043d0a88f955c20996fde/eee34cf1929043d0a88f955c20996fde.HD-1080p-2.5Mbps-94291441.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/eee34cf1929043d0a88f955c20996fde.thumbnail.0000000000.jpg?v=1789331697"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/eee34cf1929043d0a88f955c20996fde.thumbnail.0000000000.jpg?v=1789331697",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/eee34cf1929043d0a88f955c20996fde/eee34cf1929043d0a88f955c20996fde.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/eee34cf1929043d0a88f955c20996fde/eee34cf1929043d0a88f955c20996fde.HD-1080p-2.5Mbps-94291441.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/eee34cf1929043d0a88f955c20996fde/eee34cf1929043d0a88f955c20996fde.HD-720p-1.6Mbps-94291441.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/eee34cf1929043d0a88f955c20996fde/eee34cf1929043d0a88f955c20996fde.SD-480p-0.9Mbps-94291441.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "241525391532",
@@ -4766,7 +4986,29 @@
    "produto": null,
    "atualizado_em": "2026-09-12T03:16:02Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/e9d6a923e6174485980a80175969fbf6/e9d6a923e6174485980a80175969fbf6.HD-1080p-2.5Mbps-94186709.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/e9d6a923e6174485980a80175969fbf6.thumbnail.0000000000.jpg?v=1789182988"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/e9d6a923e6174485980a80175969fbf6.thumbnail.0000000000.jpg?v=1789182988",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/e9d6a923e6174485980a80175969fbf6/e9d6a923e6174485980a80175969fbf6.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/e9d6a923e6174485980a80175969fbf6/e9d6a923e6174485980a80175969fbf6.HD-1080p-2.5Mbps-94186709.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/e9d6a923e6174485980a80175969fbf6/e9d6a923e6174485980a80175969fbf6.HD-720p-1.6Mbps-94186709.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/e9d6a923e6174485980a80175969fbf6/e9d6a923e6174485980a80175969fbf6.SD-480p-0.9Mbps-94186709.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "241469522092",
@@ -4801,7 +5043,24 @@
    "produto": null,
    "atualizado_em": "2026-09-08T01:42:03Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/422548a7192a41f2b4f62111021e20d9/422548a7192a41f2b4f62111021e20d9.HD-720p-1.6Mbps-93757016.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/422548a7192a41f2b4f62111021e20d9.thumbnail.0000000000.jpg?v=1788831750"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/422548a7192a41f2b4f62111021e20d9.thumbnail.0000000000.jpg?v=1788831750",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/422548a7192a41f2b4f62111021e20d9/422548a7192a41f2b4f62111021e20d9.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/422548a7192a41f2b4f62111021e20d9/422548a7192a41f2b4f62111021e20d9.HD-720p-1.6Mbps-93757016.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/422548a7192a41f2b4f62111021e20d9/422548a7192a41f2b4f62111021e20d9.SD-480p-0.9Mbps-93757016.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "235189665964",
@@ -4848,7 +5107,19 @@
    "produto": null,
    "atualizado_em": "2026-09-04T15:31:45Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/398491343e9841d09b83a2104ffb7eb2/398491343e9841d09b83a2104ffb7eb2.SD-480p-0.9Mbps-93511668.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/398491343e9841d09b83a2104ffb7eb2.thumbnail.0000000000.jpg?v=1788535914"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/398491343e9841d09b83a2104ffb7eb2.thumbnail.0000000000.jpg?v=1788535914",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/398491343e9841d09b83a2104ffb7eb2/398491343e9841d09b83a2104ffb7eb2.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 480
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/398491343e9841d09b83a2104ffb7eb2/398491343e9841d09b83a2104ffb7eb2.SD-480p-0.9Mbps-93511668.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "227758342316",
@@ -4859,7 +5130,29 @@
    "produto": null,
    "atualizado_em": "2026-09-02T16:24:46Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/47693bdced994850966fe7c2ea225aac/47693bdced994850966fe7c2ea225aac.HD-1080p-2.5Mbps-93307228.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/47693bdced994850966fe7c2ea225aac.thumbnail.0000000000.jpg?v=1788366370"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/47693bdced994850966fe7c2ea225aac.thumbnail.0000000000.jpg?v=1788366370",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/47693bdced994850966fe7c2ea225aac/47693bdced994850966fe7c2ea225aac.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/47693bdced994850966fe7c2ea225aac/47693bdced994850966fe7c2ea225aac.HD-1080p-2.5Mbps-93307228.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/47693bdced994850966fe7c2ea225aac/47693bdced994850966fe7c2ea225aac.HD-720p-1.6Mbps-93307228.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/47693bdced994850966fe7c2ea225aac/47693bdced994850966fe7c2ea225aac.SD-480p-0.9Mbps-93307228.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "227747037356",
@@ -4870,7 +5163,29 @@
    "produto": null,
    "atualizado_em": "2026-09-02T15:17:48Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/e98ea7cee2bc41489c549012f1043359/e98ea7cee2bc41489c549012f1043359.HD-1080p-2.5Mbps-93301426.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/e98ea7cee2bc41489c549012f1043359.thumbnail.0000000000.jpg?v=1788362294"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/e98ea7cee2bc41489c549012f1043359.thumbnail.0000000000.jpg?v=1788362294",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/e98ea7cee2bc41489c549012f1043359/e98ea7cee2bc41489c549012f1043359.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/e98ea7cee2bc41489c549012f1043359/e98ea7cee2bc41489c549012f1043359.HD-1080p-2.5Mbps-93301426.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/e98ea7cee2bc41489c549012f1043359/e98ea7cee2bc41489c549012f1043359.HD-720p-1.6Mbps-93301426.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/e98ea7cee2bc41489c549012f1043359/e98ea7cee2bc41489c549012f1043359.SD-480p-0.9Mbps-93301426.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "227684417708",
@@ -5049,7 +5364,29 @@
    "produto": null,
    "atualizado_em": "2026-08-10T22:05:25Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/f616e0d3db724f2da6c6e4ca76d21d84/f616e0d3db724f2da6c6e4ca76d21d84.HD-1080p-2.5Mbps-91262312.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/f616e0d3db724f2da6c6e4ca76d21d84.thumbnail.0000000000.jpg?v=1786399610"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/f616e0d3db724f2da6c6e4ca76d21d84.thumbnail.0000000000.jpg?v=1786399610",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/f616e0d3db724f2da6c6e4ca76d21d84/f616e0d3db724f2da6c6e4ca76d21d84.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/f616e0d3db724f2da6c6e4ca76d21d84/f616e0d3db724f2da6c6e4ca76d21d84.HD-1080p-2.5Mbps-91262312.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/f616e0d3db724f2da6c6e4ca76d21d84/f616e0d3db724f2da6c6e4ca76d21d84.HD-720p-1.6Mbps-91262312.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/f616e0d3db724f2da6c6e4ca76d21d84/f616e0d3db724f2da6c6e4ca76d21d84.SD-480p-0.9Mbps-91262312.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "210449727660",
@@ -5132,7 +5469,29 @@
    "produto": null,
    "atualizado_em": "2026-07-30T10:28:27Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/36b364d470f04ef2ab62ce957c96fab3/36b364d470f04ef2ab62ce957c96fab3.HD-1080p-2.5Mbps-90324403.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/36b364d470f04ef2ab62ce957c96fab3.thumbnail.0000000000.jpg?v=1785407324"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/36b364d470f04ef2ab62ce957c96fab3.thumbnail.0000000000.jpg?v=1785407324",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/36b364d470f04ef2ab62ce957c96fab3/36b364d470f04ef2ab62ce957c96fab3.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/36b364d470f04ef2ab62ce957c96fab3/36b364d470f04ef2ab62ce957c96fab3.HD-1080p-2.5Mbps-90324403.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/36b364d470f04ef2ab62ce957c96fab3/36b364d470f04ef2ab62ce957c96fab3.HD-720p-1.6Mbps-90324403.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/36b364d470f04ef2ab62ce957c96fab3/36b364d470f04ef2ab62ce957c96fab3.SD-480p-0.9Mbps-90324403.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "197285937324",
@@ -5623,7 +5982,24 @@
    "produto": null,
    "atualizado_em": "2026-06-25T19:42:33Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/f70cff868e8c4c7b938038e6886c01b6/f70cff868e8c4c7b938038e6886c01b6.HD-720p-1.6Mbps-87431196.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/f70cff868e8c4c7b938038e6886c01b6.thumbnail.0000000000.jpg?v=1782416655"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/f70cff868e8c4c7b938038e6886c01b6.thumbnail.0000000000.jpg?v=1782416655",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/f70cff868e8c4c7b938038e6886c01b6/f70cff868e8c4c7b938038e6886c01b6.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/f70cff868e8c4c7b938038e6886c01b6/f70cff868e8c4c7b938038e6886c01b6.HD-720p-1.6Mbps-87431196.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/f70cff868e8c4c7b938038e6886c01b6/f70cff868e8c4c7b938038e6886c01b6.SD-480p-0.9Mbps-87431196.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "190647468204",
@@ -5634,7 +6010,24 @@
    "produto": null,
    "atualizado_em": "2026-06-23T17:18:45Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/a218f2c71a8f48b9a92f67eda81962b7/a218f2c71a8f48b9a92f67eda81962b7.HD-720p-1.6Mbps-87239246.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/a218f2c71a8f48b9a92f67eda81962b7.thumbnail.0000000000.jpg?v=1782235255"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/a218f2c71a8f48b9a92f67eda81962b7.thumbnail.0000000000.jpg?v=1782235255",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/a218f2c71a8f48b9a92f67eda81962b7/a218f2c71a8f48b9a92f67eda81962b7.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/a218f2c71a8f48b9a92f67eda81962b7/a218f2c71a8f48b9a92f67eda81962b7.HD-720p-1.6Mbps-87239246.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/a218f2c71a8f48b9a92f67eda81962b7/a218f2c71a8f48b9a92f67eda81962b7.SD-480p-0.9Mbps-87239246.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "190636949676",
@@ -5657,7 +6050,49 @@
    "produto": null,
    "atualizado_em": "2026-06-23T02:10:32Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/0b3fe2e2bb37425683f24d00a48f5053/0b3fe2e2bb37425683f24d00a48f5053.HD-1080p-2.5Mbps-87174939.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/0b3fe2e2bb37425683f24d00a48f5053.thumbnail.0000000000.jpg?v=1782180678"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/0b3fe2e2bb37425683f24d00a48f5053.thumbnail.0000000000.jpg?v=1782180678",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/0b3fe2e2bb37425683f24d00a48f5053/0b3fe2e2bb37425683f24d00a48f5053.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/0b3fe2e2bb37425683f24d00a48f5053/0b3fe2e2bb37425683f24d00a48f5053.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/0b3fe2e2bb37425683f24d00a48f5053/0b3fe2e2bb37425683f24d00a48f5053.HD-1080p-2.5Mbps-87174939.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/0b3fe2e2bb37425683f24d00a48f5053/0b3fe2e2bb37425683f24d00a48f5053.HD-1080p-2.5Mbps-87174939.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/0b3fe2e2bb37425683f24d00a48f5053/0b3fe2e2bb37425683f24d00a48f5053.HD-720p-1.6Mbps-87174939.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/0b3fe2e2bb37425683f24d00a48f5053/0b3fe2e2bb37425683f24d00a48f5053.HD-720p-1.6Mbps-87174939.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/0b3fe2e2bb37425683f24d00a48f5053/0b3fe2e2bb37425683f24d00a48f5053.SD-480p-0.9Mbps-87174939.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/0b3fe2e2bb37425683f24d00a48f5053/0b3fe2e2bb37425683f24d00a48f5053.SD-480p-0.9Mbps-87174939.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "190562762924",
@@ -5902,7 +6337,24 @@
    "produto": "imunofosfo-fosfoetanolamina-phospho",
    "atualizado_em": "2026-06-10T19:48:47Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/d03d833f50a94a359c12154ad244ce2e/d03d833f50a94a359c12154ad244ce2e.HD-720p-1.6Mbps-86211491.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/d03d833f50a94a359c12154ad244ce2e.thumbnail.0000000000.jpg?v=1781120952"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/d03d833f50a94a359c12154ad244ce2e.thumbnail.0000000000.jpg?v=1781120952",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/d03d833f50a94a359c12154ad244ce2e/d03d833f50a94a359c12154ad244ce2e.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/d03d833f50a94a359c12154ad244ce2e/d03d833f50a94a359c12154ad244ce2e.HD-720p-1.6Mbps-86211491.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/d03d833f50a94a359c12154ad244ce2e/d03d833f50a94a359c12154ad244ce2e.SD-480p-0.9Mbps-86211491.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "186939408556",
@@ -6069,7 +6521,29 @@
    "produto": null,
    "atualizado_em": "2026-05-31T21:39:18Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/6d1381038abf4e429ba39d3827cb7504/6d1381038abf4e429ba39d3827cb7504.HD-1080p-2.5Mbps-85370382.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/6d1381038abf4e429ba39d3827cb7504.thumbnail.0000000000.jpg?v=1780263673"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/6d1381038abf4e429ba39d3827cb7504.thumbnail.0000000000.jpg?v=1780263673",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/6d1381038abf4e429ba39d3827cb7504/6d1381038abf4e429ba39d3827cb7504.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/6d1381038abf4e429ba39d3827cb7504/6d1381038abf4e429ba39d3827cb7504.HD-1080p-2.5Mbps-85370382.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/6d1381038abf4e429ba39d3827cb7504/6d1381038abf4e429ba39d3827cb7504.HD-720p-1.6Mbps-85370382.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/6d1381038abf4e429ba39d3827cb7504/6d1381038abf4e429ba39d3827cb7504.SD-480p-0.9Mbps-85370382.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "182722625708",
@@ -6080,7 +6554,29 @@
    "produto": null,
    "atualizado_em": "2026-05-31T17:08:00Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/2292632d98f641278a26142e3614be0c/2292632d98f641278a26142e3614be0c.HD-1080p-2.5Mbps-85360085.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/2292632d98f641278a26142e3614be0c.thumbnail.0000000000.jpg?v=1780247339"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/2292632d98f641278a26142e3614be0c.thumbnail.0000000000.jpg?v=1780247339",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/2292632d98f641278a26142e3614be0c/2292632d98f641278a26142e3614be0c.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/2292632d98f641278a26142e3614be0c/2292632d98f641278a26142e3614be0c.HD-1080p-2.5Mbps-85360085.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/2292632d98f641278a26142e3614be0c/2292632d98f641278a26142e3614be0c.HD-720p-1.6Mbps-85360085.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/2292632d98f641278a26142e3614be0c/2292632d98f641278a26142e3614be0c.SD-480p-0.9Mbps-85360085.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "182722560172",
@@ -6091,7 +6587,19 @@
    "produto": null,
    "atualizado_em": "2026-05-31T17:05:50Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/1824a30af8564a1f9b786753a56d77b6/1824a30af8564a1f9b786753a56d77b6.SD-480p-0.9Mbps-85359999.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/1824a30af8564a1f9b786753a56d77b6.thumbnail.0000000000.jpg?v=1780247168"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/1824a30af8564a1f9b786753a56d77b6.thumbnail.0000000000.jpg?v=1780247168",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/1824a30af8564a1f9b786753a56d77b6/1824a30af8564a1f9b786753a56d77b6.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 480
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/1824a30af8564a1f9b786753a56d77b6/1824a30af8564a1f9b786753a56d77b6.SD-480p-0.9Mbps-85359999.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "182637822124",
@@ -6138,7 +6646,29 @@
    "produto": null,
    "atualizado_em": "2026-05-30T02:07:15Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/0d2052c62e684dcc82a62b05a3c300a2/0d2052c62e684dcc82a62b05a3c300a2.HD-1080p-2.5Mbps-85280288.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/0d2052c62e684dcc82a62b05a3c300a2.thumbnail.0000000000.jpg?v=1780106928"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/0d2052c62e684dcc82a62b05a3c300a2.thumbnail.0000000000.jpg?v=1780106928",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/0d2052c62e684dcc82a62b05a3c300a2/0d2052c62e684dcc82a62b05a3c300a2.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/0d2052c62e684dcc82a62b05a3c300a2/0d2052c62e684dcc82a62b05a3c300a2.HD-1080p-2.5Mbps-85280288.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/0d2052c62e684dcc82a62b05a3c300a2/0d2052c62e684dcc82a62b05a3c300a2.HD-720p-1.6Mbps-85280288.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/0d2052c62e684dcc82a62b05a3c300a2/0d2052c62e684dcc82a62b05a3c300a2.SD-480p-0.9Mbps-85280288.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "182589522092",
@@ -6149,7 +6679,29 @@
    "produto": "imunofosfo-fosfoetanolamina-phospho",
    "atualizado_em": "2026-05-30T01:09:32Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/d9cb747a364f45babe4a8e7d4c7e394c/d9cb747a364f45babe4a8e7d4c7e394c.HD-1080p-2.5Mbps-85278567.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/d9cb747a364f45babe4a8e7d4c7e394c.thumbnail.0000000000.jpg?v=1780103325"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/d9cb747a364f45babe4a8e7d4c7e394c.thumbnail.0000000000.jpg?v=1780103325",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/d9cb747a364f45babe4a8e7d4c7e394c/d9cb747a364f45babe4a8e7d4c7e394c.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/d9cb747a364f45babe4a8e7d4c7e394c/d9cb747a364f45babe4a8e7d4c7e394c.HD-1080p-2.5Mbps-85278567.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/d9cb747a364f45babe4a8e7d4c7e394c/d9cb747a364f45babe4a8e7d4c7e394c.HD-720p-1.6Mbps-85278567.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/d9cb747a364f45babe4a8e7d4c7e394c/d9cb747a364f45babe4a8e7d4c7e394c.SD-480p-0.9Mbps-85278567.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "182518743212",
@@ -6172,7 +6724,24 @@
    "produto": "imunofosfo-fosfoetanolamina-phospho",
    "atualizado_em": "2026-05-29T11:51:25Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/52161af75d2a499ebd301cb2c145dd8c/52161af75d2a499ebd301cb2c145dd8c.HD-720p-1.6Mbps-85237024.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/52161af75d2a499ebd301cb2c145dd8c.thumbnail.0000000000.jpg?v=1780055459"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/52161af75d2a499ebd301cb2c145dd8c.thumbnail.0000000000.jpg?v=1780055459",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/52161af75d2a499ebd301cb2c145dd8c/52161af75d2a499ebd301cb2c145dd8c.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/52161af75d2a499ebd301cb2c145dd8c/52161af75d2a499ebd301cb2c145dd8c.HD-720p-1.6Mbps-85237024.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/52161af75d2a499ebd301cb2c145dd8c/52161af75d2a499ebd301cb2c145dd8c.SD-480p-0.9Mbps-85237024.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "182422143148",
@@ -6303,7 +6872,24 @@
    "produto": "imunofosfo-fosfoetanolamina-phospho",
    "atualizado_em": "2026-05-21T10:57:01Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/5bd5e8f7a5c0469eba425245612ff8ed/5bd5e8f7a5c0469eba425245612ff8ed.HD-720p-1.6Mbps-84624317.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/5bd5e8f7a5c0469eba425245612ff8ed.thumbnail.0000000000.jpg?v=1779360956"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/5bd5e8f7a5c0469eba425245612ff8ed.thumbnail.0000000000.jpg?v=1779360956",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/5bd5e8f7a5c0469eba425245612ff8ed/5bd5e8f7a5c0469eba425245612ff8ed.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/5bd5e8f7a5c0469eba425245612ff8ed/5bd5e8f7a5c0469eba425245612ff8ed.HD-720p-1.6Mbps-84624317.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/5bd5e8f7a5c0469eba425245612ff8ed/5bd5e8f7a5c0469eba425245612ff8ed.SD-480p-0.9Mbps-84624317.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "181285617836",
@@ -6326,7 +6912,29 @@
    "produto": "imunofosfo-fosfoetanolamina-phospho",
    "atualizado_em": "2026-05-20T12:14:51Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/d933d13758b04391825b8b4954ca528f/d933d13758b04391825b8b4954ca528f.HD-1080p-2.5Mbps-84546675.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/d933d13758b04391825b8b4954ca528f.thumbnail.0000000000.jpg?v=1779279253"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/d933d13758b04391825b8b4954ca528f.thumbnail.0000000000.jpg?v=1779279253",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/d933d13758b04391825b8b4954ca528f/d933d13758b04391825b8b4954ca528f.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/d933d13758b04391825b8b4954ca528f/d933d13758b04391825b8b4954ca528f.HD-1080p-2.5Mbps-84546675.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/d933d13758b04391825b8b4954ca528f/d933d13758b04391825b8b4954ca528f.HD-720p-1.6Mbps-84546675.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/d933d13758b04391825b8b4954ca528f/d933d13758b04391825b8b4954ca528f.SD-480p-0.9Mbps-84546675.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "181216772268",
@@ -6337,7 +6945,29 @@
    "produto": "imunofosfo-fosfoetanolamina-phospho",
    "atualizado_em": "2026-05-20T12:14:28Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/abf51eed297245d3bdc7c2ab5932e2f6/abf51eed297245d3bdc7c2ab5932e2f6.HD-1080p-2.5Mbps-84546670.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/abf51eed297245d3bdc7c2ab5932e2f6.thumbnail.0000000000.jpg?v=1779279247"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/abf51eed297245d3bdc7c2ab5932e2f6.thumbnail.0000000000.jpg?v=1779279247",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/abf51eed297245d3bdc7c2ab5932e2f6/abf51eed297245d3bdc7c2ab5932e2f6.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/abf51eed297245d3bdc7c2ab5932e2f6/abf51eed297245d3bdc7c2ab5932e2f6.HD-1080p-2.5Mbps-84546670.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/abf51eed297245d3bdc7c2ab5932e2f6/abf51eed297245d3bdc7c2ab5932e2f6.HD-720p-1.6Mbps-84546670.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/abf51eed297245d3bdc7c2ab5932e2f6/abf51eed297245d3bdc7c2ab5932e2f6.SD-480p-0.9Mbps-84546670.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "181216673964",
@@ -6348,7 +6978,29 @@
    "produto": "imunofosfo-fosfoetanolamina-phospho",
    "atualizado_em": "2026-05-20T12:13:21Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/b6e108c519384d4fbff32ab0d500c89e/b6e108c519384d4fbff32ab0d500c89e.HD-1080p-2.5Mbps-84546435.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/b6e108c519384d4fbff32ab0d500c89e.thumbnail.0000000000.jpg?v=1779279165"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/b6e108c519384d4fbff32ab0d500c89e.thumbnail.0000000000.jpg?v=1779279165",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/b6e108c519384d4fbff32ab0d500c89e/b6e108c519384d4fbff32ab0d500c89e.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/b6e108c519384d4fbff32ab0d500c89e/b6e108c519384d4fbff32ab0d500c89e.HD-1080p-2.5Mbps-84546435.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/b6e108c519384d4fbff32ab0d500c89e/b6e108c519384d4fbff32ab0d500c89e.HD-720p-1.6Mbps-84546435.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/b6e108c519384d4fbff32ab0d500c89e/b6e108c519384d4fbff32ab0d500c89e.SD-480p-0.9Mbps-84546435.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "181216444588",
@@ -6359,7 +7011,29 @@
    "produto": "imunofosfo-fosfoetanolamina-phospho",
    "atualizado_em": "2026-05-20T12:10:24Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/dc4300603b3f40f3a375fb5f48c31c91/dc4300603b3f40f3a375fb5f48c31c91.HD-1080p-2.5Mbps-84546287.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/dc4300603b3f40f3a375fb5f48c31c91.thumbnail.0000000000.jpg?v=1779279013"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/dc4300603b3f40f3a375fb5f48c31c91.thumbnail.0000000000.jpg?v=1779279013",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/dc4300603b3f40f3a375fb5f48c31c91/dc4300603b3f40f3a375fb5f48c31c91.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/dc4300603b3f40f3a375fb5f48c31c91/dc4300603b3f40f3a375fb5f48c31c91.HD-1080p-2.5Mbps-84546287.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/dc4300603b3f40f3a375fb5f48c31c91/dc4300603b3f40f3a375fb5f48c31c91.HD-720p-1.6Mbps-84546287.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/dc4300603b3f40f3a375fb5f48c31c91/dc4300603b3f40f3a375fb5f48c31c91.SD-480p-0.9Mbps-84546287.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "181216346284",
@@ -6370,7 +7044,29 @@
    "produto": "imunofosfo-fosfoetanolamina-phospho",
    "atualizado_em": "2026-05-20T12:08:27Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/b8ca60ccd29b498b9004478a25f8abc5/b8ca60ccd29b498b9004478a25f8abc5.HD-1080p-3.3Mbps-84546108.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/b8ca60ccd29b498b9004478a25f8abc5.thumbnail.0000000000.jpg?v=1779278886"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/b8ca60ccd29b498b9004478a25f8abc5.thumbnail.0000000000.jpg?v=1779278886",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/b8ca60ccd29b498b9004478a25f8abc5/b8ca60ccd29b498b9004478a25f8abc5.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/b8ca60ccd29b498b9004478a25f8abc5/b8ca60ccd29b498b9004478a25f8abc5.HD-1080p-3.3Mbps-84546108.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/b8ca60ccd29b498b9004478a25f8abc5/b8ca60ccd29b498b9004478a25f8abc5.HD-720p-2.1Mbps-84546108.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/b8ca60ccd29b498b9004478a25f8abc5/b8ca60ccd29b498b9004478a25f8abc5.SD-480p-1.0Mbps-84546108.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "181216280748",
@@ -6381,7 +7077,29 @@
    "produto": "imunofosfo-fosfoetanolamina-phospho",
    "atualizado_em": "2026-05-20T12:06:55Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/1358a368052e4426aee1d3b902a8dfba/1358a368052e4426aee1d3b902a8dfba.HD-1080p-2.5Mbps-84545814.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/1358a368052e4426aee1d3b902a8dfba.thumbnail.0000000000.jpg?v=1779278797"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/1358a368052e4426aee1d3b902a8dfba.thumbnail.0000000000.jpg?v=1779278797",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/1358a368052e4426aee1d3b902a8dfba/1358a368052e4426aee1d3b902a8dfba.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/1358a368052e4426aee1d3b902a8dfba/1358a368052e4426aee1d3b902a8dfba.HD-1080p-2.5Mbps-84545814.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/1358a368052e4426aee1d3b902a8dfba/1358a368052e4426aee1d3b902a8dfba.HD-720p-1.6Mbps-84545814.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/1358a368052e4426aee1d3b902a8dfba/1358a368052e4426aee1d3b902a8dfba.SD-480p-0.9Mbps-84545814.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "181109194924",
@@ -6416,7 +7134,29 @@
    "produto": "imunofosfo-fosfoetanolamina-phospho",
    "atualizado_em": "2026-05-19T20:12:53Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/e32e129d89bb4030b8ae780fffb118a1/e32e129d89bb4030b8ae780fffb118a1.HD-1080p-3.3Mbps-84491933.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/e32e129d89bb4030b8ae780fffb118a1.thumbnail.0000000000.jpg?v=1779221323"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/e32e129d89bb4030b8ae780fffb118a1.thumbnail.0000000000.jpg?v=1779221323",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/e32e129d89bb4030b8ae780fffb118a1/e32e129d89bb4030b8ae780fffb118a1.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/e32e129d89bb4030b8ae780fffb118a1/e32e129d89bb4030b8ae780fffb118a1.HD-1080p-3.3Mbps-84491933.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/e32e129d89bb4030b8ae780fffb118a1/e32e129d89bb4030b8ae780fffb118a1.HD-720p-2.1Mbps-84491933.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/e32e129d89bb4030b8ae780fffb118a1/e32e129d89bb4030b8ae780fffb118a1.SD-480p-1.0Mbps-84491933.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "181093695660",
@@ -6427,7 +7167,29 @@
    "produto": "imunofosfo-fosfoetanolamina-phospho",
    "atualizado_em": "2026-05-19T20:07:13Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/68a5b8ef01724cd3840ae48b6894d8bf/68a5b8ef01724cd3840ae48b6894d8bf.HD-1080p-4.8Mbps-84491721.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/68a5b8ef01724cd3840ae48b6894d8bf.thumbnail.0000000000.jpg?v=1779221156"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/68a5b8ef01724cd3840ae48b6894d8bf.thumbnail.0000000000.jpg?v=1779221156",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/68a5b8ef01724cd3840ae48b6894d8bf/68a5b8ef01724cd3840ae48b6894d8bf.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/68a5b8ef01724cd3840ae48b6894d8bf/68a5b8ef01724cd3840ae48b6894d8bf.HD-1080p-4.8Mbps-84491721.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/68a5b8ef01724cd3840ae48b6894d8bf/68a5b8ef01724cd3840ae48b6894d8bf.HD-720p-3.0Mbps-84491721.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/68a5b8ef01724cd3840ae48b6894d8bf/68a5b8ef01724cd3840ae48b6894d8bf.SD-480p-1.2Mbps-84491721.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "181093597356",
@@ -6438,7 +7200,29 @@
    "produto": "imunofosfo-fosfoetanolamina-phospho",
    "atualizado_em": "2026-05-19T20:03:32Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/4a2c94972e8b4028973bc28c25d80f68/4a2c94972e8b4028973bc28c25d80f68.HD-1080p-3.3Mbps-84491596.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/4a2c94972e8b4028973bc28c25d80f68.thumbnail.0000000000.jpg?v=1779220974"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/4a2c94972e8b4028973bc28c25d80f68.thumbnail.0000000000.jpg?v=1779220974",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/4a2c94972e8b4028973bc28c25d80f68/4a2c94972e8b4028973bc28c25d80f68.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/4a2c94972e8b4028973bc28c25d80f68/4a2c94972e8b4028973bc28c25d80f68.HD-1080p-3.3Mbps-84491596.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/4a2c94972e8b4028973bc28c25d80f68/4a2c94972e8b4028973bc28c25d80f68.HD-720p-2.1Mbps-84491596.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/4a2c94972e8b4028973bc28c25d80f68/4a2c94972e8b4028973bc28c25d80f68.SD-480p-1.0Mbps-84491596.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "181093564588",
@@ -6449,7 +7233,29 @@
    "produto": "imunofosfo-fosfoetanolamina-phospho",
    "atualizado_em": "2026-05-19T20:01:59Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/f7fe1c167b0845bea794c12a99e6b728/f7fe1c167b0845bea794c12a99e6b728.HD-1080p-3.3Mbps-84491480.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/f7fe1c167b0845bea794c12a99e6b728.thumbnail.0000000000.jpg?v=1779220866"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/f7fe1c167b0845bea794c12a99e6b728.thumbnail.0000000000.jpg?v=1779220866",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/f7fe1c167b0845bea794c12a99e6b728/f7fe1c167b0845bea794c12a99e6b728.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/f7fe1c167b0845bea794c12a99e6b728/f7fe1c167b0845bea794c12a99e6b728.HD-1080p-3.3Mbps-84491480.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/f7fe1c167b0845bea794c12a99e6b728/f7fe1c167b0845bea794c12a99e6b728.HD-720p-2.1Mbps-84491480.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/f7fe1c167b0845bea794c12a99e6b728/f7fe1c167b0845bea794c12a99e6b728.SD-480p-1.0Mbps-84491480.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "181093466284",
@@ -6460,7 +7266,29 @@
    "produto": "imunofosfo-fosfoetanolamina-phospho",
    "atualizado_em": "2026-05-19T20:00:28Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/1f7c086d09af46cdbc64e3216e04c2ae/1f7c086d09af46cdbc64e3216e04c2ae.HD-1080p-2.5Mbps-84491435.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/1f7c086d09af46cdbc64e3216e04c2ae.thumbnail.0000000000.jpg?v=1779220807"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/1f7c086d09af46cdbc64e3216e04c2ae.thumbnail.0000000000.jpg?v=1779220807",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/1f7c086d09af46cdbc64e3216e04c2ae/1f7c086d09af46cdbc64e3216e04c2ae.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/1f7c086d09af46cdbc64e3216e04c2ae/1f7c086d09af46cdbc64e3216e04c2ae.HD-1080p-2.5Mbps-84491435.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/1f7c086d09af46cdbc64e3216e04c2ae/1f7c086d09af46cdbc64e3216e04c2ae.HD-720p-1.6Mbps-84491435.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/1f7c086d09af46cdbc64e3216e04c2ae/1f7c086d09af46cdbc64e3216e04c2ae.SD-480p-0.9Mbps-84491435.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "181093302444",
@@ -6471,7 +7299,29 @@
    "produto": "imunofosfo-fosfoetanolamina-phospho",
    "atualizado_em": "2026-05-19T19:59:22Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/09860cbc4d3647398a93700ec2fdba4b/09860cbc4d3647398a93700ec2fdba4b.HD-1080p-2.5Mbps-84491353.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/09860cbc4d3647398a93700ec2fdba4b.thumbnail.0000000000.jpg?v=1779220739"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/09860cbc4d3647398a93700ec2fdba4b.thumbnail.0000000000.jpg?v=1779220739",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/09860cbc4d3647398a93700ec2fdba4b/09860cbc4d3647398a93700ec2fdba4b.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/09860cbc4d3647398a93700ec2fdba4b/09860cbc4d3647398a93700ec2fdba4b.HD-1080p-2.5Mbps-84491353.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/09860cbc4d3647398a93700ec2fdba4b/09860cbc4d3647398a93700ec2fdba4b.HD-720p-1.6Mbps-84491353.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/09860cbc4d3647398a93700ec2fdba4b/09860cbc4d3647398a93700ec2fdba4b.SD-480p-0.9Mbps-84491353.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "181093138604",
@@ -6482,7 +7332,29 @@
    "produto": "imunofosfo-fosfoetanolamina-phospho",
    "atualizado_em": "2026-05-19T19:57:42Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/dfda651dc2764a0dab606f8cd5dac079/dfda651dc2764a0dab606f8cd5dac079.HD-1080p-2.5Mbps-84491310.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/dfda651dc2764a0dab606f8cd5dac079.thumbnail.0000000000.jpg?v=1779220644"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/dfda651dc2764a0dab606f8cd5dac079.thumbnail.0000000000.jpg?v=1779220644",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/dfda651dc2764a0dab606f8cd5dac079/dfda651dc2764a0dab606f8cd5dac079.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/dfda651dc2764a0dab606f8cd5dac079/dfda651dc2764a0dab606f8cd5dac079.HD-1080p-2.5Mbps-84491310.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/dfda651dc2764a0dab606f8cd5dac079/dfda651dc2764a0dab606f8cd5dac079.HD-720p-1.6Mbps-84491310.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/dfda651dc2764a0dab606f8cd5dac079/dfda651dc2764a0dab606f8cd5dac079.SD-480p-0.9Mbps-84491310.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "181092581548",
@@ -6493,7 +7365,29 @@
    "produto": "imunofosfo-fosfoetanolamina-phospho",
    "atualizado_em": "2026-05-19T19:50:59Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/94f00459ec0c4aa8bf0c7360c624cd29/94f00459ec0c4aa8bf0c7360c624cd29.HD-1080p-2.5Mbps-84490785.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/94f00459ec0c4aa8bf0c7360c624cd29.thumbnail.0000000000.jpg?v=1779220201"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/94f00459ec0c4aa8bf0c7360c624cd29.thumbnail.0000000000.jpg?v=1779220201",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/94f00459ec0c4aa8bf0c7360c624cd29/94f00459ec0c4aa8bf0c7360c624cd29.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/94f00459ec0c4aa8bf0c7360c624cd29/94f00459ec0c4aa8bf0c7360c624cd29.HD-1080p-2.5Mbps-84490785.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/94f00459ec0c4aa8bf0c7360c624cd29/94f00459ec0c4aa8bf0c7360c624cd29.HD-720p-1.6Mbps-84490785.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/94f00459ec0c4aa8bf0c7360c624cd29/94f00459ec0c4aa8bf0c7360c624cd29.SD-480p-0.9Mbps-84490785.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "181092155564",
@@ -6504,7 +7398,29 @@
    "produto": "imunofosfo-fosfoetanolamina-phospho",
    "atualizado_em": "2026-05-19T19:46:41Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/429d5b52b7334a709a918e541445a0f9/429d5b52b7334a709a918e541445a0f9.HD-1080p-2.5Mbps-84490627.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/429d5b52b7334a709a918e541445a0f9.thumbnail.0000000000.jpg?v=1779219923"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/429d5b52b7334a709a918e541445a0f9.thumbnail.0000000000.jpg?v=1779219923",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/429d5b52b7334a709a918e541445a0f9/429d5b52b7334a709a918e541445a0f9.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/429d5b52b7334a709a918e541445a0f9/429d5b52b7334a709a918e541445a0f9.HD-1080p-2.5Mbps-84490627.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/429d5b52b7334a709a918e541445a0f9/429d5b52b7334a709a918e541445a0f9.HD-720p-1.6Mbps-84490627.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/429d5b52b7334a709a918e541445a0f9/429d5b52b7334a709a918e541445a0f9.SD-480p-0.9Mbps-84490627.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "181091795116",
@@ -6515,7 +7431,29 @@
    "produto": "imunofosfo-fosfoetanolamina-phospho",
    "atualizado_em": "2026-05-19T19:46:07Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/e1f5664bbb9a421e8cf85c2d09e9cd88/e1f5664bbb9a421e8cf85c2d09e9cd88.HD-1080p-4.8Mbps-84490621.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/e1f5664bbb9a421e8cf85c2d09e9cd88.thumbnail.0000000000.jpg?v=1779219907"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/e1f5664bbb9a421e8cf85c2d09e9cd88.thumbnail.0000000000.jpg?v=1779219907",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/e1f5664bbb9a421e8cf85c2d09e9cd88/e1f5664bbb9a421e8cf85c2d09e9cd88.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/e1f5664bbb9a421e8cf85c2d09e9cd88/e1f5664bbb9a421e8cf85c2d09e9cd88.HD-1080p-4.8Mbps-84490621.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/e1f5664bbb9a421e8cf85c2d09e9cd88/e1f5664bbb9a421e8cf85c2d09e9cd88.HD-720p-3.0Mbps-84490621.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/e1f5664bbb9a421e8cf85c2d09e9cd88/e1f5664bbb9a421e8cf85c2d09e9cd88.SD-480p-1.2Mbps-84490621.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "181091598508",
@@ -6526,7 +7464,29 @@
    "produto": "imunofosfo-fosfoetanolamina-phospho",
    "atualizado_em": "2026-05-19T19:43:23Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/8306c1ae403249198f664527857187db/8306c1ae403249198f664527857187db.HD-1080p-2.5Mbps-84490502.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/8306c1ae403249198f664527857187db.thumbnail.0000000000.jpg?v=1779219772"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/8306c1ae403249198f664527857187db.thumbnail.0000000000.jpg?v=1779219772",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/8306c1ae403249198f664527857187db/8306c1ae403249198f664527857187db.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/8306c1ae403249198f664527857187db/8306c1ae403249198f664527857187db.HD-1080p-2.5Mbps-84490502.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/8306c1ae403249198f664527857187db/8306c1ae403249198f664527857187db.HD-720p-1.6Mbps-84490502.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/8306c1ae403249198f664527857187db/8306c1ae403249198f664527857187db.SD-480p-0.9Mbps-84490502.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "181091369132",
@@ -6537,7 +7497,29 @@
    "produto": "imunofosfo-fosfoetanolamina-phospho",
    "atualizado_em": "2026-05-19T19:43:37Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/d476e5f06c254bcbb99189fa57927a03/d476e5f06c254bcbb99189fa57927a03.HD-1080p-2.5Mbps-84490403.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/d476e5f06c254bcbb99189fa57927a03.thumbnail.0000000000.jpg?v=1779219658"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/d476e5f06c254bcbb99189fa57927a03.thumbnail.0000000000.jpg?v=1779219658",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/d476e5f06c254bcbb99189fa57927a03/d476e5f06c254bcbb99189fa57927a03.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/d476e5f06c254bcbb99189fa57927a03/d476e5f06c254bcbb99189fa57927a03.HD-1080p-2.5Mbps-84490403.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/d476e5f06c254bcbb99189fa57927a03/d476e5f06c254bcbb99189fa57927a03.HD-720p-1.6Mbps-84490403.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/d476e5f06c254bcbb99189fa57927a03/d476e5f06c254bcbb99189fa57927a03.SD-480p-0.9Mbps-84490403.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "181090844844",
@@ -6548,7 +7530,29 @@
    "produto": "imunofosfo-fosfoetanolamina-phospho",
    "atualizado_em": "2026-05-19T19:35:46Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/afc08d8b587242288a5474bfc85b58f2/afc08d8b587242288a5474bfc85b58f2.HD-1080p-2.5Mbps-84489978.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/afc08d8b587242288a5474bfc85b58f2.thumbnail.0000000000.jpg?v=1779219299"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/afc08d8b587242288a5474bfc85b58f2.thumbnail.0000000000.jpg?v=1779219299",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/afc08d8b587242288a5474bfc85b58f2/afc08d8b587242288a5474bfc85b58f2.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/afc08d8b587242288a5474bfc85b58f2/afc08d8b587242288a5474bfc85b58f2.HD-1080p-2.5Mbps-84489978.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/afc08d8b587242288a5474bfc85b58f2/afc08d8b587242288a5474bfc85b58f2.HD-720p-1.6Mbps-84489978.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/afc08d8b587242288a5474bfc85b58f2/afc08d8b587242288a5474bfc85b58f2.SD-480p-0.9Mbps-84489978.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "181090746540",
@@ -6559,7 +7563,29 @@
    "produto": "imunofosfo-fosfoetanolamina-phospho",
    "atualizado_em": "2026-05-19T19:35:19Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/02b16ebf33d44f88b34fa615a75f43e1/02b16ebf33d44f88b34fa615a75f43e1.HD-1080p-2.5Mbps-84489979.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/02b16ebf33d44f88b34fa615a75f43e1.thumbnail.0000000000.jpg?v=1779219275"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/02b16ebf33d44f88b34fa615a75f43e1.thumbnail.0000000000.jpg?v=1779219275",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/02b16ebf33d44f88b34fa615a75f43e1/02b16ebf33d44f88b34fa615a75f43e1.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/02b16ebf33d44f88b34fa615a75f43e1/02b16ebf33d44f88b34fa615a75f43e1.HD-1080p-2.5Mbps-84489979.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/02b16ebf33d44f88b34fa615a75f43e1/02b16ebf33d44f88b34fa615a75f43e1.HD-720p-1.6Mbps-84489979.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/02b16ebf33d44f88b34fa615a75f43e1/02b16ebf33d44f88b34fa615a75f43e1.SD-480p-0.9Mbps-84489979.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "181089632428",
@@ -6570,7 +7596,24 @@
    "produto": "imunofosfo-fosfoetanolamina-phospho",
    "atualizado_em": "2026-05-19T19:21:46Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/bace16b85a7e4e98bfc32e8710cf933b/bace16b85a7e4e98bfc32e8710cf933b.HD-720p-1.6Mbps-84489078.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/bace16b85a7e4e98bfc32e8710cf933b.thumbnail.0000000000.jpg?v=1779218324"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/bace16b85a7e4e98bfc32e8710cf933b.thumbnail.0000000000.jpg?v=1779218324",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/bace16b85a7e4e98bfc32e8710cf933b/bace16b85a7e4e98bfc32e8710cf933b.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1272
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/bace16b85a7e4e98bfc32e8710cf933b/bace16b85a7e4e98bfc32e8710cf933b.HD-720p-1.6Mbps-84489078.mp4",
+     "tipo": "video/mp4",
+     "altura": 1272
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/bace16b85a7e4e98bfc32e8710cf933b/bace16b85a7e4e98bfc32e8710cf933b.SD-480p-0.9Mbps-84489078.mp4",
+     "tipo": "video/mp4",
+     "altura": 848
+    }
+   ]
   },
   {
    "id": "181089599660",
@@ -6581,7 +7624,29 @@
    "produto": "imunofosfo-fosfoetanolamina-phospho",
    "atualizado_em": "2026-05-19T19:20:52Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/d492774b2ced48a2967822074b08213f/d492774b2ced48a2967822074b08213f.HD-1080p-2.5Mbps-84489067.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/d492774b2ced48a2967822074b08213f.thumbnail.0000000000.jpg?v=1779218268"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/d492774b2ced48a2967822074b08213f.thumbnail.0000000000.jpg?v=1779218268",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/d492774b2ced48a2967822074b08213f/d492774b2ced48a2967822074b08213f.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/d492774b2ced48a2967822074b08213f/d492774b2ced48a2967822074b08213f.HD-1080p-2.5Mbps-84489067.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/d492774b2ced48a2967822074b08213f/d492774b2ced48a2967822074b08213f.HD-720p-1.6Mbps-84489067.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/d492774b2ced48a2967822074b08213f/d492774b2ced48a2967822074b08213f.SD-480p-0.9Mbps-84489067.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "181089566892",
@@ -6592,7 +7657,24 @@
    "produto": "imunofosfo-fosfoetanolamina-phospho",
    "atualizado_em": "2026-05-19T19:19:34Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/bbb84c5548884e138bd11c919ef8ac26/bbb84c5548884e138bd11c919ef8ac26.HD-720p-3.0Mbps-84489074.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/bbb84c5548884e138bd11c919ef8ac26.thumbnail.0000000000.jpg?v=1779218258"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/bbb84c5548884e138bd11c919ef8ac26.thumbnail.0000000000.jpg?v=1779218258",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/bbb84c5548884e138bd11c919ef8ac26/bbb84c5548884e138bd11c919ef8ac26.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/bbb84c5548884e138bd11c919ef8ac26/bbb84c5548884e138bd11c919ef8ac26.HD-720p-3.0Mbps-84489074.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/bbb84c5548884e138bd11c919ef8ac26/bbb84c5548884e138bd11c919ef8ac26.SD-480p-1.2Mbps-84489074.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "181089468588",
@@ -6603,7 +7685,29 @@
    "produto": "imunofosfo-fosfoetanolamina-phospho",
    "atualizado_em": "2026-05-19T19:16:16Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/d1c7ebdc9c774728b7377e1e48fe005c/d1c7ebdc9c774728b7377e1e48fe005c.HD-1080p-2.5Mbps-84488906.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/d1c7ebdc9c774728b7377e1e48fe005c.thumbnail.0000000000.jpg?v=1779218139"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/d1c7ebdc9c774728b7377e1e48fe005c.thumbnail.0000000000.jpg?v=1779218139",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/d1c7ebdc9c774728b7377e1e48fe005c/d1c7ebdc9c774728b7377e1e48fe005c.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/d1c7ebdc9c774728b7377e1e48fe005c/d1c7ebdc9c774728b7377e1e48fe005c.HD-1080p-2.5Mbps-84488906.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/d1c7ebdc9c774728b7377e1e48fe005c/d1c7ebdc9c774728b7377e1e48fe005c.HD-720p-1.6Mbps-84488906.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/d1c7ebdc9c774728b7377e1e48fe005c/d1c7ebdc9c774728b7377e1e48fe005c.SD-480p-0.9Mbps-84488906.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "181089435820",
@@ -6614,7 +7718,29 @@
    "produto": "imunofosfo-fosfoetanolamina-phospho",
    "atualizado_em": "2026-05-19T19:15:59Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/2d2ff5f55651429db2058c50a7790e62/2d2ff5f55651429db2058c50a7790e62.HD-1080p-2.5Mbps-84488905.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/2d2ff5f55651429db2058c50a7790e62.thumbnail.0000000000.jpg?v=1779218118"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/2d2ff5f55651429db2058c50a7790e62.thumbnail.0000000000.jpg?v=1779218118",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/2d2ff5f55651429db2058c50a7790e62/2d2ff5f55651429db2058c50a7790e62.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/2d2ff5f55651429db2058c50a7790e62/2d2ff5f55651429db2058c50a7790e62.HD-1080p-2.5Mbps-84488905.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/2d2ff5f55651429db2058c50a7790e62/2d2ff5f55651429db2058c50a7790e62.HD-720p-1.6Mbps-84488905.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/2d2ff5f55651429db2058c50a7790e62/2d2ff5f55651429db2058c50a7790e62.SD-480p-0.9Mbps-84488905.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "181087502508",
@@ -6625,7 +7751,29 @@
    "produto": "imunofosfo-fosfoetanolamina-phospho",
    "atualizado_em": "2026-05-19T18:43:42Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/54822298c9f54afebebcde965d90ff9a/54822298c9f54afebebcde965d90ff9a.HD-1080p-7.2Mbps-84486406.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/54822298c9f54afebebcde965d90ff9a.thumbnail.0000000000.jpg?v=1779215361"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/54822298c9f54afebebcde965d90ff9a.thumbnail.0000000000.jpg?v=1779215361",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/54822298c9f54afebebcde965d90ff9a/54822298c9f54afebebcde965d90ff9a.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/54822298c9f54afebebcde965d90ff9a/54822298c9f54afebebcde965d90ff9a.HD-1080p-7.2Mbps-84486406.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/54822298c9f54afebebcde965d90ff9a/54822298c9f54afebebcde965d90ff9a.HD-720p-4.5Mbps-84486406.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/54822298c9f54afebebcde965d90ff9a/54822298c9f54afebebcde965d90ff9a.SD-480p-1.5Mbps-84486406.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "181085962412",
@@ -6636,7 +7784,29 @@
    "produto": "imunofosfo-fosfoetanolamina-phospho",
    "atualizado_em": "2026-05-19T18:27:03Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/f632be865b764d8cb260d311d2b329b4/f632be865b764d8cb260d311d2b329b4.HD-1080p-7.2Mbps-84485890.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/f632be865b764d8cb260d311d2b329b4.thumbnail.0000000000.jpg?v=1779214825"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/f632be865b764d8cb260d311d2b329b4.thumbnail.0000000000.jpg?v=1779214825",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/f632be865b764d8cb260d311d2b329b4/f632be865b764d8cb260d311d2b329b4.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/f632be865b764d8cb260d311d2b329b4/f632be865b764d8cb260d311d2b329b4.HD-1080p-7.2Mbps-84485890.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/f632be865b764d8cb260d311d2b329b4/f632be865b764d8cb260d311d2b329b4.HD-720p-4.5Mbps-84485890.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/f632be865b764d8cb260d311d2b329b4/f632be865b764d8cb260d311d2b329b4.SD-480p-1.5Mbps-84485890.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "181085929644",
@@ -6647,7 +7817,24 @@
    "produto": "imunofosfo-fosfoetanolamina-phospho",
    "atualizado_em": "2026-05-19T18:26:47Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/562b3f77b3e644cc8a39c7e017dd1658/562b3f77b3e644cc8a39c7e017dd1658.HD-720p-1.6Mbps-84485888.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/562b3f77b3e644cc8a39c7e017dd1658.thumbnail.0000000000.jpg?v=1779214820"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/562b3f77b3e644cc8a39c7e017dd1658.thumbnail.0000000000.jpg?v=1779214820",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/562b3f77b3e644cc8a39c7e017dd1658/562b3f77b3e644cc8a39c7e017dd1658.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/562b3f77b3e644cc8a39c7e017dd1658/562b3f77b3e644cc8a39c7e017dd1658.HD-720p-1.6Mbps-84485888.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/562b3f77b3e644cc8a39c7e017dd1658/562b3f77b3e644cc8a39c7e017dd1658.SD-480p-0.9Mbps-84485888.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "181085896876",
@@ -6658,7 +7845,29 @@
    "produto": "imunofosfo-fosfoetanolamina-phospho",
    "atualizado_em": "2026-05-19T18:26:09Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/795ce5bc0756449e82bd75bf93f2db84/795ce5bc0756449e82bd75bf93f2db84.HD-1080p-7.2Mbps-84485857.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/795ce5bc0756449e82bd75bf93f2db84.thumbnail.0000000000.jpg?v=1779214768"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/795ce5bc0756449e82bd75bf93f2db84.thumbnail.0000000000.jpg?v=1779214768",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/795ce5bc0756449e82bd75bf93f2db84/795ce5bc0756449e82bd75bf93f2db84.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/795ce5bc0756449e82bd75bf93f2db84/795ce5bc0756449e82bd75bf93f2db84.HD-1080p-7.2Mbps-84485857.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/795ce5bc0756449e82bd75bf93f2db84/795ce5bc0756449e82bd75bf93f2db84.HD-720p-4.5Mbps-84485857.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/795ce5bc0756449e82bd75bf93f2db84/795ce5bc0756449e82bd75bf93f2db84.SD-480p-1.5Mbps-84485857.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "181085175980",
@@ -6669,7 +7878,24 @@
    "produto": "imunofosfo-fosfoetanolamina-phospho",
    "atualizado_em": "2026-05-19T18:18:02Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/88949468f6be438c962d7f51e523b0e8/88949468f6be438c962d7f51e523b0e8.HD-720p-1.6Mbps-84485247.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/88949468f6be438c962d7f51e523b0e8.thumbnail.0000000000.jpg?v=1779214212"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/88949468f6be438c962d7f51e523b0e8.thumbnail.0000000000.jpg?v=1779214212",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/88949468f6be438c962d7f51e523b0e8/88949468f6be438c962d7f51e523b0e8.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/88949468f6be438c962d7f51e523b0e8/88949468f6be438c962d7f51e523b0e8.HD-720p-1.6Mbps-84485247.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/88949468f6be438c962d7f51e523b0e8/88949468f6be438c962d7f51e523b0e8.SD-480p-0.9Mbps-84485247.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "181085077676",
@@ -6680,7 +7906,24 @@
    "produto": "imunofosfo-fosfoetanolamina-phospho",
    "atualizado_em": "2026-05-19T18:17:18Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/4945d88442c2434fad69f110fbec2b6e/4945d88442c2434fad69f110fbec2b6e.HD-720p-1.6Mbps-84485243.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/4945d88442c2434fad69f110fbec2b6e.thumbnail.0000000000.jpg?v=1779214209"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/4945d88442c2434fad69f110fbec2b6e.thumbnail.0000000000.jpg?v=1779214209",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/4945d88442c2434fad69f110fbec2b6e/4945d88442c2434fad69f110fbec2b6e.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/4945d88442c2434fad69f110fbec2b6e/4945d88442c2434fad69f110fbec2b6e.HD-720p-1.6Mbps-84485243.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/4945d88442c2434fad69f110fbec2b6e/4945d88442c2434fad69f110fbec2b6e.SD-480p-0.9Mbps-84485243.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "181085044908",
@@ -6691,7 +7934,24 @@
    "produto": "imunofosfo-fosfoetanolamina-phospho",
    "atualizado_em": "2026-05-19T18:16:58Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/72e52212ad1c47b1ac312a0154bcfbfd/72e52212ad1c47b1ac312a0154bcfbfd.HD-720p-1.6Mbps-84485239.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/72e52212ad1c47b1ac312a0154bcfbfd.thumbnail.0000000000.jpg?v=1779214196"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/72e52212ad1c47b1ac312a0154bcfbfd.thumbnail.0000000000.jpg?v=1779214196",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/72e52212ad1c47b1ac312a0154bcfbfd/72e52212ad1c47b1ac312a0154bcfbfd.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/72e52212ad1c47b1ac312a0154bcfbfd/72e52212ad1c47b1ac312a0154bcfbfd.HD-720p-1.6Mbps-84485239.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/72e52212ad1c47b1ac312a0154bcfbfd/72e52212ad1c47b1ac312a0154bcfbfd.SD-480p-0.9Mbps-84485239.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "181084848300",
@@ -6702,7 +7962,29 @@
    "produto": "imunofosfo-fosfoetanolamina-phospho",
    "atualizado_em": "2026-05-19T18:15:38Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/c5e780098fac4e8a94f41a73244f64a4/c5e780098fac4e8a94f41a73244f64a4.HD-1080p-2.5Mbps-84485195.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/c5e780098fac4e8a94f41a73244f64a4.thumbnail.0000000000.jpg?v=1779214177"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/c5e780098fac4e8a94f41a73244f64a4.thumbnail.0000000000.jpg?v=1779214177",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/c5e780098fac4e8a94f41a73244f64a4/c5e780098fac4e8a94f41a73244f64a4.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/c5e780098fac4e8a94f41a73244f64a4/c5e780098fac4e8a94f41a73244f64a4.HD-1080p-2.5Mbps-84485195.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/c5e780098fac4e8a94f41a73244f64a4/c5e780098fac4e8a94f41a73244f64a4.HD-720p-1.6Mbps-84485195.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/c5e780098fac4e8a94f41a73244f64a4/c5e780098fac4e8a94f41a73244f64a4.SD-480p-0.9Mbps-84485195.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "181084291244",
@@ -6713,7 +7995,29 @@
    "produto": "imunofosfo-fosfoetanolamina-phospho",
    "atualizado_em": "2026-05-19T18:04:17Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/3ed2c402740d4ed9a2e0cd9e5b6e59f1/3ed2c402740d4ed9a2e0cd9e5b6e59f1.HD-1080p-4.8Mbps-84484450.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/3ed2c402740d4ed9a2e0cd9e5b6e59f1.thumbnail.0000000000.jpg?v=1779213453"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/3ed2c402740d4ed9a2e0cd9e5b6e59f1.thumbnail.0000000000.jpg?v=1779213453",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/3ed2c402740d4ed9a2e0cd9e5b6e59f1/3ed2c402740d4ed9a2e0cd9e5b6e59f1.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/3ed2c402740d4ed9a2e0cd9e5b6e59f1/3ed2c402740d4ed9a2e0cd9e5b6e59f1.HD-1080p-4.8Mbps-84484450.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/3ed2c402740d4ed9a2e0cd9e5b6e59f1/3ed2c402740d4ed9a2e0cd9e5b6e59f1.HD-720p-3.0Mbps-84484450.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/3ed2c402740d4ed9a2e0cd9e5b6e59f1/3ed2c402740d4ed9a2e0cd9e5b6e59f1.SD-480p-1.2Mbps-84484450.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "181084029100",
@@ -6724,7 +8028,29 @@
    "produto": "imunofosfo-fosfoetanolamina-phospho",
    "atualizado_em": "2026-05-19T18:00:41Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/557193f2a1e540b0b78f7373a8ddcfaf/557193f2a1e540b0b78f7373a8ddcfaf.HD-1080p-2.5Mbps-84484438.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/557193f2a1e540b0b78f7373a8ddcfaf.thumbnail.0000000000.jpg?v=1779213479"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/557193f2a1e540b0b78f7373a8ddcfaf.thumbnail.0000000000.jpg?v=1779213479",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/557193f2a1e540b0b78f7373a8ddcfaf/557193f2a1e540b0b78f7373a8ddcfaf.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/557193f2a1e540b0b78f7373a8ddcfaf/557193f2a1e540b0b78f7373a8ddcfaf.HD-1080p-2.5Mbps-84484438.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/557193f2a1e540b0b78f7373a8ddcfaf/557193f2a1e540b0b78f7373a8ddcfaf.HD-720p-1.6Mbps-84484438.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/557193f2a1e540b0b78f7373a8ddcfaf/557193f2a1e540b0b78f7373a8ddcfaf.SD-480p-0.9Mbps-84484438.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "181083537580",
@@ -6735,7 +8061,29 @@
    "produto": "imunofosfo-fosfoetanolamina-phospho",
    "atualizado_em": "2026-05-19T17:54:42Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/90a6f2249b014f8895e9671e85478bab/90a6f2249b014f8895e9671e85478bab.HD-1080p-2.5Mbps-84484103.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/90a6f2249b014f8895e9671e85478bab.thumbnail.0000000000.jpg?v=1779213258"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/90a6f2249b014f8895e9671e85478bab.thumbnail.0000000000.jpg?v=1779213258",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/90a6f2249b014f8895e9671e85478bab/90a6f2249b014f8895e9671e85478bab.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/90a6f2249b014f8895e9671e85478bab/90a6f2249b014f8895e9671e85478bab.HD-1080p-2.5Mbps-84484103.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/90a6f2249b014f8895e9671e85478bab/90a6f2249b014f8895e9671e85478bab.HD-720p-1.6Mbps-84484103.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/90a6f2249b014f8895e9671e85478bab/90a6f2249b014f8895e9671e85478bab.SD-480p-0.9Mbps-84484103.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "181083144364",
@@ -6746,7 +8094,29 @@
    "produto": "imunofosfo-fosfoetanolamina-phospho",
    "atualizado_em": "2026-05-19T17:51:00Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/adf765f9e4824d388c95d03922f316a6/adf765f9e4824d388c95d03922f316a6.HD-1080p-2.5Mbps-84483761.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/adf765f9e4824d388c95d03922f316a6.thumbnail.0000000000.jpg?v=1779212836"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/adf765f9e4824d388c95d03922f316a6.thumbnail.0000000000.jpg?v=1779212836",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/adf765f9e4824d388c95d03922f316a6/adf765f9e4824d388c95d03922f316a6.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/adf765f9e4824d388c95d03922f316a6/adf765f9e4824d388c95d03922f316a6.HD-1080p-2.5Mbps-84483761.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/adf765f9e4824d388c95d03922f316a6/adf765f9e4824d388c95d03922f316a6.HD-720p-1.6Mbps-84483761.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/adf765f9e4824d388c95d03922f316a6/adf765f9e4824d388c95d03922f316a6.SD-480p-0.9Mbps-84483761.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "181081768108",
@@ -6757,7 +8127,29 @@
    "produto": "imunofosfo-fosfoetanolamina-phospho",
    "atualizado_em": "2026-05-19T17:40:37Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/993aae0483804cdbb46217b04b170770/993aae0483804cdbb46217b04b170770.HD-1080p-2.5Mbps-84482541.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/993aae0483804cdbb46217b04b170770.thumbnail.0000000000.jpg?v=1779211604"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/993aae0483804cdbb46217b04b170770.thumbnail.0000000000.jpg?v=1779211604",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/993aae0483804cdbb46217b04b170770/993aae0483804cdbb46217b04b170770.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/993aae0483804cdbb46217b04b170770/993aae0483804cdbb46217b04b170770.HD-1080p-2.5Mbps-84482541.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/993aae0483804cdbb46217b04b170770/993aae0483804cdbb46217b04b170770.HD-720p-1.6Mbps-84482541.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/993aae0483804cdbb46217b04b170770/993aae0483804cdbb46217b04b170770.SD-480p-0.9Mbps-84482541.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "181081440428",
@@ -6768,7 +8160,29 @@
    "produto": "imunofosfo-fosfoetanolamina-phospho",
    "atualizado_em": "2026-05-19T17:32:07Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/8dd5db3ac92d414190bf5f17c102b69b/8dd5db3ac92d414190bf5f17c102b69b.HD-1080p-2.5Mbps-84482371.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/8dd5db3ac92d414190bf5f17c102b69b.thumbnail.0000000000.jpg?v=1779211424"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/8dd5db3ac92d414190bf5f17c102b69b.thumbnail.0000000000.jpg?v=1779211424",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/8dd5db3ac92d414190bf5f17c102b69b/8dd5db3ac92d414190bf5f17c102b69b.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/8dd5db3ac92d414190bf5f17c102b69b/8dd5db3ac92d414190bf5f17c102b69b.HD-1080p-2.5Mbps-84482371.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/8dd5db3ac92d414190bf5f17c102b69b/8dd5db3ac92d414190bf5f17c102b69b.HD-720p-1.6Mbps-84482371.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/8dd5db3ac92d414190bf5f17c102b69b/8dd5db3ac92d414190bf5f17c102b69b.SD-480p-0.9Mbps-84482371.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "181081243820",
@@ -6779,7 +8193,29 @@
    "produto": "imunofosfo-fosfoetanolamina-phospho",
    "atualizado_em": "2026-05-19T17:22:12Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/3359976023134184800e565a0b55041a/3359976023134184800e565a0b55041a.HD-1080p-2.5Mbps-84482020.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/3359976023134184800e565a0b55041a.thumbnail.0000000000.jpg?v=1779211160"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/3359976023134184800e565a0b55041a.thumbnail.0000000000.jpg?v=1779211160",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/3359976023134184800e565a0b55041a/3359976023134184800e565a0b55041a.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/3359976023134184800e565a0b55041a/3359976023134184800e565a0b55041a.HD-1080p-2.5Mbps-84482020.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/3359976023134184800e565a0b55041a/3359976023134184800e565a0b55041a.HD-720p-1.6Mbps-84482020.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/3359976023134184800e565a0b55041a/3359976023134184800e565a0b55041a.SD-480p-0.9Mbps-84482020.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "181080555692",
@@ -6790,7 +8226,29 @@
    "produto": "imunofosfo-fosfoetanolamina-phospho",
    "atualizado_em": "2026-05-19T17:14:52Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/10fe1c7d5d194870a1c87657f4874ccb/10fe1c7d5d194870a1c87657f4874ccb.HD-1080p-2.5Mbps-84481748.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/10fe1c7d5d194870a1c87657f4874ccb.thumbnail.0000000000.jpg?v=1779210823"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/10fe1c7d5d194870a1c87657f4874ccb.thumbnail.0000000000.jpg?v=1779210823",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/10fe1c7d5d194870a1c87657f4874ccb/10fe1c7d5d194870a1c87657f4874ccb.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/10fe1c7d5d194870a1c87657f4874ccb/10fe1c7d5d194870a1c87657f4874ccb.HD-1080p-2.5Mbps-84481748.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/10fe1c7d5d194870a1c87657f4874ccb/10fe1c7d5d194870a1c87657f4874ccb.HD-720p-1.6Mbps-84481748.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/10fe1c7d5d194870a1c87657f4874ccb/10fe1c7d5d194870a1c87657f4874ccb.SD-480p-0.9Mbps-84481748.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "181079441580",
@@ -6801,7 +8259,29 @@
    "produto": "imunofosfo-fosfoetanolamina-phospho",
    "atualizado_em": "2026-05-19T17:06:59Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/23da2fb2badf4c34a42e45c65b24fce4/23da2fb2badf4c34a42e45c65b24fce4.HD-1080p-2.5Mbps-84470289.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/23da2fb2badf4c34a42e45c65b24fce4.thumbnail.0000000000.jpg?v=1779201009"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/23da2fb2badf4c34a42e45c65b24fce4.thumbnail.0000000000.jpg?v=1779201009",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/23da2fb2badf4c34a42e45c65b24fce4/23da2fb2badf4c34a42e45c65b24fce4.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/23da2fb2badf4c34a42e45c65b24fce4/23da2fb2badf4c34a42e45c65b24fce4.HD-1080p-2.5Mbps-84470289.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/23da2fb2badf4c34a42e45c65b24fce4/23da2fb2badf4c34a42e45c65b24fce4.HD-720p-1.6Mbps-84470289.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/23da2fb2badf4c34a42e45c65b24fce4/23da2fb2badf4c34a42e45c65b24fce4.SD-480p-0.9Mbps-84470289.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "181062402220",
@@ -6812,7 +8292,29 @@
    "produto": "imunofosfo-fosfoetanolamina-phospho",
    "atualizado_em": "2026-05-19T17:33:29Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/89261c8092bc41deb4a2c088bd272f00/89261c8092bc41deb4a2c088bd272f00.HD-1080p-2.5Mbps-84469952.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/89261c8092bc41deb4a2c088bd272f00.thumbnail.0000000000.jpg?v=1779200719"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/89261c8092bc41deb4a2c088bd272f00.thumbnail.0000000000.jpg?v=1779200719",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/89261c8092bc41deb4a2c088bd272f00/89261c8092bc41deb4a2c088bd272f00.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/89261c8092bc41deb4a2c088bd272f00/89261c8092bc41deb4a2c088bd272f00.HD-1080p-2.5Mbps-84469952.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/89261c8092bc41deb4a2c088bd272f00/89261c8092bc41deb4a2c088bd272f00.HD-720p-1.6Mbps-84469952.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/89261c8092bc41deb4a2c088bd272f00/89261c8092bc41deb4a2c088bd272f00.SD-480p-0.9Mbps-84469952.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "181061943468",
@@ -6823,7 +8325,29 @@
    "produto": "imunofosfo-fosfoetanolamina-phospho",
    "atualizado_em": "2026-05-19T14:22:53Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/2d7d0c165a534bb28722b97374992e62/2d7d0c165a534bb28722b97374992e62.HD-1080p-2.5Mbps-84469790.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/2d7d0c165a534bb28722b97374992e62.thumbnail.0000000000.jpg?v=1779200542"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/2d7d0c165a534bb28722b97374992e62.thumbnail.0000000000.jpg?v=1779200542",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/2d7d0c165a534bb28722b97374992e62/2d7d0c165a534bb28722b97374992e62.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/2d7d0c165a534bb28722b97374992e62/2d7d0c165a534bb28722b97374992e62.HD-1080p-2.5Mbps-84469790.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/2d7d0c165a534bb28722b97374992e62/2d7d0c165a534bb28722b97374992e62.HD-720p-1.6Mbps-84469790.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/2d7d0c165a534bb28722b97374992e62/2d7d0c165a534bb28722b97374992e62.SD-480p-0.9Mbps-84469790.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "181061746860",
@@ -6834,7 +8358,29 @@
    "produto": "imunofosfo-fosfoetanolamina-phospho",
    "atualizado_em": "2026-05-19T14:19:53Z",
    "video": "https://www.americanutrition.com/cdn/shop/videos/c/vp/e7e0f7e6567d463f854f4a4e2afd42ae/e7e0f7e6567d463f854f4a4e2afd42ae.HD-1080p-2.5Mbps-84469302.mp4",
-   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/e7e0f7e6567d463f854f4a4e2afd42ae.thumbnail.0000000000.jpg?v=1779200175"
+   "poster": "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/preview_images/e7e0f7e6567d463f854f4a4e2afd42ae.thumbnail.0000000000.jpg?v=1779200175",
+   "fontes": [
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/e7e0f7e6567d463f854f4a4e2afd42ae/e7e0f7e6567d463f854f4a4e2afd42ae.m3u8",
+     "tipo": "application/x-mpegURL",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/e7e0f7e6567d463f854f4a4e2afd42ae/e7e0f7e6567d463f854f4a4e2afd42ae.HD-1080p-2.5Mbps-84469302.mp4",
+     "tipo": "video/mp4",
+     "altura": 1080
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/e7e0f7e6567d463f854f4a4e2afd42ae/e7e0f7e6567d463f854f4a4e2afd42ae.HD-720p-1.6Mbps-84469302.mp4",
+     "tipo": "video/mp4",
+     "altura": 720
+    },
+    {
+     "url": "https://www.americanutrition.com/cdn/shop/videos/c/vp/e7e0f7e6567d463f854f4a4e2afd42ae/e7e0f7e6567d463f854f4a4e2afd42ae.SD-480p-0.9Mbps-84469302.mp4",
+     "tipo": "video/mp4",
+     "altura": 480
+    }
+   ]
   },
   {
    "id": "181051031724",

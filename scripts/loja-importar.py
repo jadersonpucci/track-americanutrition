@@ -338,7 +338,9 @@ for n in rj('data/depoimentos.json'):
     if ref.get('__typename') == 'Video':
         srcs = ref.get('sources') or []
         mp4 = next((s['url'] for s in srcs if s.get('mimeType') == 'video/mp4'), srcs[0]['url'] if srcs else None)
-        item.update({'video': mp4, 'poster': (ref.get('previewImage') or {}).get('url')})
+        # todas as versões, na ordem da Shopify (HLS .m3u8 primeiro, depois MP4 1080/720/480): as seções usam a primeira
+        item.update({'video': mp4, 'poster': (ref.get('previewImage') or {}).get('url'),
+                     'fontes': [{'url': x['url'], 'tipo': x.get('mimeType'), 'altura': x.get('height')} for x in srcs]})
     elif ref.get('__typename') == 'MediaImage':
         im = ref.get('image') or {}
         item.update({'imagem': im.get('url'), 'largura': im.get('width'), 'altura': im.get('height')})
