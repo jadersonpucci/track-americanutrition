@@ -201,6 +201,7 @@ def reescrever():
                 return inteiro
             return u.replace('/', '\\/') if '\\/' in cam else u
         novo = URL_RE.sub(troca, txt)
+        novo = re.sub(r'https?:(https://cdn\.americanutrition\.com/)', r'\1', novo)   # "https:" que sobrou de //host relativo
         if novo != txt:
             open(f, 'w', encoding='utf-8').write(novo)
             print('reescrito:', os.path.relpath(f, RAIZ), file=sys.stderr)
