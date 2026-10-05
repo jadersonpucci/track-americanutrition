@@ -492,3 +492,7 @@ em.hl .scribble--circle{inset:-.25em -.4em;width:auto;height:auto}
    colunas deixam de ser desenhados da 2ª coluna em diante. Mantém o fade, sem deslocamento. */
 body .depoimento-card{display:inline-block;width:100%;vertical-align:top;-webkit-column-break-inside:avoid;break-inside:avoid;animation-name:an-dep-fade}
 @keyframes an-dep-fade{from{opacity:0}to{opacity:1}}
+/* Na listagem fica sempre a capa do vídeo: o Safari carrega o vídeo mas não desenha nenhum quadro
+   antes do play, e ele cobria a capa com um retângulo branco. O vídeo toca no lightbox, ao clicar. */
+body .depoimento-video-wrapper video{display:none!important}
+body .depoimento-video-wrapper img.depoimento-video-poster{z-index:3}
