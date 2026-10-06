@@ -1,6 +1,6 @@
 // Shell do app: layout, roteador, seletor de empresa, paleta de comandos, atalhos, tema, onboarding.
 import { db, prefs } from './db.js';
-import { h, icon, modal, toast, avatar, bankIcon, catIcon, closeAll, menu, on } from './ui.js';
+import { h, icon, modal, toast, avatar, bankIcon, catIcon, closeAll, menu, on, offAll } from './ui.js';
 import { esc, money, norm, today, fmtDate } from './utils.js';
 import { seedEmpresa, seedCadastros, seedLancamentos } from './seed.js';
 import { CONFIG } from './config.js';
@@ -128,6 +128,7 @@ async function route(force = false, refresh = false) {
   const y = refresh ? app.root.scrollTop || window.scrollY : 0;
   if (!refresh && lastHash !== hash) window.scrollTo(0, 0);
   const opts = { tipo: key === 'receber' ? 'receber' : 'pagar', params, sub: parts[1] || null, contaId: key === 'extrato' ? parts[1] || null : null };
+  offAll(app.root);
   try { mod.render(app.root, opts); } catch (e) { console.error(e); app.root.innerHTML = `<div class="page"><div class="alert red">${icon('ti-bug')}Erro ao abrir a tela: ${esc(e.message)}</div></div>`; }
   if (refresh) window.scrollTo(0, y);
   lastHash = hash; app.view = viewName;

@@ -43,7 +43,12 @@ export function abrirLancamento(existing = null, { tipo = 'pagar', defaults = {}
   const categoria = combobox({ options: catOpts(C.categorias, L.tipo === 'receber' ? 'in' : 'out'), value: L.categoria_id, placeholder: 'Categoria', allowEmpty: false });
   // o botão de rateio fica fora do <label>: dentro dele, o clique no seletor (uma div) acionava o botão
   const catCol = h('<div class="fld-col"></div>'); catCol.appendChild(fieldEl('Categoria', categoria, { req: true }));
-  const rowCC = h('<div class="row2"></div>'); rowCC.append(fieldEl('Contato', contato), catCol); f.appendChild(rowCC);
+  // novo contato sem sair do lançamento (o "+ Novo" da barra fica atrás do fundo do formulário)
+  const ctCol = h('<div class="fld-col"></div>'); ctCol.appendChild(fieldEl('Contato', contato));
+  const novoCt = h(`<button type="button" class="linkbtn" tabindex="-1" data-novo-contato>${icon('ti-user-plus')}Cadastrar ${L.tipo === 'receber' ? 'cliente' : 'fornecedor'}</button>`);
+  novoCt.onclick = async () => { const { abrirContato } = await import('./cadastros.js'); abrirContato(null, { tipo: L.tipo === 'receber' ? 'cliente' : 'fornecedor', onSaved: c => { contato.setOptions(contatoOpts(app.ctx().contatos)); contato.set(c.id); if (ccPick && !ccTocado) ccPick.set(centrosPadrao(c.id)); } }); };
+  ctCol.appendChild(novoCt);
+  const rowCC = h('<div class="row2"></div>'); rowCC.append(ctCol, catCol); f.appendChild(rowCC);
   // rateio de categorias
   const rateioBox = h(`<div class="rateio hidden"><div class="rateio-h"><span>Rateio por categoria</span><button type="button" class="btn ghost xs" data-add>${icon('ti-plus')}Linha</button></div><div class="rateio-l"></div><div class="rateio-t"></div></div>`);
   const rateioBtn = h(`<button type="button" class="linkbtn" tabindex="-1">${icon('ti-layout-list')}Dividir em mais de uma categoria</button>`);

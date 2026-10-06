@@ -121,7 +121,7 @@ function paintContatos(body, C, E) {
   on(body, 'click', '[data-menu]', (e, b) => { e.stopPropagation(); const c = db.get('contatos', b.closest('[data-id]').dataset.id); menu(b, [{ label: 'Editar', icon: 'ti-pencil', onClick: () => abrirContato(c) }, { label: 'Ver lançamentos', icon: 'ti-list', onClick: () => { location.hash = `#/relatorios`; } }, { label: c.arquivado ? 'Reativar' : 'Arquivar', icon: 'ti-archive', onClick: () => db.upsert('contatos', { ...c, arquivado: !c.arquivado }) }, '-', { label: 'Excluir', icon: 'ti-trash', danger: true, onClick: async () => { if (stats.get(c.id)) return toast('Contato com lançamentos. Arquive.', 'warn'); if (await confirm({ title: 'Excluir contato', msg: `Excluir "${esc(c.nome)}"?`, ok: 'Excluir', danger: true })) db.remove('contatos', c.id); } }]); });
   on(body, 'click', '.ct-r', (e, el) => { if (e.target.closest('button')) return; abrirContato(db.get('contatos', el.dataset.id)); });
 }
-export function abrirContato(c = null, { tipo: tipoNovo = 'fornecedor' } = {}) {
+export function abrirContato(c = null, { tipo: tipoNovo = 'fornecedor', onSaved = null } = {}) {
   const E = app.empresaId; const C = app.ctx(); const isEdit = !!c;
   const L = c ? { ...c } : { nome: '', tipo: tipoNovo || 'fornecedor', documento: '', email: '', telefone: '', pix: '', cidade: '', uf: '', observacoes: '', arquivado: false };
   const d = drawer({ title: isEdit ? 'Editar contato' : 'Novo contato', size: 'md' });
@@ -141,7 +141,8 @@ export function abrirContato(c = null, { tipo: tipoNovo = 'fornecedor' } = {}) {
   const ccBox = h('<div class="ccbox"><div class="fl">Centro de custo padrão</div><p class="muted sm">Aplicado automaticamente aos novos lançamentos deste contato. Sem seleção, vale o padrão da empresa (Brasil).</p></div>'); ccBox.appendChild(ccPad.el);
   f.append(fieldEl('Observações', obs), ccBox);
   d.footer.innerHTML = ''; const bc = h('<button class="btn ghost">Cancelar</button>'); bc.onclick = () => d.close(); const ok = h(`<button class="btn primary">${icon('ti-check')}Salvar</button>`); d.footer.append(bc, ok);
-  ok.onclick = async () => { if (!nome.value.trim()) return toast('Informe o nome', 'err'); await db.upsert('contatos', { ...L, empresa_id: E, nome: nome.value.trim(), tipo: tipo.get(), documento: doc.value.replace(/\D/g, ''), email: email.value.trim(), telefone: tel.value.trim(), pix: pix.value.trim(), cidade: cidade.value.trim(), uf: uf.value.trim().toUpperCase(), observacoes: obs.value.trim(), rateio_centros_padrao: ccPad.get() }); toast('Contato salvo'); d.close(true); };
+  ok.onclick = async () => { if (!nome.value.trim()) return toast('Informe o nome', 'err'); const row = { ...L, id: L.id || uid(), empresa_id: E, nome: nome.value.trim(), tipo: tipo.get(), documento: doc.value.replace(/\D/g, ''), email: email.value.trim(), telefone: tel.value.trim(), pix: pix.value.trim(), cidade: cidade.value.trim(), uf: uf.value.trim().toUpperCase(), observacoes: obs.value.trim(), rateio_centros_padrao: ccPad.get() }; const saved = await db.upsert('contatos', row); toast('Contato salvo'); d.close(true); onSaved && onSaved(saved || row); };
+  return d;
 }
 
 function paintCentros(body, C, E) {

@@ -10,8 +10,16 @@ export const icon = (n, cls = '') => `<i class="ti ${n} ${cls}"></i>`;
 export function on(root, ev, sel, fn) {
   const reg = root.__on || (root.__on = new Map()); const k = ev + '|' + sel;
   if (reg.has(k)) { reg.get(k).fn = fn; return; }
-  const h = { fn }; reg.set(k, h);
-  root.addEventListener(ev, e => { const t = e.target.closest(sel); if (t && root.contains(t)) h.fn(e, t); });
+  const h = { fn, ev, listener: e => { const t = e.target.closest(sel); if (t && root.contains(t)) h.fn(e, t); } }; reg.set(k, h);
+  root.addEventListener(ev, h.listener);
+}
+// Remove tudo que foi registrado com on() nesse root. O roteador chama ao trocar de tela:
+// o root é o mesmo para todas as telas, e um seletor genérico de uma tela (ex.: [data-novo]
+// do extrato) não pode continuar valendo na tela seguinte.
+export function offAll(root) {
+  const reg = root.__on; if (!reg) return;
+  for (const h of reg.values()) root.removeEventListener(h.ev, h.listener);
+  reg.clear();
 }
 
 // ---------- ícones de conta / contato / categoria ----------
