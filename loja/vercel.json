@@ -12,7 +12,7 @@
       "permanent": true
     },
     {
-      "source": "/account/:rest*",
+      "source": "/account/:rest+",
       "destination": "/account",
       "permanent": false
     },
