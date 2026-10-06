@@ -187,8 +187,9 @@ export function combobox({ options = [], value = null, placeholder = 'Selecionar
       else if (e.key === 'Escape') { e.stopPropagation(); close(); el.focus(); }
       else if (e.key === 'Tab') { e.preventDefault(); const dir = e.shiftKey ? -1 : 1; if (inp.value.trim() && filtered[hi]) pick(filtered[hi], { foco: false }); else close(); focarVizinho(dir); }
     });
+    // o botão Criar usa data-create sem valor: dataset.create é '' (falso), por isso o teste é 'create' in dataset
     const doCreate = async txt => { const o = await allowCreate(txt); if (o) { opts = [...opts, o]; pick(o); } };
-    list.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.create) return doCreate(inp.value.trim()); const i = Number(b.dataset.i); pick(i < 0 ? null : filtered[i]); });
+    list.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; if ('create' in b.dataset) return doCreate(inp.value.trim()); const i = Number(b.dataset.i); pick(i < 0 ? null : filtered[i]); });
     if (inicial) inp.focus(); // aberto pelo teclado: foco já, para não perder as próximas teclas
     setTimeout(() => inp.focus(), 20);
   };
