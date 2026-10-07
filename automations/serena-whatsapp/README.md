@@ -1985,3 +1985,51 @@ Primeira execução em produção (01/10 10:18, execução `2331226`): **2 devol
 
 Os outros 11 da fila não foram devolvidos porque a última mensagem deles é de mais de 24h (ou o contato
 está bloqueado) — esses continuam só no alerta, para a equipe responder pelo Inbox.
+
+## Serena manda o rótulo (Supplement Facts) de cada produto (07/10)
+
+Print da Noelia (+55 43 9906-2905): ela pediu *"Pode me mandar a parte do rótulo onde fala a composição
+porfavor"* e a Serena respondeu a composição **em texto**, com a foto do frasco acima. O cliente pediu uma
+imagem e recebeu uma lista. A foto do frasco já estava cadastrada desde 21/09, o rótulo não.
+
+**Onde estavam as tabelas:** nenhuma em metafield nem na descrição do produto. Elas são `<img class="factsimg">`
+**fixas dentro dos snippets de LP do tema** (`snippets/lp-imunofosfo.liquid`, `snippets/lp-omega3.liquid`,
+`snippets/green-propolis-lp.liquid`, …) e uma vem da mídia do produto (multivitamínico). Varrendo o tema por
+`factsimg`/`nutricional` saíram 11 imagens, **todas abertas e conferidas uma a uma** — o nome do arquivo não
+serve de critério: 5 `Screenshot_*.png` que pareciam tabela eram foto de produto (Green Propolis, Creatina,
+Life Protein, Diabetes e a D3 50.000 têm um `Screenshot` que é mockup).
+
+`serena_config.documentos` foi de 15 para **26 entradas**: o laudo, **11 rótulos**, 14 fotos de frasco.
+
+| Rótulo | Produto |
+| --- | --- |
+| `rotulo_imunofosfo` | ImunoFosfo em cápsulas (42, 60, 90, Plus 180 e Vegano — mesma fórmula) |
+| `rotulo_imunofosfo_kids` / `_liquid` / `_diabetes` | versões com fórmula própria |
+| `rotulo_omega3`, `rotulo_d3_k2_a`, `rotulo_d3_50000` | Ômega 3, D3 diária, D3 50.000 UI |
+| `rotulo_green_propolis`, `rotulo_propolis_extract` | os dois própolis |
+| `rotulo_life_hair`, `rotulo_multivitaminico` | Life Hair, Vitamins & Minerals |
+
+**Ordem do array importa**, porque as duas redes de segurança pegam o *primeiro* documento cujos termos batem:
+
+1. Rótulos **específicos antes do genérico** (`rotulo_d3_50000` antes de `rotulo_d3_k2_a`, `rotulo_green_propolis`
+   antes de `rotulo_propolis_extract`, todos antes de `rotulo_imunofosfo`).
+2. Rótulos **antes das fotos**, senão "manda a foto do rótulo do ômega" cairia em `foto_omega3` (frasco).
+
+**Gatilhos compostos, nunca soltos.** Primeira versão usava `composicao` e `ingredientes` sozinhos: no teste,
+*"qual a composição da creatina?"* anexou o rótulo do ImunoFosfo — produto errado para o cliente. Agora cada
+rótulo exige produto no termo (`composicao do omega`, `rotulo do kids`, `d3 50.000`) e o genérico só aceita
+`rotulo do imuno`, `composicao do produto` e afins. A frase da Noelia não casa com gatilho nenhum: quem manda
+ali é o próprio modelo, pelo campo `quando`.
+
+Testes (07/10, sandbox), 12 frases: a frase exata da Noelia → `rotulo_imunofosfo`; "tabela nutricional do ômega
+3" → `rotulo_omega3`; "rótulo do kids" → Kids; "composição do própolis verde" → Green Propolis; "tabela da
+vitamina d3 50.000" → a de 50.000 e não a diária; "rótulo do imunofosfo vegano" → o do ImunoFosfo, com a Serena
+explicando que a fórmula é a mesma; "tem foto do produto?" → frasco de 90, não o rótulo; **"qual a composição da
+creatina?" → nenhum arquivo**. Envio real pelo WhatsApp testado no número da empresa (PNG pelo `sendMedia`,
+`message_id 3EB0A9CD68AEB0A4750104`).
+
+**Cinco produtos não têm tabela em lugar nenhum** (nem no tema, nem na mídia, nem em metafield): Creatina, Life
+Protein, Life Gummy, ImunoPet e ImunoFosfo Healing. Pedido para eles cai no comportamento certo — em teste,
+"manda a tabela do life protein" respondeu *"Não tenho um arquivo de rótulo do Life Protein para enviar, mas a
+tabela está aqui"* e seguiu em texto. Quando as imagens existirem, é só acrescentar a entrada em
+`nodes/serena-config-documentos.json` e gravar em `serena_config.documentos`.
