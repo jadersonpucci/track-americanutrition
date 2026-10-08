@@ -147,9 +147,9 @@ begin
     if nullif(regexp_replace(coalesce(p->>'cnpj', ''), '\D', '', 'g'), '') is not null then update contatos set documento = coalesce(nullif(documento, ''), p->>'cnpj') where id = ct; end if;
   end if;
   select id into conta from contas where empresa_id = emp and deletado_em is null and not arquivada and tipo <> 'cartao' order by (nome ilike 'inter') desc, ordem limit 1;
-  insert into lancamentos (empresa_id, tipo, descricao, valor, vencimento, competencia, contato_id, conta_id, forma_pagamento, status, baixas, referencia, observacoes, origem, origem_ref)
+  insert into lancamentos (empresa_id, tipo, descricao, valor, vencimento, competencia, contato_id, conta_id, forma_pagamento, status, baixas, referencia, boleto_linha, pix_codigo, observacoes, origem, origem_ref)
     values (emp, 'pagar', left(coalesce(nullif(p->>'descricao', ''), 'Boleto ' || coalesce(forn, '')), 140), valor, venc, date_trunc('month', venc)::date, ct, conta, 'boleto', 'aberto', '[]'::jsonb,
-            nullif(linha, ''), nullif('Recebido pelo Telegram' || coalesce(' por ' || nullif(p->>'quem', ''), ''), ''), 'telegram', ref)
+            nullif(linha, ''), nullif(linha, ''), nullif(trim(coalesce(p->>'pix', '')), ''), nullif('Recebido pelo Telegram' || coalesce(' por ' || nullif(p->>'quem', ''), ''), ''), 'telegram', ref)
     returning id into lid;
   if coalesce(p->>'base64', '') <> '' then
     conteudo := decode(regexp_replace(p->>'base64', '^data:[^,]*,', ''), 'base64');

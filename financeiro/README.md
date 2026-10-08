@@ -125,3 +125,10 @@ Projeto próprio na Vercel (`financeiro-americanutrition`, Root Directory `finan
 - Workflow "Financeiro · Extrato Inter" (n8n, de hora em hora): token OAuth da aplicação só de extrato (escopo `extrato.read`, certificado na credencial "SSL Certificates" dos dois nós HTTP), `GET /banking/v2/extrato/completo` dos últimos 7 dias (`inter_ext_dias` muda a janela), grava em `extrato_itens` e chama `fin_extrato_aplicar`.
 - Credenciais da aplicação ficam em `checkout_config` (`inter_ext_client_id`, `inter_ext_client_secret`, `inter_ext_conta_corrente`), gravadas pelo formulário "Financeiro · Inter Extrato · Credenciais" (exige login no n8n). Nada da integração de PIX/cobrança é alterado.
 - Na aba Conciliação da conta, o botão "Lançar tarifas (N)" faz o mesmo agrupamento por dia para itens importados por OFX.
+
+## Boleto e PIX no lançamento
+
+- **Código do boleto ou PIX** (`lancamentos.boleto_linha`, `lancamentos.pix_codigo`): no formulário da conta a pagar, em "Mais detalhes". Aceita a linha digitável (47 dígitos bancário / 48 arrecadação, DVs conferidos) e o PIX copia e cola (CRC conferido), um por linha.
+- **Leitura automática**: ao anexar um PDF numa conta a pagar, o app chama `POST /webhook/financeiro-boleto` {token, base64, nome} (workflow **Financeiro · Ler boleto (anexo)**), que valida a sessão, extrai o texto do PDF e devolve linha digitável, PIX, valor e vencimento. Preenche o código e, se estiverem vazios, valor e vencimento. PDF só de imagem (escaneado) não é lido: mande pelo Telegram (visão) ou cole o código.
+- **Pagar**: no detalhe do lançamento, o botão **Boleto** mostra a linha digitável com "Copiar" (1 clique), o código de barras desenhado na tela (ITF 2 de 5 intercalado, `boleto.js`), o valor e vencimento embutidos no código, e o QR PIX se o boleto for híbrido. "Ler do anexo" cobre lançamentos antigos com PDF e sem código. "Já paguei · dar baixa" abre a baixa sem conta pré-selecionada.
+- Boletos recebidos pelo Telegram já gravam `boleto_linha` (`fin_boleto_criar`, `supabase/boleto.sql`).

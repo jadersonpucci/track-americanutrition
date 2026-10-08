@@ -278,3 +278,10 @@ details.hist{margin-top:14px;border-top:1px solid var(--line);padding-top:8px}de
 .ct-tabs{margin-bottom:12px;max-width:100%;overflow-x:auto;scrollbar-width:none}.ct-tabs::-webkit-scrollbar{display:none}.ct-tabs button b{font-weight:600;color:var(--soft);margin-left:2px;font-size:12px}.ct-tabs button.on b{color:var(--muted)}
 /* PIX copia e cola */
 .pix-box{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}.pix-qr{position:relative;width:240px;height:240px;background:#fff;border-radius:14px;padding:8px;box-sizing:content-box;border:1px solid var(--line)}.pix-qr img{display:block;width:240px;height:240px;image-rendering:pixelated}.pix-qr-ld{position:absolute;inset:0;display:grid;place-items:center}.pix-v{font-family:var(--display);font-weight:600;font-size:24px;letter-spacing:-.5px}.pix-n{font-weight:600}.pix-k{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center;word-break:break-all}.pix-cc{width:100%;text-align:left}.pix-cc textarea{font-size:11px;line-height:1.35;word-break:break-all;resize:none}
+
+/* boleto */
+.cod-pag{font-size:12px;line-height:1.35;word-break:break-all;resize:vertical}
+.bol-box{display:flex;flex-direction:column;gap:10px}.bol-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px}.bol-t{font-weight:600;min-width:0}.bol-v{font-family:var(--display);font-weight:600;font-size:20px;white-space:nowrap}
+.bol-cc textarea{font-size:13px;line-height:1.4;resize:none;word-break:break-all}.bol-bar{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 8px;overflow-x:auto}.bol-bar svg{display:block;margin:0 auto;max-width:100%;height:72px}
+.bol-pix{display:flex;flex-direction:column;align-items:center;gap:8px;padding-top:6px;border-top:1px solid var(--line2)}.bol-pix img{width:200px;height:200px;background:#fff;border-radius:10px;padding:6px;border:1px solid var(--line);image-rendering:pixelated}
+.mono.sm{font-size:12px;word-break:break-all}

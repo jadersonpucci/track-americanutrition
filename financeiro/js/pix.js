@@ -55,6 +55,9 @@ function carregarQR() {
   return qrLib;
 }
 
+// QR Code (GIF data URL) de qualquer texto: usado também pelo boleto híbrido
+export async function qrDataUrl(texto, cell = 6) { const qrcode = await carregarQR(); const qr = qrcode(0, 'M'); qr.addData(texto); qr.make(); return qr.createDataURL(cell, 0); }
+
 // Abre o modal de pagamento de um lançamento pela chave PIX do contato.
 export function modalPix({ lanc, contato, valor, onPago = null, contaNome = '' }) {
   const nk = pixKeyNorm(contato?.pix);

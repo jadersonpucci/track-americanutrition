@@ -4,6 +4,7 @@ import { drawer, modal, field, fieldEl, moneyInput, combobox, segmented, toggle,
 import { today, addDays, addMonths, monthStart, uid, esc, money, round2, fmtDate, sum, readFile } from '../utils.js';
 import { FORMAS, gerarParcelas, gerarRecorrencia, emAberto, statusOf, liquidado } from '../model.js';
 import { app } from '../app.js';
+import { ehLinha, soDigitos, parseCodigos, codigosTexto, lerBoletoPdf, modalBoleto, fmtLinha } from '../boleto.js';
 
 const contaOpt = c => ({ id: c.id, label: c.nome, sub: c.tipo === 'cartao' ? 'Cartão' : undefined, icon: bankIcon(c, 24), group: c.arquivada ? 'Arquivadas' : undefined });
 const catOpts = (cats, tipo) => cats.filter(c => !c.arquivada && (!tipo || c.tipo === tipo)).sort((a, b) => (a.grupo - b.grupo) || (a.ordem - b.ordem)).map(c => ({ id: c.id, label: c.nome, sub: c.codigo, icon: catIcon(c, 24), group: `${c.grupo} · ${c.subgrupo || ''}`, keywords: c.subgrupo }));
@@ -123,13 +124,28 @@ export function abrirLancamento(existing = null, { tipo = 'pagar', defaults = {}
   if (!isEdit) { pagoBox.prepend(tglPago, pagoOpts); f.appendChild(pagoBox); avisoVenc(); }
 
   // observações sempre visíveis no formulário; na lista não aparecem, só ao abrir o lançamento
-  const more = h(`<details class="more" ${L.tags?.length || L.referencia || L.anexos?.length ? 'open' : ''}><summary>${icon('ti-chevron-right')}Mais detalhes <span class="muted">tags, referência, anexos</span></summary><div class="more-b"></div></details>`);
+  const more = h(`<details class="more" ${L.tags?.length || L.referencia || L.anexos?.length || L.boleto_linha || L.pix_codigo ? 'open' : ''}><summary>${icon('ti-chevron-right')}Mais detalhes <span class="muted">tags, referência, anexos</span></summary><div class="more-b"></div></details>`);
   const mb = more.querySelector('.more-b');
   const tagsEl = h(`<div class="chips"></div>`); const selTags = new Set(L.tags || []);
   const paintTags = () => { tagsEl.innerHTML = C.tags.map(t => `<button type="button" class="chip ${selTags.has(t.nome) ? 'on' : ''}" style="--c:${t.cor}" data-t="${esc(t.nome)}">${esc(t.nome)}</button>`).join('') + `<button type="button" class="chip add" data-new>${icon('ti-plus')}Nova tag</button>`; };
   paintTags(); tagsEl.onclick = async e => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.new) { const nome = window.prompt('Nome da tag'); if (nome) { await db.upsert('tags', { id: uid(), empresa_id: E, nome, cor: ['#2F6BE0', '#17924A', '#B26A00', '#8E44AD', '#E8262C'][C.tags.length % 5] }); C.tags = db.of('tags', E); selTags.add(nome); paintTags(); } return; } selTags.has(b.dataset.t) ? selTags.delete(b.dataset.t) : selTags.add(b.dataset.t); paintTags(); };
   const ref = h(`<input class="inp" placeholder="Nº da nota, pedido, contrato…" value="${esc(L.referencia || '')}">`);
   const obs = h(`<textarea class="inp" rows="2" placeholder="Ex.: combinado desconto se pagar até o dia 10">${esc(L.observacoes || '')}</textarea>`);
+  // linha digitável do boleto e/ou PIX copia e cola (uma por linha); preenchido sozinho ao anexar o PDF do boleto
+  const codigo = h(`<textarea class="inp mono cod-pag" rows="2" placeholder="Cole a linha digitável do boleto ou o PIX copia e cola">${esc(codigosTexto(L))}</textarea>`);
+  const aplicarLeitura = (r, { silencioso = false } = {}) => {
+    if (!r || (!r.linha && !r.pix)) { if (!silencioso) toast('Não achei código de boleto nem PIX nesse PDF', 'warn', 4500); return false; }
+    const atual = parseCodigos(codigo.value); const linhas = [];
+    if (r.linha && !atual.boleto_linha) linhas.push(fmtLinha(r.linha)); else if (atual.boleto_linha) linhas.push(fmtLinha(atual.boleto_linha));
+    if (r.pix && !atual.pix_codigo) linhas.push(r.pix); else if (atual.pix_codigo) linhas.push(atual.pix_codigo);
+    codigo.value = linhas.join('\n');
+    if (r.valor > 0 && !(valor.get() > 0)) valor.set(r.valor);
+    if (r.vencimento && !isEdit && !L.baixas?.length) venc.value = r.vencimento;
+    if (!forma.get() || forma.get() === 'pix') forma.set('boleto');
+    more.open = true;
+    toast(`Boleto lido${r.valor ? ': ' + money(r.valor) : ''}${r.vencimento ? ' · vence ' + fmtDate(r.vencimento) : ''}`);
+    return true;
+  };
   const anexos = [...(L.anexos || [])];
   const anexBox = h(`<div class="anexos"><div class="anexos-l"></div><div class="anexos-a"><label class="btn ghost sm">${icon('ti-paperclip')}Anexar arquivo<input type="file" multiple hidden accept="image/*,.pdf"></label><label class="btn ghost sm cam">${icon('ti-camera')}Foto<input type="file" hidden accept="image/*" capture="environment"></label><button type="button" class="btn ghost sm" data-link>${icon('ti-link')}Link</button></div></div>`);
   const paintAnex = () => { anexBox.querySelector('.anexos-l').innerHTML = anexos.map((a, i) => `<span class="anexo ${a.enviando ? 'busy' : ''}">${icon(anexoIcone(a))}<a href="${a.url && !a.id ? esc(a.url) : '#'}" ${a.id ? `data-open="${i}"` : 'target="_blank"'}>${esc(a.nome || a.url)}</a>${a.tamanho ? `<small class="muted">${fmtBytes(a.tamanho)}</small>` : ''}<button type="button" class="ibtn xs" data-rm="${i}" title="Remover">${icon('ti-x')}</button></span>`).join('') || '<span class="muted sm">Boleto, nota fiscal, comprovante…</span>'; };
@@ -143,12 +159,16 @@ export function abrirLancamento(existing = null, { tipo = 'pagar', defaults = {}
       const { base64, tipo, tamanho, nome } = await prepararArquivo(file);
       const a = await db.backend.anexoPut({ empresa_id: E, lancamento_id: L.id || null, nome, tipo, base64 });
       Object.assign(tmp, a, { enviando: false }); delete tmp.enviando;
+      // PDF numa conta a pagar: tenta ler a linha digitável / PIX do boleto
+      if (L.tipo === 'pagar' && /pdf/i.test(tipo || '') && !parseCodigos(codigo.value).boleto_linha) { paintAnex(); try { aplicarLeitura(await lerBoletoPdf({ base64, nome }), { silencioso: true }); } catch (e) { console.warn('leitura do boleto', e); } }
     } catch (err) { anexos.splice(anexos.indexOf(tmp), 1); toast('Falha ao enviar o anexo: ' + err.message, 'err', 5000); }
     paintAnex();
   }
   anexBox.querySelectorAll('input[type=file]').forEach(i => i.onchange = onFiles);
   anexBox.querySelector('[data-link]').onclick = () => { const url = window.prompt('URL do anexo (nota fiscal, comprovante…)'); if (url) { anexos.push({ nome: url.split('/').pop().slice(0, 40) || url, url }); paintAnex(); } };
-  mb.append(h('<div class="row2"></div>')); mb.lastChild.append(fieldEl('Tags', tagsEl), fieldEl('Referência', ref)); mb.append(fieldEl('Anexos', anexBox));
+  mb.append(h('<div class="row2"></div>')); mb.lastChild.append(fieldEl('Tags', tagsEl), fieldEl('Referência', ref));
+  if (L.tipo === 'pagar') mb.append(fieldEl('Código do boleto ou PIX', codigo, { hint: 'Ao anexar o PDF do boleto o sistema lê sozinho. Pode colar os dois, um por linha.' }));
+  mb.append(fieldEl('Anexos', anexBox));
   f.appendChild(fieldEl('Observações', obs, { hint: 'Aparecem só ao abrir o lançamento.' }));
   f.appendChild(more);
 
@@ -190,6 +210,7 @@ export function abrirLancamento(existing = null, { tipo = 'pagar', defaults = {}
     if (anexos.some(a => a.enviando)) { toast('Aguarde o envio dos anexos', 'warn'); return; }
     const base = { ...L, empresa_id: E, tipo: L.tipo, descricao: descr.value.trim(), valor: v, vencimento: venc.value, competencia: monthStart(venc.value), contato_id: tr ? null : contato.get(), categoria_id: tr ? null : (rateio.length ? rateio[0].categoria_id : categoria.get()), rateio_categorias: tr ? [] : (rateio.length > 1 ? rateio.map(r => ({ categoria_id: r.categoria_id, valor: round2(r.valor), descricao: r.descricao || '' })) : []), rateio_centros: tr ? [] : ccPick.get(), conta_id: conta.get(), conta_destino_id: tr ? contaDest.get() : null, forma_pagamento: tr ? 'transferencia' : forma.get(), tags: [...selTags], referencia: ref.value.trim(), observacoes: obs.value.trim(), anexos, origem: L.origem || 'manual', criado_em: L.criado_em || new Date().toISOString() };
     if (tr) base.status = 'pago';
+    if (L.tipo === 'pagar') { const cod = parseCodigos(codigo.value); base.boleto_linha = cod.boleto_linha; base.pix_codigo = cod.pix_codigo; const bruto = codigo.value.trim(); if (bruto && !cod.boleto_linha && !cod.pix_codigo) return toast('Código do boleto/PIX inválido. Confira os dígitos ou deixe em branco.', 'err', 5000); } else { base.boleto_linha = null; base.pix_codigo = null; }
     let rows = [base];
     if (!isEdit && !tr) {
       const rep = segRep.get();
@@ -312,7 +333,7 @@ export function abrirDetalhe(l) {
   const kv = (k, v) => v ? `<div class="kv"><span>${k}</span><b>${v}</b></div>` : '';
   d.body.innerHTML = `<div class="det-head">${isTr ? bankIcon(cta, 44) : catIcon(cat, 44)}<div><div class="det-t">${esc(l.descricao)}</div><div class="muted sm">${ct ? esc(ct.nome) + ' · ' : ''}${cat ? esc(cat.nome) : isTr ? esc(cta?.nome) + ' → ' + esc(C.conta(l.conta_destino_id)?.nome) : ''}</div></div><div class="det-v ${l.tipo === 'receber' ? 'pos' : 'neg'}">${money(l.valor)}</div></div>
   <div class="det-status">${statusPill(l)}${l.parcela_total ? `<span class="pill gray">Parcela ${l.parcela_num}/${l.parcela_total}</span>` : ''}${l.recorrencia_id ? `<span class="pill gray">${icon('ti-repeat')} Recorrente</span>` : ''}${(l.tags || []).map(t => { const tg = C.tags.find(x => x.nome === t); return tg ? `<span class="tagchip" style="--c:${tg.cor}">${esc(t)}</span>` : ''; }).join('')}${l.conciliado_fitid ? `<span class="pill green">${icon('ti-check')} Conciliado</span>` : ''}</div>
-  <div class="kvs">${kv('Vencimento', fmtDate(l.vencimento))}${kv(isTr ? 'De' : 'Conta', cta ? `<span class="inl">${bankIcon(cta, 18)} ${esc(cta.nome)}</span>` : '')}${isTr ? kv('Para', `<span class="inl">${bankIcon(C.conta(l.conta_destino_id), 18)} ${esc(C.conta(l.conta_destino_id)?.nome)}</span>`) : ''}${kv('Forma', FORMAS.find(f => f.id === l.forma_pagamento)?.nome)}${l.tipo === 'pagar' && ct?.pix ? kv('Chave PIX', `<span class="mono">${esc(ct.pix)}</span>`) : ''}${kv('Referência', esc(l.referencia))}${kv('Origem', esc({ manual: 'Manual', pagarme: 'Pagar.me', shopify: 'Shopify', nibo: 'Nibo', importacao: 'Importação', extrato: 'Extrato' }[l.origem || 'manual']))}${kv('Centro de custo', (l.rateio_centros || []).map(r => `${esc(C.centro(r.centro_id)?.nome)} ${r.percent}%`).join(', '))}</div>
+  <div class="kvs">${kv('Vencimento', fmtDate(l.vencimento))}${kv(isTr ? 'De' : 'Conta', cta ? `<span class="inl">${bankIcon(cta, 18)} ${esc(cta.nome)}</span>` : '')}${isTr ? kv('Para', `<span class="inl">${bankIcon(C.conta(l.conta_destino_id), 18)} ${esc(C.conta(l.conta_destino_id)?.nome)}</span>`) : ''}${kv('Forma', FORMAS.find(f => f.id === l.forma_pagamento)?.nome)}${l.tipo === 'pagar' && ct?.pix ? kv('Chave PIX', `<span class="mono">${esc(ct.pix)}</span>`) : ''}${l.tipo === 'pagar' && (l.boleto_linha || ehLinha(l.referencia)) ? kv('Boleto', `<span class="mono sm">${fmtLinha(l.boleto_linha || soDigitos(l.referencia))}</span>`) : ''}${kv('Referência', esc(l.referencia))}${kv('Origem', esc({ manual: 'Manual', pagarme: 'Pagar.me', shopify: 'Shopify', nibo: 'Nibo', importacao: 'Importação', extrato: 'Extrato' }[l.origem || 'manual']))}${kv('Centro de custo', (l.rateio_centros || []).map(r => `${esc(C.centro(r.centro_id)?.nome)} ${r.percent}%`).join(', '))}</div>
   ${l.rateio_categorias?.length ? `<h5>Rateio</h5><div class="det-list">${l.rateio_categorias.map(r => `<div class="det-li">${catIcon(C.cat(r.categoria_id), 24)}<span>${esc(C.cat(r.categoria_id)?.nome)}${r.descricao ? ` <small class="muted">${esc(r.descricao)}</small>` : ''}</span><b>${money(r.valor)}</b></div>`).join('')}</div>` : ''}
   ${!isTr ? `<h5>Baixas <span class="muted">${money(liquidado(l))} de ${money(l.valor)}</span></h5><div class="det-list" data-baixas>${(l.baixas || []).map(b => `<div class="det-li">${bankIcon(C.conta(b.conta_id), 24)}<span>${fmtDate(b.data)} · ${esc(C.conta(b.conta_id)?.nome || '')}${b.juros || b.multa || b.desconto ? ` <small class="muted">${b.juros ? 'juros ' + money(b.juros) + ' ' : ''}${b.multa ? 'multa ' + money(b.multa) + ' ' : ''}${b.desconto ? 'desc. ' + money(b.desconto) : ''}</small>` : ''}${b.observacao ? ` <small class="muted">${esc(b.observacao)}</small>` : ''}</span><b>${money(b.valor)}</b><button class="ibtn" data-est="${b.id}" title="Estornar">${icon('ti-arrow-back-up')}</button></div>`).join('') || '<div class="muted sm">Nenhuma baixa ainda.</div>'}</div>` : ''}
   ${l.observacoes ? `<h5>Observações</h5><p class="det-obs">${esc(l.observacoes)}</p>` : ''}
@@ -332,6 +353,14 @@ export function abrirDetalhe(l) {
   d.footer.append(bDel, bDup, h('<span class="grow"></span>'), bEdit);
   if (!isTr && st !== 'pago' && st !== 'cancelado') {
     // fornecedor com chave PIX: QR Code / copia e cola com o valor em aberto. O PIX pode sair de qualquer banco: a conta é escolhida na baixa, sem pré-seleção.
+    // boleto: linha digitável salva (ou na referência, nos que vieram pelo Telegram) ou PDF anexado que ainda não foi lido
+    const linhaBol = l.boleto_linha || (ehLinha(l.referencia) ? soDigitos(l.referencia) : null); const pdfAnexo = (l.anexos || []).find(a => a.id && /pdf/i.test(a.tipo || a.nome || ''));
+    if (l.tipo === 'pagar' && (linhaBol || l.pix_codigo || pdfAnexo)) {
+      const bBol = h(`<button type="button" class="btn secondary" title="Pagar boleto">${icon('ti-barcode')}Boleto</button>`);
+      bBol.onclick = () => modalBoleto({ lanc: l, linha: linhaBol, pix: l.pix_codigo || null, onPago: () => { d.close(); abrirBaixa(l, { escolherConta: true }); },
+        onLer: pdfAnexo && !linhaBol && !l.pix_codigo ? async () => { const x = await db.backend.anexoGet(pdfAnexo.id); const r = await lerBoletoPdf({ base64: x.base64, nome: x.nome }); if (r?.linha || r?.pix) { await db.upsert('lancamentos', { ...l, boleto_linha: r.linha || null, pix_codigo: r.pix || null }); l.boleto_linha = r.linha || null; l.pix_codigo = r.pix || null; } return r; } : null });
+      d.footer.append(bBol);
+    }
     if (l.tipo === 'pagar' && ct?.pix) { const bPix = h(`<button class="btn secondary" title="Pagar com PIX">${icon('ti-qrcode')}PIX</button>`); bPix.onclick = async () => { const { modalPix } = await import('../pix.js'); modalPix({ lanc: l, contato: ct, valor: emAberto(l), onPago: () => { d.close(); abrirBaixa(l, { escolherConta: true }); } }); }; d.footer.append(bPix); }
     const bPay = h(`<button class="btn primary">${icon(l.tipo === 'receber' ? 'ti-arrow-down-left' : 'ti-check')}${l.tipo === 'receber' ? 'Receber' : 'Pagar'}</button>`); bPay.onclick = () => { d.close(); abrirBaixa(l); }; d.footer.append(bPay);
   }
