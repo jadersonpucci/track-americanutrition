@@ -2033,3 +2033,56 @@ Protein, Life Gummy, ImunoPet e ImunoFosfo Healing. Pedido para eles cai no comp
 "manda a tabela do life protein" respondeu *"Não tenho um arquivo de rótulo do Life Protein para enviar, mas a
 tabela está aqui"* e seguiu em texto. Quando as imagens existirem, é só acrescentar a entrada em
 `nodes/serena-config-documentos.json` e gravar em `serena_config.documentos`.
+
+## Indicação parava a venda e não chegava em ninguém (09/10)
+
+Print do Jean Carlo (+55 93 99119-5295). Às 18:44 ele passou o número da irmã e pediu *"Poderiam entrar em
+contato?"*. A Serena respondeu *"Passei o número da sua irmã para a nossa equipe, e alguém vai entrar em
+contato com ela"* — e **parou de responder**. Quatro mensagens dele ficaram sem resposta, entre elas
+*"Vcs tem o imunofosfo com 42 cápsula?"* (18:48), *"Oi"* (19:00) e **"Sim vou querer os dois imunopet
+líquidos"** (19:13), com o pedido montado. Às 23:36 ele ainda se desculpou pela demora *dele*.
+
+Duas falhas na mesma frase:
+
+1. **A indicação virou `escalar_humano`.** O handoff pausa a Serena por 12h naquele contato
+   (`wpp_pausa_handoff_min`). Anotar um telefone não precisa de ninguém da equipe, mas custou o silêncio
+   justamente na conversa de quem estava fechando a compra.
+2. **Ninguém contatou a irmã.** 13 horas depois ela não existia no banco: a promessa não foi cumprida.
+
+### Correção 1: indicação não é handoff (adendo no prompt)
+
+Adendo de 09/10 em `serena_config.system_prompt` (texto em `nodes/serena-config-adendos-prompt.md`): passar o
+número de outra pessoa **não** é caso de `escalar_humano`. Ela confirma que anotou, diz que a pessoa vai
+receber uma mensagem nossa e **volta para o assunto do próprio cliente na mesma mensagem**. `escalar_humano`
+continua para reclamação, estorno, devolução, troca e fraude.
+
+Teste (09/10, sandbox) com a mesma frase do Jean mais o pedido: `handoff: false`, ferramenta `gerar_checkout`,
+e a resposta trouxe o link do pedido **e** o "anotei o número da sua irmã" na mesma mensagem.
+
+### Correção 2: a Serena mesma dá o primeiro oi (`[Serena] Indicacao: Primeiro Contato`, `r4jT86KAD5sJBQbI`)
+
+Cron de 10 min, fonte `indicacao-contato.workflow.js`:
+
+1. **SQL** acha mensagem de cliente com telefone de outra pessoa dentro e já descarta: número do próprio
+   cliente, contato sem telefone (exclui o Sandbox do laboratório), bloqueado, opt-out, quem já é contato
+   ativo nosso (mensagem nos últimos 60 dias) e quem já foi indicado nos últimos 90 dias.
+2. **Claude** confirma que é indicação **e** que o cliente pediu que falássemos com a pessoa, e extrai nome,
+   relação e motivo.
+3. **A Serena** manda a primeira mensagem em modo proativo, dizendo quem passou o contato, sem link e sem
+   preço. Só entre 9h e 19h BRT; fora disso espera a próxima rodada.
+
+Tudo fica em `serena_indicacoes`, inclusive o que foi **descartado e por quê**, e o resumo vai no Telegram.
+Kill switch: `serena_config indicacao_auto = off`.
+
+Duas coisas que o teste seco pegou antes de ligar:
+
+- `serena_tel_canon` **não acrescenta o DDI**: "65 99951 7586" virava 11 dígitos e o filtro de tamanho
+  (12–13) descartava toda indicação. Agora o SQL prefixa `55` quando vêm 10 ou 11 dígitos.
+- O contato do **Sandbox** (telefone nulo) entrava como indicação real — minha própria frase de teste teria
+  feito a Serena abordar a irmã do Jean. Resolvido exigindo telefone válido no indicador.
+
+Teste de precisão (09/10, 13 candidatos reais de 7 dias): o Claude aprovou **2** — a indicação verdadeira do
+Jean e a minha frase de sandbox. Reprovou os outros 11, todos código de rastreio, comprovante de PIX, número
+de pedido, QR de boleto e link de Mercado Livre. Com a trava do Sandbox, sobra 1 de 13. O contexto agora
+inclui até 15 min depois da mensagem, que é como o nome "Gisele Agostini" (mandado no minuto seguinte) entra
+na classificação.
