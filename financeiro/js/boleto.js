@@ -78,15 +78,28 @@ export function itfSvg(code, { altura = 72, fina = 2 } = {}) {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${total.toFixed(2)} ${altura}" width="${total.toFixed(2)}" height="${altura}" shape-rendering="crispEdges" fill="#000" role="img" aria-label="Código de barras do boleto">${rects}</svg>`;
 }
 
-// Lê um PDF de boleto no servidor (n8n extrai o texto) e devolve {ok, linha, pix, valor, vencimento}.
-export async function lerBoletoPdf({ base64, nome = 'boleto.pdf' }) {
+// Lê um boleto no servidor e devolve {ok, linha, pix, valor, vencimento, beneficiario, fonte, motivo, linha_lida}.
+// PDF com texto: o n8n extrai e procura os códigos. PDF escaneado ou imagem/foto: o Claude (visão) transcreve
+// e o servidor confere os dígitos verificadores antes de devolver (motivo 'linha_invalida' se não baterem).
+export const ehArquivoLegivel = (tipo = '', nome = '') => /pdf$/i.test(tipo) || /^image\/(jpeg|png|webp|gif)/i.test(tipo) || /\.(pdf|jpe?g|png|webp|gif)$/i.test(nome);
+export async function lerBoletoArquivo({ base64, nome = 'boleto.pdf', tipo = '' }) {
   const token = db.backend?.session?.token; if (!token) throw new Error('Sessão expirada');
-  const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 60000);
+  const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 120000);
   try {
-    const r = await fetch(LEITOR_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token, base64: String(base64 || '').replace(/^data:[^,]*,/, ''), nome }), signal: ctrl.signal });
+    const r = await fetch(LEITOR_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token, base64: String(base64 || '').replace(/^data:[^,]*,/, ''), nome, tipo }), signal: ctrl.signal });
     const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.erro || ('HTTP ' + r.status));
     return j;
   } finally { clearTimeout(t); }
+}
+export const lerBoletoPdf = lerBoletoArquivo;
+// Mensagem para o usuário quando a leitura não trouxe código
+export function motivoLeitura(r) {
+  if (!r) return 'Não consegui ler o arquivo';
+  if (r.motivo === 'linha_invalida') { const d = String(r.linha_lida || ''); return `Li "${/^\d{47,48}$/.test(d) ? fmtLinha(d) : d}" mas os dígitos não conferem. Confira no boleto e cole a linha à mão.`; }
+  if (r.motivo === 'nao_e_boleto') return 'O arquivo não parece um boleto nem uma conta a pagar';
+  if (r.motivo === 'erro_visao' || r.motivo === 'recusado') return 'A leitura por imagem falhou' + (r.erro ? ': ' + r.erro : '');
+  if (r.erro === 'formato_nao_suportado') return 'Formato não suportado: use PDF, JPG, PNG ou WEBP';
+  return 'Não achei código de boleto nem PIX nesse arquivo';
 }
 
 // Texto digitado/colado no formulário → {boleto_linha, pix_codigo}
@@ -110,7 +123,7 @@ export function modalBoleto({ lanc, linha = null, pix = null, onPago = null, onL
         <div class="bol-bar">${itfSvg(barras)}</div>
         <div class="muted xs">${info.valor ? 'Valor no código: ' + money(info.valor) : ''}${info.vencimento ? ' · vence ' + fmtDate(info.vencimento) : ''}${info.valor && Math.abs(info.valor - Number(lanc?.valor || 0)) > 0.009 ? ' · <b class="neg">diferente do lançamento</b>' : ''}</div>` : ''}
       ${pix ? `<div class="bol-pix"><span class="fl">PIX do boleto (copia e cola)</span><img alt="QR Code PIX" width="200" height="200"><button type="button" class="btn secondary" data-copiar-pix>${icon('ti-copy')}Copiar código PIX</button></div>` : ''}
-      ${!temLinha && !pix ? `<p class="muted sm">Este lançamento ainda não tem o código do boleto.${onLer ? ' Leia o PDF anexado ou cole a linha digitável editando o lançamento.' : ' Edite o lançamento e cole a linha digitável em "Mais detalhes".'}</p>` : ''}
+      ${!temLinha && !pix ? `<p class="muted sm">Este lançamento ainda não tem o código do boleto.${onLer ? ' Leia o anexo (PDF ou foto) ou cole a linha digitável editando o lançamento.' : ' Edite o lançamento e cole a linha digitável em "Mais detalhes".'}</p>` : ''}
       <p class="muted xs">No app do banco: Pagar → Boleto → cole a linha digitável, ou escaneie o código de barras na tela. Depois confirme aqui a baixa, escolhendo a conta de onde saiu.</p>
     </div>`;
     d.body.querySelector('[data-copiar-linha]')?.addEventListener('click', () => copy(linha));
@@ -119,7 +132,7 @@ export function modalBoleto({ lanc, linha = null, pix = null, onPago = null, onL
     const img = d.body.querySelector('.bol-pix img'); if (img) qrDataUrl(pix).then(u => { img.src = u; }).catch(() => img.remove());
     d.footer.innerHTML = '';
     const bFechar = h('<button class="btn ghost">Fechar</button>'); bFechar.onclick = () => d.close(); d.footer.append(bFechar);
-    if (onLer && !temLinha && !pix) { const bLer = h(`<button class="btn secondary">${icon('ti-file-search')}Ler do anexo</button>`); bLer.onclick = async () => { bLer.disabled = true; try { const r = await onLer(); if (r?.linha) linha = r.linha; if (r?.pix) pix = r.pix; if (!r?.linha && !r?.pix) toast('Não achei código de boleto nem PIX no PDF', 'warn', 5000); paint(); } catch (e) { toast('Falha ao ler o anexo: ' + e.message, 'err', 5000); bLer.disabled = false; } }; d.footer.append(bLer); }
+    if (onLer && !temLinha && !pix) { const bLer = h(`<button class="btn secondary">${icon('ti-file-search')}Ler do anexo</button>`); bLer.onclick = async () => { bLer.disabled = true; try { const r = await onLer(); if (r?.linha) linha = r.linha; if (r?.pix) pix = r.pix; if (!r?.linha && !r?.pix) toast(motivoLeitura(r), 'warn', 7000); else toast('Boleto lido' + (r.fonte === 'visao' ? ' pela imagem' : '')); paint(); } catch (e) { toast('Falha ao ler o anexo: ' + e.message, 'err', 5000); bLer.disabled = false; } }; d.footer.append(bLer); }
     d.footer.append(h('<span class="grow"></span>'));
     if (onPago) { const bPago = h(`<button class="btn primary">${icon('ti-check')}Já paguei · dar baixa</button>`); bPago.onclick = () => { d.close(); onPago(); }; d.footer.append(bPago); }
   };

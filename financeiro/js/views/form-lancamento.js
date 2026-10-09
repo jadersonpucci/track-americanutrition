@@ -4,7 +4,7 @@ import { drawer, modal, field, fieldEl, moneyInput, combobox, segmented, toggle,
 import { today, addDays, addMonths, monthStart, uid, esc, money, round2, fmtDate, sum, readFile } from '../utils.js';
 import { FORMAS, gerarParcelas, gerarRecorrencia, emAberto, statusOf, liquidado } from '../model.js';
 import { app } from '../app.js';
-import { ehLinha, soDigitos, parseCodigos, codigosTexto, lerBoletoPdf, modalBoleto, fmtLinha } from '../boleto.js';
+import { ehLinha, soDigitos, parseCodigos, codigosTexto, lerBoletoArquivo, ehArquivoLegivel, motivoLeitura, modalBoleto, fmtLinha } from '../boleto.js';
 
 const contaOpt = c => ({ id: c.id, label: c.nome, sub: c.tipo === 'cartao' ? 'Cartão' : undefined, icon: bankIcon(c, 24), group: c.arquivada ? 'Arquivadas' : undefined });
 const catOpts = (cats, tipo) => cats.filter(c => !c.arquivada && (!tipo || c.tipo === tipo)).sort((a, b) => (a.grupo - b.grupo) || (a.ordem - b.ordem)).map(c => ({ id: c.id, label: c.nome, sub: c.codigo, icon: catIcon(c, 24), group: `${c.grupo} · ${c.subgrupo || ''}`, keywords: c.subgrupo }));
@@ -134,7 +134,7 @@ export function abrirLancamento(existing = null, { tipo = 'pagar', defaults = {}
   // linha digitável do boleto e/ou PIX copia e cola (uma por linha); preenchido sozinho ao anexar o PDF do boleto
   const codigo = h(`<textarea class="inp mono cod-pag" rows="2" placeholder="Cole a linha digitável do boleto ou o PIX copia e cola">${esc(codigosTexto(L))}</textarea>`);
   const aplicarLeitura = (r, { silencioso = false } = {}) => {
-    if (!r || (!r.linha && !r.pix)) { if (!silencioso) toast('Não achei código de boleto nem PIX nesse PDF', 'warn', 4500); return false; }
+    if (!r || (!r.linha && !r.pix)) { if (!silencioso || r?.motivo === 'linha_invalida') toast(motivoLeitura(r), 'warn', 7000); return false; }
     const atual = parseCodigos(codigo.value); const linhas = [];
     if (r.linha && !atual.boleto_linha) linhas.push(fmtLinha(r.linha)); else if (atual.boleto_linha) linhas.push(fmtLinha(atual.boleto_linha));
     if (r.pix && !atual.pix_codigo) linhas.push(r.pix); else if (atual.pix_codigo) linhas.push(atual.pix_codigo);
@@ -143,7 +143,8 @@ export function abrirLancamento(existing = null, { tipo = 'pagar', defaults = {}
     if (r.vencimento && !isEdit && !L.baixas?.length) venc.value = r.vencimento;
     if (!forma.get() || forma.get() === 'pix') forma.set('boleto');
     more.open = true;
-    toast(`Boleto lido${r.valor ? ': ' + money(r.valor) : ''}${r.vencimento ? ' · vence ' + fmtDate(r.vencimento) : ''}`);
+    if (r.beneficiario && !descr.value.trim()) descr.value = 'Boleto ' + r.beneficiario.replace(/\s+/g, ' ').trim().slice(0, 60);
+    toast(`Boleto lido${r.fonte === 'visao' ? ' pela imagem' : ''}${r.valor ? ': ' + money(r.valor) : ''}${r.vencimento ? ' · vence ' + fmtDate(r.vencimento) : ''}`);
     return true;
   };
   const anexos = [...(L.anexos || [])];
@@ -159,15 +160,15 @@ export function abrirLancamento(existing = null, { tipo = 'pagar', defaults = {}
       const { base64, tipo, tamanho, nome } = await prepararArquivo(file);
       const a = await db.backend.anexoPut({ empresa_id: E, lancamento_id: L.id || null, nome, tipo, base64 });
       Object.assign(tmp, a, { enviando: false }); delete tmp.enviando;
-      // PDF numa conta a pagar: tenta ler a linha digitável / PIX do boleto
-      if (L.tipo === 'pagar' && /pdf/i.test(tipo || '') && !parseCodigos(codigo.value).boleto_linha) { paintAnex(); try { aplicarLeitura(await lerBoletoPdf({ base64, nome }), { silencioso: true }); } catch (e) { console.warn('leitura do boleto', e); } }
+      // PDF ou foto numa conta a pagar: tenta ler a linha digitável / PIX do boleto (texto do PDF, senão visão)
+      if (L.tipo === 'pagar' && ehArquivoLegivel(tipo, nome) && !parseCodigos(codigo.value).boleto_linha) { paintAnex(); toast('Lendo o boleto…', 'info', 2500); try { aplicarLeitura(await lerBoletoArquivo({ base64, nome, tipo }), { silencioso: true }); } catch (e) { console.warn('leitura do boleto', e); } }
     } catch (err) { anexos.splice(anexos.indexOf(tmp), 1); toast('Falha ao enviar o anexo: ' + err.message, 'err', 5000); }
     paintAnex();
   }
   anexBox.querySelectorAll('input[type=file]').forEach(i => i.onchange = onFiles);
   anexBox.querySelector('[data-link]').onclick = () => { const url = window.prompt('URL do anexo (nota fiscal, comprovante…)'); if (url) { anexos.push({ nome: url.split('/').pop().slice(0, 40) || url, url }); paintAnex(); } };
   mb.append(h('<div class="row2"></div>')); mb.lastChild.append(fieldEl('Tags', tagsEl), fieldEl('Referência', ref));
-  if (L.tipo === 'pagar') mb.append(fieldEl('Código do boleto ou PIX', codigo, { hint: 'Ao anexar o PDF do boleto o sistema lê sozinho. Pode colar os dois, um por linha.' }));
+  if (L.tipo === 'pagar') mb.append(fieldEl('Código do boleto ou PIX', codigo, { hint: 'Ao anexar o boleto (PDF ou foto) o sistema lê sozinho. Pode colar os dois, um por linha.' }));
   mb.append(fieldEl('Anexos', anexBox));
   f.appendChild(fieldEl('Observações', obs, { hint: 'Aparecem só ao abrir o lançamento.' }));
   f.appendChild(more);
@@ -354,11 +355,11 @@ export function abrirDetalhe(l) {
   if (!isTr && st !== 'pago' && st !== 'cancelado') {
     // fornecedor com chave PIX: QR Code / copia e cola com o valor em aberto. O PIX pode sair de qualquer banco: a conta é escolhida na baixa, sem pré-seleção.
     // boleto: linha digitável salva (ou na referência, nos que vieram pelo Telegram) ou PDF anexado que ainda não foi lido
-    const linhaBol = l.boleto_linha || (ehLinha(l.referencia) ? soDigitos(l.referencia) : null); const pdfAnexo = (l.anexos || []).find(a => a.id && /pdf/i.test(a.tipo || a.nome || ''));
+    const linhaBol = l.boleto_linha || (ehLinha(l.referencia) ? soDigitos(l.referencia) : null); const pdfAnexo = (l.anexos || []).find(a => a.id && ehArquivoLegivel(a.tipo || '', a.nome || ''));
     if (l.tipo === 'pagar' && (linhaBol || l.pix_codigo || pdfAnexo)) {
       const bBol = h(`<button type="button" class="btn secondary" title="Pagar boleto">${icon('ti-barcode')}Boleto</button>`);
       bBol.onclick = () => modalBoleto({ lanc: l, linha: linhaBol, pix: l.pix_codigo || null, onPago: () => { d.close(); abrirBaixa(l, { escolherConta: true }); },
-        onLer: pdfAnexo && !linhaBol && !l.pix_codigo ? async () => { const x = await db.backend.anexoGet(pdfAnexo.id); const r = await lerBoletoPdf({ base64: x.base64, nome: x.nome }); if (r?.linha || r?.pix) { await db.upsert('lancamentos', { ...l, boleto_linha: r.linha || null, pix_codigo: r.pix || null }); l.boleto_linha = r.linha || null; l.pix_codigo = r.pix || null; } return r; } : null });
+        onLer: pdfAnexo && !linhaBol && !l.pix_codigo ? async () => { const x = await db.backend.anexoGet(pdfAnexo.id); const r = await lerBoletoArquivo({ base64: x.base64, nome: x.nome, tipo: x.tipo || pdfAnexo.tipo || '' }); if (r?.linha || r?.pix) { await db.upsert('lancamentos', { ...l, boleto_linha: r.linha || null, pix_codigo: r.pix || null }); l.boleto_linha = r.linha || null; l.pix_codigo = r.pix || null; } return r; } : null });
       d.footer.append(bBol);
     }
     if (l.tipo === 'pagar' && ct?.pix) { const bPix = h(`<button class="btn secondary" title="Pagar com PIX">${icon('ti-qrcode')}PIX</button>`); bPix.onclick = async () => { const { modalPix } = await import('../pix.js'); modalPix({ lanc: l, contato: ct, valor: emAberto(l), onPago: () => { d.close(); abrirBaixa(l, { escolherConta: true }); } }); }; d.footer.append(bPix); }
