@@ -2086,3 +2086,66 @@ Jean e a minha frase de sandbox. Reprovou os outros 11, todos código de rastrei
 de pedido, QR de boleto e link de Mercado Livre. Com a trava do Sandbox, sobra 1 de 13. O contexto agora
 inclui até 15 min depois da mensagem, que é como o nome "Gisele Agostini" (mandado no minuto seguinte) entra
 na classificação.
+
+## Coletar depoimentos: o material já existe, só não era pedido (09/10)
+
+Levantamento antes de propor qualquer coisa:
+
+| | |
+| --- | --- |
+| Entregas em 90 dias | 1.328 |
+| Avaliações orgânicas no período | **42 → 3,2%** |
+| Base total de reviews | 42.389, das quais **42.331 importadas** (2023 a jun/2026) |
+| Orgânicas desde julho | 60 (55 site, 5 WhatsApp coletadas à mão) |
+| Fluxo automático pedindo avaliação | **nenhum** |
+
+E o achado que decidiu o desenho: em 180 dias **436 pessoas escreveram algo positivo** para a Serena; das que
+elogiaram **depois da entrega**, 59 pessoas, **nenhuma virou depoimento**. O texto já está escrito pelo próprio
+cliente e evapora no chat.
+
+**O público pede cuidado.** Puxando os "elogios" reais aparecem frases como *"minha mãe refez os exames e
+apresentou linfonodo com centro necrótico"*. Boa parte da base é oncológica: pedido genérico de avaliação cai
+na caixa de quem piorou na semana. A regra virou **nunca pedir no escuro — só a quem já disse que está bem**.
+
+### Como funciona
+
+**1. O pedido vai dentro da resposta que a Serena já ia mandar.** Adendo de 09/10 no `system_prompt`: quando o
+cliente conta um resultado bom espontaneamente, ela responde o que ele perguntou e fecha com *"Posso publicar
+seu relato no nosso site, com seu primeiro nome?"*. **Zero mensagem a mais** — não pesa no limite do número.
+
+O adendo proíbe pedir quando há piora, recaída, internação, efeito colateral ou falecimento; em reclamação,
+troca, devolução, estorno ou atraso; nos primeiros dias de uso; e quando o cliente foi só educado
+("obrigado") sem contar resultado. Uma vez a cada 90 dias por cliente. Nunca oferecer vantagem em troca, nunca
+pedir 5 estrelas, nunca repetir alegação de cura.
+
+Teste (09/10, sandbox), 4 frases: relato de disposição → pediu; "obrigada pelo atendimento" → não pediu;
+"minha mãe piorou, o tumor voltou" → não pediu (respondeu com acolhimento); "faz 3 dias que comecei" → não
+pediu.
+
+**2. `[Serena] Depoimento: Coletar` (`ez4iXCrm7DOvnNfr`), cron 30 min, fonte `depoimento-coletar.workflow.js`.**
+Só **lê** a conversa — não manda nada para cliente. Acha onde a Serena pediu ("posso publicar"), o Claude
+confirma o consentimento e extrai o relato **nas palavras do cliente**, e a linha entra em `reviews` com
+status `pendente`.
+
+Checado no banco: a `reviews-api` do tema serve apenas `aprovado`/`destaque` (6.652 servidas = exatamente os
+aprovados do handle, sem os 2 rejeitados), então **nada vai ao ar sem aprovação**. E a API já renderiza
+"Mailton S." a partir do nome completo — o formato primeiro nome + inicial sai de graça.
+
+`product_id` e `product_title` saem de outra review do mesmo handle, então a linha nasce completa. Fica uma
+nota no contato (chave `depoimento`) mesmo quando o cliente recusa, para não perguntar de novo. Kill switch:
+`depoimento_auto = off`.
+
+Teste da extração (09/10), 4 cenários: autorizou → texto dele, só com acentos corrigidos; recusou → nada;
+mudou de assunto → não conta como autorização; **"curou o câncer da minha mãe" + autorizou → entra como
+pendente e vai marcado `⚠️ fala em cura/tratamento` no aviso do Telegram**, para ninguém publicar no
+automático.
+
+### Sobre o volume de envio (risco de banimento)
+
+Medido nos últimos 14 dias: a Serena manda entre **180 e 440 mensagens/dia**, das quais 39 a 157 são
+proativas (transacional de pago/enviado/entregue, pós-entrega, reposição e carrinho). O item 1 **não soma
+nada** nisso, porque o pedido pega carona na resposta.
+
+Um eventual pedido ativo em D+28 somaria ~370 mensagens/mês (183 pessoas a cada 15 dias na janela de 25–40
+dias pós-entrega), ou seja ~12/dia — pouco em volume, mas é mensagem nova para quem não escreveu. Fica
+registrado como ideia, **não implementado**.
