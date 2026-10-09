@@ -78,7 +78,7 @@ Tudo isso está em `supabase/automacao.sql` (idempotente), aplicado pelo workflo
 
 - **Trilha de alterações**: trigger `trg_z_auditar` grava em `auditoria` quem criou, alterou, excluiu ou restaurou cada lançamento, contato, categoria, conta, centro, tag e regra (usuário vindo da `fin_api`; integrações aparecem como "sistema · origem"). No app: histórico no detalhe do lançamento e Configurações → Atividade, com "Desfazer" em cada linha (`fin_desfazer`).
 - **Sugestão de categoria por IA** (workflow **Financeiro · Classificar com IA**, de hora em hora): o que está em "A classificar" vai ao Claude com o plano de contas e exemplos recentes; a sugestão fica em `lancamentos.sugestao` e aparece no detalhe com "Aceitar" (e a oferta de virar regra do fornecedor).
-- **Boleto pelo Telegram**: mande o PDF ou a foto do boleto em conversa privada com o bot da Serena. O workflow "Serena | Telegram" desvia mensagens de usuários autorizados (ids no nó "Boleto para o Financeiro?") para **Financeiro · Boleto pelo Telegram**, que lê o documento com Claude, cria a conta a pagar com fornecedor, categoria pela regra e anexo (`fin_boleto_criar`) e responde no chat.
+- **Boleto pelo Telegram**: mande o PDF ou a foto do boleto em conversa privada com o bot da Serena. O workflow "Serena | Telegram" desvia mensagens de usuários autorizados (ids no nó "Boleto para o Financeiro?") para **Financeiro · Boleto pelo Telegram**, que lê o documento com Claude (texto do PDF; PDF escaneado e foto por visão, nó Anthropic com `claude-opus-5-5`), cria a conta a pagar com fornecedor, categoria pela regra, anexo, linha digitável e PIX (`fin_boleto_criar`) e responde no chat.
 
 Essas três partes estão em `supabase/automacao2.sql`, aplicado pelo Setup depois de `automacao.sql`.
 
