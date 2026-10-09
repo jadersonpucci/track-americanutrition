@@ -97,6 +97,7 @@ export function prompt({ title = '', label = '', value = '', ok = 'Salvar', type
 let openMenu = null;
 export function menu(anchor, items, { align = 'right' } = {}) {
   closeMenu();
+  if (!items.some(it => it && it !== '-')) return null; // sem ações: não abre caixa vazia
   const el = h(`<div class="menu"></div>`);
   for (const it of items) {
     if (it === '-') { el.appendChild(h('<div class="menu-sep"></div>')); continue; }

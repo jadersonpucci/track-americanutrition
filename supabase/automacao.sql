@@ -129,7 +129,7 @@ end $$;
 --    o previsto do mesmo contato/mês é removido automaticamente.
 -- ---------------------------------------------------------------------
 create or replace function fin_recorrencias_gerar(p_empresa uuid, p_meses int default 6) returns jsonb language plpgsql as $$
-declare n int := 0; k int; pares int := 0; r record; m date; venc date; v_valor numeric; ini date := date_trunc('month', current_date)::date;
+declare n int := 0; k int; pares int := 0; variaveis int := 0; r record; m date; venc date; v_valor numeric; fixo boolean; horizonte int; m_keep date; ini date := date_trunc('month', current_date)::date;
 begin
   insert into tags (empresa_id, nome, cor) select p_empresa, 'Previsto', '#5B667E'
     where not exists (select 1 from tags where empresa_id = p_empresa and deletado_em is null and nome = 'Previsto');
@@ -149,12 +149,13 @@ begin
              percentile_cont(0.5) within group (order by dia) as dia_med,
              -- valor dos dois meses mais recentes: se repetiu, é o valor atual (reajuste de salário, aluguel etc.)
              (array_agg(valor order by mes desc))[1] as ultimo,
-             (array_agg(valor order by mes desc))[2] as penultimo
+             (array_agg(valor order by mes desc))[2] as penultimo,
+             max(valor) as vmax, min(valor) as vmin, avg(valor) as vavg
       from hist group by 1, 2
       -- 6+ meses no histórico e ainda em curso (apareceu num dos 2 últimos meses fechados)
       having count(*) >= 6 and max(mes) >= (date_trunc('month', current_date) - interval '2 months')::date
     )
-    select p.contato_id, p.categoria_id, p.valor_med, p.dia_med, p.ultimo, p.penultimo,
+    select p.contato_id, p.categoria_id, p.valor_med, p.dia_med, p.ultimo, p.penultimo, p.vmax, p.vmin, p.vavg,
       (select l.descricao from lancamentos l where l.empresa_id = p_empresa and l.deletado_em is null and l.tipo = 'pagar' and l.origem <> 'recorrencia'
          and l.contato_id = p.contato_id and l.categoria_id = p.categoria_id group by l.descricao order by count(*) desc, max(l.vencimento) desc limit 1) as descricao,
       (select coalesce((l.baixas->0->>'conta_id')::uuid, l.conta_id) from lancamentos l where l.empresa_id = p_empresa and l.deletado_em is null and l.tipo = 'pagar' and l.origem <> 'recorrencia'
@@ -182,22 +183,45 @@ begin
         and jsonb_array_length(coalesce(l.baixas, '[]'::jsonb)) = 0 and l.valor <> v_valor
         and coalesce((l.recorrencia->>'manual')::boolean, false) = false
         and ((l.recorrencia->>'valor_auto') is null or (l.recorrencia->>'valor_auto')::numeric = l.valor);
-    for i in 0 .. least(greatest(p_meses, 1), coalesce(r.parcelas_restantes, p_meses)) loop
+    -- valor fixo (aluguel, salário, assinatura): repetiu nos 2 últimos meses ou oscila até 5%.
+    -- Valor variável (energia, água, frete, tráfego, matéria-prima): só o próximo vencimento, como estimativa.
+    fixo := (r.ultimo is not null and r.ultimo = r.penultimo) or (r.vavg > 0 and (r.vmax - r.vmin) <= 0.05 * r.vavg);
+    if not fixo then variaveis := variaveis + 1; end if;
+    horizonte := case when fixo then least(greatest(p_meses, 1), coalesce(r.parcelas_restantes, p_meses)) else 1 end;
+    m_keep := null;
+    for i in 0 .. horizonte loop
       m := (ini + (i || ' months')::interval)::date;
       if exists (select 1 from lancamentos l where l.empresa_id = p_empresa and l.deletado_em is null and l.status <> 'cancelado' and l.tipo = 'pagar'
-                   and l.contato_id = r.contato_id and l.categoria_id = r.categoria_id and date_trunc('month', coalesce(l.competencia, l.vencimento))::date = m) then continue; end if;
+                   and l.contato_id = r.contato_id and l.categoria_id = r.categoria_id and date_trunc('month', coalesce(l.competencia, l.vencimento))::date = m) then
+        -- variável: o "próximo" é o primeiro mês com um lançamento ainda por vencer (real ou previsto); mês já vencido/pago não conta
+        if not fixo and exists (select 1 from lancamentos l where l.empresa_id = p_empresa and l.deletado_em is null and l.status <> 'cancelado' and l.tipo = 'pagar'
+                   and l.contato_id = r.contato_id and l.categoria_id = r.categoria_id and date_trunc('month', coalesce(l.competencia, l.vencimento))::date = m
+                   and l.vencimento >= current_date) then m_keep := m; exit; end if;
+        continue;
+      end if;
       venc := least(m + (greatest(round(r.dia_med)::int, 1) - 1), (m + interval '1 month - 1 day')::date);
       -- no mês corrente só cria se o dia ainda não passou (senão nasceria atrasado)
       if i = 0 and venc < current_date then continue; end if;
       insert into lancamentos (empresa_id, tipo, descricao, valor, vencimento, competencia, categoria_id, contato_id, conta_id, forma_pagamento, status, baixas, tags, recorrencia, recorrencia_id, origem, origem_ref)
       values (p_empresa, 'pagar', coalesce(r.descricao, 'Previsto'), v_valor, venc, m, r.categoria_id, r.contato_id, r.conta_id, coalesce(r.forma, 'pix'), 'aberto', '[]'::jsonb, '["Previsto"]'::jsonb,
-              jsonb_build_object('freq', 'mensal', 'auto', true, 'valor_auto', v_valor), md5(p_empresa::text || r.contato_id::text || r.categoria_id::text)::uuid, 'recorrencia',
+              jsonb_build_object('freq', 'mensal', 'auto', true, 'valor_auto', v_valor, 'variavel', not fixo), md5(p_empresa::text || r.contato_id::text || r.categoria_id::text)::uuid, 'recorrencia',
               'auto:' || r.contato_id || ':' || r.categoria_id || ':' || to_char(m, 'YYYYMM'))
       on conflict (empresa_id, origem, origem_ref) where origem_ref is not null do nothing;
       get diagnostics k = row_count; n := n + k;
+      if not fixo then m_keep := m; exit; end if;
     end loop;
+    -- variável: previstos automáticos além do próximo (clones de meses adiante) somem; os editados à mão ficam
+    if not fixo then
+      update lancamentos l set deletado_em = now(), atualizado_em = now()
+        where l.empresa_id = p_empresa and l.deletado_em is null and l.origem = 'recorrencia' and (l.recorrencia->>'auto') = 'true'
+          and l.contato_id = r.contato_id and l.categoria_id = r.categoria_id and l.status = 'aberto'
+          and jsonb_array_length(coalesce(l.baixas, '[]'::jsonb)) = 0
+          and coalesce((l.recorrencia->>'manual')::boolean, false) = false
+          and ((l.recorrencia->>'valor_auto') is null or (l.recorrencia->>'valor_auto')::numeric = l.valor)
+          and date_trunc('month', coalesce(l.competencia, l.vencimento))::date > coalesce(m_keep, (ini + interval '1 month')::date);
+    end if;
   end loop;
-  return jsonb_build_object('ok', true, 'pares', pares, 'criados', n);
+  return jsonb_build_object('ok', true, 'pares', pares, 'variaveis', variaveis, 'criados', n);
 end $$;
 
 -- Remove o previsto quando o lançamento real do mesmo contato e mês existe

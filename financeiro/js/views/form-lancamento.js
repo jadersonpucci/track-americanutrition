@@ -144,6 +144,8 @@ export function abrirLancamento(existing = null, { tipo = 'pagar', defaults = {}
     if (!forma.get() || forma.get() === 'pix') forma.set('boleto');
     more.open = true;
     if (r.beneficiario && !descr.value.trim()) descr.value = 'Boleto ' + r.beneficiario.replace(/\s+/g, ' ').trim().slice(0, 60);
+    // beneficiário do boleto → contato já cadastrado com nome parecido
+    if (r.beneficiario && !contato.get()) { const hit = acharContato(r.beneficiario); if (hit) contato.set(hit.id); }
     toast(`Boleto lido${r.fonte === 'visao' ? ' pela imagem' : ''}${r.valor ? ': ' + money(r.valor) : ''}${r.vencimento ? ' · vence ' + fmtDate(r.vencimento) : ''}`);
     return true;
   };
@@ -178,6 +180,8 @@ export function abrirLancamento(existing = null, { tipo = 'pagar', defaults = {}
   const bCancel = h('<button type="button" class="btn ghost">Cancelar</button>'); bCancel.onclick = () => d.close();
   const bSave = h(`<button type="submit" form="_" class="btn primary">${icon('ti-check')}${isEdit ? 'Salvar' : 'Salvar lançamento'}</button>`);
   const bMore = h(`<button type="button" class="btn ghost sm">${icon('ti-dots')}</button>`);
+  // o menu só tem ações para lançamento existente (duplicar/excluir): em lançamento novo o botão não aparece
+  if (!isEdit) bMore.classList.add('hidden');
   foot.append(bMore, h('<span class="grow"></span>'), bCancel, bSave);
   if (!isEdit) { const bAgain = h('<button type="button" class="btn secondary">Salvar e novo</button>'); bAgain.onclick = () => submit(true); foot.insertBefore(bAgain, bSave); }
   bMore.onclick = e => { import('../ui.js').then(({ menu }) => menu(bMore, [isEdit ? { label: 'Duplicar', icon: 'ti-copy', onClick: () => { d.close(); abrirLancamento(null, { tipo: L.tipo, defaults: { ...L, id: undefined, baixas: [], status: 'aberto', parcela_num: null, parcela_total: null, grupo_parcelas_id: null, recorrencia_id: null, recorrencia: null, conciliado_fitid: null } }); } } : null, isEdit ? { label: 'Excluir', icon: 'ti-trash', danger: true, onClick: async () => { if (await excluirLancamento(L)) d.close(); } } : null].filter(Boolean), { align: 'left' })); };
@@ -466,4 +470,12 @@ export async function desfazerAlteracao(id, tabela, d = null) {
     if (d) d.close();
     return true;
   } catch (e) { toast(e.message, 'err', 5000); return false; }
+}
+
+// Procura um contato pelo nome do beneficiário do boleto (sem acentos/pontuação; aceita nome contido no outro)
+function acharContato(nome) {
+  const norm = x => String(x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/\b(LTDA|ME|EPP|EIRELI|SA|S A|CIA)\b/g, ' ').replace(/[^A-Z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+  const b = norm(nome); if (b.length < 4) return null;
+  const cts = app.ctx().contatos.filter(c => !c.arquivado && c.deletado_em == null);
+  return cts.find(c => norm(c.nome) === b) || cts.find(c => { const n = norm(c.nome); return n.length >= 5 && (b.includes(n) || n.includes(b)); }) || null;
 }
