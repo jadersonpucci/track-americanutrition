@@ -27,6 +27,24 @@ export function abrirLancamento(existing = null, { tipo = 'pagar', defaults = {}
   if (isEdit) segTipo.querySelectorAll('button').forEach(b => { if (b.dataset.v !== L.tipo) b.disabled = true; });
   f.appendChild(segTipo);
 
+  // Arraste o boleto aqui: anexa e, em conta a pagar, lê valor/vencimento/código antes de qualquer outro campo.
+  // Aceita arrastar sobre a zona ou sobre o formulário inteiro, clique e colar (Cmd+V) um arquivo ou print.
+  const drop = h(`<div class="dropzone" tabindex="0" role="button" aria-label="Anexar boleto ou nota"><input type="file" hidden accept="image/*,.pdf" multiple>${icon('ti-cloud-upload')}<div class="dz-t"><b>Arraste o boleto aqui</b><span> ou clique para anexar</span><div class="dz-h muted sm">PDF ou foto · em despesa, valor, vencimento e código são preenchidos sozinhos</div></div><div class="dz-s"></div></div>`);
+  const dzStatus = (txt = '', cls = '') => { const el = drop.querySelector('.dz-s'); el.textContent = txt; el.className = 'dz-s ' + cls; drop.classList.toggle('has', !!txt); };
+  const dzInput = drop.querySelector('input');
+  drop.onclick = e => { if (e.target !== dzInput) dzInput.click(); };
+  drop.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); dzInput.click(); } };
+  dzInput.onchange = async e => { const files = [...e.target.files]; e.target.value = ''; for (const file of files) await anexarArquivo(file); };
+  const dzFiles = async dt => { const files = [...(dt?.files || [])].filter(x => x && x.size); for (const file of files) await anexarArquivo(file); };
+  let dragN = 0;
+  f.addEventListener('dragenter', e => { if ([...(e.dataTransfer?.types || [])].includes('Files')) { e.preventDefault(); dragN++; drop.classList.add('over'); } });
+  f.addEventListener('dragover', e => { if ([...(e.dataTransfer?.types || [])].includes('Files')) { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; } });
+  f.addEventListener('dragleave', () => { dragN = Math.max(0, dragN - 1); if (!dragN) drop.classList.remove('over'); });
+  f.addEventListener('drop', e => { if (!(e.dataTransfer?.files || []).length) return; e.preventDefault(); dragN = 0; drop.classList.remove('over'); dzFiles(e.dataTransfer); });
+  f.addEventListener('paste', e => { const files = [...(e.clipboardData?.files || [])]; if (files.length) { e.preventDefault(); dzFiles(e.clipboardData); } });
+  if (isEdit && L.anexos?.length) drop.classList.add('compact');
+  f.appendChild(drop);
+
   // linha valor + descrição
   const valor = moneyInput({ value: L.valor, cls: 'xl' });
   const descr = h(`<input class="inp" list="dl-desc" placeholder="Ex.: Meta Ads · setembro" value="${esc(L.descricao)}" required>`);
@@ -157,14 +175,19 @@ export function abrirLancamento(existing = null, { tipo = 'pagar', defaults = {}
   async function anexarArquivo(file) {
     if (!db.temAnexosServidor) { if (file.size > 800 * 1024) { toast(`"${file.name}" é grande demais pra guardar no navegador (máx. 800 KB). Use um link.`, 'warn', 5000); return; } const url = await readFile(file, 'data'); anexos.push({ nome: file.name, url, tipo: file.type, tamanho: file.size }); paintAnex(); return; }
     if (file.size > 12 * 1024 * 1024) { toast(`"${file.name}" passa de 12 MB.`, 'warn', 5000); return; }
-    const tmp = { nome: file.name, tipo: file.type, tamanho: file.size, enviando: true }; anexos.push(tmp); paintAnex();
+    const tmp = { nome: file.name, tipo: file.type, tamanho: file.size, enviando: true }; anexos.push(tmp); paintAnex(); dzStatus('Enviando ' + file.name + '…', 'busy');
     try {
       const { base64, tipo, tamanho, nome } = await prepararArquivo(file);
       const a = await db.backend.anexoPut({ empresa_id: E, lancamento_id: L.id || null, nome, tipo, base64 });
       Object.assign(tmp, a, { enviando: false }); delete tmp.enviando;
+      dzStatus(`${anexos.filter(x => x.id || x.url).length} anexo${anexos.length > 1 ? 's' : ''}`, 'ok');
       // PDF ou foto numa conta a pagar: tenta ler a linha digitável / PIX do boleto (texto do PDF, senão visão)
-      if (L.tipo === 'pagar' && ehArquivoLegivel(tipo, nome) && !parseCodigos(codigo.value).boleto_linha) { paintAnex(); toast('Lendo o boleto…', 'info', 2500); try { aplicarLeitura(await lerBoletoArquivo({ base64, nome, tipo }), { silencioso: true }); } catch (e) { console.warn('leitura do boleto', e); } }
-    } catch (err) { anexos.splice(anexos.indexOf(tmp), 1); toast('Falha ao enviar o anexo: ' + err.message, 'err', 5000); }
+      if (L.tipo === 'pagar' && ehArquivoLegivel(tipo, nome) && !parseCodigos(codigo.value).boleto_linha) {
+        paintAnex(); dzStatus('Lendo o boleto…', 'busy');
+        try { const r = await lerBoletoArquivo({ base64, nome, tipo }); const ok = aplicarLeitura(r, { silencioso: true }); dzStatus(ok ? `Boleto lido${r.valor ? ': ' + money(r.valor) : ''}${r.vencimento ? ' · vence ' + fmtDate(r.vencimento) : ''}` : 'Anexado, mas não achei o código do boleto', ok ? 'ok' : 'warn'); }
+        catch (e) { console.warn('leitura do boleto', e); dzStatus('Anexado; a leitura do boleto falhou', 'warn'); }
+      }
+    } catch (err) { anexos.splice(anexos.indexOf(tmp), 1); dzStatus('', ''); toast('Falha ao enviar o anexo: ' + err.message, 'err', 5000); }
     paintAnex();
   }
   anexBox.querySelectorAll('input[type=file]').forEach(i => i.onchange = onFiles);
@@ -190,7 +213,7 @@ export function abrirLancamento(existing = null, { tipo = 'pagar', defaults = {}
 
   function repaintTipo() {
     const tr = L.tipo === 'transferencia';
-    f.classList.toggle('is-tr', tr);
+    f.classList.toggle('is-tr', tr); drop.classList.toggle('hidden', tr);
     fDest.classList.toggle('hidden', !tr); fForma.classList.toggle('hidden', tr); rowCC.classList.toggle('hidden', tr); rateioBox.classList.toggle('hidden', tr || !rateio.length); ccBox.classList.toggle('hidden', tr); pagoBox.classList.toggle('hidden', tr); repBox.classList.toggle('hidden', tr);
     fConta.querySelector('.fl').textContent = tr ? 'Da conta' : 'Conta (opcional)';
     if (!isEdit) avisoVenc();
