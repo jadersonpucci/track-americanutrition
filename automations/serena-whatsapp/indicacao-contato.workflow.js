@@ -62,8 +62,8 @@ for (const it of lista) {
   if (!dentroDoHorario) { continue; }   // fica para a proxima rodada dentro do horario
   const quem = prim(it.indicador_nome) || 'um cliente nosso';
   const comoChamar = String(j.nome || '').trim();
-  const instr = 'Primeiro contato com uma pessoa INDICADA. ' + quem + (j.relacao ? ' (' + j.relacao + ' dela)' : '') +
-    ' passou o contato dela para a gente e pediu que falassemos com ela' + (j.motivo ? ', porque ela procura: ' + j.motivo : '') + '. ' +
+  const instr = 'Primeiro contato com uma pessoa INDICADA. ' + quem +
+    ' passou o contato dela para a gente e pediu que falassemos com ela' + (j.relacao ? ' (ela e ' + j.relacao + ' do cliente)' : '') + (j.motivo ? ', porque ela procura: ' + j.motivo : '') + '. ' +
     'Escreva a PRIMEIRA mensagem para essa pessoa: cumprimente' + (comoChamar ? ' pelo nome (' + comoChamar + ')' : '') +
     ', apresente-se em uma frase, diga que foi o ' + quem + ' que passou o contato dela, e pergunte como voce pode ajudar' +
     (j.motivo ? ' no que ela procura' : '') + '. No maximo 3 linhas. Nao mande link, nao mande preco, nao fale de saude dela e nao invente nada que nao esteja aqui. Termine deixando claro que ela pode responder por aqui.';
