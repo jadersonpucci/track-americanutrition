@@ -2193,3 +2193,36 @@ Teste depois do deploy: Life Protein → `estoque 0, disponivel false` (bate com
   página esgotada. Nas 23 execuções recentes ele avisou 0, apesar de a Shopify responder "disponível" —
   **não consegui determinar pelos dados de execução por que ele pulou**, e isso fica para investigar com
   diagnóstico no nó. Enquanto isso ninguém recebeu mensagem errada.
+
+## Laudo em inglês: tradução de cortesia em PT-BR (10/10)
+
+Print da Rosangela (Telegram): ela recebeu o laudo toxicológico, que é emitido em inglês pela NuLab, e
+respondeu **"Não teve propósito se não entendo"**. A Serena contornou bem — explicou o conteúdo em uma
+frase e sugeriu que a médica ou alguém da família lesse com ela —, mas o documento em si continuou
+inacessível para quem não lê inglês. Boa parte da base é de pessoas mais velhas.
+
+**O que foi feito.** Tradução integral do laudo para o português, gerada do texto do PDF original
+(`NULAB-TX-IF-2026-289`, lote 8329US): resumo, declaração de cGMP, identificação da amostra, métodos
+analíticos (ICP-MS, GC-MS, HPLC, USP Micro), tabela de metais pesados, tabela microbiológica, declaração de
+perfil limpo e considerações regulatórias. Nenhum resultado foi alterado.
+
+**Como documento, não como substituto.** O PDF traduzido diz na capa, em destaque, e no rodapé de todas as
+páginas, que é **tradução livre feita pela America Nutrition para facilitar a leitura**, que o documento
+oficial é o original em inglês da NuLab e que o original prevalece em qualquer divergência. Isso importa:
+o próprio laudo determina que não pode ser reproduzido exceto na íntegra sem autorização escrita da NuLab,
+então o que publicamos é uma tradução identificada, não um laudo nosso com a cara do laboratório.
+
+Fonte do gerador em `assets/gerar-laudo-pt.py` (reportlab), para refazer quando mudar o lote. PDF em
+`AmericaNutrition/Laudo_Toxicologico_ImunoFosfo_PT.pdf` no Storage.
+
+**Cadastro.** Entrada `laudo_pt` em `serena_config.documentos` (27 entradas agora). O `quando` manda usá-la
+quando o cliente **já recebeu** o laudo e disse que não entende, que está em inglês, ou quando pede em
+português; e manda explicar em uma frase que é tradução e que o oficial continua sendo o original.
+
+Testes (10/10, sandbox): *"Esse laudo tá em inglês, não entendo nada"* → `laudo_pt`, com a frase sobre o
+documento oficial; *"tem o laudo em português?"* → `laudo_pt`; *"me manda o laudo toxicológico"* → `laudo`
+(o original em inglês, como antes).
+
+**Fica em aberto, é decisão sua:** hoje o padrão continua mandando o original em inglês, e a tradução só
+aparece quando o cliente reclama. Dá para inverter (traduzido primeiro para quem fala português, com o
+original oferecido em seguida) — é uma linha no `quando` de cada um.
