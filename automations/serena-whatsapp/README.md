@@ -2149,3 +2149,47 @@ nada** nisso, porque o pedido pega carona na resposta.
 Um eventual pedido ativo em D+28 somaria ~370 mensagens/mês (183 pessoas a cada 15 dias na janela de 25–40
 dias pós-entrega), ou seja ~12/dia — pouco em volume, mas é mensagem nova para quem não escreveu. Fica
 registrado como ideia, **não implementado**.
+
+## "No site tá esgotado" e a Serena dizia que tinha estoque (10/10)
+
+Print da Rosy (+55 77 99153-5477): ela avisou *"No site oficial tá como esgotado"* e a Serena respondeu
+*"conferi agora e o Life Protein aparece disponível, mas com poucas unidades em estoque"* e ofereceu gerar o
+link de pagamento. O site estava certo; a Serena, errada.
+
+**Causa.** A ferramenta `[Serena Tool] Consultar Produto` (`hdkG3Ewc9DL3OCiH`) lia o catálogo pelo REST
+`products.json` e usava direto:
+
+```js
+estoque: v.inventory_quantity,
+disponivel: v.inventory_quantity > 0,
+```
+
+O `inventory_quantity` do REST **soma todas as localizações**. A loja tem 10, e só duas atendem pedido do
+site (`fulfillsOnlineOrders = true`): **América Nutrition [CD]** e **Estados Unidos**. As outras são
+revendedoras — Nair, Adriana Bonin, Sônia Terezinha, Sônia Cintra, Cristina Matias, MIRIAM PURNHAGEN,
+Ass. Maracajuense — e ainda há o Mercado Livre Full, cujo estoque é do ML.
+
+No Life Protein: `totalInventory = 2`, **as 2 unidades na Nair**, CD zerado. Daí "disponível, poucas
+unidades". Não era caso isolado: vale para qualquer produto que sobre com revendedora.
+
+**Correção.** Nó novo `Estoque da Loja Online` entre `Filtrar e formatar` e `Erro Shopify?`
+(fonte `nodes/consultar-produto-estoque-online.js`). Ele consulta `inventoryLevels` por localização e
+recalcula somando **só a allowlist** (CD + Estados Unidos). Allowlist, não denylist: revendedora nova já
+nasce de fora. Produto sem controle de estoque (`tracked = false`) continua disponível. Se a consulta
+falhar, mantém o número antigo e marca `fonte_estoque: 'total_lojas'` para dar para ver no log.
+
+Teste depois do deploy: Life Protein → `estoque 0, disponivel false` (bate com o site). ImunoFosfo 90 → 463,
+60 → 100, 42 → 100, Vegano → 390, Diabetes → 238, USA → 1.402, todos com `fonte_estoque: 'loja_online'`.
+
+### Dois achados de passagem
+
+- **O 42 e o 60 voltaram.** Em 08/10 a Serena disse ao Jean que estavam sem estoque, e estava certa na hora;
+  hoje há 100 de cada no CD. O estoque entrou depois.
+- **A fila do "avise-me quando voltar" não avisou ninguém.** São 7 pessoas esperando o D3 50.000 desde
+  28/09, todas `pendente`, nenhuma com `avisado_em`. E o D3 tem o mesmo problema de localização: a Shopify
+  responde `availableForSale = true, inventoryQuantity = 5`, mas **os 5 estão na Nair** — para o site o
+  produto segue esgotado. Ou seja, o `aviso-estoque.workflow.js` precisa da mesma allowlist, senão no dia em
+  que uma revendedora receber estoque ele dispara "voltou!" para a fila inteira e manda todo mundo para uma
+  página esgotada. Nas 23 execuções recentes ele avisou 0, apesar de a Shopify responder "disponível" —
+  **não consegui determinar pelos dados de execução por que ele pulou**, e isso fica para investigar com
+  diagnóstico no nó. Enquanto isso ninguém recebeu mensagem errada.
