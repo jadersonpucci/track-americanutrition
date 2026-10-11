@@ -25,6 +25,27 @@ const dt = (v) => { const s = String(v || '').slice(0, 10); return s ? s.split('
 // apresentar; com confirmado troca items/shopify_items/valores e, se estava cancelada ou pausada, reativa.
 const SHOP = 'https://n8n.americanutrition.com/webhook/shopify-admin';
 const cacheVar = {};
+// ESTOQUE ONLINE (11/10/2026): o inventory_quantity do REST soma TODAS as locations, inclusive as das
+// revendedoras (Nair, Adriana Bonin, Sonia Terezinha, Sonia Cintra, Cristina Matias, MIRIAM PURNHAGEN,
+// Ass. Maracajuense), que tem fulfillsOnlineOrders = false e nao despacham pedido do site. Estoque de
+// revendedora nao e disponibilidade de venda: a assinatura renova pela loja online todo mes, entao vale
+// so o que o CD/EUA tem. Mesma regra do /webhook/checar-estoque e da consultar_produto.
+async function estoqueOnline(vid) {
+  const Q = 'query($ids:[ID!]!){ nodes(ids:$ids){ ... on ProductVariant { id inventoryItem { tracked inventoryLevels(first:50){ nodes{ location{ fulfillsOnlineOrders isActive } quantities(names:["available"]){ quantity } } } } } } }';
+  const r = await req({ method: 'POST', url: SHOP, json: true, timeout: 20000, headers: { 'Content-Type': 'application/json' },
+    body: { acao: 'atualizar_pedido', endpoint: '../2026-07/graphql.json', metodo: 'POST', payload: { query: Q, variables: { ids: ['gid://shopify/ProductVariant/' + vid] } } } });
+  const n = ((((r || {}).dados || {}).data || {}).nodes || [])[0];
+  if (!n) return undefined;               // consulta falhou: mantem o numero do REST
+  const inv = n.inventoryItem || {};
+  if (inv.tracked === false) return null; // sem controle de estoque: nunca tratar como esgotado
+  let soma = 0;
+  for (const l of ((inv.inventoryLevels || {}).nodes || [])) {
+    if (!l || !l.location || !l.location.fulfillsOnlineOrders || l.location.isActive === false) continue;
+    const q = Number((((l.quantities || [])[0]) || {}).quantity || 0);
+    if (q > 0) soma += q;
+  }
+  return soma;
+}
 async function variante(vid) {
   vid = String(vid || '').replace(/\D/g, '');
   if (!vid) return null;
@@ -36,8 +57,13 @@ async function variante(vid) {
   const prod = p && p.ok && p.dados && p.dados.product;
   const vt = String(v.title || '').replace(/^Tradicionais \/ /, '');
   const titulo = String((prod && prod.title) || 'Produto') + (vt && vt !== 'Default Title' ? ' ' + vt : '');
-  const semEstoque = String(v.inventory_management || '') === 'shopify' && String(v.inventory_policy || 'deny') === 'deny' && Number(v.inventory_quantity || 0) <= 0;
-  const out = { variant_id: String(v.id), titulo: titulo, preco: Number(v.price || 0), estoque: Number(v.inventory_quantity || 0), sem_estoque: semEstoque, ativo: !prod || String(prod.status || 'active') === 'active' };
+  let estoque = Number(v.inventory_quantity || 0);
+  let semEstoque = String(v.inventory_management || '') === 'shopify' && String(v.inventory_policy || 'deny') === 'deny' && estoque <= 0;
+  let fonteEstoque = 'total_lojas';
+  const online = await estoqueOnline(vid);
+  if (online === null) { semEstoque = false; fonteEstoque = 'sem_controle'; }
+  else if (online !== undefined) { estoque = online; semEstoque = String(v.inventory_policy || 'deny') === 'deny' && online <= 0; fonteEstoque = 'loja_online'; }
+  const out = { variant_id: String(v.id), titulo: titulo, preco: Number(v.price || 0), estoque: estoque, sem_estoque: semEstoque, fonte_estoque: fonteEstoque, ativo: !prod || String(prod.status || 'active') === 'active' };
   cacheVar[vid] = out;
   return out;
 }

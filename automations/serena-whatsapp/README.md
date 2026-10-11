@@ -2226,3 +2226,61 @@ documento oficial; *"tem o laudo em português?"* → `laudo_pt`; *"me manda o l
 **Fica em aberto, é decisão sua:** hoje o padrão continua mandando o original em inglês, e a tradução só
 aparece quando o cliente reclama. Dá para inverter (traduzido primeiro para quem fala português, com o
 original oferecido em seguida) — é uma linha no `quando` de cada um.
+
+## Revendedora não é estoque do site nem disponibilidade pra vender (11/10)
+
+Ontem o conserto foi pontual, na `consultar_produto`. A regra que o Jaderson passou é geral: **"revendedora
+não pode ser considerado estoque no site nem disponibilidade pra vender"**. Varri o que lê estoque da
+Shopify e achei três lugares que ainda somavam tudo, mais um que já estava certo e um quarto que ninguém
+tinha mexido.
+
+**O que a Shopify devolve.** São 10 locations. Só três têm `fulfillsOnlineOrders = true`: `América
+Nutrition [CD]`, `Estados Unidos` e `Mercado Livre Full`. As sete de revendedora (Nair, Adriana Bonin,
+Sônia Terezinha, Sônia Cintra, Cristina Matias, MIRIAM PURNHAGEN, Ass. Maracajuense) estão em `false` — não
+despacham pedido do site. E `availableForSale`, `inventoryQuantity` e `totalInventory` da Admin API **somam
+todas as locations**: é daí que vinha o erro em todos os casos.
+
+A regra agora é uma só, em todo lugar: soma só location com `fulfillsOnlineOrders` e `isActive`. Troquei
+também a allowlist por nome que eu tinha feito ontem na `consultar_produto` — usar o flag da própria
+Shopify significa que **revendedora nova entra de fora sozinha**, sem ninguém lembrar de editar código.
+`inventoryPolicy CONTINUE` e item sem controle de estoque continuam passando como disponíveis.
+
+| Onde | Antes | Agora |
+| --- | --- | --- |
+| `consultar_produto` (`hdkG3Ewc9DL3OCiH`) | allowlist por nome (10/10) | flag `fulfillsOnlineOrders` |
+| `/webhook/checar-estoque` (`Vj5dxntje6WrQUqn`) | já estava certo (01/10) | sem mudança, agora no repo |
+| `[Serena] Avise-me Quando Voltar` (`XfrzsyTwdMdhbwwZ`) | já estava certo (01/10) | + diagnóstico e alerta de fila parada |
+| Checkout Fluxo A, `Checar Estoque` (`DHeud8c0Qkb0EDwS`) | `availableForSale` | soma das locations online |
+| `[Serena Tool] Assinatura` (`WfxlFkDA9U9yYeR7`) | `inventory_quantity` do REST | soma das locations online |
+
+**O checkout era o pior.** O `ESTOQUE-GUARD` barrava o pedido só quando `availableForSale` era `false`. A
+D3 50.000 estava com `availableForSale: true` e 5 unidades — todas com a Nair, CD zerado. Ou seja: o site
+mostrava esgotado, mas um link de pagamento direto passava e a gente cobrava por algo que não tinha de onde
+sair. Agora o guard soma as locations online e, quando dá zero, devolve a mensagem de esgotado que já
+existia. Erro de consulta continua **fail-open**: nunca derruba venda real por bug nosso.
+
+**Na assinatura** a troca de item (`acao: 'trocar'`) aceitava colocar na recorrência um produto que só
+existia na mão de revendedora — e assinatura renova todo mês pela loja online. Testado no ar (caminho
+somente leitura, sem confirmado): D3 50.000 → *"está sem estoque agora"*; Life Protein → *"está sem estoque
+agora"*; ImunoFosfo Plus 180 (CD cheio) → proposta normal, R$ 537,30.
+
+**Por que ninguém da fila de "avise-me" foi avisado.** Não era bug. São 7 pessoas esperando a D3 50.000
+desde 28/09, e as 5 unidades que aparecem na Shopify entraram no estoque da Nair em 01/10 — o CD está
+zerado desde 28/09. O workflow já aplicava a regra certa e, por isso, calou. O problema era outro: **a fila
+estava invisível**. O resumo no Telegram só sai quando alguém é avisado ou registrado, então ninguém ficou
+sabendo que tinha gente esperando há 13 dias. Duas coisas foram adicionadas:
+
+- `estoque_fila` no output do node, com `qtd_online` e `disponivel` por variante. Da próxima vez a pergunta
+  *"por que ninguém foi avisado?"* se responde abrindo a execução, sem refazer a conta na mão.
+- Alerta de **fila parada**: 1x por dia, na rodada das 9h, quando tem gente esperando e ninguém foi avisado
+  — *"Fila de aviso de estoque parada: 7 pessoa(s) · D3 com K2, A e E - 50.000 UI: 7 pessoa(s) desde
+  28/09"*, com a nota de que o que está com revendedora não conta. Tópico 289, uma mensagem por dia.
+
+**Fica em aberto, é decisão sua:** `Mercado Livre Full` está com `fulfillsOnlineOrders = true` e, por isso,
+conta como estoque do site — tanto pra nós quanto pra vitrine da Shopify. Hoje não muda nada (as 78
+unidades que estão lá são de produtos que também têm estoque no CD), mas se um dia sobrar estoque só no ML
+Full o site vai vender algo que sai do galpão do Mercado Livre. Se não é isso que você quer, é desmarcar
+"atender pedidos online" naquela location no admin da Shopify — nenhum código muda.
+
+Arquivos: `nodes/consultar-produto-estoque-online.js`, `nodes/checar-estoque-tool.js`,
+`nodes/assinatura-tool.js`, `aviso-estoque.workflow.js`, `../checkout/nodes/fluxo-a-checar-estoque.js`.

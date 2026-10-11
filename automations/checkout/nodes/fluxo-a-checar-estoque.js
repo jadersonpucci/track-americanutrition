@@ -1,5 +1,5 @@
 // Node "Checar Estoque" do workflow "Pagar.me — Criar Pedido (Fluxo A)" (n8n DHeud8c0Qkb0EDwS). Chaves reais so no n8n.
-// AN-RATE-GUARD v3.7 (antifraude card testing) + AN-ESTOQUE-GUARD
+// AN-RATE-GUARD v3.7 (antifraude card testing) + AN-ESTOQUE-GUARD v2 (so estoque que a loja online despacha)
 // v3.7 (19/09/2026, chargeback AN-15104): blocklist por ENDERECO (cliente_blocklist tipo 'endereco' = cep|rua normalizada)
 //   e regras de JANELA LONGA para cartao: mesmo telefone com 3+ CPFs em 7 dias, ou CPF/email com 6+ recusas de cartao em 7 dias.
 //   O fraudador de Osorio passou pelas regras de 30min voltando em dias e IPs diferentes com identidades novas.
@@ -181,24 +181,43 @@ try {
 } catch (e) { /* fail-open */ }
 
 // ---------- ESTOQUE-GUARD (so roda se nao bloqueou) ----------
+// AN-ESTOQUE-ONLINE v2 (11/10/2026): estoque de REVENDEDORA nao e disponibilidade de venda no site.
+// availableForSale e inventoryQuantity da Admin API somam TODAS as locations, inclusive as das
+// revendedoras (Nair, Adriana Bonin, Sonia Terezinha, Sonia Cintra, Cristina Matias, MIRIAM PURNHAGEN,
+// Ass. Maracajuense), que tem fulfillsOnlineOrders = false e nao despacham pedido do site. Com a regra
+// antiga o checkout aceitava pedido de item que so existia na mao de revendedora: a D3 50.000 estava
+// com availableForSale = true e 5 unidades, todas com a Nair, CD zerado.
+// Agora soma so as locations que atendem pedido online (mesma regra do /webhook/checar-estoque e da
+// Serena). inventoryPolicy CONTINUE e item sem controle de estoque continuam passando.
+// Erro de consulta = fail-open: nunca derruba venda real por bug.
 if (!bloqueado) {
   try {
     const sitems = Array.isArray(b.shopify_items) ? b.shopify_items : [];
     const ids = [...new Set(sitems.map(it => String(it.variant_id || it.code || '').replace(/[^0-9]/g,'')).filter(v => v.length >= 8))];
     if (ids.length) {
       const gids = ids.map(id => '\"gid://shopify/ProductVariant/' + id + '\"').join(',');
-      const query = '{ nodes(ids: [' + gids + ']) { ... on ProductVariant { id title availableForSale product { title } } } }';
+      const query = '{ nodes(ids: [' + gids + ']) { ... on ProductVariant { id title inventoryPolicy product { title status } inventoryItem { tracked inventoryLevels(first:50) { nodes { location { fulfillsOnlineOrders isActive } quantities(names:[\"available\"]) { quantity } } } } } } }';
       const resp = await this.helpers.httpRequest({
         method: 'POST',
         url: 'https://n8n.americanutrition.com/webhook/shopify-admin',
-        body: { acao: 'atualizar_pedido', endpoint: 'graphql.json', metodo: 'POST', payload: { query: query } },
+        body: { acao: 'atualizar_pedido', endpoint: '../2026-07/graphql.json', metodo: 'POST', payload: { query: query } },
         json: true,
-        timeout: 10000
+        timeout: 15000
       });
       const nodes = resp && resp.dados && resp.dados.data && resp.dados.data.nodes ? resp.dados.data.nodes : null;
-      if (Array.isArray(nodes)) {
+      if (Array.isArray(nodes) && nodes.length) {
         for (const n of nodes) {
-          if (n && n.availableForSale === false) {
+          if (!n || !n.id) continue;
+          const inv = n.inventoryItem || {};
+          const continua = String(n.inventoryPolicy || '').toUpperCase() === 'CONTINUE' || inv.tracked === false;
+          let qtd = 0;
+          for (const l of ((inv.inventoryLevels || {}).nodes || [])) {
+            if (!l || !l.location || !l.location.fulfillsOnlineOrders || l.location.isActive === false) continue;
+            const q = Number((((l.quantities || [])[0]) || {}).quantity || 0);
+            if (q > 0) qtd += q;
+          }
+          const ativo = !n.product || String(n.product.status || 'ACTIVE').toUpperCase() === 'ACTIVE';
+          if (!continua && (qtd <= 0 || !ativo)) {
             esgotado = true;
             const nome = (n.product && n.product.title) ? n.product.title : ('produto ' + String(n.id||'').split('/').pop());
             if (nomes.indexOf(nome) === -1) nomes.push(nome);

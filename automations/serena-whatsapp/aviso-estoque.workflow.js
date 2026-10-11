@@ -18,7 +18,10 @@ const buscar = node({ type: 'n8n-nodes-base.postgres', version: 2.6, config: { n
 
 const processar = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Registrar e Avisar', parameters: { jsCode: `// 1) Pedido novo: descobre de qual produto o cliente falou e, se ele estiver FORA de estoque, entra na fila.
 //    Produto em estoque = nao ha o que esperar (e filtra "me avisa quando meu pedido chegar", que nao cita produto).
-// 2) Fila: consulta o estoque real na Shopify; voltou, a Serena escreve o aviso (Core proativo) e o Samuel envia.
+// 2) Fila: consulta o estoque ONLINE real na Shopify; voltou, a Serena escreve o aviso (Core proativo) e o Samuel envia.
+// 3) Fila parada (11/10/2026): se tem gente esperando e ninguem foi avisado, avisa a EQUIPE 1x por dia (9h).
+//    Sem isso a fila ficava invisivel: 7 pessoas esperando a D3 50.000 desde 28/09 e nenhum alerta,
+//    porque as 5 unidades que a Shopify mostra estao com a revendedora Nair e o CD esta zerado.
 const d = $input.first().json || {};
 const cfg = d.cfg || {};
 const novos = Array.isArray(d.novos) ? d.novos : [];
@@ -28,18 +31,19 @@ const SHOPIFY = 'https://n8n.americanutrition.com/webhook/shopify-admin';
 const CORE = 'https://n8n.americanutrition.com/webhook/serena-core';
 const ENVIAR = 'https://n8n.americanutrition.com/webhook/serena-samuel-enviar';
 const API = 'https://n8n.americanutrition.com/webhook/painel-serena-api';
+const TG = 'https://api.telegram.org/bot<TOKEN_ALERTAS>/sendMessage';
 const TOKEN = 'an-serena-9Kx4Lm2Q';
 const NL = String.fromCharCode(10);
 const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const dia = v => String(v || '').slice(0, 10).split('-').reverse().join('/');
 if (String(cfg.ativo || 'on') !== 'on') { return [{ json: { payload: '[]', desligado: true } }]; }
 
+// CASAMENTO DO PRODUTO. O nome no banco esta em portugues ("D3 com K2, A e E - 50.000 UI") e o botao do site
+// manda em ingles ("D3 with K2, A and E - 50.000 UI"), entao e por tokens fortes, inclusive curtos (d3, k2, 180).
+// bate() aceita plural/genero (vegano~veganas, liquido~liquida). Token raro (aparece em ate 2 produtos) vale
+// sozinho, para "avisa quando chegar o omega 3" funcionar; "imunofosfo" sozinho e ambiguo e nao casa nada.
 const norm = t => String(t || '').toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
 const STOP = new Set(['de','da','do','com','and','the','with','ui','mg','e','a','o','para','em','capsulas','capsula','caps','un','ml','gotas','vitamin','vitamina']);
-// O nome no banco esta em portugues ("D3 com K2, A e E - 50.000 UI") e o botao do site manda em ingles
-// ("D3 with K2, A and E - 50.000 UI"): por isso o casamento e por tokens fortes, inclusive curtos como
-// d3, k2 e 180 (com w.length > 2 nao sobrava nada desse nome e nenhum cliente era registrado).
-// bate() aceita plural/genero (vegano~veganas, liquido~liquida). Token raro (em ate 2 produtos) vale sozinho,
-// para "avisa quando chegar o omega 3" funcionar; "imunofosfo" sozinho e ambiguo e de proposito nao casa nada.
 const tokens = nome => norm(nome).split(' ').filter(w => w.length >= 2 && !STOP.has(w));
 const freq = {};
 for (const p of produtos) { for (const w of new Set(tokens(p.nome))) { freq[w] = (freq[w] || 0) + 1; } }
@@ -70,19 +74,29 @@ const gql = async (query, variables) => {
   if (!dd || (dd.errors && dd.errors.length)) throw new Error('shopify: ' + JSON.stringify((dd || {}).errors || 'sem resposta').slice(0, 200));
   return dd.data;
 };
-// estoque real de varias variantes de uma vez
 async function estoqueDe(ids) {
+  // Estoque ONLINE: soma so locations com "atender pedidos online" (revendedoras ficam de fora).
+  // availableForSale/inventoryQuantity da Admin API somam todas as locations, por isso nao servem aqui.
   const unicos = Array.from(new Set(ids.filter(Boolean).map(String)));
   const mapa = {};
-  for (let i = 0; i < unicos.length; i += 40) {
-    const lote = unicos.slice(i, i + 40).map(v => 'gid://shopify/ProductVariant/' + v);
+  for (let i = 0; i < unicos.length; i += 20) {
+    const lote = unicos.slice(i, i + 20).map(v => 'gid://shopify/ProductVariant/' + v);
     let res = null;
-    try { res = await gql('query($ids:[ID!]!){ nodes(ids:$ids){ ... on ProductVariant { id availableForSale inventoryQuantity } } }', { ids: lote }); } catch (e) { res = null; }
+    try { res = await gql('query($ids:[ID!]!){ nodes(ids:$ids){ ... on ProductVariant { id inventoryPolicy product { status } inventoryItem { tracked inventoryLevels(first:50){ nodes{ location{ fulfillsOnlineOrders isActive } quantities(names:["available"]){ quantity } } } } } } }', { ids: lote }); } catch (e) { res = null; }
     const nodes = ((res || {}).nodes) || [];
     for (const n of nodes) {
       if (!n || !n.id) continue;
       const vid = String(n.id).split('/').pop();
-      mapa[vid] = { disponivel: !!n.availableForSale, qtd: Number(n.inventoryQuantity || 0) };
+      const it = n.inventoryItem || {};
+      let qtd = 0;
+      for (const l of ((it.inventoryLevels || {}).nodes || [])) {
+        if (!l.location || !l.location.fulfillsOnlineOrders || l.location.isActive === false) continue;
+        const q = Number((((l.quantities || [])[0]) || {}).quantity || 0);
+        if (q > 0) qtd += q;
+      }
+      const ativo = !n.product || n.product.status === 'ACTIVE';
+      const semControle = it.tracked === false || n.inventoryPolicy === 'CONTINUE';
+      mapa[vid] = { disponivel: ativo && (qtd > 0 || semControle), qtd: semControle && qtd <= 0 ? 1 : qtd };
     }
   }
   return mapa;
@@ -92,8 +106,8 @@ const rows = [];
 const avisados = [];
 const registrados = [];
 const semProduto = [];
+let estoqueFila = [];
 
-// --- 1) pedidos novos ---
 if (novos.length) {
   const casados = [];
   for (const n of novos) {
@@ -105,8 +119,8 @@ if (novos.length) {
     const est = await estoqueDe(casados.map(c => c.p.variant_id));
     for (const c of casados) {
       const e = est[String(c.p.variant_id)];
-      if (!e) continue;                       // sem resposta da Shopify: tenta na proxima rodada
-      if (e.disponivel && e.qtd > 0) continue; // produto tem estoque: nada a esperar
+      if (!e) continue;                        // sem resposta da Shopify: tenta na proxima rodada
+      if (e.disponivel && e.qtd > 0) continue; // produto tem estoque na loja online: nada a esperar
       rows.push({ acao: 'registrar', telefone: c.n.telefone, nome: c.n.nome || '', contato_id: c.n.contato_id || null,
         variant_id: String(c.p.variant_id), produto: c.p.nome, msg_id: c.n.msg_id, origem: 'whatsapp' });
       registrados.push({ nome: c.n.nome, produto: c.p.nome, telefone: c.n.telefone });
@@ -114,16 +128,17 @@ if (novos.length) {
   }
 }
 
-// --- 2) fila esperando ---
 const hora = Number(cfg.hora);
 const podeEnviar = hora >= 8 && hora <= 20;
 if (pendentes.length && podeEnviar) {
   const est = await estoqueDe(pendentes.map(p => p.variant_id));
+  // fica no output da execucao: responde "por que ninguem foi avisado?" sem ter que refazer a conta
+  estoqueFila = Object.keys(est).map(v => ({ variant_id: v, qtd_online: est[v].qtd, disponivel: est[v].disponivel }));
   for (const it of pendentes) {
     const e = est[String(it.variant_id)];
     if (!e || !e.disponivel || e.qtd <= 0) continue;
     const instr = 'O produto ' + it.produto + ' VOLTOU AO ESTOQUE. Este cliente pediu para ser avisado quando voltasse, em ' +
-      String(it.criado_em || '').slice(0, 10).split('-').reverse().join('/') + '. Escreva uma mensagem curta (ate 4 linhas) avisando que voltou, ' +
+      dia(it.criado_em) + '. Escreva uma mensagem curta (ate 4 linhas) avisando que voltou, ' +
       'lembrando que foi ele quem pediu o aviso, e ofereca mandar o link do pedido. Nao invente prazo, desconto nem quantidade em estoque.';
     let texto = '';
     try {
@@ -152,10 +167,25 @@ if (avisados.length || registrados.length || semProduto.length) {
   if (avisados.length) partes.push('\\u{1F514} <b>Voltou ao estoque: ' + avisados.length + ' cliente(s) avisado(s)</b>' + NL + avisados.map(a => '\\u2022 ' + esc(a.nome || 'Cliente') + ' - ' + esc(a.produto)).join(NL));
   if (registrados.length) partes.push('\\u{1F4DD} <b>Novos pedidos de aviso: ' + registrados.length + '</b>' + NL + registrados.map(a => '\\u2022 ' + esc(a.nome || 'Cliente') + ' - ' + esc(a.produto)).join(NL));
   if (semProduto.length) partes.push('\\u2753 <b>Pediu aviso e nao identifiquei o produto: ' + semProduto.length + '</b>' + NL + semProduto.map(a => '\\u2022 ' + esc(a.nome || 'Cliente') + ' (+' + esc(a.telefone) + '): "' + esc(a.texto) + '"').join(NL) + NL + '<i>Registrar na mao ou responder pelo Inbox.</i>');
-  try { await this.helpers.httpRequest({ method: 'POST', url: 'https://api.telegram.org/bot8872435172:AAGA-EmIy8MKA8e0p3DhtIAtqRQfcFCI7vk/sendMessage', json: true, timeout: 20000,
+  try { await this.helpers.httpRequest({ method: 'POST', url: TG, json: true, timeout: 20000,
     body: { chat_id: '-1003766435449', message_thread_id: 289, text: partes.join(NL + NL), parse_mode: 'HTML', disable_web_page_preview: true } }); } catch (e5) {}
 }
-return [{ json: { payload: JSON.stringify(rows), registrados: registrados.length, avisados: avisados.length, sem_produto: semProduto.length, fila: pendentes.length } }];` } },
+
+// FILA PARADA: 1x por dia, na primeira rodada das 9h. So quando ninguem foi avisado nesta rodada.
+if (pendentes.length && !avisados.length && hora === 9 && new Date().getMinutes() < 30) {
+  const porProd = {};
+  for (const it of pendentes) {   // pendentes vem ordenado por criado_em, o 1o de cada produto e o mais antigo
+    const k = it.produto || 'produto';
+    if (!porProd[k]) porProd[k] = { n: 0, desde: it.criado_em };
+    porProd[k].n++;
+  }
+  const linhas = Object.keys(porProd).map(k => '\\u2022 ' + esc(k) + ': ' + porProd[k].n + ' pessoa(s) desde ' + dia(porProd[k].desde));
+  const txt = '\\u23F3 <b>Fila de aviso de estoque parada: ' + pendentes.length + ' pessoa(s)</b>' + NL + linhas.join(NL) + NL + NL +
+    '<i>Estoque da loja online (CD/EUA) zerado \\u2014 o que esta com revendedora nao conta como disponibilidade de venda. Repor para a Serena avisar a fila.</i>';
+  try { await this.helpers.httpRequest({ method: 'POST', url: TG, json: true, timeout: 20000,
+    body: { chat_id: '-1003766435449', message_thread_id: 289, text: txt, parse_mode: 'HTML', disable_web_page_preview: true } }); } catch (e6) {}
+}
+return [{ json: { payload: JSON.stringify(rows), registrados: registrados.length, avisados: avisados.length, sem_produto: semProduto.length, fila: pendentes.length, estoque_fila: estoqueFila } }];` } },
   output: [{ payload: '[]', registrados: 0, avisados: 0, fila: 0 }] });
 
 const gravar = node({ type: 'n8n-nodes-base.postgres', version: 2.6, config: { name: 'Gravar Fila', parameters: { operation: 'executeQuery',
@@ -163,7 +193,7 @@ const gravar = node({ type: 'n8n-nodes-base.postgres', version: 2.6, config: { n
   options: { queryReplacement: "={{ [$json.payload] }}", queryBatching: 'single' } }, credentials: PG },
   output: [{ registrados: 0, avisados: 0 }] });
 
-const nota = sticky('## Avise-me quando voltar\n\nA cada 30 min:\n1. Le as mensagens de cliente dos ultimos 3 dias pedindo aviso de volta ao estoque, descobre o produto pelo nome e, se ele estiver FORA de estoque na Shopify, entra na fila (serena_avisos_estoque).\n2. Para a fila pendente, consulta o estoque real: voltou, a Serena escreve o aviso (Core proativo, tipo estoque_voltou) e o Samuel envia, entre 8h e 20h BRT.\n\nPula bloqueados. Produto em estoque no momento do pedido nao entra na fila (nao ha o que esperar). Resumo no Telegram (topico 289). Kill switch: serena_config aviso_estoque = off.', { color: 4, width: 420, height: 260 });
+const nota = sticky('## Avise-me quando voltar\n\nA cada 30 min:\n1. Le as mensagens de cliente dos ultimos 3 dias pedindo aviso de volta ao estoque, descobre o produto pelo nome e, se ele estiver FORA de estoque, entra na fila (serena_avisos_estoque).\n2. Para a fila pendente, consulta o estoque da LOJA ONLINE (so locations com fulfillsOnlineOrders: revendedora nao conta): voltou, a Serena escreve o aviso (Core proativo, tipo estoque_voltou) e o Samuel envia, entre 8h e 20h BRT.\n3. Fila parada: 1x por dia (9h) avisa a equipe quem esta esperando e desde quando.\n\nPula bloqueados. Produto em estoque no momento do pedido nao entra na fila. Resumo no Telegram (topico 289). Kill switch: serena_config aviso_estoque = off.', { color: 4, width: 420, height: 260 });
 
 export default workflow('serena-aviso-estoque', '[Serena] Avise-me Quando Voltar', { settings: { executionOrder: 'v1' } })
   .add(cron).to(buscar).to(processar).to(gravar).add(nota);
