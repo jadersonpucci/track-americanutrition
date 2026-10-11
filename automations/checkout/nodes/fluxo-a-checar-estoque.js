@@ -195,8 +195,14 @@ if (!bloqueado) {
     const sitems = Array.isArray(b.shopify_items) ? b.shopify_items : [];
     const ids = [...new Set(sitems.map(it => String(it.variant_id || it.code || '').replace(/[^0-9]/g,'')).filter(v => v.length >= 8))];
     if (ids.length) {
+      // Mercado Livre Full esta com fulfillsOnlineOrders = true na Shopify, mas aquele estoque esta no galpao
+      // do Mercado Livre e atende SO venda do ML, nunca pedido do site (Jaderson, 11/10/2026).
+      const CANAIS_EXTERNOS = ['mercado livre'];
+      const norml = s => String(s == null ? '' : s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+      const contaOnline = l => !!l && !!l.location && l.location.fulfillsOnlineOrders === true && l.location.isActive !== false
+        && !CANAIS_EXTERNOS.some(c => norml(l.location.name).indexOf(c) >= 0);
       const gids = ids.map(id => '\"gid://shopify/ProductVariant/' + id + '\"').join(',');
-      const query = '{ nodes(ids: [' + gids + ']) { ... on ProductVariant { id title inventoryPolicy product { title status } inventoryItem { tracked inventoryLevels(first:50) { nodes { location { fulfillsOnlineOrders isActive } quantities(names:[\"available\"]) { quantity } } } } } } }';
+      const query = '{ nodes(ids: [' + gids + ']) { ... on ProductVariant { id title inventoryPolicy product { title status } inventoryItem { tracked inventoryLevels(first:50) { nodes { location { name fulfillsOnlineOrders isActive } quantities(names:[\"available\"]) { quantity } } } } } } }';
       const resp = await this.helpers.httpRequest({
         method: 'POST',
         url: 'https://n8n.americanutrition.com/webhook/shopify-admin',
@@ -212,7 +218,7 @@ if (!bloqueado) {
           const continua = String(n.inventoryPolicy || '').toUpperCase() === 'CONTINUE' || inv.tracked === false;
           let qtd = 0;
           for (const l of ((inv.inventoryLevels || {}).nodes || [])) {
-            if (!l || !l.location || !l.location.fulfillsOnlineOrders || l.location.isActive === false) continue;
+            if (!contaOnline(l)) continue;
             const q = Number((((l.quantities || [])[0]) || {}).quantity || 0);
             if (q > 0) qtd += q;
           }

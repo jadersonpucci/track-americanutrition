@@ -23,8 +23,9 @@ if (!Array.isArray(ids)) ids = [ids];
 ids = ids.map(v => String(v).replace(/\D/g, '')).filter(v => v.length >= 10);
 if (!ids.length) { throw new Error('variant_ids obrigatorio'); }
 const gids = ids.map(v => '"gid://shopify/ProductVariant/' + v + '"').join(',');
-// Estoque ONLINE: traz o estoque por location para somar so as que atendem pedidos online (revendedoras ficam de fora).
-const query = '{ nodes(ids:[' + gids + ']) { ... on ProductVariant { id title inventoryPolicy product { title status } inventoryItem { tracked inventoryLevels(first:50) { nodes { location { fulfillsOnlineOrders isActive } quantities(names:["available"]) { quantity } } } } } } }';
+// Estoque ONLINE: traz o estoque por location para somar so as que atendem pedidos online (revendedoras
+// ficam de fora). O nome vem junto porque Mercado Livre Full tambem precisa ficar de fora.
+const query = '{ nodes(ids:[' + gids + ']) { ... on ProductVariant { id title inventoryPolicy product { title status } inventoryItem { tracked inventoryLevels(first:50) { nodes { location { name fulfillsOnlineOrders isActive } quantities(names:["available"]) { quantity } } } } } } }';
 return [{ json: { query: query, ids: ids } }];
 
 // ===================== node "Formatar Estoque" =====================
@@ -38,6 +39,13 @@ if (!nos.length) {
 
 // Disponibilidade = estoque so das locations que atendem pedidos online.
 // availableForSale/inventoryQuantity somam todas as locations (inclusive revendedoras), por isso nao sao usados.
+// Mercado Livre Full esta com fulfillsOnlineOrders = true na Shopify, mas aquele estoque esta no galpao do
+// Mercado Livre e atende SO venda do ML, nunca pedido do site (Jaderson, 11/10/2026). Fica de fora na mao.
+const CANAIS_EXTERNOS = ['mercado livre'];
+const norml = s => String(s == null ? '' : s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+const contaOnline = l => !!l && !!l.location && l.location.fulfillsOnlineOrders === true && l.location.isActive !== false
+  && !CANAIS_EXTERNOS.some(c => norml(l.location.name).indexOf(c) >= 0);
+
 const variantes = [];
 const indisponiveis = [];
 for (const n of nos) {
@@ -47,7 +55,7 @@ for (const n of nos) {
   const continua = String(n.inventoryPolicy || '').toUpperCase() === 'CONTINUE' || it.tracked === false;
   let qtd = 0;
   for (const l of ((it.inventoryLevels || {}).nodes || [])) {
-    if (!l || !l.location || !l.location.fulfillsOnlineOrders || l.location.isActive === false) continue;
+    if (!contaOnline(l)) continue;
     const q = Number((((l.quantities || [])[0]) || {}).quantity || 0);
     if (q > 0) qtd += q;
   }

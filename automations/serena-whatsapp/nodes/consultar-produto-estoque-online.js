@@ -16,12 +16,19 @@
 const d = $input.first().json || {};
 if (d.erro_shopify || !d.encontrado || !Array.isArray(d.produtos) || !d.produtos.length) { return [{ json: d }]; }
 
+// Mercado Livre Full esta com fulfillsOnlineOrders = true na Shopify, mas aquele estoque esta no galpao do
+// Mercado Livre e atende SO venda do ML, nunca pedido do site (Jaderson, 11/10/2026). Fica de fora na mao.
+const CANAIS_EXTERNOS = ['mercado livre'];
+const norml = s => String(s == null ? '' : s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+const contaOnline = lvl => !!lvl && !!lvl.location && lvl.location.fulfillsOnlineOrders === true && lvl.location.isActive !== false
+  && !CANAIS_EXTERNOS.some(c => norml(lvl.location.name).indexOf(c) >= 0);
+
 const ids = [];
 for (const p of d.produtos) { for (const v of (p.variantes || [])) { if (v.variant_id) ids.push('gid://shopify/ProductVariant/' + v.variant_id); } }
 
 const calc = {};
 let fonte = 'total_lojas';
-const Q = 'query($ids:[ID!]!){ nodes(ids:$ids){ ... on ProductVariant { id inventoryPolicy inventoryItem { tracked inventoryLevels(first:50){ nodes{ location{ fulfillsOnlineOrders isActive } quantities(names:["available"]){ quantity } } } } } } }';
+const Q = 'query($ids:[ID!]!){ nodes(ids:$ids){ ... on ProductVariant { id inventoryPolicy inventoryItem { tracked inventoryLevels(first:50){ nodes{ location{ name fulfillsOnlineOrders isActive } quantities(names:["available"]){ quantity } } } } } } }';
 for (let i = 0; i < ids.length; i += 50) {
   let r = null;
   try {
@@ -40,7 +47,7 @@ for (let i = 0; i < ids.length; i += 50) {
     if (inv.tracked === false || String(n.inventoryPolicy || '').toUpperCase() === 'CONTINUE') { calc[vid] = null; continue; }
     let soma = 0;
     for (const lvl of (((inv.inventoryLevels || {}).nodes) || [])) {
-      if (!lvl || !lvl.location || !lvl.location.fulfillsOnlineOrders || lvl.location.isActive === false) continue;
+      if (!contaOnline(lvl)) continue;
       for (const qt of (lvl.quantities || [])) { const q = Number(qt.quantity || 0); if (q > 0) soma += q; }
     }
     calc[vid] = soma;

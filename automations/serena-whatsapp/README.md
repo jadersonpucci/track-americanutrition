@@ -2240,10 +2240,11 @@ Sônia Terezinha, Sônia Cintra, Cristina Matias, MIRIAM PURNHAGEN, Ass. Maracaj
 despacham pedido do site. E `availableForSale`, `inventoryQuantity` e `totalInventory` da Admin API **somam
 todas as locations**: é daí que vinha o erro em todos os casos.
 
-A regra agora é uma só, em todo lugar: soma só location com `fulfillsOnlineOrders` e `isActive`. Troquei
-também a allowlist por nome que eu tinha feito ontem na `consultar_produto` — usar o flag da própria
-Shopify significa que **revendedora nova entra de fora sozinha**, sem ninguém lembrar de editar código.
-`inventoryPolicy CONTINUE` e item sem controle de estoque continuam passando como disponíveis.
+A regra agora é uma só, em todo lugar: soma só location com `fulfillsOnlineOrders` e `isActive`, menos
+`Mercado Livre Full` (ver abaixo). Troquei também a allowlist por nome que eu tinha feito ontem na
+`consultar_produto` — usar o flag da própria Shopify significa que **revendedora nova entra de fora
+sozinha**, sem ninguém lembrar de editar código. `inventoryPolicy CONTINUE` e item sem controle de estoque
+continuam passando como disponíveis.
 
 | Onde | Antes | Agora |
 | --- | --- | --- |
@@ -2276,11 +2277,18 @@ sabendo que tinha gente esperando há 13 dias. Duas coisas foram adicionadas:
   — *"Fila de aviso de estoque parada: 7 pessoa(s) · D3 com K2, A e E - 50.000 UI: 7 pessoa(s) desde
   28/09"*, com a nota de que o que está com revendedora não conta. Tópico 289, uma mensagem por dia.
 
-**Fica em aberto, é decisão sua:** `Mercado Livre Full` está com `fulfillsOnlineOrders = true` e, por isso,
-conta como estoque do site — tanto pra nós quanto pra vitrine da Shopify. Hoje não muda nada (as 78
-unidades que estão lá são de produtos que também têm estoque no CD), mas se um dia sobrar estoque só no ML
-Full o site vai vender algo que sai do galpão do Mercado Livre. Se não é isso que você quer, é desmarcar
-"atender pedidos online" naquela location no admin da Shopify — nenhum código muda.
+**Mercado Livre Full também não conta.** A location está com `fulfillsOnlineOrders = true` na Shopify, mas
+aquele estoque está no galpão do Mercado Livre e atende só venda do ML — o site não despacha de lá
+(Jaderson, 11/10). Como o flag da Shopify não distingue isso, essa location entra numa exceção explícita
+(`CANAIS_EXTERNOS = ['mercado livre']`, por nome normalizado) nos cinco pontos. Efeito medido no ar:
+ImunoFosfo 90 caps 502 → 463, Ômega 3 112 → 80, Green Propolis 107 → 100; nenhum produto virou "esgotado"
+por causa disso, porque os três também têm estoque no CD.
+
+Vale saber que **a vitrine da Shopify continua contando o ML Full** — ela usa o flag, não a nossa exceção.
+Hoje não aparece diferença (os três produtos têm estoque no CD), mas se um dia sobrar estoque só no ML Full
+o site vai aceitar a compra enquanto a Serena, o checkout e o `/webhook/checar-estoque` dizem esgotado.
+Para fechar isso de vez é desmarcar "atender pedidos online" naquela location no admin da Shopify — vale
+conferir antes com quem cuida da integração do ML, porque o flag também participa do roteamento de pedido.
 
 Arquivos: `nodes/consultar-produto-estoque-online.js`, `nodes/checar-estoque-tool.js`,
 `nodes/assinatura-tool.js`, `aviso-estoque.workflow.js`, `../checkout/nodes/fluxo-a-checar-estoque.js`.

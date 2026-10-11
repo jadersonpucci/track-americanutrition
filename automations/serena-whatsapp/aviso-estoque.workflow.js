@@ -74,15 +74,21 @@ const gql = async (query, variables) => {
   if (!dd || (dd.errors && dd.errors.length)) throw new Error('shopify: ' + JSON.stringify((dd || {}).errors || 'sem resposta').slice(0, 200));
   return dd.data;
 };
+// Mercado Livre Full esta com fulfillsOnlineOrders = true na Shopify, mas aquele estoque esta no galpao do
+// Mercado Livre e atende SO venda do ML, nunca pedido do site (Jaderson, 11/10/2026). Fica de fora na mao.
+const CANAIS_EXTERNOS = ['mercado livre'];
+const norml = s => String(s == null ? '' : s).toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').trim();
+const contaOnline = l => !!l && !!l.location && l.location.fulfillsOnlineOrders === true && l.location.isActive !== false
+  && !CANAIS_EXTERNOS.some(c => norml(l.location.name).indexOf(c) >= 0);
 async function estoqueDe(ids) {
-  // Estoque ONLINE: soma so locations com "atender pedidos online" (revendedoras ficam de fora).
+  // Estoque ONLINE: soma so locations que atendem pedido do site (revendedora e ML Full ficam de fora).
   // availableForSale/inventoryQuantity da Admin API somam todas as locations, por isso nao servem aqui.
   const unicos = Array.from(new Set(ids.filter(Boolean).map(String)));
   const mapa = {};
   for (let i = 0; i < unicos.length; i += 20) {
     const lote = unicos.slice(i, i + 20).map(v => 'gid://shopify/ProductVariant/' + v);
     let res = null;
-    try { res = await gql('query($ids:[ID!]!){ nodes(ids:$ids){ ... on ProductVariant { id inventoryPolicy product { status } inventoryItem { tracked inventoryLevels(first:50){ nodes{ location{ fulfillsOnlineOrders isActive } quantities(names:["available"]){ quantity } } } } } } }', { ids: lote }); } catch (e) { res = null; }
+    try { res = await gql('query($ids:[ID!]!){ nodes(ids:$ids){ ... on ProductVariant { id inventoryPolicy product { status } inventoryItem { tracked inventoryLevels(first:50){ nodes{ location{ name fulfillsOnlineOrders isActive } quantities(names:["available"]){ quantity } } } } } } }', { ids: lote }); } catch (e) { res = null; }
     const nodes = ((res || {}).nodes) || [];
     for (const n of nodes) {
       if (!n || !n.id) continue;
@@ -90,7 +96,7 @@ async function estoqueDe(ids) {
       const it = n.inventoryItem || {};
       let qtd = 0;
       for (const l of ((it.inventoryLevels || {}).nodes || [])) {
-        if (!l.location || !l.location.fulfillsOnlineOrders || l.location.isActive === false) continue;
+        if (!contaOnline(l)) continue;
         const q = Number((((l.quantities || [])[0]) || {}).quantity || 0);
         if (q > 0) qtd += q;
       }
@@ -181,7 +187,7 @@ if (pendentes.length && !avisados.length && hora === 9 && new Date().getMinutes(
   }
   const linhas = Object.keys(porProd).map(k => '\\u2022 ' + esc(k) + ': ' + porProd[k].n + ' pessoa(s) desde ' + dia(porProd[k].desde));
   const txt = '\\u23F3 <b>Fila de aviso de estoque parada: ' + pendentes.length + ' pessoa(s)</b>' + NL + linhas.join(NL) + NL + NL +
-    '<i>Estoque da loja online (CD/EUA) zerado \\u2014 o que esta com revendedora nao conta como disponibilidade de venda. Repor para a Serena avisar a fila.</i>';
+    '<i>Estoque da loja online (CD/EUA) zerado \\u2014 revendedora e Mercado Livre Full nao contam como disponibilidade de venda no site. Repor para a Serena avisar a fila.</i>';
   try { await this.helpers.httpRequest({ method: 'POST', url: TG, json: true, timeout: 20000,
     body: { chat_id: '-1003766435449', message_thread_id: 289, text: txt, parse_mode: 'HTML', disable_web_page_preview: true } }); } catch (e6) {}
 }

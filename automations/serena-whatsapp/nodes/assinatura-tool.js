@@ -30,8 +30,14 @@ const cacheVar = {};
 // Ass. Maracajuense), que tem fulfillsOnlineOrders = false e nao despacham pedido do site. Estoque de
 // revendedora nao e disponibilidade de venda: a assinatura renova pela loja online todo mes, entao vale
 // so o que o CD/EUA tem. Mesma regra do /webhook/checar-estoque e da consultar_produto.
+// Mercado Livre Full esta com fulfillsOnlineOrders = true na Shopify, mas aquele estoque esta no galpao do
+// Mercado Livre e atende SO venda do ML, nunca pedido do site: fica de fora na mao.
+const CANAIS_EXTERNOS = ['mercado livre'];
+const norml = (s) => String(s == null ? '' : s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+const contaOnline = (l) => !!l && !!l.location && l.location.fulfillsOnlineOrders === true && l.location.isActive !== false
+  && !CANAIS_EXTERNOS.some((c) => norml(l.location.name).indexOf(c) >= 0);
 async function estoqueOnline(vid) {
-  const Q = 'query($ids:[ID!]!){ nodes(ids:$ids){ ... on ProductVariant { id inventoryItem { tracked inventoryLevels(first:50){ nodes{ location{ fulfillsOnlineOrders isActive } quantities(names:["available"]){ quantity } } } } } } }';
+  const Q = 'query($ids:[ID!]!){ nodes(ids:$ids){ ... on ProductVariant { id inventoryItem { tracked inventoryLevels(first:50){ nodes{ location{ name fulfillsOnlineOrders isActive } quantities(names:["available"]){ quantity } } } } } } }';
   const r = await req({ method: 'POST', url: SHOP, json: true, timeout: 20000, headers: { 'Content-Type': 'application/json' },
     body: { acao: 'atualizar_pedido', endpoint: '../2026-07/graphql.json', metodo: 'POST', payload: { query: Q, variables: { ids: ['gid://shopify/ProductVariant/' + vid] } } } });
   const n = ((((r || {}).dados || {}).data || {}).nodes || [])[0];
@@ -40,7 +46,7 @@ async function estoqueOnline(vid) {
   if (inv.tracked === false) return null; // sem controle de estoque: nunca tratar como esgotado
   let soma = 0;
   for (const l of ((inv.inventoryLevels || {}).nodes || [])) {
-    if (!l || !l.location || !l.location.fulfillsOnlineOrders || l.location.isActive === false) continue;
+    if (!contaOnline(l)) continue;
     const q = Number((((l.quantities || [])[0]) || {}).quantity || 0);
     if (q > 0) soma += q;
   }
