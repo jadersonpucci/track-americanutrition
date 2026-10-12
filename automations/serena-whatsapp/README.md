@@ -2292,3 +2292,44 @@ conferir antes com quem cuida da integração do ML, porque o flag também parti
 
 Arquivos: `nodes/consultar-produto-estoque-online.js`, `nodes/checar-estoque-tool.js`,
 `nodes/assinatura-tool.js`, `aviso-estoque.workflow.js`, `../checkout/nodes/fluxo-a-checar-estoque.js`.
+
+## A Serena não sabia que dia era hoje (12/10)
+
+Caso Lucia (+55 19 97101-3382, pedido AN-15833). No dia **11/10** ela escreveu: *"A previsão de entrega é
+11/10/2026, então ainda está dentro do prazo"* e *"se passar de 11/10 e não chegar, me chama"* — o prazo
+era aquele mesmo dia. E chamou de *"sem nenhuma ocorrência"* um objeto parado em Casa Branca/SP desde
+06/10, cinco dias antes.
+
+Não era alucinação: **a data de hoje não aparecia em nenhum lugar do prompt**. Nem na base de treinamento,
+nem no `system_prompt`, nem no cabeçalho de contexto do Cérebro. Sem isso o modelo chuta, e o histórico
+carregado (20 mensagens, de vários dias) só piora — ele reaproveita o prazo que valia numa mensagem antiga.
+
+Dois consertos, porque os dois problemas são independentes:
+
+**1. A data entra no prompt** (`core-carregar-contexto.sql`). A query que já carrega o `system_prompt`
+agora devolve, no fim dele: `HOJE E SEGUNDA-FEIRA, 12/10/2026 (horário de Brasília)`, mais a regra —
+toda conta de dias sai dessa data, nunca estimar, nunca reaproveitar prazo de mensagem antiga, não dizer
+"dentro do prazo" quando a previsão é hoje, reconhecer o atraso quando passou. Vale para todos os canais,
+porque todos passam pelo Core. Só a data, **sem a hora**: hora mudaria a cada minuto e derrubaria o cache
+de prompt de 1h. Assim o cache quebra uma vez por dia, na virada.
+
+**2. A ferramenta de rastreio faz a conta** (`status-pedido-resumir.js`, v4). Antes devolvia só datas
+absolutas e deixava a aritmética para o modelo. Agora devolve em palavras e em campos:
+
+| Campo | Exemplo |
+| --- | --- |
+| `previsao_situacao` | `era ontem, o prazo passou` · `e HOJE` · `faltam 3 dias` |
+| `dias_para_previsao` | `-1` |
+| `dias_sem_movimentacao` | `6` |
+| `atrasado` | `true` |
+
+O `atrasado` do motor de rastreio **não era confiável**: vinha `false` com a previsão de 11/10 vencida.
+Agora é recalculado aqui. O texto também ganhou o relativo: *"Previsão de entrega: 11/10/2026 (era ontem,
+o prazo passou)"*, *"⚠️ Sem nova movimentação há 6 dias"* e *"06/10, 16:33 (há 6 dias)"* em cada
+movimentação. E um `nota_serena` que proíbe na letra o que ela fez com a Lucia, e manda escalar quando o
+prazo passou.
+
+Testado no sandbox depois de subir: *"Que dia é hoje?"* → *"Hoje é segunda-feira, 12/10/2026"*;
+*"meu pedido AN-15833 ainda não chegou, quando chega?"* → *"A previsão de entrega era 11/10, e o prazo
+passou ontem. Também está há 6 dias sem nova movimentação. Já encaminhei o seu caso para a nossa equipe
+acionar a transportadora"*.
