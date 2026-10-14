@@ -2476,3 +2476,72 @@ Cérebro, mas esse node tem 50 KB e não há chave da API do n8n nesta sessão �
 retranscrever 620 linhas à mão, no cérebro da operação. O veto faz o mesmo efeito de fora e é reversível.
 Quando houver uma chave da API do n8n, a troca de uma linha lá (`norm(semMidia(entrada.texto))`) deixa o
 veto redundante e ele pode sair.
+
+## Adicionar ao pedido: mais frascos sem frete novo e com o desconto do total (14/10)
+
+Regra nova do Jaderson: quem comprou um frasco e quer mais, **antes do pedido sair**, tem direito a não pagar
+frete de novo e a levar o desconto por volume da quantidade **total**, contando o que já comprou. Exemplo
+dele: comprou 1 ImunoFosfo 90 (cheio) e quer +2 — os 3 ativam os 5%, e como o primeiro foi pago cheio, os 5%
+do pedido inteiro saem na cobrança dos dois novos.
+
+**A conta, formalizada.** O invariante é: *o total pago nos dois momentos = valor cheio combinado menos a
+faixa*. As faixas são as mesmas do checkout do site (3 a 5 itens = 5%, 6+ = 10%).
+
+```
+desconto_devido    = faixa(itens_total) × (cheio_original + cheio_novos)
+desconto_a_aplicar = desconto_devido − desconto_já_concedido_no_pedido      (nunca negativo)
+credito_frete      = frete já pago, quando o combinado passa de R$ 250
+a_cobrar           = cheio_novos − desconto_a_aplicar − credito_frete
+```
+
+Seis cenários conferidos, todos fechando o invariante:
+
+| Caso | Faixa | A cobrar | Total dos dois |
+| --- | --- | --- | --- |
+| 1× 327 cheio, +2× 327 (exemplo do Jaderson) | 5% | R$ 604,95 | R$ 931,95 = 981 × 0,95 |
+| 2× 327, +1× 327 | 5% | R$ 277,95 | R$ 931,95 |
+| 5× 327 já com 5%, +1× 327 | 10% | R$ 212,55 | R$ 1.765,80 |
+| 1× 197 com frete R$ 30, +2× 327 (cruza os R$ 250) | 5% | R$ 581,45 | R$ 808,45 |
+| 1× 327 com cupom 10%, +2× 327 | 5% | R$ 637,65 | R$ 931,95 |
+| 1× 327, +1× 327 (só 2 itens) | — | R$ 327,00 | R$ 654,00 |
+
+Duas coisas que a fórmula resolve sozinha e vale notar:
+
+- **Cupom não some.** O clamp em zero garante que ninguém recebe menos do que já tinha: quem usou
+  IMUNOFOSFO (10%) e depois ativa a faixa de 5% fica com o maior dos dois sobre o total combinado, não com a
+  soma dos dois.
+- **O desconto efetivo do segundo pagamento pode passar de 10%** (na linha dos 5 frascos dá 35%), porque o
+  desconto do pedido inteiro cai numa cobrança pequena. No total está certo, mas destoa do teto de 10% que a
+  base impõe à Serena — fica registrado porque uma auditoria do relatório da Shopify vai estranhar.
+
+**A janela é curta.** Medi os últimos 60 pedidos em 14/10: **mediana de 19h até o envio**, 63% saem em 24h,
+88% em 48h. Ou seja, enquanto o cliente paga a diferença o pedido já estaria indo para a rua. Por isso a
+etapa de commit **segura o pedido** com `fulfillmentOrderHold` (trava de verdade no admin, com motivo
+visível, em vez de etiqueta que alguém precisa enxergar) e libera com `fulfillmentOrderReleaseHold`.
+
+**Arquitetura escolhida (decisão dele):** os itens entram **no próprio pedido**, via `orderEditBegin /
+orderEditAddVariant / orderEditAddLineItemDiscount / orderEditCommit`. Uma caixa, um rastreio, frete original
+intacto, nada para o CD juntar à mão. A alternativa (segundo pedido marcado para ir junto) foi descartada.
+
+### O que já está no ar
+
+`[Serena Tool] Adicionar ao Pedido` (n8n `Py5EArJafr069iTL`), POST `/webhook/serena-adicionar-pedido` com
+`acao=simular`: confere elegibilidade e faz a conta, **sem mexer em nada na loja**. Elegível é pedido pago,
+não cancelado, ainda não enviado (fulfillment order `OPEN`) e dentro de 72h; cada recusa volta com a frase
+pronta para a Serena falar. Pedido ainda **não pago** não entra nesse fluxo: a resposta manda refazer o
+pedido inteiro com tudo junto, que já sai com a faixa certa e um frete só — mais simples e sem remendo.
+
+Testado no ar: pedido já enviado → recusa explicando; pedido inexistente → pede o número; sem itens → pede o
+variant_id; e a conta rodada sobre o pedido real AN-16013 (2 itens, R$ 524) + 1 frasco → 3 itens, 5%,
+**a cobrar R$ 284,45**, total dos dois R$ 808,45 = 851 × 0,95.
+
+### O que falta
+
+A etapa `acao=confirmar`: hold no pedido, `orderEdit` acrescentando os itens com o abatimento, cobrança da
+diferença e liberação do hold no pagamento (ou reversão da edição e liberação, se não pagar na janela).
+**O ponto técnico aberto é a cobrança:** nosso PIX/boleto nasce de draft order, e draft pago vira um pedido
+novo — exatamente o que essa arquitetura evita. Para manter tudo num pedido só, a diferença tem que ser
+cobrada direto no Pagar.me e lançada como pagamento no pedido original.
+
+Não foi possível testar o caminho feliz ponta a ponta: **não existe nenhum pedido pago e não enviado na
+loja** no momento (a mediana de 19h cuida disso). O primeiro pedido novo serve de teste real.
