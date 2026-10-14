@@ -2545,3 +2545,33 @@ cobrada direto no Pagar.me e lançada como pagamento no pedido original.
 
 Não foi possível testar o caminho feliz ponta a ponta: **não existe nenhum pedido pago e não enviado na
 loja** no momento (a mediana de 19h cuida disso). O primeiro pedido novo serve de teste real.
+
+## Nota fiscal no pedido (14/10/2026)
+
+**Pedido do Jaderson:** quando o cliente pedir nota fiscal, o pedido dele na Shopify ganha uma tag. A Serena
+já passava o pedido de nota para a equipe, mas a equipe tinha de achar o pedido na mão. Agora é só filtrar
+os pedidos por **`NOTA FISCAL`** (mesmo estilo de `WPP`, `VENDA COMERCIAL`, `MERCADO LIVRE`).
+
+`[Serena] Nota Fiscal no Pedido` (n8n `48bwyfca3QCCojEy`, fonte `nota-fiscal-tag.workflow.js` e
+`nodes/nota-fiscal-marcar.js`), cron a cada 10 min. **Não mexe no Core**: lê as mensagens de cliente já
+gravadas em `serena_mensagens`, como o Avise-me Quando Voltar.
+
+- Detecta `nota fiscal`, `NF`, `NF-e`, `NFS-e`, `DANFE`, `cupom fiscal` e "nota da compra/do pedido/pra
+  reembolso/imposto/CNPJ". "Tirei nota 10" não conta.
+- A descrição que a Entrada escreve para foto/PDF não é o cliente falando (ela mesma costuma dizer "não é
+  nota fiscal"): só a legenda conta. Áudio transcrito conta. Números da equipe ficam de fora.
+- Pedido que recebe a tag: (1) o que o cliente citou (`AN-15902`, `#15902`); (2) senão, o mais recente dele,
+  não cancelado, dos últimos 30 dias; (3) senão — pediu nota **antes** de comprar, como "preciso de DANFE com
+  CNPJ" — fica `aguardando_pedido` e a tag vai no primeiro pedido que ele fizer nos 7 dias seguintes.
+- Erro de Shopify não perde o pedido de nota: fica `aguardando_pedido` e o ciclo seguinte tenta de novo.
+- Controle em `serena_nf_solicitacoes` (uma linha por mensagem: `marcado`, `aguardando_pedido`, `ignorado`,
+  `expirado`). Kill switch `serena_config nf_tag = off`; nome da tag em `nf_tag_nome`.
+
+Primeira rodada no ar: **AN-15902** (Odete, "É possível me mandar a nota fiscal do produto?") marcado e
+conferido na Shopify; a cliente do DANFE com CNPJ ficou aguardando o pedido do boleto; 3 descrições de
+foto ignoradas.
+
+```sql
+select criado_em, telefone, status, pedido, detalhe, left(texto, 80) from serena_nf_solicitacoes
+where status <> 'ignorado' order by id desc limit 30;
+```
