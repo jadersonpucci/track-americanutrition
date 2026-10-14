@@ -397,9 +397,7 @@ export function abrirDetalhe(l) {
 export function statusPill(l) {
   const s = statusOf(l); const map = { aberto: 'blue', parcial: 'amber', atrasado: 'red', pago: 'green', cancelado: 'gray' };
   const nome = s === 'pago' ? (l.tipo === 'receber' ? 'Recebido' : l.tipo === 'transferencia' ? 'Efetuada' : 'Pago') : { aberto: 'Em aberto', parcial: 'Parcial', atrasado: 'Atrasado', cancelado: 'Cancelado' }[s];
-  // atrasado com baixa parcial: deixa claro que parte já foi paga
-  const parcialAtras = s === 'atrasado' && liquidado(l) > 0;
-  return `<span class="pill ${map[s]}">${nome}${parcialAtras ? ' · parcial' : ''}</span>`;
+  return `<span class="pill ${map[s]}" ${s === 'atrasado' && liquidado(l) > 0 ? 'title="Pago em parte"' : ''}>${nome}</span>`;
 }
 
 // ---------- anexos ----------
