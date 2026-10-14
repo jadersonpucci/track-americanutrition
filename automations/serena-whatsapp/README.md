@@ -2333,3 +2333,41 @@ Testado no sandbox depois de subir: *"Que dia é hoje?"* → *"Hoje é segunda-f
 *"meu pedido AN-15833 ainda não chegou, quando chega?"* → *"A previsão de entrega era 11/10, e o prazo
 passou ontem. Também está há 6 dias sem nova movimentação. Já encaminhei o seu caso para a nossa equipe
 acionar a transportadora"*.
+
+## Encaminhou, ninguém respondeu, ela encaminhou de novo — e ficou muda (13/10)
+
+Caso Najla (+55 53 98137-7714), com PIX já em aberto e compra montada:
+
+| Hora | O que aconteceu |
+| --- | --- |
+| 16:58 | Cliente: *"Me passa com humano por favor"* → `escalar_humano` → **silêncio por 12h** |
+| 17:11 · 17:35 · 18:32 | *"Obrigada"*, *"Estou aguardando"*, *"Eu te chamei"*, *"Vc tinha sumido"* — ninguém da equipe respondeu |
+| 20:41 | A fila devolveu a conversa para a Serena (2h sem resposta). Ela pediu desculpa… **e encaminhou de novo** → silêncio por mais 12h |
+| 21:06 | *"Pode enviar outro por favor"*, *"Preciso pagar"* |
+| 21:07 | *"Eu quero o tratamento de choque mais o tratamento para 30 dias, ou seja 3 CAPS ao dia"* → **sem resposta** |
+
+A devolução de 01/10 funcionou como projetada; o que eu não previ foi que **a Serena re-encaminhar também
+re-aplica a mordaça de 12h**. O sticky do workflow dizia só *"se a Serena encaminhar de novo, a atribuição
+fica aberta"* — ficava aberta, e ela calada. Com o cooldown de 24h da devolução, a conversa não voltaria de
+novo até o dia seguinte. Uma cliente com o pedido pronto, dizendo *"preciso pagar"*, ficou sem ninguém.
+
+**Conserto 1, na trava (`core-salvar-conversa.sql`).** Quando o contato tem a nota `atendimento devolvido`
+dos últimos `handoff_sem_pausa_horas` (padrão 24h), um novo `escalar_humano` **registra na fila e alerta a
+equipe, mas não silencia a Serena de novo**. A exceção é `motivo_handoff = 'irritado'`: aí a pausa continua
+valendo, porque com cliente irritado calar é o certo. Testado nos dois ramos contra o banco: devolvido +
+handoff normal → `pausa_wpp: 0` e `fila: 1`; o mesmo contato com motivo irritado → `pausa_wpp: 1`.
+
+**Conserto 2, no prompt** (adendo *Conversa devolvida pela fila*). A nota `atendimento devolvido` já
+aparecia para ela no bloco de fatos do contato — ela só não sabia o que fazer com aquilo. Agora sabe: pede
+desculpa uma vez, resolve o que der, atende a venda, e só escala de novo por motivo **novo** (reclamação,
+estorno, devolução, troca, fraude).
+
+Teste no sandbox, reproduzindo o caso (contato com a nota, cliente pedindo para pagar): `handoff: false`,
+nenhuma pausa nova, e ela foi direto fechar a venda — *"Pra cobrir o choque (6 cápsulas por 7 dias = 42)
+mais 30 dias de manutenção (3 por dia = 90)… 1 ImunoFosfo 90 + 1 ImunoFosfo 42, R$ 524,00"*.
+
+**De quebra, um placeholder vazando.** No primeiro teste ela escreveu *"Peço desculpa pela demora, `{{}}`
+vou resolver"* — o contato de sandbox não tem nome e o modelo inventou um placeholder. Não há `{{` nenhum
+na base nem no prompt; era invenção dele. Adendo novo: sem nome no cabeçalho, escreve sem nome, nunca
+`{{nome}}`, `{{}}`, `[nome]` ou "cliente". Reteste: sem placeholder, e de quebra ela passou a oferecer as
+duas opções (2 frascos por R$ 524 **ou** o Plus 180 por R$ 597).
