@@ -134,7 +134,7 @@ function linha(l, C, S) {
       <div class="r-s">${ct ? `<span>${esc(ct.nome)}</span>` : ''}${cat ? `<span class="r-cat">${catIcon(cat, 14)}${esc(cat.nome)}</span>` : ''}${(l.tags || []).map(t => { const tg = C.tags.find(x => x.nome === t); return tg ? tagChip(tg) : ''; }).join('')}</div></div>
     <div class="r-conta${conta ? '' : ' none'}" title="${esc(conta?.nome || 'Conta definida na baixa')}">${conta ? bankIcon(conta, 22) + `<span>${esc(conta.nome)}</span>` : '<span class="muted">—</span>'}</div>
     <div class="r-d ${st === 'atrasado' ? 'neg' : ''}">${pago ? `<small>${l.tipo === 'receber' ? 'recebido' : 'pago'} em</small>${fmtDate(dataPagamento(l))}` : `${fmtDate(l.vencimento)}<small>${relDate(l.vencimento)}</small>`}</div>
-    <div class="r-v"><span class="amt ${l.tipo === 'receber' ? 'pos' : 'neg'}">${money(parcial ? ab : l.valor)}</span>${parcial ? `<small title="Total ${money(l.valor)} · ${l.tipo === 'receber' ? 'recebido' : 'pago'} ${money(liq)}">de ${money(l.valor)} · ${l.tipo === 'receber' ? 'recebido' : 'pago'} ${money(liq)}</small>` : ''}</div>
+    <div class="r-v"><span class="amt ${l.tipo === 'receber' ? 'pos' : 'neg'}">${money(parcial ? ab : l.valor)}</span>${parcial ? `<small class="nw">de ${money(l.valor).replace('R$\u00a0', '').replace('R$ ', '')}</small><small class="nw">${l.tipo === 'receber' ? 'recebido' : 'pago'} ${money(liq).replace('R$\u00a0', '').replace('R$ ', '')}</small>` : ''}</div>
     <div class="r-st">${statusPill(l)}</div>
     <div class="r-a">${!pago ? `<button class="ibtn pay" data-pay="${l.id}" title="${l.tipo === 'receber' ? 'Receber' : 'Pagar'}">${icon('ti-check')}</button>` : ''}<button class="ibtn" data-menu="${l.id}">${icon('ti-dots-vertical')}</button></div>
   </div>`;
