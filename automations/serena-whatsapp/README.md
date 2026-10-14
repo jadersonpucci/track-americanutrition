@@ -2424,3 +2424,55 @@ acima, nunca pela palavra solta.
 **Fica em aberto, é decisão sua:** se "Fase de Choque" estiver impresso no rótulo ou no cartão de posologia
 que vai na caixa, a troca tem prazo de estoque — não consigo conferir isso daqui. E a equipe fala "fase de
 choque" no WhatsApp e no telefone: se o nome mudar só na Serena, sai desencontrado.
+
+## Foto do cliente ligando as redes de arquivo (14/10)
+
+Apareceu num atendimento: a cliente mandou a **foto do boleto vencido** pedindo um novo, e a Serena anexou a
+**foto do frasco** junto com a resposta. O gatilho foi a descrição da própria imagem dela.
+
+**Como a Entrada grava mídia.** Quando chega foto ou PDF, o `entrada-descrever-imagem-pdf` chama o modelo e
+grava o texto do cliente assim:
+
+```
+[Cliente enviou uma imagem: <descrição escrita pelo nosso modelo>]
+Legenda do cliente: <o que a pessoa digitou junto, se digitou>
+```
+
+Essa descrição cita produto ("foto do rótulo do ImunoFosfo 90 cápsulas, com a tabela nutricional") e as duas
+redes de arquivo casam termos contra o texto do cliente. Resultado: **a descrição que nós mesmos escrevemos
+pedia o arquivo em nome do cliente.**
+
+Importante, porque eu tinha dito o contrário num primeiro momento: **na rede de fotos isso já estava
+coberto** desde 22/09 pela trava `ehMidiaRecebida`, que pega o formato real `[Cliente enviou ...]`. O que
+furou no meu teste foi o texto do teste, que eu escrevi como `[imagem enviada pela cliente: ...]` e não bate
+com a trava. Falso alarme meu. Mas a investigação achou dois furos de verdade:
+
+1. **A rede de documentos do Cérebro não tinha trava nenhuma.** Ela casa `gatilhos` contra `entrada.texto`
+   cru. Uma foto de rótulo, de laudo ou de receita era suficiente para a Serena mandar o rótulo ou o laudo
+   em PDF sem ninguém pedir.
+2. **A trava da rede de fotos era grossa demais:** descartava o turno inteiro quando havia mídia, então quem
+   mandasse uma foto **com legenda pedindo foto** ("tem foto do frasco de 90?") não recebia nada.
+
+**O conserto** mora no `core-montar-resposta.js`, o node pequeno, como já mora a rede de fotos ("mora aqui
+para nao mexer no node grande"):
+
+- `semMidia()` tira **só** o bloco `[Cliente enviou ...]` e o rótulo `Legenda do cliente:`, mantendo a
+  legenda — que é o cliente falando de verdade. Usado na rede de fotos e também no histórico que ela varre.
+- **Veto do arquivo do Cérebro**: quando houve mídia e o documento que o node grande escolheu não se
+  explica nem pela legenda nem pela resposta da Serena, o anexo não vai. O marcador explícito
+  `[[ARQUIVO: x]]` continua passando, porque o prompt exige uma frase de envio antes dele ("estou enviando",
+  "segue", "aqui está") e o veto aceita essas.
+
+| Cliente | Antes | Agora |
+| --- | --- | --- |
+| Foto do rótulo (sem legenda) | mandava o rótulo em PDF | nenhum arquivo |
+| Comprovante de PIX + "já paguei" | mandava a foto do frasco | nenhum arquivo |
+| Foto + legenda "tem foto do frasco de 90?" | **nenhum arquivo** (bloqueado demais) | `foto_imunofosfo_90` |
+
+Os três foram testados no sandbox depois de publicar, e deram exatamente isso.
+
+**Por que o veto em vez da correção na origem:** o certo seria tirar a descrição no `txtCli` da rede do
+Cérebro, mas esse node tem 50 KB e não há chave da API do n8n nesta sessão — atualizar significaria
+retranscrever 620 linhas à mão, no cérebro da operação. O veto faz o mesmo efeito de fora e é reversível.
+Quando houver uma chave da API do n8n, a troca de uma linha lá (`norm(semMidia(entrada.texto))`) deixa o
+veto redundante e ele pode sair.

@@ -21,6 +21,45 @@ function paraWhatsApp(txt) {
 let texto = c.resposta;
 let arquivo = c.arquivo || null;
 
+// MIDIA RECEBIDA NAO E O CLIENTE FALANDO (14/10/2026). A Entrada grava a foto/PDF do cliente como
+// "[Cliente enviou uma imagem: <descricao escrita pelo nosso modelo>]" (+ "Legenda do cliente: ..." quando
+// ha legenda). Essa descricao cita produto ("foto do rotulo do ImunoFosfo 90 capsulas") e liga as redes de
+// arquivo, que casam termos/gatilhos contra o texto do cliente: a Serena mandava foto ou rotulo sem ninguem
+// pedir. semMidia() tira so a descricao e mantem a legenda, que e o cliente falando de verdade.
+const norm = t => String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+const semMidia = t => String(t == null ? '' : t)
+  .replace(/\[\s*(?:cliente|contato)\s+enviou[^\]]*\]/gi, ' ')
+  .replace(/legenda do cliente\s*:/gi, ' ')
+  .replace(/[ \t]{2,}/g, ' ')
+  .trim();
+const temMidia = /\[\s*(?:cliente|contato)\s+enviou/i.test(String(ent.texto || ''));
+const textoCli = semMidia(ent.texto);
+const verboEnvio = t => /(segue|segui|mand|envi|anex|encaminh|aqui esta|aqui vai)/.test(norm(t));
+
+// VETO DO ARQUIVO DO CEREBRO. A segunda rede do node grande casa os gatilhos do documento contra o texto
+// do cliente, e esse texto inclui a descricao da midia. Aqui, quando houve midia e o documento escolhido
+// NAO se explica nem pela legenda do cliente nem pela resposta da Serena, o anexo nao vai. O marcador
+// explicito ([[ARQUIVO: x]]) continua passando porque o prompt exige uma frase de envio antes dele.
+try {
+  if (arquivo && temMidia && !c.sugestao) {
+    const ctx0 = $('Carregar Contexto').first().json || {};
+    let docs0 = [];
+    try { docs0 = Array.isArray(ctx0.documentos) ? ctx0.documentos : JSON.parse(ctx0.documentos || '[]'); } catch (e) { docs0 = []; }
+    const doc0 = docs0.find(d => d && norm(d.chave) === norm(arquivo.chave));
+    if (doc0) {
+      const alvos = []
+        .concat(Array.isArray(doc0.gatilhos) ? doc0.gatilhos : [])
+        .concat(Array.isArray(doc0.termos) ? doc0.termos : [])
+        .concat([doc0.chave, doc0.nome])
+        .map(norm).filter(g => g.length >= 4);
+      const tLimpo = norm(textoCli);
+      const tResp = norm(texto);
+      const justificado = alvos.some(g => tLimpo.indexOf(g) >= 0) || (verboEnvio(texto) && alvos.some(g => tResp.indexOf(g) >= 0));
+      if (!justificado) arquivo = null;
+    }
+  }
+} catch (e) { /* fail-open: na duvida o anexo segue como o Cerebro decidiu */ }
+
 // FOTO DE PRODUTO (21/09/2026). Rede de seguranca: em 21/09 um cliente pediu "Tem foto do produto" e a Serena
 // respondeu "nao tenho como enviar foto por aqui" com o link do site, porque nao havia foto cadastrada. Agora as
 // fotos estao em serena_config.documentos (tipo image) e ela marca [[ARQUIVO: foto_...]] sozinha; se esquecer o
@@ -33,26 +72,23 @@ try {
     let docs = [];
     try { docs = Array.isArray(ctx.documentos) ? ctx.documentos : JSON.parse(ctx.documentos || '[]'); } catch (e) { docs = []; }
     const fotos = docs.filter(d => d && d.chave && d.url && String(d.tipo) === 'image');
-    const norm = t => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-    // 22/09: o cliente mandou o comprovante do PIX e a Entrada guarda isso como
-    // "[Cliente enviou uma imagem: Comprovante de PIX...]". A palavra "imagem" ligava a rede
-    // e ele recebeu a foto do frasco sem pedir. Agora: descricao de midia recebida nunca conta,
-    // e falar em foto so vale se vier junto de um pedido de verdade.
-    const tCli = norm(ent.texto);
-    const ehMidiaRecebida = /(cliente|contato)\s+enviou/.test(tCli) || /^\s*\[?\s*(imagem|audio|video|documento|figurinha|sticker)\b/.test(tCli);
+    // 22/09: o cliente mandou o comprovante do PIX e a palavra "imagem" da descricao ligava esta rede.
+    // Antes o turno inteiro era descartado quando havia midia, o que silenciava quem manda foto COM legenda
+    // pedindo foto. Agora vale a legenda, e so ela.
+    const tCli = norm(textoCli);
     const falaFoto = /\b(foto|fotos|imagem|imagens)\b/.test(tCli) || /(me mostra|mostra o produto|ver o produto|como e o (frasco|produto|pote|vidro))/.test(tCli);
-    const pedeAlgo = /\b(manda|mande|mandar|envia|envie|enviar|tem|teria|quero|queria|posso|pode|poderia|mostra|mostrar|ver|qual|quais|como|existe)\b/.test(tCli) || /\?/.test(String(ent.texto || ''));
-    const pediuFoto = !ehMidiaRecebida && falaFoto && pedeAlgo;
+    const pedeAlgo = /\b(manda|mande|mandar|envia|envie|enviar|tem|teria|quero|queria|posso|pode|poderia|mostra|mostrar|ver|qual|quais|como|existe)\b/.test(tCli) || /\?/.test(textoCli);
+    const pediuFoto = falaFoto && pedeAlgo;
     if (pediuFoto && fotos.length) {
       const bate = txt => {
         const t = norm(txt);
         if (!t) return null;
         return fotos.find(d => (Array.isArray(d.termos) ? d.termos : []).map(norm).filter(g => g.length >= 3).some(g => t.indexOf(g) >= 0)) || null;
       };
-      let doc = bate(ent.texto) || bate(texto);
+      let doc = bate(textoCli) || bate(texto);
       if (!doc) {
         const h = Array.isArray(ctx.historico) ? ctx.historico : [];
-        for (let i = 0; i < h.length && i < 6; i++) { const cand = bate(h[i] && h[i].texto); if (cand) { doc = cand; break; } }
+        for (let i = 0; i < h.length && i < 6; i++) { const cand = bate(semMidia(h[i] && h[i].texto)); if (cand) { doc = cand; break; } }
       }
       if (!doc) doc = fotos.find(d => /_90$/.test(String(d.chave))) || fotos[0];
       if (doc) {
