@@ -126,7 +126,7 @@ export function render(root, { tipo = 'pagar', params = {} } = {}) {
 
 function linha(l, C, S) {
   const st = statusOf(l); const cat = C.cat(l.categoria_id); const ct = C.contato(l.contato_id); const conta = C.conta(l.conta_id);
-  const ab = emAberto(l); const pago = st === 'pago';
+  const ab = emAberto(l); const pago = st === 'pago'; const liq = liquidado(l); const parcial = !pago && st !== 'cancelado' && liq > 0;
   return `<div class="row ${st} ${S.sel.has(l.id) ? 'sel' : ''}" data-id="${l.id}">
     <label class="chk"><input type="checkbox" data-sel="${l.id}" ${S.sel.has(l.id) ? 'checked' : ''} ${pago ? 'disabled' : ''}></label>
     ${catIcon(cat, 34)}
@@ -134,7 +134,7 @@ function linha(l, C, S) {
       <div class="r-s">${ct ? `<span>${esc(ct.nome)}</span>` : ''}${cat ? `<span class="r-cat">${catIcon(cat, 14)}${esc(cat.nome)}</span>` : ''}${(l.tags || []).map(t => { const tg = C.tags.find(x => x.nome === t); return tg ? tagChip(tg) : ''; }).join('')}</div></div>
     <div class="r-conta${conta ? '' : ' none'}" title="${esc(conta?.nome || 'Conta definida na baixa')}">${conta ? bankIcon(conta, 22) + `<span>${esc(conta.nome)}</span>` : '<span class="muted">—</span>'}</div>
     <div class="r-d ${st === 'atrasado' ? 'neg' : ''}">${pago ? `<small>${l.tipo === 'receber' ? 'recebido' : 'pago'} em</small>${fmtDate(dataPagamento(l))}` : `${fmtDate(l.vencimento)}<small>${relDate(l.vencimento)}</small>`}</div>
-    <div class="r-v"><span class="amt ${l.tipo === 'receber' ? 'pos' : 'neg'}">${money(l.valor)}</span>${st === 'parcial' ? `<small>falta ${money(ab)}</small>` : ''}</div>
+    <div class="r-v"><span class="amt ${l.tipo === 'receber' ? 'pos' : 'neg'}">${money(parcial ? ab : l.valor)}</span>${parcial ? `<small title="Total ${money(l.valor)} · ${l.tipo === 'receber' ? 'recebido' : 'pago'} ${money(liq)}">de ${money(l.valor)} · ${l.tipo === 'receber' ? 'recebido' : 'pago'} ${money(liq)}</small>` : ''}</div>
     <div class="r-st">${statusPill(l)}</div>
     <div class="r-a">${!pago ? `<button class="ibtn pay" data-pay="${l.id}" title="${l.tipo === 'receber' ? 'Receber' : 'Pagar'}">${icon('ti-check')}</button>` : ''}<button class="ibtn" data-menu="${l.id}">${icon('ti-dots-vertical')}</button></div>
   </div>`;
