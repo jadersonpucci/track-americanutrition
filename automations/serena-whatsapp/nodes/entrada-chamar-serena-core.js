@@ -25,10 +25,28 @@ try {
   throw new Error('Serena Core indisponivel: ' + e.message);
 }
 
+// RESPOSTA AUTOMATICA DE AUSENCIA (15/10/2026): o WhatsApp Business do cliente responde sozinho ("no momento
+// nao posso atender, retorno assim que possivel"). A Serena fica calada, e esta certo; mas a segunda tentativa
+// e o reprocessamento liam o silencio como falha e mandavam responder "a tudo o que ficou pendente". No caso
+// Sheila (14/10 18:57) ela escreveu para a cliente a propria justificativa de nao responder. Mesmo detector do
+// [Serena WhatsApp] Reprocessar sem resposta: precisa de "estou indisponivel" + "retorno", e cai fora com
+// pergunta ou palavra de compra, para nunca calar um pedido de verdade.
+const normA = t => String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
+function ehAutoResposta(txt) {
+  const t = normA(txt);
+  if (!t || t.length > 600 || /^\[cliente enviou/.test(t) || /\?/.test(t)) return false;
+  if (/\b(quero|queria|link|pedido|frasco|preco|valor|comprar|pix|boleto|cartao|imunofosfo)\b/.test(t)) return false;
+  const ausente = /(nao (estamos|estou) (disponive|disponiv)|nao (posso|podemos|consigo) (atender|responder)|no momento (nao (posso|podemos|estamos|estou)|estamos ocupad|estou ocupad)|estarei ausente|estou ausente|fora do horario|deixe sua mensagem|mensagem automatica|resposta automatica)/.test(t);
+  const retorno = /(assim que (possivel|puder)|em breve|retornare(i|mos)|retorno|responde(rei|remos)|entrare(i|mos) em contato|lhe atenderemos|atenderemos)/.test(t);
+  return ausente && retorno;
+}
+const autoResposta = ehAutoResposta(texto);
+
 // SEGUNDA TENTATIVA (15/09/2026): de vez em quando o Core responde ok sem texto (o modelo encerrou sem
 // escrever; caso Marizel, 14/09 22:43, atendida so pelo reprocessamento 7 min depois). Antes de desistir,
 // pede de novo em modo reprocessar: nao regrava a pergunta e responde a tudo o que ficou pendente.
-if (r && !r.resposta && r.pausada !== true) {
+// Resposta automatica de ausencia nao ganha segunda tentativa: o silencio ali e a resposta certa.
+if (r && !r.resposta && r.pausada !== true && !autoResposta) {
   await new Promise((ok) => setTimeout(ok, 1500));
   try {
     const r2 = await this.helpers.httpRequest({ method: 'POST', url: 'https://n8n.americanutrition.com/webhook/serena-core', json: true, timeout: 180000, body: Object.assign({}, corpo, { modo: 'reprocessar' }) });
@@ -39,6 +57,7 @@ if (r && !r.resposta && r.pausada !== true) {
 
 // pausada = um humano assumiu essa conversa no painel; sem resposta = erro no Core (fica no log)
 if (!r || r.pausada === true) { await soltar(); return []; }
+if (!r.resposta && autoResposta) { await soltar(); return []; }
 if (!r.resposta) { await soltar(); throw new Error('Serena Core sem resposta: ' + (r.erro || 'desconhecido')); }
 
 const resposta = String(r.resposta);

@@ -102,6 +102,19 @@ try {
   }
 } catch (e) { /* fail-open: sem foto, a resposta segue igual */ }
 
+// BASTIDOR NAO VAI PARA O CLIENTE (15/10/2026). Caso Sheila, 14/10 18:57: o WhatsApp Business dela respondeu
+// sozinho a confirmacao do pedido, a Serena ficou calada (certo), o reprocessamento pediu resposta e ela escreveu
+// para a cliente "Essa mensagem e uma resposta automatica de ausencia, entao nao vou responder... Quando a Sheila
+// escrever de verdade, eu retomo o atendimento". Texto que fala da propria decisao de nao responder vira silencio.
+// Conferido sobre 54 mil respostas dos ultimos 30 dias: so esse caso bate.
+try {
+  const n = norm(texto).replace(/\s+/g, ' ');
+  const bastidor = /(resposta|mensagem) automatica de ausencia|troca de mensagens automaticas|mensagens automaticas sem fim|loop de mensagens/.test(n)
+    || /quando (a|o) [a-z]+( [a-z]+)? (escrever|responder|mandar mensagem|voltar a escrever) de verdade/.test(n)
+    || (/\b(nao vou|nao irei|prefiro nao|melhor nao) (responder|retornar|interagir)\b/.test(n) && /(automatic|ausencia|\brobo\b|\bbot\b)/.test(n));
+  if (bastidor && !c.sugestao) { texto = ''; arquivo = null; }
+} catch (e) { /* fail-open */ }
+
 const textoCanais = ['whatsapp', 'site', 'telegram', 'instagram', 'messenger', 'sms'];
 const resposta = textoCanais.indexOf(canal) >= 0 ? paraWhatsApp(texto) : texto;
 
@@ -119,7 +132,7 @@ return [{ json: {
   canal: canal,
   resposta: resposta,
   // lista clicavel e arquivo (PDF/imagem) que a Entrada envia junto com a resposta
-  lista: c.lista || null,
+  lista: texto ? (c.lista || null) : null,
   arquivo: arquivo || null,
   ferramentas: c.ferramentas || [],
   erro: c.erro || null

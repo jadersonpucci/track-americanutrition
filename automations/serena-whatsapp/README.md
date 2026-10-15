@@ -2575,3 +2575,30 @@ foto ignoradas.
 select criado_em, telefone, status, pedido, detalhe, left(texto, 80) from serena_nf_solicitacoes
 where status <> 'ignorado' order by id desc limit 30;
 ```
+
+## Resposta automática do cliente não vira conversa (15/10/2026)
+
+**Caso Sheila (AN-16026), 14/10:** o WhatsApp Business dela respondeu sozinho à confirmação do pedido ("no
+momento não posso atender, assim que possível entrarei em contato"). A Serena ficou calada, o que está certo.
+Mas o silêncio parecia falha para dois mecanismos: a segunda tentativa da Entrada e o `[Serena WhatsApp]
+Reprocessar sem resposta` (`wXN30aD4YloMV2NN`, a cada 3 min), que mandam responder "a tudo o que ficou
+pendente". Às 18:57 ela escreveu para a cliente a própria justificativa: *"Essa mensagem é uma resposta
+automática de ausência, então não vou responder... Quando a Sheila escrever de verdade, eu retomo o
+atendimento."*
+
+Três travas:
+
+1. **Detector de resposta automática** (`ehAutoResposta`, igual na Entrada e no Reprocessar): exige as duas
+   pistas, "não estou disponível / não posso atender / estou ausente / deixe sua mensagem" **e** "retorno /
+   assim que possível / responderemos". Sai fora se tiver `?` ou palavra de compra (quero, link, pedido,
+   frasco, pix, boleto...), para nunca calar um pedido de verdade. Nos últimos 60 dias: pegou os 13 casos
+   claros de ausência e nenhuma mensagem de cliente real ("Agradeço o contato! Quero 2 frascos, me manda o
+   link?" passa).
+2. **Entrada** (`nodes/entrada-chamar-serena-core.js`): resposta automática não ganha segunda tentativa, e o
+   silêncio não é registrado como erro.
+3. **Reprocessar** (`nodes/reprocessar-responder-cada-um.js`): pula resposta automática (`motivo: resposta
+   automatica de ausencia`), sem gastar chamada do Claude.
+4. **Montar Resposta** (Core): última rede para qualquer caminho, inclusive a devolução da fila. Texto em que
+   a Serena fala da própria decisão de não responder ("resposta automática de ausência", "troca de mensagens
+   automáticas", "quando a X escrever de verdade") vira silêncio. Conferido sobre 54 mil respostas dos últimos
+   30 dias: só o caso Sheila bate.
