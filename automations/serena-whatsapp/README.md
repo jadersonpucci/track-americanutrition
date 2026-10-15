@@ -2618,3 +2618,19 @@ pega o `waid` (ou o número exibido; sem DDI vira +55) e entrega como texto:
 `[O cliente compartilhou um contato do WhatsApp: Máse, +55 11 96597-0821]`. O formato foi escolhido para o
 `[Serena] Indicacao` reconhecer sozinho (conferido com o regex dele: extrai `5511965970821`), então contato
 compartilhado entra no mesmo fluxo de indicação que número digitado. Cartão sem telefone continua no caminho antigo.
+
+## D3 50.000 UI de R$ 57 para R$ 77 (15/10/2026)
+
+O preço na Shopify já estava em R$ 77,00 (de R$ 97,00), mas o valor antigo continuava em vários lugares:
+
+| Onde | O que era | Feito |
+|---|---|---|
+| Página do produto (`snippets/d3-50000-lp.liquid`, tema principal) | "A partir de R$57", bloco "Monte o seu kit" com `UNIT=57.00` e R$ 57,00 fixos, barra fixa "a partir de R$ 57" | 5 pontos trocados para 77; o cliente via R$ 57 na página e pagava R$ 77 no checkout |
+| Base da Serena (`serena_config.base_treinamento`) | tabela de preços, ficha do Produto 17, tabela de VIDs | 3 pontos; o site da base (serena.americanutrition.com) não muda desde 03/09, então o banco é a fonte em uso |
+| Base do bot dos grupos (`base_conhecimento` ids 115 e 133) | tabela de preços e ficha do produto | trocado |
+| `catalogo_precos` e `produtos` | 57 | 77 (e compare 97); o sync diário das 7h já ia corrigir o primeiro |
+| Checkout Fluxo A (`DHeud8c0Qkb0EDwS`): catálogo de reserva do guard de preço em "Montar Payload Pagar.me" e "Roteador PIX (Inter?)" | 57 | 77 (só é usado se a tabela falhar) |
+| Bump pós-compra (`NhWfSiqEUPQ1Nf9S`) | catálogo padrão com D3 a 57 (oferecida a R$ 48,45 com 15%) | catálogo gravado pela ação `set_catalog`: D3 a R$ 65,45 (77 com 15%) |
+
+Conferido: página no ar sem nenhum R$ 57, e a Serena responde "R$ 77,00". Não mexi nas 3 assinaturas
+pausadas com a D3 (valor do ciclo calculado sobre R$ 57): reajuste de assinante é decisão comercial.
