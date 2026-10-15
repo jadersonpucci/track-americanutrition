@@ -2586,7 +2586,7 @@ pendente". Às 18:57 ela escreveu para a cliente a própria justificativa: *"Ess
 automática de ausência, então não vou responder... Quando a Sheila escrever de verdade, eu retomo o
 atendimento."*
 
-Três travas:
+Um detector e três travas:
 
 1. **Detector de resposta automática** (`ehAutoResposta`, igual na Entrada e no Reprocessar): exige as duas
    pistas, "não estou disponível / não posso atender / estou ausente / deixe sua mensagem" **e** "retorno /
