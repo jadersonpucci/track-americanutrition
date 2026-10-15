@@ -2602,3 +2602,19 @@ Um detector e três travas:
    a Serena fala da própria decisão de não responder ("resposta automática de ausência", "troca de mensagens
    automáticas", "quando a X escrever de verdade") vira silêncio. Conferido sobre 54 mil respostas dos últimos
    30 dias: só o caso Sheila bate.
+
+## Contato compartilhado vira número (15/10/2026)
+
+**Caso Rita, 15/10 10:27:** ela pediu para a gente orientar a irmã e mandou o **cartão de contato** do
+WhatsApp. A Triagem tratava `contactMessage` como mídia ilegível ("[O cliente enviou um contato que nao
+consigo abrir...]") e a Serena pediu o número em texto. Mas o cartão traz o número no vCard:
+
+```
+item1.TEL;waid=5511965970821:+55 11 96597-0821
+```
+
+Agora a Triagem (`nodes/entrada-triagem.js`) lê `contactMessage` e `contactsArrayMessage` (até 5 cartões),
+pega o `waid` (ou o número exibido; sem DDI vira +55) e entrega como texto:
+`[O cliente compartilhou um contato do WhatsApp: Máse, +55 11 96597-0821]`. O formato foi escolhido para o
+`[Serena] Indicacao` reconhecer sozinho (conferido com o regex dele: extrai `5511965970821`), então contato
+compartilhado entra no mesmo fluxo de indicação que número digitado. Cartão sem telefone continua no caminho antigo.

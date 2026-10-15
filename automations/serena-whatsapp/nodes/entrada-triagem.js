@@ -70,6 +70,36 @@ if (inner.videoMessage && !inner.videoMessage.gifPlayback) {
 if (inner.audioMessage) {
   return [{ json: Object.assign({}, base, { tipo: 'audio', texto: '', mimetype: inner.audioMessage.mimetype || 'audio/ogg' }) }];
 }
+// CONTATO COMPARTILHADO (15/10/2026): o cartao de contato do WhatsApp traz o numero no vCard
+// ("item1.TEL;waid=5511965970821:+55 11 96597-0821"). Antes caia em "nao consigo abrir" e a Serena pedia o
+// numero em texto (caso Rita, 15/10 10:27, mandando o contato da irma para a gente orientar). Agora vira texto
+// com o numero no formato "+55 11 96597-0821", que a Serena le e o [Serena] Indicacao reconhece sozinho.
+const cartoes = inner.contactMessage ? [inner.contactMessage]
+  : ((inner.contactsArrayMessage && Array.isArray(inner.contactsArrayMessage.contacts)) ? inner.contactsArrayMessage.contacts : []);
+if (cartoes.length) {
+  const fmt = n => (n.length === 12 || n.length === 13) && n.indexOf('55') === 0
+    ? '+55 ' + n.slice(2, 4) + ' ' + n.slice(4, n.length - 4) + '-' + n.slice(-4)
+    : '+' + n;
+  const lidos = cartoes.slice(0, 5).map(cc => {
+    const v = String((cc && cc.vcard) || '');
+    const nomeC = String((cc && cc.displayName) || (v.match(/^FN:(.*)$/m) || [])[1] || '').trim().slice(0, 60);
+    const tels = [];
+    v.split(/\r?\n/).forEach(l => {
+      if (!/^(item\d+\.)?TEL/i.test(l)) return;
+      const waid = (l.match(/waid=(\d+)/i) || [])[1];
+      const exibido = String(l.split(':').slice(1).join(':'));
+      let n = waid || exibido.replace(/\D/g, '');
+      // sem waid e sem +DDI: numero nacional, entao e do Brasil
+      if (!waid && n.length >= 10 && n.length <= 11 && !/^\s*\+/.test(exibido)) n = '55' + n;
+      if (n && n.length >= 10 && n.length <= 15 && tels.indexOf(n) < 0) tels.push(n);
+    });
+    return { nome: nomeC, tels: tels };
+  }).filter(x => x.tels.length);
+  if (lidos.length) {
+    const desc = lidos.map(x => (x.nome || 'sem nome') + ', ' + x.tels.map(fmt).join(' / ')).join('; ');
+    return [{ json: Object.assign({}, base, { tipo: 'texto', texto: (texto ? texto + '\n' : '') + '[O cliente compartilhou um contato do WhatsApp: ' + desc + ']' }) }];
+  }
+}
 if (!texto) {
   if (inner.stickerMessage) return [];
   const midia = inner.videoMessage ? 'um video' : doc ? 'um documento (' + String(doc.fileName || doc.mimetype || 'arquivo') + ')' : inner.locationMessage ? 'uma localizacao' : inner.contactMessage ? 'um contato' : '';
