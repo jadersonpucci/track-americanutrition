@@ -152,7 +152,34 @@ if (acao === 'trocar') {
   await telegram('\u{1F501} <b>ASSINATURA TROCADA pela Serena</b>', 'Novo plano: ' + esc(itensNovos) + ' \u00b7 ' + esc(brlc(novo)) + ' (de ' + esc(brlc(cheio)) + ', -' + desc + '%)' + (reativa ? '\nReativada. ' : '\n') + 'Proximo ciclo: ' + esc(prox3));
   return [{ json: { sucesso: true, assinatura: Object.assign(resumo('ativa'), { itens: itensNovos, valor: brlc(novo), valor_cheio: brlc(cheio), proximo_ciclo: prox3 }), resultado: 'Assinatura trocada para ' + itensNovos + ': ' + brlc(novo) + ' a cada ' + (a.ciclo_dias || 30) + ' dias (' + desc + '% de assinante ja aplicado)' + (reativa ? ', reativada' : '') + '. Proxima renovacao: ' + prox3 + '.', nota_serena: 'Confirme ao cliente o novo item, o valor com desconto e a data da proxima renovacao. Se ele quiser o item novo ja agora, gere PIX ou boleto com desconto_pct=' + desc + ' e cupom ASSINANTE.' } }];
 }
+// PRECO TRAVADO (16/10/2026, decisao do Jaderson): quando a loja aumenta o preco, a assinatura continua no
+// valor antigo. Se o cliente pedir para cancelar, a Serena avisa ANTES que perde esse valor: voltando depois,
+// paga o preco novo. Pausar mantem o valor travado, entao e a alternativa para quem so quer dar um tempo.
+// Caso que originou: D3 50.000 UI de R$ 57 para R$ 77 (15/10/2026), 3 assinaturas pausadas a R$ 51,30.
+let precoTravado = null;
+if (acao === 'cancelar' && a.status !== 'cancelada') {
+  try {
+    let antigo = 0, hoje = 0;
+    const subiram = [];
+    for (const i of itensAtuais) {
+      const q = Math.max(1, parseInt(i.quantity || 1, 10) || 1);
+      const pAnt = Number(i.price || 0);
+      const v = await variante(i.variant_id);
+      if (!v || !(pAnt > 0) || !(v.preco > 0)) { antigo = 0; break; }
+      antigo += Math.round(pAnt * 100) * q;
+      hoje += Math.round(v.preco * 100) * q;
+      if (v.preco > pAnt + 0.009) subiram.push(v.titulo + ' de ' + brlc(Math.round(pAnt * 100)) + ' para ' + brlc(Math.round(v.preco * 100)));
+    }
+    if (antigo > 0 && hoje > antigo && subiram.length) {
+      const descT = Number(a.desconto_pct || 10) || 10;
+      precoTravado = { valor_travado: brlc(a.valor_centavos), valor_se_voltar_assinando: brlc(Math.round(hoje * (100 - descT) / 100)), valor_avulso_hoje: brlc(hoje), aumentos: subiram };
+    }
+  } catch (e) { precoTravado = null; }
+}
 if (!confirmado) {
+  if (precoTravado) {
+    return [{ json: { sucesso: false, precisa_confirmacao: true, preco_travado: precoTravado, assinatura: resumo(), resultado: 'ATENCAO, PRECO TRAVADO: o preco da loja subiu (' + precoTravado.aumentos.join('; ') + '), mas a assinatura deste cliente continua no valor antigo, ' + precoTravado.valor_travado + ' por ciclo. Antes de cancelar, avise com calma: se cancelar e quiser voltar depois, a assinatura sai por ' + precoTravado.valor_se_voltar_assinando + ' por ciclo (ou ' + precoTravado.valor_avulso_hoje + ' na compra avulsa). Se ele so quer dar um tempo, ofereca PAUSAR: pausada, o valor antigo continua garantido. Sem pressionar: se ele mantiver o pedido de cancelar, repita a chamada com confirmado=true.' } }];
+  }
   return [{ json: { sucesso: false, precisa_confirmacao: true, assinatura: resumo(), resultado: 'Antes de ' + acao + ', explique ao cliente o que muda e pergunte se ele confirma. Repita a chamada com confirmado=true SOMENTE depois de um sim explicito.' } }];
 }
 if (acao === 'cancelar') {

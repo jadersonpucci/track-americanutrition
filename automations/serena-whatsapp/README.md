@@ -2632,5 +2632,30 @@ O preço na Shopify já estava em R$ 77,00 (de R$ 97,00), mas o valor antigo con
 | Checkout Fluxo A (`DHeud8c0Qkb0EDwS`): catálogo de reserva do guard de preço em "Montar Payload Pagar.me" e "Roteador PIX (Inter?)" | 57 | 77 (só é usado se a tabela falhar) |
 | Bump pós-compra (`NhWfSiqEUPQ1Nf9S`) | catálogo padrão com D3 a 57 (oferecida a R$ 48,45 com 15%) | catálogo gravado pela ação `set_catalog`: D3 a R$ 65,45 (77 com 15%) |
 
-Conferido: página no ar sem nenhum R$ 57, e a Serena responde "R$ 77,00". Não mexi nas 3 assinaturas
-pausadas com a D3 (valor do ciclo calculado sobre R$ 57): reajuste de assinante é decisão comercial.
+Conferido: página no ar sem nenhum R$ 57, e a Serena responde "R$ 77,00". As 3 assinaturas pausadas com a
+D3 continuam no valor antigo (decisão do Jaderson, ver a seção seguinte).
+
+## Preço travado na assinatura: aviso antes de cancelar (16/10/2026)
+
+Decisão do Jaderson: quando a loja aumenta o preço, quem já assina **continua pagando o valor antigo**. Se o
+assinante pedir para cancelar, a Serena avisa antes que ele perde esse valor.
+
+Fica na ferramenta de assinatura (`[Serena Tool] Assinatura`, `WfxlFkDA9U9yYeR7`, nó "Gerenciar",
+`nodes/assinatura-tool.js`). Quando chega `acao:'cancelar'` sem `confirmado`, ela compara o preço gravado em
+cada item da assinatura (`items[].price`) com o preço de hoje na Shopify. Se algum item subiu, a resposta
+traz `preco_travado` e uma instrução para a Serena:
+
+- o valor travado da assinatura por ciclo;
+- quanto custa se ele voltar a assinar depois (preço novo com o desconto de assinante);
+- quanto custa na compra avulsa;
+- a alternativa: **pausar** mantém o valor antigo garantido.
+
+Sem pressão: se o cliente insistir, a Serena repete a chamada com `confirmado=true` e cancela normalmente.
+Sem aumento, o fluxo é o de sempre (só a confirmação).
+
+Testado no webhook de produção, sem confirmar (nada muda no banco):
+
+| Assinante | Travado | Se voltar assinando | Avulso hoje |
+|---|---|---|---|
+| PATRICIA PAZ (1x D3 50.000 UI) | R$ 51,30 | R$ 69,30 | R$ 77,00 |
+| Fátima Castilho | R$ 120,60 | R$ 138,60 | R$ 154,00 |
