@@ -389,8 +389,11 @@ export function abrirDetalhe(l) {
         onLer: pdfAnexo && !linhaBol && !l.pix_codigo ? async () => { const x = await db.backend.anexoGet(pdfAnexo.id); const r = await lerBoletoArquivo({ base64: x.base64, nome: x.nome, tipo: x.tipo || pdfAnexo.tipo || '' }); if (r?.linha || r?.pix) { await db.upsert('lancamentos', { ...l, boleto_linha: r.linha || null, pix_codigo: r.pix || null }); l.boleto_linha = r.linha || null; l.pix_codigo = r.pix || null; } return r; } : null });
       d.footer.append(bBol);
     }
-    if (l.tipo === 'pagar' && ct?.pix) { const bPix = h(`<button class="btn secondary" title="Pagar com PIX">${icon('ti-qrcode')}PIX</button>`); bPix.onclick = async () => { const { modalPix } = await import('../pix.js'); modalPix({ lanc: l, contato: ct, valor: emAberto(l), onPago: () => { d.close(); abrirBaixa(l, { escolherConta: true }); } }); }; d.footer.append(bPix); }
-    const bPay = h(`<button class="btn primary">${icon(l.tipo === 'receber' ? 'ti-arrow-down-left' : 'ti-check')}${l.tipo === 'receber' ? 'Receber' : 'Pagar'}</button>`); bPay.onclick = () => { d.close(); abrirBaixa(l); }; d.footer.append(bPay);
+    // fornecedor com chave PIX: "Pagar" já abre o QR Code com a chave e o valor em aberto; "Já paguei · dar baixa" segue para a baixa
+    const comPix = l.tipo === 'pagar' && !!ct?.pix;
+    const bPay = h(`<button class="btn primary">${icon(l.tipo === 'receber' ? 'ti-arrow-down-left' : comPix ? 'ti-qrcode' : 'ti-check')}${l.tipo === 'receber' ? 'Receber' : comPix ? 'Pagar com PIX' : 'Pagar'}</button>`);
+    bPay.onclick = () => { if (comPix) { d.close(); pagarComPix(l, ct); } else { d.close(); abrirBaixa(l); } }; d.footer.append(bPay);
+    if (comPix) { const bBaixa = h(`<button class="btn ghost" title="Registrar a baixa sem gerar o PIX">${icon('ti-check')}Só dar baixa</button>`); bBaixa.onclick = () => { d.close(); abrirBaixa(l); }; d.footer.insertBefore(bBaixa, bPay); }
   }
   return d;
 }
@@ -501,4 +504,13 @@ function acharContato(nome) {
   const b = norm(nome); if (b.length < 4) return null;
   const cts = app.ctx().contatos.filter(c => !c.arquivado && c.deletado_em == null);
   return cts.find(c => norm(c.nome) === b) || cts.find(c => { const n = norm(c.nome); return n.length >= 5 && (b.includes(n) || n.includes(b)); }) || null;
+}
+
+// Pagamento pela chave PIX do contato: QR Code + copia e cola com o valor em aberto; se não houver chave, vai direto para a baixa
+export async function pagarComPix(l, ct = null) {
+  const C = app.ctx(); ct = ct || C.contato(l.contato_id);
+  if (l.tipo !== 'pagar' || !ct?.pix) return abrirBaixa(l);
+  const { modalPix } = await import('../pix.js');
+  const m = modalPix({ lanc: l, contato: ct, valor: emAberto(l), onPago: () => abrirBaixa(l, { escolherConta: true }) });
+  if (!m) abrirBaixa(l);
 }

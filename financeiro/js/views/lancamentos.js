@@ -4,7 +4,7 @@ import { db, prefs } from '../db.js';
 import { h, icon, bankIcon, catIcon, avatar, chips, combobox, menu, emptyState, toast, confirm, on, tagChip } from '../ui.js';
 import { money, today, addDays, monthStart, monthEnd, addMonths, fmtDate, fmtMonth, relDate, esc, sum, round2, toCSV, download, groupBy, daysBetween } from '../utils.js';
 import { statusOf, emAberto, liquidado, filtrar, resumoPeriodo, FORMAS, dataPagamento } from '../model.js';
-import { abrirLancamento, abrirBaixa, abrirDetalhe, statusPill, excluirLancamento, estornarBaixa } from './form-lancamento.js';
+import { abrirLancamento, abrirBaixa, abrirDetalhe, statusPill, excluirLancamento, estornarBaixa, pagarComPix } from './form-lancamento.js';
 
 const state = { pagar: null, receber: null };
 function defState(tipo) { const t = today(); return { tipo, periodo: 'mes', de: monthStart(t), ate: monthEnd(t), status: [], conta: null, categoria: null, contato: null, centro: null, tag: null, q: '', ordem: 'vencimento', agrupar: 'dia', sel: new Set(), mostrarPagos: true }; }
@@ -108,7 +108,7 @@ export function render(root, { tipo = 'pagar', params = {} } = {}) {
     S.ultimo = i.dataset.sel;
   });
   on(lw, 'change', 'input[data-sel]', (e, i) => { i.checked ? S.sel.add(i.dataset.sel) : S.sel.delete(i.dataset.sel); i.closest('.row').classList.toggle('sel', i.checked); paintBulk(); });
-  on(lw, 'click', '[data-pay]', (e, b) => { e.stopPropagation(); abrirBaixa(app.lanc(b.dataset.pay)); });
+  on(lw, 'click', '[data-pay]', (e, b) => { e.stopPropagation(); const l = app.lanc(b.dataset.pay); const ct = app.ctx().contato(l.contato_id); if (l.tipo === 'pagar' && ct?.pix) pagarComPix(l, ct); else abrirBaixa(l); });
   on(lw, 'click', '[data-menu]', (e, b) => { e.stopPropagation(); const l = app.lanc(b.dataset.menu); const s = statusOf(l); menu(b, [
     s !== 'pago' ? { label: isRec ? 'Receber' : 'Pagar', icon: 'ti-check', onClick: () => abrirBaixa(l) } : { label: 'Estornar baixa', icon: 'ti-arrow-back-up', onClick: () => estornarBaixa(l) },
     { label: 'Editar', icon: 'ti-pencil', onClick: () => abrirLancamento(l) }, { label: 'Duplicar', icon: 'ti-copy', onClick: () => abrirLancamento(null, { tipo, defaults: { ...l, id: undefined, baixas: [], status: 'aberto', parcela_num: null, parcela_total: null, grupo_parcelas_id: null, recorrencia_id: null, recorrencia: null, conciliado_fitid: null, vencimento: today() } }) },
