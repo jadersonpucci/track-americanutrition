@@ -130,3 +130,25 @@ A base da Serena (`serena_config.base_treinamento`) agora explica o Pix Automát
 não é automático". Ela também passou a escalar para a equipe o pedido de converter uma compra recente em
 assinatura, em vez de dizer que é impossível. Backup em scratchpad (`bkp_base_pixauto_20261016.json`). Se o
 site da base mudar, o sync sobrescreve o banco e estas regras precisam ir para o site.
+
+### Correção do número com DDD 55 (16/10/2026)
+
+Todos os fluxos de assinatura punham o 55 só quando o número não começava com 55. Quem é do RS (DDD 55) e
+estava gravado como `55981111480` recebia em `+55 98111-1480`, que não existe. A correção ficou em três pontos:
+
+- **Trava no banco** (`trg_assinaturas_whatsapp_ddd55` em `assinaturas`, antes de insert/update): com entrega no
+  RS (estado RS ou CEP começando com 9), número de 11 dígitos `559…` vira `55559…`, e de 10 dígitos `55[6-9]…`
+  ganha o 55 e o 9 do celular. Assim cron PIX, convite do Pix Automático, confirmação da autorização e dunning
+  recebem o número já com o país, sem mexer em cada um. Fora do RS a trava não mexe (ver abaixo).
+- **`AN - WhatsApp Avulso`** (`790457qKCPet4kOc`, nó Prep): número de 10 ou 11 dígitos é nacional e sempre ganha
+  o 55; 12 ou 13 dígitos passa como veio. Cobre a mensagem de ativação da assinatura PIX, que usa o número do
+  checkout antes de gravar.
+- **`AN - Assinatura Criar (Checkout)`** (`ZkCJD7EQcD77KBHm`, nó Montar WhatsApp BV): mesma regra nas
+  boas-vindas da assinatura no cartão, que vão direto para a Evolution.
+
+Dados corrigidos (backup em scratchpad, `bkp_whatsapp_assinaturas_20261016.json`): Rosangela, Joel e
+Alessandra (RS, confirmados por mensagens recebidas do +55 55) ficaram com o 55 na frente. **Número truncado:**
+fora do RS, os 11 dígitos começando com 55 são de cliente que digitou 55 no campo de DDD do checkout, e o
+número perdeu os últimos dígitos. Quatro foram corrigidos pelo telefone completo que estava na Shopify (Maura,
+Gilberto, Rogério, Francisco). Luiz Fernando (pausada), Antonio Barbosa (pausada) e Ricardo Mocelin (ativa,
+cartão) não têm o número certo em lugar nenhum.
