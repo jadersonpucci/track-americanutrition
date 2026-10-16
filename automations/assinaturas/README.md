@@ -93,3 +93,40 @@ Dois ajustes na própria página, que só apareceram agora porque o PIX de assin
   assinatura não tem draft. Agora, quando não há `draft_id`, ele confere `assinatura_cobrancas` pelo
   `pix_order_id` — é onde a **AN - Assinatura PIX Confirmar** marca pago. Sem isso a página ficaria
   para sempre em "aguardando", mesmo depois de o cliente pagar.
+
+## Pix Automático para toda a base PIX e conversão de compra em assinatura (16/10/2026)
+
+O Pix Automático (Inter, `n8n z18gprrjyTy8noJC`, rotas `pix-auto-*`) já estava pronto desde 18/09: com a
+assinatura `pix_auto_ativo`, o cron agenda o débito (`gerar_auto`, nó "Agendar Cobr Auto") em vez de mandar
+QR. O convite saía em dois momentos: na adesão (`pix_auto_novas = on`, mensagem de ativação) e na
+renovação por QR (nó "Pos Gerar", a partir de 12/10). Quem assinou antes de 22/09 e ainda não tinha
+renovado depois de 12/10 nunca recebeu convite: nenhuma das 29 PIX ativas tinha autorizado.
+
+A pedido do Jaderson, o convite foi para todas as PIX ativas sem convite aberto: **18 clientes**, pelo
+`POST /webhook/pix-auto-migrar` com `enviar:false` (cria a recorrência no Inter, fixa `dia_fixo` e devolve
+a página) e envio pelo `wpp-avulso`, 15 s entre um e outro, com registro em `serena_mensagens` para a
+Serena ter o contexto se o cliente responder.
+
+- Ficaram de fora Marcia auxiliadora e Maura Paschoal: PIX de 14/10 em aberto, 2º lembrete hoje. Quando
+  pagarem, o convite vai na próxima renovação.
+- Os 9 que já tinham convite aberto (adesões de 12 a 16/10 e renovações de 15 e 16/10) não receberam de novo.
+- As 31 pausadas não receberam: a recorrência nasce com `dataInicial = proximo_ciclo`, que nelas está no
+  passado. O convite vai se e quando forem reativadas e renovarem.
+- **Pegadinha do número:** o `pix-auto-migrar` (e o "Pos Gerar") só põe o 55 quando o número não começa
+  com 55, então quem é do DDD 55 (RS) e está gravado sem o código do país recebe num número errado. Caso
+  Rosangela Gonçalves (`55981111480`, real `+55 55 98111-1480`): enviado à mão para o número certo.
+
+**Conversão de compra em assinatura (caso Clerton Franca, AN-16058).** Ele pagou ImunoFosfo 90 no PIX com
+o cupom de 10% (R$ 294,30, igual ao 1º mês da assinatura) e pediu os "descontos de 6 meses". Feito na mão,
+igual ao que o `AN - Assinatura PIX Confirmar` grava:
+
+1. linha em `assinaturas` (PIX, R$ 294,30 de R$ 327,00, `desconto_primeira`, endereço e CPF do pedido,
+   `proximo_ciclo` 15/11, `dia_fixo` 15, `ultimo_pedido_shopify` AN-16058);
+2. `assinatura_cobrancas` do ciclo 16/10 como pago (o pedido conta como 1º pagamento, então o 30% cai no 6º);
+3. `assinatura_elegibilidade`, tag `ASSINATURA` no pedido e `respond-set-link` (link do portal);
+4. `pix-auto-migrar` com `enviar:false` e uma mensagem só, juntando a confirmação e o link do Pix Automático.
+
+A base da Serena (`serena_config.base_treinamento`) agora explica o Pix Automático. Antes dizia que "no PIX
+não é automático". Ela também passou a escalar para a equipe o pedido de converter uma compra recente em
+assinatura, em vez de dizer que é impossível. Backup em scratchpad (`bkp_base_pixauto_20261016.json`). Se o
+site da base mudar, o sync sobrescreve o banco e estas regras precisam ir para o site.
