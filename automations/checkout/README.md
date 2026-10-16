@@ -40,3 +40,24 @@ Testes (19/09): gate com o e-mail do fraudador → `status: blocked`; Fluxo A co
 
 Fica para a conta Pagar.me (não dá para fazer daqui): contratar o Antifraude (ClearSale/Konduto) e, se quiser transferir
 a responsabilidade do chargeback ao emissor, o 3DS 2.0, que exige integração no front do checkout.
+
+## WhatsApp com +55 no campo de DDD (16/10/2026)
+
+O campo "WhatsApp (DDD + número)" tinha máscara de 11 dígitos, e o checkout usa os 2 primeiros como DDD. Quem
+digitava ou colava o número com o código do país (`+55 21 99923-0800`) ficava com `(55) 21999-2308`: DDD 55 e
+número truncado. Esse número passava na validação (55 é um DDD válido, do RS), e o cliente nunca recebia
+WhatsApp nenhum (PIX da renovação, convite do Pix Automático, rastreio). Pelo menos 13 assinaturas foram
+gravadas assim.
+
+O HTML do checkout fica no static data do workflow `Deploy / Servir Checkout` (`AW9QQoFCsunFLsQh`), publicado
+por `POST /webhook/checkout-deploy` (header `x-deploy-key`; `{"action":"get"}` baixa, `{"html":...}` publica e
+guarda a versão anterior, `{"action":"rollback"}` volta). Duas mudanças, marcadas com `DDD-55-FIX`:
+
+- `mascaraTel`: com mais de 11 dígitos começando em 55, o 55 é do país e sai antes de cortar em 11.
+  `+55 21 99923-0800` digitado ou colado vira `(21) 99923-0800`.
+- `coletarDados`: WhatsApp começando em 55 com entrega fora do RS gera um aviso na primeira tentativa de
+  finalizar ("digite só DDD + número, sem o 55 do país"). Quem tem DDD 55 de verdade e mora em outro estado
+  finaliza de novo e passa, para não perder a venda. Com entrega no RS, passa direto.
+
+Testado no Chromium com as requisições externas bloqueadas, antes e depois do deploy. A versão anterior
+reproduz o erro (`(55) 21999-2308`). Publicado em 16/10 às 11h27; o backup automático é a versão de 19/09.

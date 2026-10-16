@@ -152,3 +152,8 @@ fora do RS, os 11 dígitos começando com 55 são de cliente que digitou 55 no c
 número perdeu os últimos dígitos. Quatro foram corrigidos pelo telefone completo que estava na Shopify (Maura,
 Gilberto, Rogério, Francisco). Luiz Fernando (pausada), Antonio Barbosa (pausada) e Ricardo Mocelin (ativa,
 cartão) não têm o número certo em lugar nenhum.
+
+Maura Paschoal (PIX, ciclo de 14/10, R$ 294,30) não tinha recebido a renovação nem os dois lembretes, que foram
+para o número truncado. Em 16/10 recebeu no número certo a página do Pix (`serena_pix_links` token
+`amv3tzzozcjxeig`, válida até 20/10) e o copia e cola, registrados na conversa dela. A origem do número truncado
+foi corrigida no checkout (ver `automations/checkout/README.md`, "WhatsApp com +55 no campo de DDD").
