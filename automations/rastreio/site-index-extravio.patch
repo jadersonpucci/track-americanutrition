@@ -1,0 +1,52 @@
+--- a/index.html
++++ b/index.html
+@@ -51,6 +51,9 @@
+ .tag{display:inline-flex;align-items:center;gap:6px;margin-top:14px;padding:7px 12px;border-radius:99px;font-size:13px;font-weight:600}
+ .tag.warn{background:#FFF3DC;color:var(--amber)}
+ .tag.usa{background:#EEF3FC;color:var(--blue);margin-left:6px}
++.tag.lost{background:#FDECEC;color:var(--red)}
++.reenv{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:18px;padding:14px 18px;border-radius:16px;background:var(--blue);color:#fff;font-size:16px;font-weight:700;text-decoration:none}
++.reenv i{font-size:20px}
+ .carousel{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;margin:30px -22px 0;padding:14px 22px 4px;scrollbar-width:none}
+ .carousel::-webkit-scrollbar{display:none}
+ .card{flex:0 0 86%;scroll-snap-align:center;border-radius:32px;min-height:250px;position:relative;overflow:hidden;padding:24px}
+@@ -354,26 +357,36 @@
+     waiting:[['Aguardando',esc(artTransp)],`Esse código ainda não teve movimentação. Pode levar até 24h depois da postagem pra aparecer ${esc(ehCorreios?'nos Correios':'na '+transpCurto)}. Confira se digitou igual ao que recebeu.`],
+     returned:[['Voltou','pra gente'],'O pacote retornou ao remetente. Fale com a gente pra combinar o reenvio.']
+   }[st]||[['Acompanhe','seu pedido'],esc(R.status_atual||'Atualizado agora.')];
++  // EXTRAVIO (18/10/2026): o motor marca rastreio.extraviado quando a transportadora perde o pacote (J&T: scan 110
++  // sem texto depois de dias parado). A mensagem deixa claro que o envio saiu certo daqui, que o extravio foi da
++  // transportadora e que a America Nutrition reenvia sem custo; com reenvio ja postado, botao para o rastreio novo.
++  const ext=!!R.extraviado,rv=R.extravio||{},novoCod=rv.reenvio_codigo||'';
++  if(ext){
++    T[0]=['Extraviado','pela '+esc(transpCurto)];
++    T[1]=`O seu ${esc(prod1)} saiu do nosso centro de distribuição normalmente e foi entregue à ${esc(transp)}, mas a transportadora extraviou o pacote durante o transporte. O problema foi com a transportadora, não com o nosso envio.<br><br><b>${novoCod?'Já reenviamos o seu pedido, sem nenhum custo para você.':'Vamos reenviar o seu pedido sem nenhum custo para você.'}</b>${novoCod?'':' O novo código de rastreio chega pelo WhatsApp assim que ele for postado.'}`
++      +(novoCod?`<a class="reenv" href="/${encodeURIComponent(novoCod)}"><i class="ti ti-truck-delivery"></i>Acompanhar o reenvio</a>`:'');
++  }
+   const vermelho=st==='exception'||st==='returned';
+   $('r-titulo').innerHTML=`${T[0][0]}<br><em class="${vermelho?'r':''}">${T[0][1]}</em>${st==='delivered'?'':'<span class="dt"></span>'}`;
+   {const e24=parseData(R.entregue_em);if(st==='delivered'&&e24&&(Date.now()-e24)/36e5<=24)$('r-titulo').querySelector('em').classList.add('shine');}
+   $('r-sub').innerHTML=T[1];
+   let tags='';
+   if(R.atrasado&&st!=='delivered')tags+='<span class="tag warn"><i class="ti ti-clock"></i>Um pouco atrasado</span>';
++  if(ext)tags+='<span class="tag lost"><i class="ti ti-package-off"></i>Reenvio sem custo</span>';
+   if(evs.some(e=>e.eh_importacao))tags+='<span class="tag usa"><i class="ti ti-plane"></i>Importado dos EUA</span>';
+   $('r-tags').innerHTML=tags;
+ 
+   const n=ETAPA[st]??2;setBars(Math.min(n,5),st!=='delivered',vermelho,st==='delivered');
+-  $('etapa').textContent=st==='delivered'?'Todas as etapas concluídas':`Etapa ${Math.min(n+1,5)} de 5 · ${vermelho?(st==='returned'?'Devolvido':'Atenção'):st==='waiting'?'Aguardando postagem':NOMES[n]}`;
++  $('etapa').textContent=st==='delivered'?'Todas as etapas concluídas':`Etapa ${Math.min(n+1,5)} de 5 · ${vermelho?(st==='returned'?'Devolvido':ext?'Extraviado':'Atenção'):st==='waiting'?'Aguardando postagem':NOMES[n]}`;
+   $('hdr-dir').textContent=P.numero?'#'+P.numero:'';
+ 
+   const serv=/SEDEX/i.test(R.servico||'')?'Sedex':/PAC/i.test(R.servico||'')?'PAC':(R.transportadora||'Correios');
+   const ent=parseData(R.entregue_em);
+   const celebrar=st==='delivered'&&ent&&(Date.now()-ent)/36e5<=24;
+-  const bigTxt=st==='delivered'&&ent?(ent.getDate()+' de '+MESES[ent.getMonth()]+',<br>às '+hhmm(ent)):(dataLonga(R.previsao_entrega)||(st==='waiting'?'Assim que<br>postarem':'Em breve'));
++  const bigTxt=ext?(novoCod?'Já<br>reenviado':'Reenvio<br>sem custo'):st==='delivered'&&ent?(ent.getDate()+' de '+MESES[ent.getMonth()]+',<br>às '+hhmm(ent)):(dataLonga(R.previsao_entrega)||(st==='waiting'?'Assim que<br>postarem':'Em breve'));
+   const nomeGarrafa=nomeGarrafaDe(prod1);
+   let cards=`<div class="card main ${vermelho?'alert':''}${celebrar?' cele':''}">${celebrar?'<div class="sweep"></div><div class="selo">'+(ROSA?laco(13):'')+'Entregue</div>':''}
+-    <small>${st==='delivered'?'Entregue em':'Previsão de entrega'}</small><div class="big">${bigTxt}</div>
++    <small>${ext?'Seu pedido':st==='delivered'?'Entregue em':'Previsão de entrega'}</small><div class="big">${bigTxt}</div>
+     <div class="meta"><span>${esc(serv)}${cidade?' · '+esc(cidade)+(uf?', '+esc(uf):''):''}</span>${R.codigo?`<button class="code" onclick="copiar()"><i class="ti ti-copy"></i>${esc(R.codigo)}</button>`:''}</div>
+     ${(()=>{const rod=prods.length>1?'+'+(prods.length-1)+' item'+(prods.length>2?'s':''):'America';const foto=prods[0]&&prods[0].img;
+       if(!foto)return garrafaCss(nomeGarrafa,rod);
