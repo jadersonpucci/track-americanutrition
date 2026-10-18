@@ -29,17 +29,24 @@ no evento mais recente (Correios, Loggi).
 
 **Tabela `rastreio_extravios`** (`codigo` pk, `extraviado`, `novo_codigo`, `nota`): manda sobre a detecção.
 `extraviado=false` desmarca um falso positivo, `extraviado=true` marca à mão um extravio que a transportadora
-não sinalizou, e `novo_codigo` aponta o reenvio. O lote de 17/10 foi cadastrado: 24 códigos, 16 com o reenvio
-encontrado na Shopify.
+não sinalizou, e `novo_codigo` aponta o reenvio. O lote de 17/10 foi cadastrado: 24 códigos, todos com o
+reenvio (16 pela J&T e 8 pelos Correios, postados em 14 e 15/10).
 
 **Página** (`site-index-extravio.patch`, contra o `index.html` do `main`):
 - título "Extraviado pela J&T", a mensagem acima e a frase do reenvio sem custo em destaque;
 - botão "Acompanhar o reenvio" quando há código novo;
 - etiqueta "Reenvio sem custo" e, no cartão, "Já reenviado" ou "Reenvio sem custo" no lugar da previsão.
 
-Sem o patch publicado, a página atual mostra a mesma mensagem no estado "Precisa de atenção".
+Publicado no `main` em 18/10 (commit `f4b7bbd`). Sem ele, a página mostrava a mesma mensagem no estado
+"Precisa de atenção".
 
 **Serena:** a ferramenta `consultar_status_pedido` repassa a situação e a mensagem. A base
 (`serena_config.base_treinamento`, "Regras importantes do rastreio") ganhou a regra: explicar que o extravio
 foi da transportadora, que o reenvio é sempre sem custo, passar o rastreio novo quando houver, e acionar
 `escalar_humano` quando ainda não houver reenvio.
+
+**Aviso aos clientes do lote (18/10).** Todos os 26 pedidos já tinham sido reenviados. Atenção ao conferir: parte
+dos reenvios saiu pelos Correios, então procurar só códigos `888…` da J&T deixa esses de fora. Os 8 pacotes
+reenviados pelos Correios (AN-15790, AN-15791, AN-15792, AN-15797, AN-15812 com AN-15831, AN-15814, AN-15832)
+receberam da Serena, pelo WhatsApp, a explicação do extravio e o código novo, registrada na conversa. O AN-15816
+(Laercio) ficou de fora porque o reenvio já tinha sido entregue em 15/10.
