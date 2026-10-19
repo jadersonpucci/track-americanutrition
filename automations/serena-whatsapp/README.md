@@ -201,10 +201,15 @@ Agora o "Salvar Base" só regrava quando o hash mudou **e** a versão do site ("
 Ao aplicar, `base_versao` passa a ser a versão do site.
 
 Regra prática: **toda edição feita direto no banco precisa ir também para o site**, e toda publicação do site precisa
-subir a versão. O site foi alinhado na versão 7.66 (19/10), com o texto idêntico ao do banco.
+subir a versão. O site foi alinhado na versão 7.66 (19/10), com o texto idêntico ao do banco. O aviso de bloqueio sai
+uma vez por conteúdo (`base_bloqueado_hash`), não a cada rodada.
 
-Servido como `index.php`, o site não manda `ETag` nem `Last-Modified`, e o cron de 1 minuto não percebe mudanças
-(fica só o cron diário e o webhook). Servido como `index.html`, volta a sincronizar em 1 minuto.
+**Publicar o site:** `POST https://serena.americanutrition.com/upload.php` com o header `X-Deploy-Key: <DEPLOY_KEY>`
+e o HTML inteiro no corpo. Ele grava o `index.html` e responde `{"ok":true,"target":"index.html",...}`. Depois é só
+esperar o sync (até 5 min) ou chamar `/webhook/serena-sync-base`. A chave fica com a equipe, não vai para o repositório.
+
+Desde 10/2026 a Hostinger não manda `ETag` nem `Last-Modified` neste site. Sem esses cabeçalhos, o "Mudou?" deixa
+baixar a página a cada 5 minutos e o hash decide se mudou. Se o cabeçalho voltar, o cron de 1 minuto volta a valer.
 
 ## 2. Alerta de falha no Telegram (watchdog)
 
@@ -296,7 +301,8 @@ Tudo isso passa pelo workflow auxiliar `POST /webhook/serena-samuel-enviar`
 | `wpp_pos_entrega` | `on` | Modo de uso após "pedido entregue" |
 | `wpp_alerta_min` | `10` | Minutos sem resposta da Serena que disparam alerta |
 | `base_hash` / `base_etag` | automático | Controle do sync da base |
-| `base_versao` | automático (`7.65` em 19/10) | Versão da base em uso; o sync só aplica versão maior do site |
+| `base_versao` | automático (`7.66` em 19/10) | Versão da base em uso; o sync só aplica versão maior do site |
+| `base_bloqueado_hash` | automático | Último conteúdo do site bloqueado (evita repetir o aviso) |
 
 ## Tabelas novas
 
