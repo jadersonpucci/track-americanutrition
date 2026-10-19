@@ -188,6 +188,24 @@ se o conteúdo realmente mudou. Quando muda, avisa no Telegram (tópico 289): "B
 Na prática a Serena passa a usar o treinamento novo em até 1 minuto depois de o site ser publicado, em todos os canais.
 Para forçar: `POST /webhook/serena-sync-base` com `{"force": true}`. O cron diário das 4h continua como rede de segurança.
 
+### Trava de versão (19/10/2026)
+
+Em 18/10 o site passou a dar 403 na raiz: o `index.html` sumiu da Hostinger e a base ficou só em `/index.php`. O texto
+desse `index.php` era **mais antigo** que a base da Serena, que vinha sendo editada direto no banco: tinha a D3 a
+R$ 57, a Cris com título de saúde, "Fase de Choque" e não tinha Pix Automático nem extravio. Com a raiz consertada,
+o sync teria trocado a base boa pela antiga em 1 minuto.
+
+Agora o "Salvar Base" só regrava quando o hash mudou **e** a versão do site ("Versão: X.YY" no topo) é maior que
+`serena_config.base_versao`, ou quando vem `force: true`. Site mudou com versão igual ou menor sai como
+`bloqueado: true`, a base não é tocada e o Telegram (tópico 289) recebe "Base do site NAO aplicada na Serena".
+Ao aplicar, `base_versao` passa a ser a versão do site.
+
+Regra prática: **toda edição feita direto no banco precisa ir também para o site**, e toda publicação do site precisa
+subir a versão. O site foi alinhado na versão 7.66 (19/10), com o texto idêntico ao do banco.
+
+Servido como `index.php`, o site não manda `ETag` nem `Last-Modified`, e o cron de 1 minuto não percebe mudanças
+(fica só o cron diário e o webhook). Servido como `index.html`, volta a sincronizar em 1 minuto.
+
 ## 2. Alerta de falha no Telegram (watchdog)
 
 `[Serena WhatsApp] Watchdog -> Telegram`, a cada 5 min:
@@ -278,6 +296,7 @@ Tudo isso passa pelo workflow auxiliar `POST /webhook/serena-samuel-enviar`
 | `wpp_pos_entrega` | `on` | Modo de uso após "pedido entregue" |
 | `wpp_alerta_min` | `10` | Minutos sem resposta da Serena que disparam alerta |
 | `base_hash` / `base_etag` | automático | Controle do sync da base |
+| `base_versao` | automático (`7.65` em 19/10) | Versão da base em uso; o sync só aplica versão maior do site |
 
 ## Tabelas novas
 
