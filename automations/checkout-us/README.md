@@ -12,8 +12,29 @@ Nós versionados aqui:
 
 | Arquivo | Nó no n8n |
 | --- | --- |
+| `nodes/agendar-etiqueta-us.js` | `Agendar Etiqueta` |
 | `nodes/etiqueta-us.js` | `Etiqueta US` |
 | `nodes/msg-aviso-us.js` | `Msg Aviso US` |
+
+## Etiqueta com espera de 2 a 4 horas (20/10/2026)
+
+A etiqueta era comprada no mesmo minuto do pagamento e a Shopify mandava ao cliente o e-mail
+de envio com o rastreio (`notifyCustomer: true`) logo junto da confirmação do pedido: o
+processo inteiro parecia automático demais. Agora:
+
+```
+Mover p/ Estados Unidos → Agendar Etiqueta → Esperar Etiqueta (Wait até liberar_em) → Etiqueta US → Msg Aviso US
+```
+
+- O pedido continua sendo criado e movido para o local Estados Unidos na hora; só a compra da
+  etiqueta, o e-mail de envio e o aviso do Paulo ficam para depois.
+- `Agendar Etiqueta` sorteia uma espera de **2 a 4 horas**. Se o horário cair fora do
+  comercial da Flórida (seg a sex, 9h às 17h30, `America/New_York`), vai para o próximo dia
+  útil, sorteado entre 9h15 e 11h. As constantes ficam no topo do nó.
+- A Stripe recebe o 200 na hora (o webhook responde ao receber), então a espera não causa
+  reenvio do evento.
+- Depois da espera, o `Etiqueta US` só compra se ainda houver envio em aberto. Pedido enviado à
+  mão, cancelado ou reembolsado nesse intervalo não gera etiqueta, e o aviso do Paulo diz o motivo.
 
 ## Envio internacional: código SH e país de origem (22/09/2026)
 
