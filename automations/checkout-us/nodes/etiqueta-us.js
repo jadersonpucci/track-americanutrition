@@ -38,7 +38,7 @@ try {
   const q1 = await gql('query($id:ID!){ order(id:$id){ fulfillmentOrders(first:10){ nodes{ id status assignedLocation{ location{ id name } } } } } }', { id: oid });
   const nodes = (((q1 || {}).order || {}).fulfillmentOrders || {}).nodes || [];
   const abertos = nodes.filter(function(n){ return n.status === 'OPEN' || n.status === 'IN_PROGRESS'; });
-  // Depois da espera de 2 a 4h (no 'Agendar Etiqueta'), o pedido pode ter sido enviado a mao, cancelado ou
+  // Depois da espera de 20 a 60 min (no 'Agendar Etiqueta'), o pedido pode ter sido enviado a mao, cancelado ou
   // reembolsado: sem envio em aberto, nao compra etiqueta.
   if (!abertos.length) throw new Error('nenhum envio em aberto, pedido ja enviado, cancelado ou reembolsado durante a espera (status: ' + (nodes.map(function(n){ return n.status; }).join(',') || 'nenhum') + ')');
   let alvo = abertos.filter(noUS)[0] || abertos[0];
