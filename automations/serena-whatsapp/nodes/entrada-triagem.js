@@ -68,7 +68,8 @@ if (inner.videoMessage && !inner.videoMessage.gifPlayback) {
   return [{ json: Object.assign({}, base, { tipo: 'texto', texto: (texto ? texto + ' ' : '') + '[O cliente enviou um video longo (' + Math.round(segs / 60) + ' min) que nao da para ouvir por aqui. Agradeca e peca o resumo em texto, ou avise que a equipe vai assistir.]' }) }];
 }
 if (inner.audioMessage) {
-  return [{ json: Object.assign({}, base, { tipo: 'audio', texto: '', mimetype: inner.audioMessage.mimetype || 'audio/ogg' }) }];
+  // segundos: duracao do audio, usada no 'Pode Responder?' para a Serena nao responder antes do tempo de ouvir
+  return [{ json: Object.assign({}, base, { tipo: 'audio', texto: '', segundos: Number(inner.audioMessage.seconds || 0), mimetype: inner.audioMessage.mimetype || 'audio/ogg' }) }];
 }
 // CONTATO COMPARTILHADO (15/10/2026): o cartao de contato do WhatsApp traz o numero no vCard
 // ("item1.TEL;waid=5511965970821:+55 11 96597-0821"). Antes caia em "nao consigo abrir" e a Serena pedia o

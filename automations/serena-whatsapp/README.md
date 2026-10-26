@@ -2701,3 +2701,12 @@ Testado no webhook de produção, sem confirmar (nada muda no banco):
 - `serena_config.retirada_aviso`: `off` | `simulacao` (nada é enviado; Telegram recebe a lista) | `on`.
 - O `[Serena] Rastreio Proativo` trata retirada como `exception` e fecha o acompanhamento dele, então os dois não
   avisam o mesmo pacote.
+
+## Tempo de ouvir o áudio (26/10/2026)
+Um áudio de 1:44 era respondido no mesmo minuto e o cliente brincou "caramba, já ouviu o áudio kkk". Agora o
+`Triagem` guarda a duração do áudio (`audioMessage.seconds`, como já fazia com vídeo) e o `Pode Responder?` estica a
+espera das "mensagens picadas" para ~85% da duração + 4s (teto 150s) quando a mensagem é áudio ou vídeo. Somando a
+transcrição e o Core, a resposta chega mais ou menos depois do tempo de ouvir a mensagem inteira (1:44 → espera de 92s).
+Nesses casos o ack rápido ("já estou verificando") não sai. Texto continua com `wpp_debounce_seg` (8s).
+Limite conhecido: se o cliente manda um áudio e logo depois um texto, quem responde é a execução do texto, com a espera
+normal de texto.
