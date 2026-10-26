@@ -50,3 +50,21 @@ dos reenvios saiu pelos Correios, então procurar só códigos `888…` da J&T d
 reenviados pelos Correios (AN-15790, AN-15791, AN-15792, AN-15797, AN-15812 com AN-15831, AN-15814, AN-15832)
 receberam da Serena, pelo WhatsApp, a explicação do extravio e o código novo, registrada na conversa. O AN-15816
 (Laercio) ficou de fora porque o reenvio já tinha sido entregue em 15/10.
+
+## Retirada nos Correios (26/10/2026)
+
+**O problema.** Quando os Correios não entregam (área sem entrega, restrição, ninguém em casa), o último evento vira
+"Objeto aguardando retirada no endereço indicado". A API dos Correios na RapidAPI manda o endereço da unidade em
+`eventos[0].unidade.endereco` (logradouro, número, bairro, cidade, UF) e `rota: "RETIRADA"`, mas o `Normalizar
+Resposta` só guardava a cidade. Caso real: AN-16159, `AE059939994BR`, Avenida Sete de Setembro, 486, Centro,
+Diadema/SP.
+
+**Nó `Detectar Retirada`** (`nodes/detectar-retirada.js`, entre `Detectar Extravio` e `Responder Sucesso`):
+- `rastreio.retirada = {aguardando, endereco, logradouro, numero, bairro, cidade, uf, cep, unidade, motivo, desde,
+  prazo_ate, prazo_estimado, maps_url, documentos}`;
+- `status_atual` vira "Aguardando retirada nos Correios" e `detalhe_atual` traz o endereço, o que levar e o prazo
+  (a página e a Serena já mostram esse campo);
+- prazo: `dataLimiteRetirada` quando a API manda; senão 7 dias corridos a partir do evento (`prazo_estimado: true`);
+- na linha do tempo, o evento de retirada ganha "Endereço para retirada: ...".
+
+**Aviso pelo WhatsApp:** `[Serena] Aviso de Retirada` (`automations/serena-whatsapp/retirada-aviso.workflow.js`).

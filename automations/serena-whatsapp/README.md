@@ -208,6 +208,10 @@ uma vez por conteúdo (`base_bloqueado_hash`), não a cada rodada.
 e o HTML inteiro no corpo. Ele grava o `index.html` e responde `{"ok":true,"target":"index.html",...}`. Depois é só
 esperar o sync (até 5 min) ou chamar `/webhook/serena-sync-base`. A chave fica com a equipe, não vai para o repositório.
 
+**26/10/2026:** a raiz do site passou a servir um `index.php` parado na 7.66, enquanto o `upload.php` grava o
+`index.html`. O sync (`Baixar Base` e `Checar Cabecalho`) agora lê direto `https://serena.americanutrition.com/index.html`,
+que manda `Last-Modified`. Base publicada na 7.67 (cápsula do ImunoFosfo toda branca no lote novo).
+
 Desde 10/2026 a Hostinger não manda `ETag` nem `Last-Modified` neste site. Sem esses cabeçalhos, o "Mudou?" deixa
 baixar a página a cada 5 minutos e o hash decide se mudou. Se o cabeçalho voltar, o cron de 1 minuto volta a valer.
 
@@ -2684,3 +2688,16 @@ Testado no webhook de produção, sem confirmar (nada muda no banco):
 |---|---|---|---|
 | PATRICIA PAZ (1x D3 50.000 UI) | R$ 51,30 | R$ 69,30 | R$ 77,00 |
 | Fátima Castilho | R$ 120,60 | R$ 138,60 | R$ 154,00 |
+
+## Aviso de retirada nos Correios (`[Serena] Aviso de Retirada`, id m4RXocg2pK1nlvqC, cron 1h) — 26/10/2026
+- Pacotes dos Correios (`AA123456789BR`) com aviso `pedido_enviado` nos últimos 25 dias (e há mais de 20h) são
+  consultados no motor de rastreio, cada um no máximo a cada ~2h; entregues, devolvidos e extraviados saem da lista
+  (`serena_retirada_avisos.finalizado`). Até 60 por rodada.
+- Quando o motor devolve `rastreio.retirada`, entre 8h e 20h a Serena manda o endereço da agência, o link do Google
+  Maps, o que levar (código + documento com foto; autorização para terceiros) e o prazo. Lembrete 3 dias depois se
+  continuar lá, e só enquanto faltam mais de 6h para o prazo. Nota "retirada correios" e etiqueta `retirada-correios`
+  no contato, mensagem registrada em `serena_mensagens` (autor `proativo:retirada`), lista no Telegram (tópico 289).
+- Texto fixo (não passa pelo Core), para o endereço sair exatamente como os Correios mandaram.
+- `serena_config.retirada_aviso`: `off` | `simulacao` (nada é enviado; Telegram recebe a lista) | `on`.
+- O `[Serena] Rastreio Proativo` trata retirada como `exception` e fecha o acompanhamento dele, então os dois não
+  avisam o mesmo pacote.
