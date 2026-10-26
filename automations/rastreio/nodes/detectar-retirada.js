@@ -58,8 +58,8 @@ try {
     documentos: 'código do objeto (' + R.codigo + ') e documento oficial com foto do destinatário; outra pessoa pode retirar com autorização assinada e cópia do documento do destinatário'
   };
   R.status_atual = 'Aguardando retirada nos Correios';
-  const semEntrega = /sem entrega|restri/i.test(desc);
-  R.detalhe_atual = (semEntrega ? 'Os Correios não fazem entrega no seu endereço e deixaram o pedido para retirada' : 'Os Correios deixaram o pedido para retirada')
+  // texto neutro: 'area sem entrega' pode ser restricao temporaria (seguranca, obra, chuva), nao afirmar que nunca entregam
+  R.detalhe_atual = 'Os Correios não conseguiram concluir a entrega no endereço desta vez e deixaram o pedido para retirada'
     + (temEndereco ? ' em: ' + endereco + '.' : ' na unidade de ' + [cidade, uf].filter(Boolean).join('/') + '.')
     + ' Leve o código do objeto (' + R.codigo + ') e um documento oficial com foto do destinatário.'
     + (prazo ? ' Retire até ' + fmt(prazo) + (estimado ? ' (prazo de guarda de 7 dias corridos)' : '') + ', depois disso o pacote volta para nós.' : '');

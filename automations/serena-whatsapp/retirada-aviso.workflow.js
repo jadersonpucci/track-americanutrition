@@ -43,8 +43,8 @@ function texto(tipo, it, r) {
   if (tipo === 'lembrete') {
     return oi + ' Aqui é a Serena, da America Nutrition 💙' + NL + NL + 'Passando para lembrar que o seu pedido *' + (it.pedido || '') + '* continua esperando você na agência dos Correios:' + NL + NL + onde + NL + NL + docs + prazo + NL + NL + 'Se tiver qualquer dificuldade para buscar, me chama aqui que a gente resolve junto.';
   }
-  const motivo = /sem entrega|restri/i.test(r.motivo || '') ? 'Os Correios não fazem entrega domiciliar no seu endereço' : 'Os Correios não conseguiram entregar no seu endereço';
-  return oi + ' Aqui é a Serena, da America Nutrition 💙' + NL + NL + motivo + ', então o seu pedido *' + (it.pedido || '') + '* ficou disponível para retirada aqui:' + NL + NL + onde + NL + NL + docs + prazo + NL + NL + 'Qualquer dúvida, é só me chamar por aqui!';
+  // texto neutro: 'area sem entrega' dos Correios pode ser restricao temporaria, nao afirmar que nunca entregam
+  return oi + ' Aqui é a Serena, da America Nutrition 💙' + NL + NL + 'Os Correios não conseguiram concluir a entrega no seu endereço desta vez, então o seu pedido *' + (it.pedido || '') + '* ficou disponível para retirada aqui:' + NL + NL + onde + NL + NL + docs + prazo + NL + NL + 'Qualquer dúvida, é só me chamar por aqui!';
 }
 
 const rows = [], msgs = [], avisados = [];
