@@ -99,8 +99,13 @@ button,input{font-family:inherit}
 .card.review h3{font-family:Unbounded;font-weight:600;font-size:20px;margin-top:10px;letter-spacing:-.4px;line-height:1.2}
 .card.review p{color:var(--muted);font-size:14.5px;margin-top:8px;line-height:1.45}
 .card.review a{display:inline-flex;margin-top:18px;height:46px;padding:0 20px;border-radius:99px;background:var(--red);color:#fff;font-weight:600;align-items:center;gap:8px;text-decoration:none;font-size:14.5px}
-.fotos{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap}
-.fotos img{width:88px;height:88px;object-fit:cover;border-radius:16px;cursor:pointer;background:#EEF1F7}
+.pod{position:relative;margin-top:12px;border-radius:18px;background:#fff;border:1px solid var(--line);overflow:hidden;cursor:zoom-in}
+.pod img{display:block;width:100%;height:auto;max-height:520px;object-fit:contain;background:#fff}
+.pod .zoom{position:absolute;right:10px;bottom:10px;background:rgba(10,27,61,.82);color:#fff;font-size:12px;font-weight:600;padding:6px 10px;border-radius:99px;pointer-events:none}
+.pod .cnt{position:absolute;left:10px;top:10px;background:rgba(10,27,61,.82);color:#fff;font-size:12px;font-weight:600;padding:4px 9px;border-radius:99px;pointer-events:none}
+.fotos{display:flex;gap:8px;margin-top:8px;overflow-x:auto;padding-bottom:2px}
+.fotos img{width:64px;height:64px;flex:none;object-fit:cover;border-radius:12px;cursor:pointer;background:#fff;border:2px solid transparent}
+.fotos img.on{border-color:var(--blue)}
 .dots{display:flex;gap:6px;justify-content:center;margin-top:14px}
 .dots span{width:6px;height:6px;border-radius:9px;background:#CDD6E4;transition:all .3s}
 .dots span.on{width:18px;background:var(--blue)}
@@ -137,9 +142,14 @@ button,input{font-family:inherit}
 .hidden{display:none!important}
 .toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 94px);transform:translate(-50%,20px);opacity:0;background:var(--ink);color:#fff;padding:10px 16px;border-radius:99px;font-size:13.5px;font-weight:500;transition:all .3s;z-index:60;pointer-events:none}
 .toast.on{opacity:1;transform:translate(-50%,0)}
-.lb{position:fixed;inset:0;background:rgba(10,27,61,.92);display:none;align-items:center;justify-content:center;z-index:80;padding:24px}
-.lb.on{display:flex}
-.lb img{max-width:100%;max-height:85vh;border-radius:18px}
+.lb{position:fixed;inset:0;background:rgba(10,27,61,.97);display:none;z-index:200;touch-action:pan-y pinch-zoom}
+.lb.on{display:block}
+.lb img{position:absolute;left:0;right:0;top:56px;bottom:64px;margin:auto;width:auto;height:auto;max-width:calc(100% - 24px);max-height:calc(100% - 120px);border-radius:14px;background:#fff;object-fit:contain}
+.lb .x,.lb .nav{position:absolute;z-index:2;border:0;background:rgba(10,27,61,.78);box-shadow:0 0 0 1px rgba(255,255,255,.25);color:#fff;border-radius:50%;width:44px;height:44px;font-size:22px;line-height:44px;text-align:center;cursor:pointer;padding:0}
+.lb .x{top:calc(env(safe-area-inset-top) + 8px);right:12px}
+.lb .nav{top:50%;margin-top:-22px}
+.lb .ant{left:10px}.lb .prx{right:10px}
+.lb .cnt{position:absolute;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 20px);text-align:center;color:#fff;font-size:13.5px;font-weight:600}
 /* comemoracao de entrega (uma vez, entrega nas ultimas 24h): frasco pousa + brilho + carimbo */
 .selo{position:absolute;right:22px;top:20px;padding:8px 12px;border:2.5px solid #fff;border-radius:10px;font-family:Unbounded;font-weight:700;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#fff;opacity:0;transform:rotate(-10deg) scale(1.6);pointer-events:none}
 .selo:after{content:'';position:absolute;inset:3px;border:1px solid rgba(255,255,255,.5);border-radius:7px}
@@ -247,7 +257,7 @@ button,input{font-family:inherit}
   <a class="go" id="b-wpp" target="_blank" rel="noopener"><i class="ti ti-brand-whatsapp"></i>Falar com a gente</a>
 </nav>
 <div class="toast" id="toast"></div>
-<div class="lb" id="lb"><img alt="Comprovante de entrega"></div>
+<div class="lb" id="lb"><img alt="Comprovante de entrega"><button class="x" aria-label="Fechar">&times;</button><button class="nav ant" aria-label="Foto anterior">&#8249;</button><button class="nav prx" aria-label="Próxima foto">&#8250;</button><div class="cnt"></div></div>
 <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
 <script>
@@ -398,7 +408,7 @@ function render(d){
     ${dest.nome?`<div class="lbl">Pra quem</div><div class="val">${esc(mascNome(dest.nome))}</div>`:''}
     ${dest.endereco_completo?`<div class="lbl">Endereço</div><div class="val"><span class="reveal" onclick="this.classList.add('on')"><span class="txt">${esc(mascEnd(dest.endereco_completo))}</span><span class="hint"><i class="ti ti-eye"></i>Toque pra ver</span></span></div>`:''}</div>`;
   const c=R.comprovante,fotos=c?[c.url,...(c.evidencias||[])].filter(Boolean):[];
-  if(fotos.length){cards+=`<div class="card white"><h3>Comprovante de entrega</h3><p style="font-size:13px;color:var(--muted)">${c.recebido_por?'Recebido por <b>'+esc(c.recebido_por)+'</b>':'Registro feito pela transportadora'}</p><div class="fotos">${fotos.map(u=>`<img src="${esc(u)}" loading="lazy" onclick="abrirFoto(this.src)" onerror="this.remove()" alt="Comprovante">`).join('')}</div></div>`}
+  if(fotos.length){cards+=`<div class="card white"><h3>Comprovante de entrega</h3><p style="font-size:13px;color:var(--muted)">${c.recebido_por?'Recebido por <b>'+esc(c.recebido_por)+'</b>':'Registro feito pela transportadora'}</p><div class="pod" onclick="abrirFoto(FOTOS_IDX)"><img id="podimg" src="${esc(fotos[0])}" alt="Comprovante de entrega" onerror="fotoQuebrada(this.src)">${fotos.length>1?`<span class="cnt" id="podcnt">1/${fotos.length}</span>`:''}<span class="zoom">Toque para ampliar</span></div>${fotos.length>1?`<div class="fotos">${fotos.map((u,i)=>`<img src="${esc(u)}" loading="lazy" class="${i?'':'on'}" onclick="verFoto(${i})" onerror="fotoQuebrada(this.src)" alt="Foto ${i+1} do comprovante">`).join('')}</div>`:''}</div>`;FOTOS=fotos.slice();FOTOS_IDX=0}
   $('carousel').innerHTML=cards;$('carousel').scrollLeft=0;
   const qt=$('carousel').children.length;$('dots').innerHTML=qt>1?Array.from({length:qt},(_,i)=>`<span class="${i?'':'on'}"></span>`).join(''):'';
 
@@ -421,8 +431,18 @@ $('carousel').addEventListener('scroll',()=>{const c=$('carousel'),w=c.children[
 function copiar(){if(!ultimoCodigo)return;(navigator.clipboard?navigator.clipboard.writeText(ultimoCodigo):Promise.reject()).then(()=>toast('Código copiado')).catch(()=>toast(ultimoCodigo))}
 $('b-hist').onclick=()=>$('caminho').scrollIntoView({behavior:'smooth',block:'start'});
 $('b-share').onclick=async()=>{const url=location.origin+'/'+ultimoCodigo;try{if(navigator.share)await navigator.share({title:'Rastreio America Nutrition',text:'Acompanhe a entrega:',url});else{await navigator.clipboard.writeText(url);toast('Link copiado')}}catch(e){}};
-function abrirFoto(u){const l=$('lb');l.querySelector('img').src=u;l.classList.add('on')}
-$('lb').onclick=()=>$('lb').classList.remove('on');
+// comprovante: foto principal grande no card; varias fotos (Envia podEvidences) viram miniaturas + galeria com setas/swipe
+let FOTOS=[],FOTOS_IDX=0;
+function verFoto(i){if(!FOTOS.length)return;FOTOS_IDX=(i+FOTOS.length)%FOTOS.length;const m=$('podimg');if(m)m.src=FOTOS[FOTOS_IDX];const c=$('podcnt');if(c)c.textContent=(FOTOS_IDX+1)+'/'+FOTOS.length;document.querySelectorAll('.fotos img').forEach((im,k)=>im.classList.toggle('on',k===FOTOS_IDX));if($('lb').classList.contains('on'))mostrarLb()}
+function mostrarLb(){const l=$('lb');l.querySelector('img').src=FOTOS[FOTOS_IDX];const multi=FOTOS.length>1;l.querySelector('.cnt').textContent=multi?(FOTOS_IDX+1)+' de '+FOTOS.length:'';l.querySelectorAll('.nav').forEach(b=>b.style.display=multi?'':'none')}
+function abrirFoto(i){if(!FOTOS.length)return;FOTOS_IDX=i||0;mostrarLb();$('lb').classList.add('on')}
+function fecharFoto(){$('lb').classList.remove('on')}
+function fotoQuebrada(u){const k=FOTOS.indexOf(u);if(k<0)return;FOTOS.splice(k,1);document.querySelectorAll('.fotos img').forEach(im=>{if(im.src===u)im.remove()});if(!FOTOS.length){const p=document.querySelector('.pod');if(p)p.closest('.card').remove();return}verFoto(Math.min(FOTOS_IDX,FOTOS.length-1));if(FOTOS.length<2){const f=document.querySelector('.fotos');if(f)f.remove();const c=$('podcnt');if(c)c.remove()}}
+$('lb').onclick=e=>{if(e.target===$('lb')||e.target.classList.contains('x'))fecharFoto()};
+$('lb').querySelector('.ant').onclick=e=>{e.stopPropagation();verFoto(FOTOS_IDX-1)};
+$('lb').querySelector('.prx').onclick=e=>{e.stopPropagation();verFoto(FOTOS_IDX+1)};
+document.addEventListener('keydown',e=>{if(!$('lb').classList.contains('on'))return;if(e.key==='Escape')fecharFoto();else if(e.key==='ArrowLeft')verFoto(FOTOS_IDX-1);else if(e.key==='ArrowRight')verFoto(FOTOS_IDX+1)});
+(()=>{let x0=null;const l=$('lb');l.addEventListener('touchstart',e=>{x0=e.touches.length===1?e.touches[0].clientX:null},{passive:true});l.addEventListener('touchend',e=>{if(x0===null||FOTOS.length<2)return;const dx=e.changedTouches[0].clientX-x0;x0=null;if(Math.abs(dx)>50)verFoto(FOTOS_IDX+(dx<0?1:-1))},{passive:true})})();
 
 (function auto(){const q=new URLSearchParams(location.search);let c=q.get('codigo');const p=q.get('pedido'),v=q.get('v')||q.get('email')||q.get('cep');if(!c){const path=location.pathname.replace(/^\/+|\/+$/g,'').replace(/\.(php|html)$/,'');if(/^[A-Za-z0-9]{8,}$/.test(path)&&!/^index$/i.test(path))c=path.toUpperCase()}
 if(c){$('i-cod').value=c;buscar({modo:'codigo',codigo:c})}else if(p&&v){buscar({modo:'pedido',pedido:p,validacao:v})}else view('v-busca')})();
