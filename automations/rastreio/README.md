@@ -68,3 +68,18 @@ Diadema/SP.
 - na linha do tempo, o evento de retirada ganha "Endereço para retirada: ...".
 
 **Aviso pelo WhatsApp:** `[Serena] Aviso de Retirada` (`automations/serena-whatsapp/retirada-aviso.workflow.js`).
+
+## Comprovante de entrega na página (26/10/2026)
+
+O comprovante da J&T aparecia como miniatura de 88px cortada. Pedido do Jaderson: deixar legível e mostrar todas
+as fotos. A mudança está no `index.html` da branch `main` (Vercel, commit 299aa4e):
+
+- A primeira foto aparece inteira e grande no card (`object-fit: contain`, fundo branco), com "Toque para ampliar".
+- Com mais de uma foto, aparecem miniaturas e um contador. A tela cheia tem setas, swipe e teclado (← → Esc).
+- A imagem da tela cheia é posicionada com `position: absolute` e não como item de flex, para não encolher no Safari.
+
+As fotos vêm de `rastreio.comprovante`, montado no nó "Ajustar Previsao +2d": `url` sai de `podFile` e
+`evidencias` sai de `podEvidences` do Envia (até 6). Para a J&T, o Envia hoje manda só **um** arquivo, a imagem
+com a assinatura e os dados do recebedor, e `podEvidences` vem vazio. As outras fotos da J&T (pacote na porta) ficam
+no sistema da própria J&T. O site deles tem captcha, então só daria para buscar com a API oficial (JMS), liberada ao
+cliente pelo comercial da J&T.
