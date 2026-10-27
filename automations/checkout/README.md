@@ -87,6 +87,11 @@ A mudança é um bloco no fim do HTML, marcado `AN-ASSIN-CLARO`. A cópia está 
   `finalizarCompra()` chamada de outro lugar. A caixa pisca e a tela rola até ela. Ligar ou desligar a
   assinatura desmarca a confirmação.
 
+**Ex-assinante (15h17):** quem já teve assinatura (está em `assinatura_elegibilidade`) não ganha os 10% na
+primeira compra, só a partir da 2ª entrega. É a regra anti-farm do `assinatura-elegivel`. Esse aviso tinha sumido
+com a primeira versão do bloco e voltou: aparece na nota do box e no fim da confirmação. O botão mostra
+"R$ 327,00 agora · depois R$ 294,30 a cada 30 dias". Foi o caso da Fabiana (27/10) e do Winslow (26/10).
+
 Testado no Chromium, no celular (390px) e no desktop, com a assinatura ligada, desligada, no PIX e no cartão.
-O teste foi repetido no HTML publicado. Publicado em 27/10 às 15h12. O backup automático é a versão de 16/10;
-`{"action":"rollback"}` volta para ela.
+O teste foi repetido no HTML publicado. Publicado em 27/10 às 15h12, com ajuste às 15h17. O backup automático agora é a versão das 15h12. Para voltar
+ao checkout de antes da mudança, publique o HTML de 16/10 sem o bloco `AN-ASSIN-CLARO`.

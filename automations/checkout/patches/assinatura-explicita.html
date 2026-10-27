@@ -21,6 +21,8 @@ confirmacao obrigatoria ("Entendi que e uma assinatura...") antes de pagar, com 
   function bruto(){ try{ return ITENS.reduce(function(a,i){ return a+i.unit*i.qty; },0); }catch(e){ return 0; } }
   function itensTxt(){ try{ return ITENS.map(function(i){ return i.qty+'x '+i.name; }).join(' + '); }catch(e){ return 'o seu pedido'; } }
   function pix(){ try{ return payMethod==='pix'; }catch(e){ return false; } }
+  // quem ja foi assinante (assinatura_elegibilidade) nao ganha os 10% na 1a compra: so a partir da 2a entrega
+  function semDescAgora(){ try{ return typeof assinPrimeiraPct!=='undefined' && !(assinPrimeiraPct>0); }catch(e){ return false; } }
 
   function selo(){
     var box=el('an-assin-box'); if(!box || el('an-assin-selo')) return;
@@ -52,7 +54,8 @@ confirmacao obrigatoria ("Entendi que e uma assinatura...") antes de pagar, com 
           var ren=bruto()*0.9;
           t.innerHTML='<b>Entendi que estou fazendo uma ASSINATURA.</b> Vou receber '+itensTxt()+' a cada 30 dias e pagar <b>'+fmt(ren)+'</b> em cada renova&ccedil;&atilde;o'
             +(pix()?', por PIX (o c&oacute;digo chega no meu WhatsApp todo m&ecirc;s)':', cobrados automaticamente no meu cart&atilde;o')
-            +'. Frete gr&aacute;tis nas renova&ccedil;&otilde;es acima de R$ 250. Posso cancelar quando quiser, sem multa.';
+            +'. Frete gr&aacute;tis nas renova&ccedil;&otilde;es acima de R$ 250. Posso cancelar quando quiser, sem multa.'
+            +(semDescAgora()?' <b>Como j&aacute; fui assinante antes, esta primeira compra sai sem o desconto; os 10% valem a partir da 2&ordf; entrega.</b>':'');
         }
       }
       // resumo do rodape (discLbl) e resumo fixo do topo (.mr-desc .mr-name)
@@ -72,7 +75,8 @@ confirmacao obrigatoria ("Entendi que e uma assinatura...") antes de pagar, com 
         else { b.style.background='#fff'; b.style.color='#AD0404'; b.style.border='2px solid #AD0404'; b.style.boxShadow='none'; if(ep) ep.style.stroke='#AD0404'; if(tt) tt.textContent='Quero assinar: todo mês com 10% OFF'; }
       }
       var n=el('an-assin-note');
-      if(n) n.textContent=on ? 'Assinatura ligada: renova a cada 30 dias. Cancele quando quiser. Toque no botão de novo para desfazer.'
+      if(n) n.textContent=on ? ((semDescAgora() ? 'Você já teve uma assinatura antes: esta compra sai sem desconto e os 10% valem a partir da 2ª entrega. ' : '')
+                              + 'Assinatura ligada: renova a cada 30 dias. Cancele quando quiser. Toque no botão de novo para desfazer.')
                             : 'Opcional. Sem assinar, esta é uma compra única. Assinando: cobrança a cada 30 dias, cancele quando quiser.';
     }catch(e){}
   }
