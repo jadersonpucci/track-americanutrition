@@ -55,8 +55,11 @@ ao antecipar, ela diz ao cliente a data nova da próxima renovação.
 - **Carlos Eduardo (cartão):** ciclo de 29/10 marcado como pago pelo AN-16238; próxima cobrança em 28/11.
 - **Valdecir (PIX):** ciclo de 23/10 marcado como pago pelo AN-16182; próxima renovação em 22/11.
 
-Ficaram para o Jaderson decidir:
+Reativadas com o OK do Jaderson (repescagem do próprio robô, com `assinatura_antecipacao_dias = 40` por uma rodada):
 
-- **Marta:** ela pagou o ciclo de 18/10 pelo AN-16193 e a assinatura está pausada.
-- **Claudia:** ela pagou o ciclo de 01/10 pelo AN-15738 e a assinatura está pausada desde 06/10.
+- **Marta:** ciclo de 18/10 pago pelo AN-16193; ativa, próxima renovação em 17/11.
+- **Claudia:** ciclo de 01/10 pago pelo AN-15738; ativa, próxima renovação em 31/10.
+
+Fica para a equipe conferir:
+
 - **Edelmira:** pediu o AN-15752 em 01/10 e tem cobrança paga em 08/10. Vale conferir se pagou duas vezes.
