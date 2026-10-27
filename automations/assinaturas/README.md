@@ -63,3 +63,31 @@ Reativadas com o OK do Jaderson (repescagem do próprio robô, com `assinatura_a
 Fica para a equipe conferir:
 
 - **Edelmira:** pediu o AN-15752 em 01/10 e tem cobrança paga em 08/10. Vale conferir se pagou duas vezes.
+
+## 10% já na primeira compra: nova regra de elegibilidade (27/10/2026)
+
+**Como era:** quem já tinha assinado alguma vez na vida (estava em `assinatura_elegibilidade`) pagava cheio na
+primeira compra de uma nova assinatura, e os 10% só entravam a partir da 2ª entrega.
+
+**Como ficou (decisão do Jaderson):** os 10% valem já na primeira compra para todo mundo. Ficam de fora só:
+
+- quem **tem assinatura ativa** (status `ativa` ou `inadimplente`), porque está fazendo uma segunda assinatura;
+- quem **pagou alguma assinatura nos últimos 60 dias**.
+
+Essa trava evita o "assina, pega o desconto, cancela e repete".
+
+A regra está na função SQL `assinatura_elegivel_desconto(cpf, whatsapp, email)`, em
+[`assinatura_elegivel_desconto.sql`](assinatura_elegivel_desconto.sql). Ela casa o cliente por CPF, pelos 11
+últimos dígitos do WhatsApp ou pelo e-mail. Dois workflows usam a função:
+
+- **AN - Assinatura Elegivel (pre-check)** (`COYdlYOezv9ARE0x`): é o que o checkout consulta para mostrar o
+  desconto.
+- **AN - Assinatura Criar (Checkout)** (`ZkCJD7EQcD77KBHm`), nó "Checar Elegibilidade": é o valor que
+  efetivamente é cobrado. O PIX inicial herda a decisão pelo `assinatura_dados.dp` do metadata.
+
+A tabela `assinatura_elegibilidade` continua sendo gravada, mas não decide mais nada.
+
+**Efeito:** dos 134 clientes que já assinaram alguma vez, 28 voltam a ter os 10% na primeira compra.
+
+**No checkout:** quem não tem direito vê que esta compra sai sem desconto porque já tem uma assinatura ativa ou
+pagou uma nos últimos 60 dias, e que os 10% valem a partir da 2ª entrega.

@@ -87,8 +87,9 @@ A mudança é um bloco no fim do HTML, marcado `AN-ASSIN-CLARO`. A cópia está 
   `finalizarCompra()` chamada de outro lugar. A caixa pisca e a tela rola até ela. Ligar ou desligar a
   assinatura desmarca a confirmação.
 
-**Ex-assinante (15h17):** quem já teve assinatura (está em `assinatura_elegibilidade`) não ganha os 10% na
-primeira compra, só a partir da 2ª entrega. É a regra anti-farm do `assinatura-elegivel`. Esse aviso tinha sumido
+**Sem desconto na 1ª compra (15h17, regra trocada às 15h56):** quem tem assinatura ativa ou pagou uma nos
+últimos 60 dias não ganha os 10% na primeira compra, só a partir da 2ª entrega. A regra está em
+`../assinaturas/README.md`; antes valia para qualquer ex-assinante. Esse aviso tinha sumido
 com a primeira versão do bloco e voltou: aparece na nota do box e no fim da confirmação. O botão mostra
 "R$ 327,00 agora · depois R$ 294,30 a cada 30 dias". Foi o caso da Fabiana (27/10) e do Winslow (26/10).
 
