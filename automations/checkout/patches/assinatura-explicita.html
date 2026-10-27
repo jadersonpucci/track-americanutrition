@@ -1,0 +1,98 @@
+<!-- AN-ASSIN-CLARO:START (27/10/2026) Clientes assinavam sem perceber: o box so falava em "10% OFF", o botao
+vermelho parecia o de continuar a compra, e com a assinatura ligada o resumo mostrava so "Desconto" e o botao
+seguia "Finalizar compra". Agora: selo "Assinatura mensal" no box, botao de assinar em contorno (o botao cheio e
+so o de pagar), resumo "Desconto assinatura", botao "Assinar e pagar" com o valor de agora e o da renovacao, e
+confirmacao obrigatoria ("Entendi que e uma assinatura...") antes de pagar, com atalho para compra unica. -->
+<style id="anAssinClaroCss">
+#an-assin-selo{display:flex;align-items:center;gap:8px;margin:0 0 10px;padding:7px 10px;border-radius:10px;background:#07388E;color:#fff;font:700 12px/1.35 'Barlow',sans-serif;letter-spacing:.2px}
+#an-assin-selo b{font-weight:800;letter-spacing:.6px}
+#an-assin-consent{display:none;margin:0 0 12px;padding:12px 12px 10px;border:2px solid #07388E;border-radius:12px;background:#f2f6ff;font:500 13px/1.45 'Barlow',sans-serif;color:#1d2740}
+#an-assin-consent label{display:flex;gap:10px;align-items:flex-start;cursor:pointer}
+#an-assin-consent input{flex:none;width:20px;height:20px;margin:1px 0 0;accent-color:#07388E}
+#an-assin-consent b{color:#07388E}
+#an-assin-unica{display:block;margin:9px 0 0 30px;color:#AD0404;font-weight:700;font-size:12.5px;text-decoration:underline;cursor:pointer;background:none;border:0;padding:0}
+#an-assin-consent.an-pisca{animation:anAssinPisca .5s ease 3}
+@keyframes anAssinPisca{0%,100%{box-shadow:0 0 0 0 rgba(173,4,4,0)}50%{box-shadow:0 0 0 5px rgba(173,4,4,.35);border-color:#AD0404}}
+</style>
+<script id="anAssinClaro">(function(){
+  function el(i){ return document.getElementById(i); }
+  function ligado(){ try{ return typeof assinaturaOn!=='undefined' && !!assinaturaOn; }catch(e){ return false; } }
+  function fmt(v){ return 'R$ '+(Math.round(v*100)/100).toFixed(2).replace('.',','); }
+  function bruto(){ try{ return ITENS.reduce(function(a,i){ return a+i.unit*i.qty; },0); }catch(e){ return 0; } }
+  function itensTxt(){ try{ return ITENS.map(function(i){ return i.qty+'x '+i.name; }).join(' + '); }catch(e){ return 'o seu pedido'; } }
+  function pix(){ try{ return payMethod==='pix'; }catch(e){ return false; } }
+
+  function selo(){
+    var box=el('an-assin-box'); if(!box || el('an-assin-selo')) return;
+    var s=document.createElement('div'); s.id='an-assin-selo';
+    s.innerHTML='<span>&#128257;</span><span><b>ASSINATURA MENSAL (opcional)</b><br>Entrega e cobran&ccedil;a autom&aacute;ticas a cada 30 dias</span>';
+    box.insertBefore(s, box.firstChild);
+  }
+  function consent(){
+    var c=el('an-assin-consent'); if(c) return c;
+    var pay=el('btnPay'); if(!pay || !pay.parentNode) return null;
+    c=document.createElement('div'); c.id='an-assin-consent';
+    c.innerHTML='<label><input type="checkbox" id="an-assin-ok"><span id="an-assin-ok-t"></span></label>'
+      +'<button type="button" id="an-assin-unica">Prefiro compra &uacute;nica, sem assinatura</button>';
+    pay.parentNode.insertBefore(c, pay);
+    el('an-assin-unica').onclick=function(){ try{ var tg=el('an-assin-toggle'); if(tg) tg.checked=false; if(typeof window.setAssinatura==='function') window.setAssinatura(false); }catch(e){} render(); };
+    return c;
+  }
+  var ultimo=null;
+  function render(){
+    try{
+      selo();
+      var on=ligado(), c=consent();
+      if(ultimo!==null && ultimo!==on){ var ok0=el('an-assin-ok'); if(ok0) ok0.checked=false; }
+      ultimo=on;
+      if(c){
+        c.style.display=on?'block':'none';
+        var t=el('an-assin-ok-t');
+        if(t && on){
+          var ren=bruto()*0.9;
+          t.innerHTML='<b>Entendi que estou fazendo uma ASSINATURA.</b> Vou receber '+itensTxt()+' a cada 30 dias e pagar <b>'+fmt(ren)+'</b> em cada renova&ccedil;&atilde;o'
+            +(pix()?', por PIX (o c&oacute;digo chega no meu WhatsApp todo m&ecirc;s)':', cobrados automaticamente no meu cart&atilde;o')
+            +'. Frete gr&aacute;tis nas renova&ccedil;&otilde;es acima de R$ 250. Posso cancelar quando quiser, sem multa.';
+        }
+      }
+      // resumo do rodape (discLbl) e resumo fixo do topo (.mr-desc .mr-name)
+      var dls=[el('discLbl')].concat([].slice.call(document.querySelectorAll('.mr-desc .mr-name')));
+      dls.forEach(function(dl){ if(dl && on && !/assinatura/i.test(dl.textContent)) dl.textContent=dl.textContent.replace(/^Desconto/,'Desconto assinatura'); });
+      var lbl=el('btnPayLabel');
+      if(lbl){ if(on && lbl.textContent==='Finalizar compra') lbl.textContent='Assinar e pagar'; else if(!on && lbl.textContent==='Assinar e pagar') lbl.textContent='Finalizar compra'; }
+      var sub=el('btnPaySub');
+      if(sub && on && !/a cada 30 dias/.test(sub.textContent)){
+        var m=sub.textContent.match(/R\$ ?[\d.]+,\d{2}/);
+        sub.textContent=(m?m[0]+' agora':'Pague agora')+' · depois '+fmt(bruto()*0.9)+' a cada 30 dias';
+      }
+      var b=el('an-assin-btn'), tt=el('an-assin-t');
+      if(b){
+        var ep=document.querySelector('#an-assin-emo path');
+        if(on){ b.style.color='#fff'; b.style.border='0'; if(ep) ep.style.stroke='#fff'; if(tt) tt.textContent='Assinatura mensal ativada'; }
+        else { b.style.background='#fff'; b.style.color='#AD0404'; b.style.border='2px solid #AD0404'; b.style.boxShadow='none'; if(ep) ep.style.stroke='#AD0404'; if(tt) tt.textContent='Quero assinar: todo mês com 10% OFF'; }
+      }
+      var n=el('an-assin-note');
+      if(n) n.textContent=on ? 'Assinatura ligada: renova a cada 30 dias. Cancele quando quiser. Toque no botão de novo para desfazer.'
+                            : 'Opcional. Sem assinar, esta é uma compra única. Assinando: cobrança a cada 30 dias, cancele quando quiser.';
+    }catch(e){}
+  }
+  function bloqueado(){
+    if(!ligado()) return false;
+    var ok=el('an-assin-ok'); if(ok && ok.checked) return false;
+    var c=consent(); if(c){ c.style.display='block'; c.classList.remove('an-pisca'); void c.offsetWidth; c.classList.add('an-pisca'); try{ c.scrollIntoView({block:'center',behavior:'smooth'}); }catch(e){} }
+    return true;
+  }
+  // a confirmacao vale para qualquer caminho que finalize (botao, Enter, modal de troca para PIX)
+  document.addEventListener('click', function(e){ var b=e.target && e.target.closest ? e.target.closest('#btnPay') : null; if(b && bloqueado()){ e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); } }, true);
+  function embrulhar(){
+    if(typeof window.finalizarCompra==='function' && !window.finalizarCompra.__anClaro){
+      var f=window.finalizarCompra; window.finalizarCompra=function(){ if(bloqueado()) return; return f.apply(this, arguments); }; window.finalizarCompra.__anClaro=1;
+    }
+    ['setAssinatura','updateTotals','setPay'].forEach(function(nm){
+      var g=window[nm]; if(typeof g==='function' && !g.__anClaro){ var w=function(){ var r=g.apply(this, arguments); render(); return r; }; w.__anClaro=1; if(g.__anW) w.__anW=g.__anW; window[nm]=w; }
+    });
+  }
+  function boot(){ embrulhar(); render(); setInterval(function(){ embrulhar(); render(); }, 900); }
+  if(document.readyState!=='loading') setTimeout(boot, 300); else document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot, 300); });
+})();</script>
+<!-- AN-ASSIN-CLARO:END -->

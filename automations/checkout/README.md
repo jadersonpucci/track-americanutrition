@@ -61,3 +61,32 @@ guarda a versão anterior, `{"action":"rollback"}` volta). Duas mudanças, marca
 
 Testado no Chromium com as requisições externas bloqueadas, antes e depois do deploy. A versão anterior
 reproduz o erro (`(55) 21999-2308`). Publicado em 16/10 às 11h27; o backup automático é a versão de 19/09.
+
+## Assinatura explícita no checkout (27/10/2026)
+
+O Jaderson relatou clientes assinando sem perceber. O que estava levando a isso:
+
+- O box da assinatura fica no topo da etapa de pagamento e só falava em "10% OFF".
+- O botão de assinar era vermelho e cheio, com cara de "continuar a compra".
+- Com a assinatura ligada, o resumo mostrava apenas "Desconto (-10%)" e o botão seguia "Finalizar compra",
+  sem dizer que haveria cobrança todo mês.
+
+A mudança é um bloco no fim do HTML, marcado `AN-ASSIN-CLARO`. A cópia está em
+[`patches/assinatura-explicita.html`](patches/assinatura-explicita.html). O que ele faz:
+
+- **Selo no topo do box:** "ASSINATURA MENSAL (opcional) · Entrega e cobrança automáticas a cada 30 dias".
+- **Botão de assinar desligado:** vira contorno vermelho com o texto "Quero assinar: todo mês com 10% OFF". Fica
+  cheio só o botão de pagar. A nota abaixo diz "Opcional. Sem assinar, esta é uma compra única...".
+- **Assinatura ligada:**
+  - os dois resumos mostram "Desconto assinatura (-10%)";
+  - o botão vira **"Assinar e pagar"**, com "R$ X agora · depois R$ Y a cada 30 dias";
+  - logo acima do botão aparece uma **confirmação obrigatória**: "Entendi que estou fazendo uma ASSINATURA. Vou
+    receber [itens] a cada 30 dias e pagar R$ Y em cada renovação (cartão ou PIX no WhatsApp)... Posso cancelar
+    quando quiser". Embaixo dela há o link "Prefiro compra única, sem assinatura", que desliga a assinatura.
+- **Bloqueio:** sem a confirmação marcada, o pagamento não sai, seja pelo clique no botão ou pela
+  `finalizarCompra()` chamada de outro lugar. A caixa pisca e a tela rola até ela. Ligar ou desligar a
+  assinatura desmarca a confirmação.
+
+Testado no Chromium, no celular (390px) e no desktop, com a assinatura ligada, desligada, no PIX e no cartão.
+O teste foi repetido no HTML publicado. Publicado em 27/10 às 15h12. O backup automático é a versão de 16/10;
+`{"action":"rollback"}` volta para ela.
