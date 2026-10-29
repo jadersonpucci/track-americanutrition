@@ -2710,3 +2710,26 @@ transcrição e o Core, a resposta chega mais ou menos depois do tempo de ouvir 
 Nesses casos o ack rápido ("já estou verificando") não sai. Texto continua com `wpp_debounce_seg` (8s).
 Limite conhecido: se o cliente manda um áudio e logo depois um texto, quem responde é a execução do texto, com a espera
 normal de texto.
+
+## Limite de respostas por hora não some mais em silêncio (29/10/2026)
+
+**O caso:** o Pedro (+55 86 99400-7395) conversou com a Serena das 14h10 às 14h35, com 30 respostas em menos de uma
+hora. Às 14h39 ele pediu "monte o pedido de uma D3 com um ImunoFosfo Líquido", e depois mandou "pode ser", "oi" e
+"pode gerar". Nenhuma dessas mensagens foi respondida.
+
+**A causa:** o `Pode Responder?` da Entrada (`zeJ8nScEpt7TckFb`) corta quem passa de `wpp_max_por_hora`
+respostas na última hora, uma proteção contra robô e loop. O corte era um `return []` mudo: nada ficava gravado em
+`serena_mensagens`, então o `Reprocessar sem resposta` também não via essas mensagens, e ninguém era avisado. Em 30
+dias, 4 clientes bateram o limite.
+
+**O que mudou:**
+
+- `serena_config.wpp_max_por_hora`: **30 → 60**.
+- No limite, a Entrada avisa no Telegram pelo `/webhook/serena-alerta` (chave `limite_hora_<telefone>`, um aviso
+  por número por hora). O aviso traz nome, número e a mensagem, para alguém responder pelo Inbox.
+- O Pedro foi respondido à mão às 15h08 pelo Core: pedido de R$ 214, faltando R$ 36 para o frete grátis. As 3
+  mensagens que estavam presas no buffer foram marcadas como processadas.
+
+**Outro problema visto na mesma conversa, ainda não corrigido:** às 14h15 a Serena gerou um boleto, e às 14h29 disse
+"não achei nenhum pedido ou boleto". A consulta de pedido não enxerga o rascunho do boleto (`#D40xx`), que só vira
+AN-xxxxx depois do pagamento. Por isso ela não conseguiu trocar o pedido.

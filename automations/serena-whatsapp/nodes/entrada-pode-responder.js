@@ -11,7 +11,19 @@ if (modo === 'teste') {
   if (lista.indexOf(tel) < 0) return [];
 }
 if (r.pausada_ate) return [];
-if (Number(r.respostas_1h || 0) >= Number(r.max_por_hora || 30)) return [];
+// LIMITE POR HORA (29/10/2026): no limite (serena_config.wpp_max_por_hora, agora 60), a Serena para de responder
+// aquele numero por um tempo (protecao contra robo/loop). Antes a mensagem sumia em silencio: o Pedro (+55 86
+// 99400-7395) mandou "pode gerar" o pedido e ficou sem resposta. Agora a equipe e avisada no Telegram (1 aviso
+// por numero por hora, dedupe do /webhook/serena-alerta) para responder pelo Inbox.
+if (Number(r.respostas_1h || 0) >= Number(r.max_por_hora || 30)) {
+  try {
+    const telL = String(r.telefone || '').replace(/\D/g, '');
+    await this.helpers.httpRequest({ method: 'POST', url: 'https://n8n.americanutrition.com/webhook/serena-alerta', json: true, timeout: 10000,
+      body: { chave: 'limite_hora_' + telL, minutos: 60,
+        texto: '\u{23F8}\u{FE0F} <b>Serena no limite de respostas por hora</b>' + String.fromCharCode(10) + String(r.nome || 'Cliente').replace(/[<>&]/g, ' ') + ' (+' + telL + ') passou de ' + Number(r.max_por_hora || 30) + ' respostas na \u00faltima hora e ficou sem resposta autom\u00e1tica.' + String.fromCharCode(10) + '<i>' + String(r.texto || '').replace(/[<>&]/g, ' ').slice(0, 200) + '</i>' + String.fromCharCode(10) + String.fromCharCode(10) + 'Responda pelo Inbox. Se for robo/spam, bloqueie.' } });
+  } catch (e) {}
+  return [];
+}
 if (r.ignorar_regex) {
   try { if (new RegExp(String(r.ignorar_regex), 'i').test(String(r.texto || ''))) return []; } catch (e) {}
 }
