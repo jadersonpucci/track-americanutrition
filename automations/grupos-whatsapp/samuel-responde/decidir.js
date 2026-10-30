@@ -45,13 +45,17 @@ if (!dirigida) return calar('ignorada', 'nao dirigida ao grupo');
 if (conf < CONF_MIN) return calar('ignorada', 'confianca ' + conf + ' abaixo de ' + CONF_MIN);
 
 const autor = ctx.telefone || String(ctx.participant || '').split('@')[0];
+// 30/10/2026: as duas travas de repeticao comparam tambem o produto. A Lurdinha pediu o link do ImunoFosfo 90 (20h29,
+// respondido) e depois o do vegano (20h43): mesma pessoa e mesma intencao (link_compra), e o pedido novo foi calado
+// como repeticao. Pedido de outro produto e pergunta nova.
+const mesmoProduto = " and coalesce(produto, '') = " + (produto && produto !== 'nenhum' ? E(produto) : "''");
 const r = await sql(
   "select " +
   "(select count(*) from grupo_bot_log where grupo_jid = " + E(ctx.jid) + " and acao in ('respondida','reagida') and criado_em > now() - interval '1 hour')::int as grupo_hora, " +
   "(select count(*) from grupo_bot_log where grupo_jid = " + E(ctx.jid) + " and acao in ('respondida','reagida') and criado_em > now() - interval '24 hours')::int as grupo_dia, " +
   "(select count(*) from grupo_bot_log where acao in ('respondida','reagida') and criado_em > now() - interval '24 hours')::int as geral_dia, " +
-  "(select count(*) from grupo_bot_log where autor = " + E(autor) + " and intencao = " + E(cat) + " and acao in ('respondida','reagida') and criado_em > now() - interval '" + MESMA_PESSOA_H + " hours')::int as mesma_pessoa, " +
-  "(select count(*) from grupo_bot_log where grupo_jid = " + E(ctx.jid) + " and intencao = " + E(cat) + " and acao = 'respondida' and criado_em > now() - interval '" + MESMA_DUVIDA_H + " hours')::int as mesma_duvida"
+  "(select count(*) from grupo_bot_log where autor = " + E(autor) + " and intencao = " + E(cat) + mesmoProduto + " and acao in ('respondida','reagida') and criado_em > now() - interval '" + MESMA_PESSOA_H + " hours')::int as mesma_pessoa, " +
+  "(select count(*) from grupo_bot_log where grupo_jid = " + E(ctx.jid) + " and intencao = " + E(cat) + mesmoProduto + " and acao = 'respondida' and criado_em > now() - interval '" + MESMA_DUVIDA_H + " hours')::int as mesma_duvida"
 );
 const q = (r && r[0]) || {};
 if (Number(q.mesma_pessoa || 0) >= 1) return calar('bloqueada', 'mesma pessoa e intencao nas ultimas ' + MESMA_PESSOA_H + 'h');
