@@ -2733,3 +2733,20 @@ dias, 4 clientes bateram o limite.
 **Outro problema visto na mesma conversa, ainda não corrigido:** às 14h15 a Serena gerou um boleto, e às 14h29 disse
 "não achei nenhum pedido ou boleto". A consulta de pedido não enxerga o rascunho do boleto (`#D40xx`), que só vira
 AN-xxxxx depois do pagamento. Por isso ela não conseguiu trocar o pedido.
+
+## Prévia do link do ImunoFosfo Vegano (30/10/2026)
+
+No grupo ImunoFosfo Connect Oncológicas, a Lurdinha pediu o link do vegano. O Samuel mandou o link certo: o texto
+dizia "ImunoFosfo Vegano 90 cápsulas" e o checkout abria a variante vegana (`44436756267180`). Mas a prévia do
+WhatsApp mostrava a arte genérica, com o frasco normal (`og-checkout-imunofosfo.jpg`). O AN Links tem arte própria
+para o Liquid, mas não tinha para o vegano, e quem olha a imagem acha que o link é do normal.
+
+Correção:
+
+- **Arte nova:** `og-checkout-imunofosfo-vegano.jpg` (1200x630, no CDN em `imagens/og/`), com o frasco vegano e o
+  selo "100% vegan". A fonte é [`og/og-checkout-imunofosfo-vegano.html`](og/og-checkout-imunofosfo-vegano.html).
+- **Trigger no banco:** `anl_links_og_vegano`, em [`og/anl-links-og-vegano.sql`](og/anl-links-og-vegano.sql). Todo
+  link de checkout criado só com a variante vegana já nasce com essa arte, com o título "ImunoFosfo Vegano — Finalize
+  sua compra" e a descrição padrão. Vale para qualquer origem: Serena, robô dos grupos ou painel.
+- **Link da Lurdinha:** o link que ela recebeu (`Y2sGHA2`) também ganhou a arte nova. A prévia que já apareceu no
+  WhatsApp não muda, porque o WhatsApp guarda a imagem da mensagem enviada.
