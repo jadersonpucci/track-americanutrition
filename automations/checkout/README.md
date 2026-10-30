@@ -96,3 +96,19 @@ com a primeira versão do bloco e voltou: aparece na nota do box e no fim da con
 Testado no Chromium, no celular (390px) e no desktop, com a assinatura ligada, desligada, no PIX e no cartão.
 O teste foi repetido no HTML publicado. Publicado em 27/10 às 15h12, com ajuste às 15h17. O backup automático agora é a versão das 15h12. Para voltar
 ao checkout de antes da mudança, publique o HTML de 16/10 sem o bloco `AN-ASSIN-CLARO`.
+
+## PIX vencido devolvido de novo pelo gate (30/10/2026)
+
+**O caso:** a Rosana Caraschi tentou pagar R$ 567,15 em 30/10, e o banco disse que o código PIX era inválido. O PIX
+era o de 23/10 (txid `ANmvkysw206e7a80bzimtbujl138ph5c`), que tinha vencido em 24/10 às 09h47. A URL de cobrança
+desse PIX no Inter já respondia 404.
+
+**A causa:** o checkout grava no celular uma chave por carrinho (`localStorage` `an_intent:<assinatura do
+carrinho>`) e nunca a apaga. O `AN Checkout Gate` (`htUp2uQx0LpaCwCk`) repetia a resposta guardada para a mesma
+chave por até 14 dias. Quem voltava com o mesmo carrinho recebia de novo o PIX antigo, já vencido. Com cartão, a
+recompra do mesmo carrinho dentro de 14 dias recebia a resposta da compra anterior, e nenhum pedido novo era
+criado.
+
+**A correção:** o gate agora só repete a resposta guardada se ela tiver **menos de 30 minutos**. Isso continua
+cobrindo clique duplo e recarregamento da página. O código está em
+[`nodes/gate-idempotencia.js`](nodes/gate-idempotencia.js), com a chave da Supabase como marcador.
