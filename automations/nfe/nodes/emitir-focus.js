@@ -1,7 +1,7 @@
 // No "Emitir e Anexar" do workflow AN · NF-e Focus (emitir e anexar). Roda a cada 10 min e em GET /webhook/nfe-focus.
 // 30/10/2026: a America Nutrition passa a emitir NF-e pela Focus NFe (conta da Rodolog, plano Growth). A cada rodada:
 //   1. acompanha as notas em processamento e, quando autorizadas, anexa DANFE (PDF) e XML no pedido da Shopify
-//      (arquivos + metafields nfe.numero/chave/danfe/xml/danfe_url, tag "NF-e");
+//      (arquivos + metafields nfe.numero/chave/danfe/xml/danfe_url; sem tag, a pedido do Jaderson);
 //   2. pega os pedidos pagos e ainda nao enviados desde serena_config.nfe_desde, monta a nota e envia a Focus.
 // Modo em serena_config.nfe_modo: off (parado), simulacao (monta e grava o payload, nao envia), on (emite).
 // Manual: GET /webhook/nfe-focus?t=TOKEN[&pedido=AN-123][&modo=simulacao|on] (um pedido so, reprocessa erro/revisar).
@@ -239,7 +239,6 @@ async function anexar(pedido, orderId, r) {
   if (fs[0]) mf.push({ ownerId: orderId, namespace: 'nfe', key: 'danfe', type: 'file_reference', value: fs[0].id });
   if (fs[1]) mf.push({ ownerId: orderId, namespace: 'nfe', key: 'xml', type: 'file_reference', value: fs[1].id });
   const ms = await gql('mutation($m:[MetafieldsSetInput!]!){ metafieldsSet(metafields:$m){ metafields{ key } userErrors{ field message } } }', { m: mf });
-  await gql('mutation($id:ID!,$t:[String!]!){ tagsAdd(id:$id, tags:$t){ userErrors{ message } } }', { id: orderId, t: ['NF-e', 'NF-e ' + r.numero] });
   const erros = [].concat(fc.fileCreate.userErrors || [], ms.metafieldsSet.userErrors || []);
   await gravar(pedido, { status: 'autorizado', shopify_danfe_id: fs[0] ? fs[0].id : null, shopify_xml_id: fs[1] ? fs[1].id : null,
     anexado_em: new Date().toISOString(), mensagem: erros.length ? ('anexo: ' + JSON.stringify(erros)).slice(0, 500) : 'Autorizada e anexada' });

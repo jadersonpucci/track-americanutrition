@@ -14,8 +14,9 @@ A cada rodada:
 
 1. Acompanha as notas em processamento. Quando a nota é autorizada, anexa no pedido da Shopify:
    - o DANFE (PDF) e o XML, nos Arquivos da Shopify;
-   - os metafields `nfe.numero`, `nfe.chave`, `nfe.danfe`, `nfe.xml` e `nfe.danfe_url`, fixados na tela do pedido;
-   - as tags `NF-e` e `NF-e <número>`.
+   - os metafields `nfe.numero`, `nfe.chave`, `nfe.danfe`, `nfe.xml` e `nfe.danfe_url`, fixados na tela do pedido.
+
+   O pedido não recebe tag de NF-e (pedido do Jaderson, 30/10).
 2. Pega os pedidos **pagos e ainda não enviados** criados desde `serena_config.nfe_desde` (começou em 30/10/2026,
    00h), monta a nota e envia para a Focus com `ref` = número do pedido (`AN-16318`).
 
