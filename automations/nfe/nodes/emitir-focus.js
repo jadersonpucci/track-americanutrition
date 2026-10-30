@@ -1,10 +1,13 @@
-// No "Emitir e Anexar" do workflow AN · NF-e Focus (emitir e anexar). Roda a cada 10 min e em GET /webhook/nfe-focus.
-// 30/10/2026: a America Nutrition passa a emitir NF-e pela Focus NFe (conta da Rodolog, plano Growth). A cada rodada:
-//   1. acompanha as notas em processamento e, quando autorizadas, anexa DANFE (PDF) e XML no pedido da Shopify
-//      (arquivos + metafields nfe.numero/chave/danfe/xml/danfe_url; sem tag, a pedido do Jaderson);
-//   2. pega os pedidos pagos e ainda nao enviados desde serena_config.nfe_desde, monta a nota e envia a Focus.
+// No "Emitir e Anexar" do workflow AN · NF-e Focus (emitir e anexar). Tres entradas chegam aqui:
+//   - Eventos (POST /webhook/nfe-focus-evento?t=TOKEN_EVENTO), na hora:
+//       Shopify orders/create e orders/paid -> emite a nota daquele pedido se estiver pago e nao enviado;
+//       Focus (gatilho "nfe" do CNPJ) -> nota autorizada/rejeitada: anexa no pedido ou avisa no Telegram.
+//   - Rede de seguranca a cada 60 min: acompanha o que ficou processando e emite o que algum aviso perdeu.
+//   - Manual: GET /webhook/nfe-focus?t=TOKEN[&pedido=AN-123][&modo=simulacao|on] (um pedido so, reprocessa erro/revisar).
+// 30/10/2026: a America Nutrition passa a emitir NF-e pela Focus NFe (conta da Rodolog, plano Growth). Nota autorizada
+// vai para o pedido da Shopify (arquivos + metafields nfe.numero/chave/danfe/xml/danfe_url; sem tag, a pedido do
+// Jaderson). Pedidos considerados: pagos e ainda nao enviados desde serena_config.nfe_desde.
 // Modo em serena_config.nfe_modo: off (parado), simulacao (monta e grava o payload, nao envia), on (emite).
-// Manual: GET /webhook/nfe-focus?t=TOKEN[&pedido=AN-123][&modo=simulacao|on] (um pedido so, reprocessa erro/revisar).
 //
 // Tributacao (Lucro Presumido, CRT 3; produtos importados direto pela AN = origem 1):
 //   ICMS CST 00: 18% dentro de SP (CFOP 5102); 4% interestadual para importado (Res. Senado 13/2012, CFOP 6108).
@@ -23,6 +26,7 @@ const FOCUS_TOKEN = '<FOCUS_TOKEN_AN>';
 const TG_BOT = '<TOKEN_ALERTAS>';
 const TG_CHAT = '-1003766435449';
 const TOKEN_MANUAL = '<NFE_TOKEN_MANUAL>';
+const TOKEN_EVENTO = '<NFE_TOKEN_EVENTO>';
 const CNPJ = '11298909000194';
 const self = this;
 
@@ -266,7 +270,13 @@ async function consultar(pedido, orderId) {
 // ---------- rodada ----------
 const ent = $input.first().json || {};
 const q = ent.query || {};
-const manual = Object.prototype.hasOwnProperty.call(ent, 'query');
+const corpo = (ent.body && typeof ent.body === 'object') ? ent.body : {};
+// Aviso da Focus traz ref + status + cnpj_emitente; aviso da Shopify traz o pedido inteiro (name + admin_graphql_api_id).
+const evFocus = !!(corpo.ref && corpo.status && corpo.cnpj_emitente);
+const evShopify = !evFocus && !!(corpo.admin_graphql_api_id && corpo.name);
+const evento = evFocus || evShopify;
+const manual = !evento && Object.prototype.hasOwnProperty.call(ent, 'query');
+if (evento && String(q.t || '') !== TOKEN_EVENTO) return [{ json: { ok: false, erro: 'acesso negado' } }];
 if (manual && q.t !== TOKEN_MANUAL) return [{ json: { ok: false, erro: 'acesso negado' } }];
 
 const cfg = {};
@@ -275,7 +285,16 @@ let modo = String(cfg.nfe_modo || 'off');
 if (manual && /^(simulacao|on)$/.test(String(q.modo || ''))) modo = q.modo;
 if (modo === 'off') return [{ json: { ok: true, modo: modo, nada: true } }];
 const desde = cfg.nfe_desde || new Date().toISOString();
-const pedidoUnico = manual && q.pedido ? String(q.pedido).trim().toUpperCase() : '';
+
+// Aviso da Focus: so a nota daquele pedido (autorizada -> anexa; rejeitada -> Telegram).
+if (evFocus) {
+  const ref = String(corpo.ref);
+  const row = (await sql('select shopify_order_id, status from nfe_emissoes where pedido = ' + E(ref)))[0];
+  if (!row) return [{ json: { ok: true, evento: 'focus', pedido: ref, ignorado: 'ref fora da nfe_emissoes' } }];
+  if (row.status === 'autorizado' || row.status === 'cancelado') return [{ json: { ok: true, evento: 'focus', pedido: ref, ja: row.status } }];
+  return [{ json: { ok: true, evento: 'focus', pedido: ref, status: await consultar(ref, row.shopify_order_id) } }];
+}
+const pedidoUnico = evShopify ? String(corpo.name).trim().toUpperCase() : (manual && q.pedido ? String(q.pedido).trim().toUpperCase() : '');
 
 const saida = { ok: true, modo: modo, acompanhadas: [], novas: [] };
 
@@ -290,7 +309,7 @@ if (modo === 'on') {
 
 // 2) novos pedidos
 const filtro = pedidoUnico ? ('name:' + pedidoUnico) : ("created_at:>='" + desde + "' financial_status:paid fulfillment_status:unfulfilled -status:cancelled");
-const QO = 'query($q:String!){ orders(first:40, query:$q, sortKey:CREATED_AT){ nodes{ id name createdAt displayFinancialStatus cancelledAt email phone customAttributes{ key value }'
+const QO = 'query($q:String!){ orders(first:40, query:$q, sortKey:CREATED_AT){ nodes{ id name createdAt displayFinancialStatus displayFulfillmentStatus cancelledAt email phone customAttributes{ key value }'
   + ' localizationExtensions(first:5){ nodes{ purpose title value } } currentTotalPriceSet{ shopMoney{ amount } }'
   + ' shippingAddress{ name firstName lastName address1 address2 city provinceCode zip phone }'
   + ' shippingLines(first:3){ nodes{ title discountedPriceSet{ shopMoney{ amount } } } }'
@@ -303,8 +322,10 @@ if (nomes.length) (await sql('select pedido, status from nfe_emissoes where pedi
 for (const o of pedidos) {
   const st = ja[o.name];
   // Ja emitida ou em andamento nao volta. Simulado pode virar emissao; erro/revisar so com pedido unico (manual).
-  if (st && !(st === 'simulado' && modo === 'on') && !(pedidoUnico && /^(erro|revisar|simulado)$/.test(st))) continue;
+  if (st && !(st === 'simulado' && modo === 'on') && !(manual && pedidoUnico && /^(erro|revisar|simulado)$/.test(st))) continue;
   if (o.cancelledAt || !/PAID/i.test(o.displayFinancialStatus)) continue;
+  // Aviso da Shopify chega tambem para pedido antigo editado/pago depois: so vale o que ainda nao foi enviado e e de nfe_desde em diante.
+  if (evShopify && (o.displayFulfillmentStatus === 'FULFILLED' || o.createdAt < new Date(desde).toISOString())) continue;
   try {
     const m = await montar(o);
     const base = { shopify_order_id: o.id, uf: m.uf, valor: m.total, icms: m.icms, difal: m.difal, payload: m.nf };

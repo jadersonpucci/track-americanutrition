@@ -5,20 +5,40 @@ divididos entre os CNPJs). A Notasy, que emitiu até a nota 234 da série 68, de
 
 ## O robô
 
-Workflow **AN · NF-e Focus (emitir e anexar)** (`s1JHMJosqDcEeWbr`). Roda a cada 10 minutos e também pode ser
-chamado à mão. O código fica em [`nodes/emitir-focus.js`](nodes/emitir-focus.js), e o arquivo do SDK
-([`nfe-focus.workflow.js`](nfe-focus.workflow.js)) é gerado por [`gerar-workflow.mjs`](gerar-workflow.mjs). No repo
-os segredos ficam como placeholders; as chaves reais ficam só no n8n.
+Workflow **AN · NF-e Focus (emitir e anexar)** (`s1JHMJosqDcEeWbr`). O código fica em
+[`nodes/emitir-focus.js`](nodes/emitir-focus.js), e o arquivo do SDK ([`nfe-focus.workflow.js`](nfe-focus.workflow.js)) é
+gerado por [`gerar-workflow.mjs`](gerar-workflow.mjs). No repo os segredos ficam como placeholders; as chaves reais
+ficam só no n8n.
 
-A cada rodada:
+### Na hora, por aviso (sem ficar consultando)
 
-1. Acompanha as notas em processamento. Quando a nota é autorizada, anexa no pedido da Shopify:
-   - o DANFE (PDF) e o XML, nos Arquivos da Shopify;
-   - os metafields `nfe.numero`, `nfe.chave`, `nfe.danfe`, `nfe.xml` e `nfe.danfe_url`, fixados na tela do pedido.
+Desde 30/10/2026 a emissão funciona por aviso. Os três avisos chegam em
+`POST /webhook/nfe-focus-evento?t=<NFE_TOKEN_EVENTO>` e o webhook responde 200 na hora.
 
-   O pedido não recebe tag de NF-e (pedido do Jaderson, 30/10).
-2. Pega os pedidos **pagos e ainda não enviados** criados desde `serena_config.nfe_desde` (começou em 30/10/2026,
-   00h), monta a nota e envia para a Focus com `ref` = número do pedido (`AN-16318`).
+| Quem avisa | Quando | O que o robô faz |
+|---|---|---|
+| Shopify `orders/paid` (`WebhookSubscription/1712311894188`) | Pedido pago | Busca o pedido. Se está pago, não foi enviado e é de `nfe_desde` em diante, emite a nota. |
+| Shopify `orders/create` (`WebhookSubscription/1712311926956`) | Pedido criado | Igual. Cobre os pedidos do nosso checkout, que já nascem pagos. |
+| Focus, gatilho `nfe` do CNPJ (`hook 2RLZzAJk`) | A SEFAZ autorizou ou rejeitou | Autorizada: anexa DANFE e XML no pedido. Rejeitada: avisa no Telegram. |
+
+O mesmo pedido pode chegar duas vezes (create e paid), mas a Focus não aceita duas notas com a mesma `ref` (o número
+do pedido). O robô também ignora pedido que já está na `nfe_emissoes`.
+
+### Rede de segurança a cada 1 hora
+
+Pega o que algum aviso perdeu: as notas que ficaram em processamento e os pedidos pagos e não enviados que ainda não
+têm nota.
+
+### Quando a nota é autorizada
+
+O robô anexa no pedido da Shopify:
+
+- o DANFE (PDF) e o XML, nos Arquivos da Shopify;
+- os metafields `nfe.numero`, `nfe.chave`, `nfe.danfe`, `nfe.xml` e `nfe.danfe_url`, fixados na tela do pedido.
+
+O pedido não recebe tag de NF-e (pedido do Jaderson, 30/10).
+
+### Quando o pedido não fecha
 
 Uma nota rejeitada ou um pedido que não fecha vai para o Telegram e fica parado até alguém mandar reprocessar. Não
 fechar quer dizer: sem CPF, item sem preço (brinde), total diferente de itens + frete + juros, ou CEP de outro estado.
