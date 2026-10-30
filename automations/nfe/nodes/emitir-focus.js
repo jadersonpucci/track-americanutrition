@@ -137,7 +137,9 @@ async function montar(o) {
     if (p.desc < 0) { p.outras = r2(p.outras - p.desc); p.desc = 0; }
   });
 
-  let totIcms = 0, totDifal = 0, totFcp = 0;
+  // Lei 12.741/2012 (valor aproximado dos tributos): a Focus nao preencheu vTotTrib sozinha, entao vai a soma real
+  // dos tributos de cada item: ICMS + DIFAL + FCP (estaduais) e PIS + COFINS (federais). IBS/CBS de 2026 fica de fora.
+  let totIcms = 0, totDifal = 0, totFcp = 0, totFed = 0;
   const [pDest, pFcp] = UF_INTERNA[uf] || [0, 0];
   const items = prods.map((p, i) => {
     const li = p.li;
@@ -145,6 +147,8 @@ async function montar(o) {
     const aliq = interna ? ICMS_SP : ICMS_INTER_IMPORTADO;
     const icms = r2(base * aliq / 100);
     const bPis = r2(base - icms);
+    const vPis = r2(bPis * 0.0065), vCofins = r2(bPis * 0.03);
+    let estaduais = icms;
     const desc = limpa(li.title + (li.variantTitle && li.variantTitle !== 'Default Title' ? ' - ' + li.variantTitle : ''));
     const it = {
       numero_item: i + 1,
@@ -158,8 +162,8 @@ async function montar(o) {
       inclui_no_total: 1,
       icms_origem: ORIGEM, icms_situacao_tributaria: '00', icms_modalidade_base_calculo: 3,
       icms_base_calculo: base, icms_aliquota: aliq, icms_valor: icms,
-      pis_situacao_tributaria: '01', pis_base_calculo: bPis, pis_aliquota_porcentual: 0.65, pis_valor: r2(bPis * 0.0065),
-      cofins_situacao_tributaria: '01', cofins_base_calculo: bPis, cofins_aliquota_porcentual: 3, cofins_valor: r2(bPis * 0.03),
+      pis_situacao_tributaria: '01', pis_base_calculo: bPis, pis_aliquota_porcentual: 0.65, pis_valor: vPis,
+      cofins_situacao_tributaria: '01', cofins_base_calculo: bPis, cofins_aliquota_porcentual: 3, cofins_valor: vCofins,
       ibs_cbs_situacao_tributaria: '000', ibs_cbs_classificacao_tributaria: '000001', ibs_cbs_base_calculo: base,
       ibs_uf_aliquota: 0.1, ibs_uf_valor: r2(base * 0.001), ibs_mun_aliquota: 0, ibs_mun_valor: 0,
       cbs_aliquota: 0.9, cbs_valor: r2(base * 0.009)
@@ -175,7 +179,10 @@ async function montar(o) {
         icms_percentual_partilha: 100, icms_valor_uf_destino: vDest, icms_valor_uf_remetente: 0 });
       if (pFcp > 0) Object.assign(it, { fcp_base_calculo_uf_destino: base, fcp_percentual_uf_destino: pFcp, fcp_valor_uf_destino: vFcp });
       totDifal += vDest; totFcp += vFcp;
+      estaduais += vDest + vFcp;
     }
+    it.valor_total_tributos = r2(estaduais + vPis + vCofins);
+    totFed += vPis + vCofins;
     return it;
   });
 
@@ -188,7 +195,10 @@ async function montar(o) {
   else if (!/pix/.test(pag)) probs.push('forma de pagamento nao reconhecida: ' + (pag || 'vazia'));
 
   const info = ['Pedido ' + o.name + '.'];
-  if (!interna) info.push('ICMS DIFAL para a UF de destino (' + uf + '): R$ ' + r2(totDifal).toFixed(2).replace('.', ',') + (totFcp > 0 ? ' + FCP R$ ' + r2(totFcp).toFixed(2).replace('.', ',') : '') + '.');
+  const brl = (v) => r2(v).toFixed(2).replace('.', ',');
+  if (!interna) info.push('ICMS DIFAL para a UF de destino (' + uf + '): R$ ' + brl(totDifal) + (totFcp > 0 ? ' + FCP R$ ' + brl(totFcp) : '') + '.');
+  const totEst = totIcms + totDifal + totFcp;
+  info.push('Valor aproximado dos tributos: R$ ' + brl(totEst + totFed) + ' (federais R$ ' + brl(totFed) + ', estaduais R$ ' + brl(totEst) + '). Lei 12.741/2012.');
   const tel = dig(sa.phone || o.phone).replace(/^55(?=\d{10,11}$)/, '');
   const nf = {
     natureza_operacao: 'Venda de mercadoria',
