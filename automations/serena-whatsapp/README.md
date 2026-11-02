@@ -2777,9 +2777,11 @@ Pedido do Jaderson: a Serena convida para os grupos quem conversa com ela e aind
 
    Não convida em reclamação, troca, reembolso, problema de entrega ou pagamento, irritação, luto, spam, conversa
    vazia, pedido para não receber mensagens, ou quando a Serena ainda espera uma resposta.
-4. **Grupo.** O de menos membros, contando o snapshot do dia mais os convites dos últimos 7 dias sem entrada, abaixo
-   de 950 membros. Os grupos gerais são #1, #2, #3, Fosfoetanolamina #2 e Connect Oncológicas. Quem tem interesse
-   em diabetes vai para os 2 grupos de diabetes.
+4. **Grupo.** O **mais cheio que ainda tem vaga**, contando o snapshot do dia mais os convites dos últimos 7 dias
+   sem entrada, até 1.000 membros (o WhatsApp para em 1.024). A ordem foi pedido do Jaderson (02/11): enche primeiro
+   os grupos maiores e, cheios, passa para os seguintes. Os grupos gerais, do maior para o menor em 02/11, são #1
+   (981), Connect Oncológicas (656), #2 (585), Fosfoetanolamina #2 (234) e #3 (134). Quem tem interesse em diabetes
+   vai para os 2 grupos de diabetes, também do maior para o menor.
 5. **Envio.** Texto fixo por perfil, com o link de convite do grupo (Evolution `group/inviteCode`), enviado pelo
    Samuel. Fica registrado em `serena_mensagens` (autor `proativo:comunidade`) e em `serena_comunidade_convites`. O
    resumo vai para o Telegram (tópico 289).

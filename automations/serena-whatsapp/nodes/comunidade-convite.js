@@ -8,8 +8,9 @@
 //   2. a Shopify diz se ja comprou (cliente pelo telefone; a clientes_tel parou em 15/08);
 //   3. a IA le a conversa e decide se convida e com qual perfil. Nao convida em reclamacao, troca, reembolso, problema
 //      de entrega ou pagamento, irritacao, luto, spam, conversa vazia ou pedido para nao receber mensagens;
-//   4. grupo: o de menos gente (snapshot + convites dos ultimos 7 dias ainda sem entrada) entre os gerais, ou entre
-//      os de diabetes quando o interesse e diabetes; abaixo de 950 membros;
+//   4. grupo: o MAIS cheio que ainda tem vaga (snapshot + convites dos ultimos 7 dias ainda sem entrada, abaixo de
+//      1000 membros; o WhatsApp para em 1024), entre os gerais ou entre os de diabetes quando o interesse e diabetes.
+//      Pedido do Jaderson (02/11): enche primeiro os grupos maiores e, cheios, passa para os seguintes;
 //   5. envia pelo Samuel, registra em serena_mensagens (autor proativo:comunidade) e em serena_comunidade_convites.
 // Quem entra num grupo depois do convite ganha entrou_em (pelo grupos_membros, atualizado todo dia).
 // serena_config.comunidade_convite: off | simulacao (monta e grava o texto, nao envia) | on.
@@ -38,7 +39,7 @@ const DIABETES = {
   '120363404254700593@g.us': 'ImunoFosfo Diabetes - Comunidade Oficial',
   '120363407289053552@g.us': '#1 ImunoFosfo Diabetes'
 };
-const LIMITE_GRUPO = 950;
+const LIMITE_GRUPO = 1000;
 const EQUIPE = ['5513981885555', '16464270203', '13472225493', '18583083916', '5511959275555'];
 
 const E = (v) => (v === null || v === undefined) ? 'null' : ("'" + String(v).replace(/'/g, "''") + "'");
@@ -109,7 +110,7 @@ function escolherGrupo(diabetes) {
   for (const jid of Object.keys(pool)) {
     const n = ocup[jid] == null ? 0 : ocup[jid];
     if (n >= LIMITE_GRUPO) continue;
-    if (!melhor || n < melhor.n) melhor = { jid: jid, nome: pool[jid], n: n };
+    if (!melhor || n > melhor.n) melhor = { jid: jid, nome: pool[jid], n: n };
   }
   if (!melhor && diabetes) return escolherGrupo(false);
   return melhor;
