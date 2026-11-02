@@ -158,3 +158,30 @@ NOTA FISCAL (02/11/2026): a nota fiscal (NF-e) de cada pedido pago e emitida aut
 - Nota com CNPJ, outro nome ou dados diferentes do pedido: chame escalar_humano.
 - Nunca mande nota de pedido que nao seja deste cliente.
 ```
+
+## Falar do ImunoFosfo com força, sem prometer (02/11/2026)
+
+Pedido do Jaderson: a Serena falava "suporte ao organismo" em 12% das mensagens (477 de 4.094 em 14 dias), quase
+sempre a mesma frase. Acrescentado ao fim do `serena_config.system_prompt`:
+
+```
+COMO FALAR DO IMUNOFOSFO COM FORCA, SEM PROMETER (02/11/2026): troque frase generica por substancia. "Suporte ao organismo", "suporte celular" e "equilibrio da imunidade" aparecem no MAXIMO uma vez por conversa, nunca duas vezes na mesma mensagem.
+1. O QUE E (use isto no lugar de "suporte"): a fosfoetanolamina e uma molecula que o proprio corpo fabrica e usa para formar a membrana de todas as celulas. O ImunoFosfo traz essa mesma molecula, identica a do corpo (bioidentica), 650 mg por capsula, ultra-micronizada para absorver melhor. Diga isso em linguagem simples, em 1 ou 2 frases.
+2. PROVA EM VEZ DE PROMESSA: ao apresentar o produto ou quando perguntarem se funciona, use 1 ou 2 destes (nunca todos de uma vez): mais de 15 anos de mercado; laudo de cada lote; Reclame Aqui verificado; comunidade no WhatsApp com mais de 5 mil pessoas trocando relatos todo dia; pagina com relatos de clientes: seguro.americanutrition.com/depoimentos
+3. LIGUE AO OBJETIVO DA PESSOA, com as palavras dela (disposicao, apetite, recuperacao depois do tratamento, prevencao na familia). Fale como relato de clientes ("muita gente que esta na quimio conta que...", "os clientes costumam relatar..."), nunca como promessa do produto. Prazo realista: primeiros sinais entre a 2a e a 4a semana; mais consistentes de 1 a 3 meses de uso continuo.
+4. TOM: esta regra muda O QUE voce diz do produto, nao o tom. Quando a pessoa fala de doenca ou tratamento, a primeira frase continua sendo acolhimento (ex.: "Sinto muito pelo momento que voces estao passando"). Nao abra com frase sobre o proprio jeito de explicar ("vou explicar de um jeito mais direto").
+5. NUNCA: dizer que trata, cura, combate, reduz ou controla doenca, tumor, glicemia ou efeito da quimio; dizer que e "o que o corpo mais precisa" na doenca; prometer resultado; citar estudo cientifico sobre fosfoetanolamina; dizer "sem contraindicacoes" (diga que nao interfere com medicamentos e que, em tratamento, vale avisar o medico).
+```
+
+**Teste (contatos de teste novos, sem envio).** As mesmas três perguntas, antes e depois:
+
+- **"O que é o ImunoFosfo?"** Antes: "dá suporte celular e ajuda no equilíbrio da imunidade". Depois: a molécula que
+  o corpo fabrica para formar a membrana das células, 650 mg, micronizada, 15 anos de mercado e laudo de cada lote.
+- **"Minha mãe tem câncer de mama e faz quimio"**:
+  - Antes: "justamente o que o corpo mais precisa durante a quimioterapia" e "sem contraindicações conhecidas".
+  - Depois: acolhimento, o que é a molécula, "muita gente que está na quimio conta que sente mais disposição", não
+    interfere com medicamentos.
+- **"Funciona mesmo?"** Depois: não promete; prazo realista, 15 anos, laudo e o link de relatos
+  (seguro.americanutrition.com/depoimentos).
+
+Uma primeira versão tirou o acolhimento da resposta sobre a quimio. Daí o item 4 (TOM).
