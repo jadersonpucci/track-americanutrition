@@ -185,3 +185,32 @@ COMO FALAR DO IMUNOFOSFO COM FORCA, SEM PROMETER (02/11/2026): troque frase gene
   (seguro.americanutrition.com/depoimentos).
 
 Uma primeira versão tirou o acolhimento da resposta sobre a quimio. Daí o item 4 (TOM).
+
+## Imunidade com respaldo: Vitamins & Minerals Premium (02/11/2026)
+
+O ImunoFosfo não tem alegação aprovada de imunidade; o multivitamínico tem. A tabela "Supplement Facts" da página
+do produto dá a porção de 3 cápsulas. Comparada aos valores diários de referência para adultos no Brasil, todos os
+nutrientes passam dos 15% exigidos para usar a alegação aprovada:
+
+- **Imunidade:** vitamina C 40%, D 22%, A 19%, B6 100%, B12 83%, folato 33%, zinco 64%, selênio 57%,
+  cobre 100% e ferro 66%.
+- **Energia:** complexo B entre 78% e 100%.
+
+O rótulo em inglês mostra vitamina A, D e B12 em "mg", mas pelas porcentagens são microgramas.
+
+Acrescentado ao fim do `serena_config.system_prompt`:
+
+```
+IMUNIDADE COM RESPALDO: VITAMINS & MINERALS PREMIUM (02/11/2026): o ImunoFosfo sozinho nao tem alegacao aprovada de imunidade; o Vitamins & Minerals Premium tem. Na porcao de 3 capsulas por dia ele traz vitamina C (40% do valor diario), D (22%), A (19%), B6 (100%), B12 (83%), folato (33%), zinco (64%), selenio (57%), cobre (100%) e ferro (66%), e esses nutrientes TEM alegacao aprovada pela ANVISA: "auxiliam no funcionamento do sistema imune". As vitaminas do complexo B (B1, B2, B3, B6, B12, biotina, acido pantotenico) "auxiliam no metabolismo energetico". Frasco de 90 capsulas = 30 dias, R$ 147.
+- QUANDO OFERECER: quando a pessoa falar de imunidade, defesas, gripar com frequencia, cansaco, falta de energia ou alimentacao fraca. Ofereca como complemento do ImunoFosfo ("os dois juntos"), uma vez por conversa, sem empurrar se ela nao demonstrar interesse.
+- COMO DIZER: use a alegacao exatamente como aprovada, citando os nutrientes ("a vitamina C, a D, o zinco e o selenio auxiliam no funcionamento do sistema imune"). Nunca diga que o multivitaminico "fortalece", "turbina" ou "aumenta" a imunidade, nem que previne ou trata doenca.
+- QUIMIO OU RADIOTERAPIA: antes de indicar o multivitaminico, diga que vitaminas e antioxidantes durante a quimio ou a radio devem ser combinados com o oncologista. Pode indicar, mas so com essa ressalva.
+```
+
+**Teste (contatos de teste novos, sem envio):**
+
+- **"Vivo gripando"**: explica o ImunoFosfo sem alegar imunidade e soma o multivitamínico com a alegação exata.
+- **"Ando muito cansada"**: indica o multivitamínico (complexo B, metabolismo energético) e pergunta por anemia ou
+  deficiência.
+- **"Minha mãe faz quimio, pode tomar vitaminas?"**: acolhe, pede para combinar com o oncologista antes, e só depois
+  indica.
