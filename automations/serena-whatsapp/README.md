@@ -574,7 +574,7 @@ Só vale link mandado na conversa (`autor` nulo ou `reprocessado`): o link da r�
 - **Config:** `link_aberto_followup` = `off`, `simulacao` (grava o texto, não envia) ou `on`.
 - **Registro:** `serena_link_aberto_followups`. A mensagem entra no histórico como `proativo:link_aberto`.
 - **Rodar na mão:** `GET /webhook/link-aberto-followup?t=<LINK_ABERTO_TOKEN_MANUAL>&modo=simulacao`.
-- **Começou em `simulacao`.** Na semana de 26/10 a 01/11, a regra teria mandado 7 mensagens: Raiane (Propolis), Antônio
+- **Ligado (`on`) em 02/11/2026**, a pedido do Jaderson. Na semana de 26/10 a 01/11, a regra teria mandado 7 mensagens: Raiane (Propolis), Antônio
   (ImunoFosfo 90 para o filho), Torquato (Líquido) e outros. Todos pediram o link e sumiram.
 
 **Clique de robô (achado em 02/11/2026).** O AN Links grava também a visita do nosso próprio servidor (navegador
@@ -2900,7 +2900,7 @@ estrelas ou o número por extenso sozinho.
 
 **Config:**
 
-- `satisfacao` = `off`, `simulacao` ou `on`. Começou em `simulacao`.
+- `satisfacao` = `off`, `simulacao` ou `on`. Ligado (`on`) em 02/11/2026, a pedido do Jaderson.
 - `satisfacao_dia` = 15 (teto diário).
 
 **Rodar na mão:** `GET /webhook/serena-satisfacao?t=<SATISFACAO_TOKEN_MANUAL>&modo=simulacao`.
@@ -2940,4 +2940,7 @@ A queda dos pedidos do WhatsApp acompanha a queda da recuperação de carrinho, 
 carrinho" caiu de 15 para 3 e "link: recusa" de 8 para 0.
 
 **Relatório diário de vendas.** "Links abertos" passou a contar só clique de gente (`anl_click_humano`).
+
+**Página da D3 50.000 UI (02/11/2026).** A descrição na Shopify dizia "Produto de uso diário" e "pensada para a rotina
+diária", mas a dose é 1 cápsula por semana. Agora diz "Uso semanal: 1 cápsula por semana" e "pensada para a sua rotina".
 

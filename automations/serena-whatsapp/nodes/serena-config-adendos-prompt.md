@@ -237,3 +237,13 @@ multivitamínico, ou como terceira opção para quem já usa ImunoFosfo, própol
 - **Imunidade:** só o ImunoFosfo, na dose preventiva.
 - **"Minha mãe faz quimio, pode tomar vitaminas?"**: ressalva do oncologista, depois o multivitamínico, porque
   a pergunta era sobre vitaminas.
+
+## D3 e ImunoPet: quantidade no frasco e tempo de uso (02/11/2026)
+
+Informação dada pelo Jaderson. Fecha as lacunas 27 e 341.
+
+```
+- *D3 Vitamin with K2 and A* (a diária): frasco com 60 cápsulas, 2 por dia, dura 30 dias.
+- *D3 with K2, A and E 50.000 UI*: frasco com 12 cápsulas, 1 por semana, dura 12 semanas (cerca de 3 meses).
+- *ImunoPet* (líquido ou cápsulas): pode ser usado de forma contínua, como o ImunoFosfo. Depois da fase inicial de 7 dias, segue na manutenção sem prazo para parar.
+```
