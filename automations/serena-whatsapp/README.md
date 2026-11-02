@@ -557,6 +557,41 @@ Pedido: "faça o 1, 2, 3, 4, 5, 6 (verificar) e 8" da lista de melhorias.
 
 **3. Follow-up de link não aberto** (`link-followup.workflow.js`, id oL5sdxV2bQWGzUeC, cron 15 min). Link de checkout da Serena com mais de `link_followup_horas` (2) sem clique no AN Links (`anl_clicks`) e sem o cliente falar depois recebe uma mensagem única (8h-20h BRT, uma por contato a cada 7 dias); respeita fila humana, pausa, bloqueio e conversa pausada. Config `link_followup` on/off. Registro em `serena_link_followups`; a mensagem entra no histórico como `proativo:link_followup`.
 
+**3b. Follow-up de link ABERTO sem pagamento** (02/11/2026; `nodes/link-aberto-followup.js`, id `S9dhrGnafRbKMgOI`,
+cron 15 min, 9h-20h BRT; SQL em `nodes/link-aberto-followup.sql`). Quem abriu o link de pagamento que a Serena mandou
+na conversa e não pagou recebe UMA mensagem `link_aberto_followup_horas` (3) depois do clique. A mensagem pergunta se
+ficou dúvida e lembra que o cartão divide em até 3x sem juros e que a Serena gera PIX ou boleto ali mesmo. Fica de fora quem:
+
+- falou depois do clique, ou recebeu outra mensagem da Serena depois do link;
+- começou o checkout (linha em `carrinhos_abandonados`: a régua de carrinho cuida);
+- tem pedido na Shopify criado depois do link;
+- recebeu qualquer follow-up de link nos últimos 7 dias;
+- está na fila humana, pausado, bloqueado ou com a IA pausada;
+- é da equipe.
+
+Só vale link mandado na conversa (`autor` nulo ou `reprocessado`): o link da régua de carrinho tem as próprias etapas.
+
+- **Config:** `link_aberto_followup` = `off`, `simulacao` (grava o texto, não envia) ou `on`.
+- **Registro:** `serena_link_aberto_followups`. A mensagem entra no histórico como `proativo:link_aberto`.
+- **Rodar na mão:** `GET /webhook/link-aberto-followup?t=<LINK_ABERTO_TOKEN_MANUAL>&modo=simulacao`.
+- **Começou em `simulacao`.** Na semana de 26/10 a 01/11, a regra teria mandado 7 mensagens: Raiane (Propolis), Antônio
+  (ImunoFosfo 90 para o filho), Torquato (Líquido) e outros. Todos pediram o link e sumiram.
+
+**Clique de robô (achado em 02/11/2026).** O AN Links grava também a visita do nosso próprio servidor (navegador
+`node`, Boston), que abre todo link segundos depois do envio para montar a prévia. Em 14 dias foram 255 dos 753 cliques
+em links de checkout. Contando só gente (função `anl_click_humano(ua)`), a Serena teve 61% dos links abertos em 30 dias,
+não 97%.
+
+O follow-up de link **não** aberto (item 3) tratava esse clique como abertura. Na prática só disparava quando a mensagem
+nem tinha sido entregue: em setembro e outubro foram 12 envios e cerca de 20 falhas para números que não existem no
+WhatsApp. Agora ele:
+
+- ignora o clique de robô;
+- vale só para link mandado na conversa;
+- respeita o follow-up de link aberto no limite de um por contato a cada 7 dias.
+
+Previsão: umas 1 ou 2 mensagens por dia.
+
 **4. Relatório diário de vendas** (`relatorio-vendas.workflow.js`, id zwchhPYGzK73hFPd, 00h05 BRT fechando o dia anterior, Telegram tópico 289; até 16/09 rodava às 20h com o dia pela metade). Primeiro relatório (03/09): 59 conversas, 28 links para 17 clientes, 24 abertos (86%), 10 pedidos WPP = R$ 5.209,24 (43% da receita do dia), conversão link→pedido 36%. Config `relatorio_vendas`.
 
 **5. Escolha de versão.** A Serena marca `[[LISTA: título | opção | opção]]`. O plano era menu nativo (sendList), mas a Evolution atual devolve 400 `this.isZero is not a function`. Então o Core (`LISTA_NATIVA = false`) converte em opções numeradas no próprio texto ("Responde só com o número"). O caminho nativo está pronto (Envio Samuel aceita `{ number, lista }`, Entrada tem o nó `Enviar Lista`, `nodes/entrada-enviar-lista.js`); basta ligar quando a Evolution for atualizada.
