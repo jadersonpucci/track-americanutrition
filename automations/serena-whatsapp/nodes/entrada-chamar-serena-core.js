@@ -64,6 +64,18 @@ const resposta = String(r.resposta);
 // Audio de resposta: so quando o cliente mandou audio, a resposta e curta e nao tem link
 const audioOk = p.audio === true && !!p.voz_id && resposta.length <= 400 && !/https?:\/\//i.test(resposta);
 
+// NOTA FISCAL (02/11/2026): quando o cliente pede a nota, a Serena responde com o link do DANFE que esta nos fatos
+// do contato (gravado pelo gatilho nfe_fato_serena quando a nota e autorizada). Aqui o link sai do texto e vira o
+// PDF anexado, pelo mesmo caminho do [[ARQUIVO]]. A resposta com link nunca vai em audio (audioOk acima).
+let textoFinal = resposta;
+let arquivo = r.arquivo || null;
+const mNf = resposta.match(/https:\/\/api\.focusnfe\.com\.br\/arquivos\/\S+?\/DANFEs\/\d{44}\.pdf/);
+if (mNf && !arquivo) {
+  const ped = (resposta.match(/AN-\d{3,}/i) || [''])[0].toUpperCase();
+  arquivo = { chave: 'nota-fiscal', url: mNf[0], tipo: 'document', nome: 'Nota fiscal' + (ped ? ' ' + ped : '') + '.pdf', legenda: '' };
+  textoFinal = resposta.replace(mNf[0], '').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim() || ('Segue a nota fiscal' + (ped ? ' do seu pedido ' + ped : '') + ' 💙');
+}
+
 // lista e arquivo (PDF/imagem marcado com [[ARQUIVO: chave]]) precisam atravessar ate o Fatiar Resposta,
 // que os prende na ultima parte da mensagem para o Enviar Lista / Enviar Arquivo despacharem.
-return [{ json: { telefone: telefone, contato_id: r.contato_id || null, resposta: resposta, lista: r.lista || null, arquivo: r.arquivo || null, ferramentas: r.ferramentas || [], handoff: !!r.handoff, audio_ok: audioOk, voz_id: p.voz_id || '' } }];
+return [{ json: { telefone: telefone, contato_id: r.contato_id || null, resposta: textoFinal, lista: r.lista || null, arquivo: arquivo, ferramentas: r.ferramentas || [], handoff: !!r.handoff, audio_ok: audioOk, voz_id: p.voz_id || '' } }];

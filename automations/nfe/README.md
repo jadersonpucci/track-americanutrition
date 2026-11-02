@@ -92,3 +92,32 @@ Definida em 30/10/2026. As notas da Notasy usavam NCM 2936.90.00 e origem nacion
 - Como o DIFAL vai ser pago: GNRE por nota antes do envio, ou inscrição nos estados onde mais vendemos (SC, PR, MG,
   RS, RJ). Em outubro, 72% dos pedidos foram para fora de SP.
 - Se algum produto tem substituição tributária ou CEST.
+
+## A Serena manda a nota quando o cliente pede (02/11/2026)
+
+A Serena só fala de nota fiscal quando o cliente pede (nota, NF, NF-e, DANFE, cupom fiscal). Quando a nota já existe,
+o PDF chega anexado na conversa. Funciona em três peças:
+
+1. **Gatilho `nfe_fato_serena`** (em [`nfe-fato-serena.sql`](nfe-fato-serena.sql)). Quando uma linha da
+   `nfe_emissoes` vira `autorizado`, ele grava um fato `nota fiscal AN-xxxx` no contato do cliente (`serena_fatos`,
+   origem `sistema`). O contato é achado pelo telefone da nota (DDD + 8 dígitos). O fato traz número, série, data,
+   a instrução "envie só se o cliente pedir" e o link do DANFE. Os fatos vão inteiros para a Serena em toda
+   conversa. Na repescagem de 02/11, as 36 notas já autorizadas acharam o contato.
+2. **Regra no prompt** (texto em `../serena-whatsapp/nodes/serena-config-adendos-prompt.md`):
+   - **Pedido com nota:** uma frase curta e o link sozinho na última linha.
+   - **Pago hoje e ainda sem nota:** a nota sai em minutos depois do pagamento.
+   - **Pedido antigo ou pago há mais de um dia, sem nota:** chama `escalar_humano`.
+   - **Pedido não pago:** a nota sai depois do pagamento.
+   - **CNPJ ou dados diferentes do pedido:** chama `escalar_humano`.
+3. **Entrada do WhatsApp**, nó `Chamar Serena Core`
+   ([`../serena-whatsapp/nodes/entrada-chamar-serena-core.js`](../serena-whatsapp/nodes/entrada-chamar-serena-core.js)).
+   Um link `api.focusnfe.com.br/.../DANFEs/<chave>.pdf` na resposta sai do texto e vira o PDF anexado
+   (`Nota fiscal AN-xxxx.pdf`), pelo mesmo caminho do `[[ARQUIVO]]`. Resposta com esse link nunca vai em áudio.
+
+**Teste (contato de teste da equipe, sem envio):**
+
+- "pode me mandar a nota fiscal do meu pedido AN-16318?" → "Claro, Jaderson! Segue a nota fiscal do seu pedido
+  AN-16318 💙" + o PDF.
+- Uma pergunta sobre dose, na mesma conversa, não trouxe a nota.
+
+O fato e as mensagens do teste foram apagados.
