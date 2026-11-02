@@ -2750,3 +2750,52 @@ Correção:
   sua compra" e a descrição padrão. Vale para qualquer origem: Serena, robô dos grupos ou painel.
 - **Link da Lurdinha:** o link que ela recebeu (`Y2sGHA2`) também ganhou a arte nova. A prévia que já apareceu no
   WhatsApp não muda, porque o WhatsApp guarda a imagem da mensagem enviada.
+
+## Convites para a comunidade (`[Serena] Comunidade: Convites`, id KIk22P8OgZSn6DpS, cron 30 min) — 02/11/2026
+
+Pedido do Jaderson: a Serena convida para os grupos quem conversa com ela e ainda não está em nenhum grupo.
+
+**Antes do robô (60 dias):**
+
+- 1.670 pessoas conversaram com a Serena.
+- 194 compradores e 1.319 não compradores estavam fora dos grupos. Dos não compradores, 574 mandaram 5 mensagens ou
+  mais.
+- O convite pós-compra antigo (`convites_grupo`) parou: 151 convites enviados de maio a setembro, e 1.255 expiraram
+  sem sair.
+
+**Como funciona.** O código fica em [`nodes/comunidade-convite.js`](nodes/comunidade-convite.js). O robô roda das 9h
+às 20h (BRT).
+
+1. **Candidatos.** Conversaram nas últimas 6h (há mais de 20 min) e a Serena respondeu por último. Ficam de fora quem
+   tem humano no comando, quem já está em algum grupo (por telefone e por LID, no `grupos_membros`), quem está
+   bloqueado, a equipe e quem já foi convidado. Quem a IA recusou só volta a ser avaliado depois de 14 dias.
+2. **Já comprou?** O robô pergunta à Shopify, pelo cliente com o telefone. A `clientes_tel` está parada desde 15/08.
+3. **A IA decide** (Haiku, pela conversa). Ela só convida em clima bom e escolhe o perfil:
+   - **comprador**;
+   - **engajado** (nunca comprou);
+   - **conteudo** (contou resultado ou a própria história).
+
+   Não convida em reclamação, troca, reembolso, problema de entrega ou pagamento, irritação, luto, spam, conversa
+   vazia, pedido para não receber mensagens, ou quando a Serena ainda espera uma resposta.
+4. **Grupo.** O de menos membros, contando o snapshot do dia mais os convites dos últimos 7 dias sem entrada, abaixo
+   de 950 membros. Os grupos gerais são #1, #2, #3, Fosfoetanolamina #2 e Connect Oncológicas. Quem tem interesse
+   em diabetes vai para os 2 grupos de diabetes.
+5. **Envio.** Texto fixo por perfil, com o link de convite do grupo (Evolution `group/inviteCode`), enviado pelo
+   Samuel. Fica registrado em `serena_mensagens` (autor `proativo:comunidade`) e em `serena_comunidade_convites`. O
+   resumo vai para o Telegram (tópico 289).
+
+Quando a pessoa aparece no `grupos_membros` depois do convite, o convite ganha `entrou_em`.
+
+**Config (`serena_config`):**
+
+| Chave | Valores |
+|---|---|
+| `comunidade_convite` | `off`, `simulacao` ou `on` |
+| `comunidade_convite_dia` | Convites por dia (`20`) |
+
+**Manual:** `GET /webhook/comunidade-convite?t=<TOKEN>&modo=simulacao|on`.
+
+**Primeira simulação (02/11):** de 8 candidatos, a IA convidou 6 (5 compradores e 1 engajado) e recusou 2:
+
+- um porque a Serena ainda esperava resposta sobre uma promoção;
+- um porque a pessoa estava irritada e pediu para não receber mensagens.
