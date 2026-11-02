@@ -2856,3 +2856,88 @@ Quando a pessoa aparece no `grupos_membros` depois do convite, o convite ganha `
 
 - um porque a Serena ainda esperava resposta sobre uma promoção;
 - um porque a pessoa estava irritada e pediu para não receber mensagens.
+
+## Pesquisa de satisfação e relatório semanal (02/11/2026)
+
+Pedido do Jaderson (itens 5 e 6 da lista de melhorias).
+
+### Pesquisa de satisfação
+
+Workflow `[Serena] Pesquisa de Satisfacao` (`TyoNLLLgAoGVtd89`), cron a cada 30 min entre 9h e 20h BRT. Código em
+[`nodes/satisfacao-pesquisa.js`](nodes/satisfacao-pesquisa.js) e tabela em [`nodes/satisfacao.sql`](nodes/satisfacao.sql).
+
+**Quem recebe.** Conversa de hoje que atende a todas estas condições:
+
+- pelo menos 3 mensagens do cliente;
+- a última fala é da Serena na conversa (não de robô) e tem mais de 2 h;
+- sem link de pagamento em aberto;
+- sem fila humana, pausa, bloqueio ou IA pausada;
+- sem outra mensagem proativa nas últimas 12 h;
+- sem pesquisa nos últimos 30 dias.
+
+Uma IA (Haiku) lê a conversa e só manda quando ela terminou sem pendência. Não manda se:
+
+- a Serena fez uma pergunta que o cliente ainda não respondeu;
+- há pagamento esperando;
+- há problema em aberto;
+- o cliente está irritado;
+- a conversa fala de morte ou internação.
+
+Ter câncer não impede a pesquisa, porque quase todo cliente está nessa situação. Teste com as conversas de 01/11: das 9
+que passaram pelo filtro, só 1 receberia. As outras ainda esperavam resposta ou pagamento.
+
+**Texto.** "Oi, Nome! Posso te pedir um favor rápido? 💙 De 1 a 5, como foi o seu atendimento comigo hoje? É só
+responder com o número (5 é ótimo)."
+
+**A resposta** é tratada na Entrada, no nó `Chamar Serena Core`
+([`nodes/entrada-chamar-serena-core.js`](nodes/entrada-chamar-serena-core.js)). Se a última fala da Serena foi a pesquisa
+e o cliente manda uma nota, a nota vai para `serena_satisfacao` e a resposta sai sem passar pelo Core. Vale número,
+estrelas ou o número por extenso sozinho.
+
+- **Nota 4 ou 5:** a Serena agradece.
+- **Nota até 3:** a Serena pergunta o que faltou e avisa no Telegram (tópico 289). O comentário seguinte também é
+  gravado e avisado.
+
+**Config:**
+
+- `satisfacao` = `off`, `simulacao` ou `on`. Começou em `simulacao`.
+- `satisfacao_dia` = 15 (teto diário).
+
+**Rodar na mão:** `GET /webhook/serena-satisfacao?t=<SATISFACAO_TOKEN_MANUAL>&modo=simulacao`.
+
+### Relatório semanal no Telegram
+
+Workflow `[Serena] Relatorio Semanal (Telegram)` (`2wmi3lzWKE9lIoxf`). Código em
+[`nodes/relatorio-semanal.js`](nodes/relatorio-semanal.js). Roda toda segunda às 8h41 BRT, fechando a semana de segunda a
+domingo, e vai para o tópico 289. Cada número vem comparado com a semana anterior.
+
+O relatório traz:
+
+- conversas e mensagens dos clientes;
+- links de pagamento e quantos foram abertos por gente;
+- pedidos e receita do WhatsApp (tags `WPP` e `AF: Serena`);
+- conversão de link em pedido e a fatia da receita da loja;
+- follow-ups de link enviados e handoffs para a equipe;
+- satisfação (respostas, média, comentários de nota baixa) e a auditoria diária;
+- lacunas novas e abertas, com o link da proposta da base que espera aprovação;
+- as 3 piores conversas (nota baixa na pesquisa ou na auditoria), com o link do WhatsApp.
+
+**Config:** `relatorio_semanal` = `on`. **Rodar na mão:** `GET /webhook/serena-relatorio-semanal?t=<RELATORIO_TOKEN_MANUAL>`.
+Com `&enviar=0`, só mostra o texto, sem mandar ao Telegram.
+
+**Primeiro envio, semana de 26/10 a 01/11:**
+
+| Indicador | Valor |
+|---|---|
+| Conversas | 271 |
+| Links de pagamento | 84, 63% abertos |
+| Pedidos do WhatsApp | 34 (R$ 13.106,53), contra 52 na semana anterior |
+| Conversão de link em pedido | 40% |
+| Fatia da receita da loja | 27% |
+| Lacunas novas | 63 |
+
+A queda dos pedidos do WhatsApp acompanha a queda da recuperação de carrinho, sem sinal de falha nas tags: "link:
+carrinho" caiu de 15 para 3 e "link: recusa" de 8 para 0.
+
+**Relatório diário de vendas.** "Links abertos" passou a contar só clique de gente (`anl_click_humano`).
+

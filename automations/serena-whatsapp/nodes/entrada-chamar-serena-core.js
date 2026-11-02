@@ -15,6 +15,54 @@ const SK = 'SUPABASE_SERVICE_KEY';
 const SB = 'https://supabase.americanutrition.com/pg/query';
 const sql = async (q) => { try { await this.helpers.httpRequest({ method: 'POST', url: SB, headers: { apikey: SK, Authorization: 'Bearer ' + SK, 'Content-Type': 'application/json' }, body: { query: q }, json: true, timeout: 10000 }); } catch (e) {} };
 const soltar = () => sql("delete from serena_wpp_lock where telefone = '" + telefone + "'");
+
+// PESQUISA DE SATISFACAO (02/11/2026): o [Serena] Pesquisa de Satisfacao pergunta "de 1 a 5, como foi?". Se a ultima fala
+// da Serena para o contato e essa pergunta e o cliente responde com a nota (numero, estrelas ou por extenso), a nota vai
+// para serena_satisfacao e a resposta sai daqui mesmo, sem o Core. Nota ate 3: pergunta o que faltou e avisa no Telegram.
+// A mensagem seguinte (o comentario) segue para o Core normalmente e tambem e gravada e avisada.
+const TG_BOT = '<TOKEN_ALERTAS>';
+const sqlR = async (q) => { try { const r = await this.helpers.httpRequest({ method: 'POST', url: SB, headers: { apikey: SK, Authorization: 'Bearer ' + SK, 'Content-Type': 'application/json' }, body: { query: q }, json: true, timeout: 10000 }); return Array.isArray(r) ? r : []; } catch (e) { return []; } };
+const Q = (v) => "'" + String(v == null ? '' : v).replace(/'/g, "''") + "'";
+const alertar = async (t) => { try { await this.helpers.httpRequest({ method: 'POST', url: 'https://api.telegram.org/bot' + TG_BOT + '/sendMessage', json: true, timeout: 10000, body: { chat_id: '-1003766435449', message_thread_id: 289, parse_mode: 'HTML', disable_web_page_preview: true, text: t } }); } catch (e) {} };
+const h = (s) => String(s == null ? '' : s).replace(/[<>&]/g, ' ');
+function lerNota(t) {
+  const s = String(t || '').trim().toLowerCase();
+  if (!s || s.length > 120) return null;
+  const estrelas = (s.match(/⭐|🌟/g) || []).length;
+  if (estrelas >= 1 && estrelas <= 5 && /^[⭐🌟\s!.]+$/u.test(s)) return { nota: estrelas, resto: '' };
+  const ext = { um: 1, uma: 1, dois: 2, duas: 2, tres: 3, 'três': 3, quatro: 4, cinco: 5 };
+  const m = s.match(/^(?:nota\s*)?([1-5]|um|uma|dois|duas|tr[eê]s|quatro|cinco)(?![0-9])(?:\s*(?:\/\s*5|de\s*5|estrelas?|[⭐🌟]+))?\s*[!.,;:-]*\s*([\s\S]*)$/u);
+  if (!m) return null;
+  // por extenso so vale sozinho ("cinco"); "uma duvida" ou "dois frascos" nao e nota
+  if (!/^[1-5]$/.test(m[1]) && String(m[2] || '').trim()) return null;
+  const n = /^[1-5]$/.test(m[1]) ? Number(m[1]) : ext[m[1]];
+  return n ? { nota: n, resto: String(m[2] || '').trim() } : null;
+}
+const pesq = await sqlR("select id, contato_id, nome, nota, comentario, respondido_em > now() - interval '24 hours' as recente from serena_satisfacao where status = 'enviado' and serena_tel_canon(telefone) = serena_tel_canon(" + Q(telefone) + ") and enviado_em > now() - interval '48 hours' order by enviado_em desc limit 1");
+if (pesq.length) {
+  const s = pesq[0];
+  const ult = await sqlR("select autor from serena_mensagens where contato_id = " + Q(s.contato_id) + "::uuid and papel = 'serena' order by criado_em desc limit 1");
+  const ultAutor = ult[0] ? String(ult[0].autor || '') : '';
+  const lida = (s.nota == null && ultAutor === 'proativo:satisfacao') ? lerNota(texto) : null;
+  if (lida) {
+    const coment = lida.nota <= 3 && lida.resto.length >= 8 ? lida.resto : null;
+    let resp;
+    if (lida.nota === 5) resp = 'Que bom saber! 💙 Obrigada pelo retorno, fico muito feliz em ajudar. Qualquer coisa, é só me chamar por aqui.';
+    else if (lida.nota === 4) resp = 'Obrigada pelo retorno! 💙 Se tiver algo que eu possa fazer melhor, me conta, tá?';
+    else if (coment) resp = 'Obrigada por me contar, e sinto muito que não foi como você esperava 🙏 Já passei o que você escreveu para a nossa equipe, que vai olhar com cuidado.';
+    else resp = 'Obrigada por me contar, e sinto muito que não foi como você esperava 🙏 O que eu poderia ter feito melhor? Sua resposta vai direto para a nossa equipe.';
+    await sqlR("update serena_satisfacao set nota = " + lida.nota + ", respondido_em = now()" + (coment ? ", comentario = " + Q(coment) + ", comentario_em = now()" : "") + " where id = " + Number(s.id));
+    await sqlR("insert into serena_mensagens (contato_id, papel, texto, canal, criado_em) values (" + Q(s.contato_id) + "::uuid, 'cliente', " + Q(texto) + ", 'whatsapp', now()); "
+      + "insert into serena_mensagens (contato_id, papel, texto, canal, autor, entregue, criado_em) values (" + Q(s.contato_id) + "::uuid, 'serena', " + Q(resp) + ", 'whatsapp', 'satisfacao:resposta', false, now() + interval '1 second')");
+    if (lida.nota <= 3) await alertar('⚠️ <b>Nota ' + lida.nota + ' na pesquisa da Serena</b>' + String.fromCharCode(10) + h(s.nome || telefone) + ' · https://wa.me/' + telefone + (coment ? String.fromCharCode(10) + '💬 ' + h(coment).slice(0, 600) : ''));
+    return [{ json: { telefone: telefone, contato_id: s.contato_id, resposta: resp, lista: null, arquivo: null, ferramentas: [], handoff: false, audio_ok: false, voz_id: p.voz_id || '' } }];
+  }
+  if (s.nota != null && Number(s.nota) <= 3 && !s.comentario && s.recente === true && ultAutor === 'satisfacao:resposta') {
+    await sqlR("update serena_satisfacao set comentario = " + Q(texto.slice(0, 2000)) + ", comentario_em = now() where id = " + Number(s.id));
+    await alertar('💬 <b>O que faltou (nota ' + s.nota + ')</b>' + String.fromCharCode(10) + h(s.nome || telefone) + ' · https://wa.me/' + telefone + String.fromCharCode(10) + h(texto).slice(0, 800));
+  }
+}
+
 await sql("insert into serena_wpp_lock (telefone, ate) values ('" + telefone + "', now() + interval '120 seconds') on conflict (telefone) do update set ate = excluded.ate");
 
 let r;
