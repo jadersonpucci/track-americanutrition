@@ -21,12 +21,24 @@ const esc = t => String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g,
 
 const cfg = (await sql("select coalesce((select valor from serena_config where chave='base_proposta'),'on') as ativo, coalesce((select valor from serena_config where chave='base_treinamento'),'') as base, coalesce((select valor from serena_config where chave='system_prompt'),'') as adendos, coalesce((select valor from serena_config where chave='modelo'),'claude-sonnet-5') as modelo, to_char((now() at time zone 'America/Sao_Paulo')::date - 7, 'DD/MM') as ini, to_char((now() at time zone 'America/Sao_Paulo')::date, 'DD/MM') as fim"))[0];
 if (cfg.ativo !== 'on') return [{ json: { ok: true, pulado: 'base_proposta=off' } }];
-const lacunas = await sql("select id, tema, pergunta, left(coalesce(resposta_serena,''), 400) as resposta_serena, status from serena_lacunas where criado_em > now() - interval '7 days' and status <> 'resolvida' order by criado_em desc limit 40");
+// 02/11/2026: as propostas 2 a 7 ficaram sem aprovacao e empilharam (46 itens repetidos, 493 lacunas abertas). Com uma
+// proposta pendente, nao gera outra: manda um lembrete com o link. As lacunas novas esperam (a consulta pega as abertas,
+// sem janela de 7 dias, entao nada se perde).
+const pend = await sql("select id, token, to_char(criado_em, 'DD/MM') as dia from serena_base_propostas where status in ('pendente', 'parcial') order by id desc limit 1");
+if (pend.length) {
+  const pp = pend[0];
+  const ver = APROVAR + '?t=' + encodeURIComponent(pp.token) + '&id=' + pp.id + '&acao=ver';
+  try { await self.helpers.httpRequest({ method: 'POST', url: TG, json: true, timeout: 20000, body: { chat_id: '-1003766435449', message_thread_id: 289, parse_mode: 'HTML', disable_web_page_preview: true,
+    text: '\\u23F3 <b>A proposta ' + pp.id + ' da base (de ' + pp.dia + ') ainda espera aprova\\u00e7\\u00e3o.</b>' + NL + 'Enquanto ela estiver pendente eu n\\u00e3o gero outra, para n\\u00e3o empilhar. As lacunas novas entram na pr\\u00f3xima proposta.',
+    reply_markup: { inline_keyboard: [[{ text: '\\uD83D\\uDD0D Ver e aprovar', url: ver }]] } } }); } catch (e) {}
+  return [{ json: { ok: true, pulado: 'proposta ' + pp.id + ' pendente', lembrete: true } }];
+}
+const lacunas = await sql("select id, tema, pergunta, left(coalesce(resposta_serena,''), 400) as resposta_serena, status from serena_lacunas where status = 'aberta' order by criado_em desc limit 60");
 const correcoes = await sql("select id, left(coalesce(texto_serena,''), 400) as texto_serena, correcao, autor from serena_correcoes where criado_em > now() - interval '7 days' order by criado_em desc limit 30");
 if (!lacunas.length && !correcoes.length) return [{ json: { ok: true, pulado: 'sem lacunas nem correcoes na semana' } }];
 
 const system = 'Voce e o editor da base de treinamento da Serena, assistente de atendimento da America Nutrition (WhatsApp). Sua tarefa: a partir das LACUNAS (perguntas de clientes que a Serena nao soube responder) e das CORRECOES feitas pela equipe na semana, propor ADENDOS prontos para entrar na base. Regras: 1) Proponha um adendo so quando a base atual e os adendos ja aprovados NAO cobrem o assunto; se ja cobrem, nao repita (pode propor um ajuste de redacao, tipo "ajuste", citando o trecho). 2) Escreva no mesmo estilo da base: direto, operacional, portugues do Brasil, 2 a 8 linhas, pronto para colar. 3) NUNCA invente fatos sobre produto, saude, prazos, precos ou politica. Se a informacao necessaria nao estiver na base nem nas correcoes, faca um item do tipo "pergunta": diga o que a equipe precisa definir e sugira como a Serena deve responder ENQUANTO nao houver definicao (ex.: encaminhar para a equipe). 4) Agrupe lacunas parecidas em um adendo so. 5) No maximo 8 itens, os mais frequentes ou mais criticos primeiro. 6) Responda SOMENTE um JSON valido, sem markdown: {"resumo":"2 frases sobre a semana","itens":[{"titulo":"...","tipo":"novo|ajuste|pergunta","secao":"modulo/secao da base onde entra","texto":"texto pronto do adendo","motivo":"por que (ate 200 caracteres)","lacunas":[ids das lacunas cobertas]}]}';
-const user = 'BASE DE TREINAMENTO ATUAL (' + cfg.base.length + ' caracteres):' + NL + cfg.base.slice(0, 380000) + NL + NL + 'ADENDOS JA APROVADOS (system_prompt):' + NL + (cfg.adendos || '(nenhum)') + NL + NL + 'LACUNAS DA SEMANA (' + lacunas.length + '):' + NL + lacunas.map(l => '- id ' + l.id + ' [' + l.tema + '] ' + l.pergunta + (l.resposta_serena ? ' | Serena respondeu: "' + l.resposta_serena.replace(/\\s+/g, ' ') + '"' : '')).join(NL) + NL + NL + 'CORRECOES DA EQUIPE (' + correcoes.length + '):' + NL + (correcoes.map(c => '- Serena disse: "' + c.texto_serena.replace(/\\s+/g, ' ') + '" -> Correto (' + (c.autor || 'equipe') + '): ' + c.correcao).join(NL) || '(nenhuma)');
+const user = 'BASE DE TREINAMENTO ATUAL (' + cfg.base.length + ' caracteres):' + NL + cfg.base.slice(0, 380000) + NL + NL + 'ADENDOS JA APROVADOS (system_prompt):' + NL + (cfg.adendos || '(nenhum)') + NL + NL + 'LACUNAS ABERTAS (' + lacunas.length + '):' + NL + lacunas.map(l => '- id ' + l.id + ' [' + l.tema + '] ' + l.pergunta + (l.resposta_serena ? ' | Serena respondeu: "' + l.resposta_serena.replace(/\\s+/g, ' ') + '"' : '')).join(NL) + NL + NL + 'CORRECOES DA EQUIPE (' + correcoes.length + '):' + NL + (correcoes.map(c => '- Serena disse: "' + c.texto_serena.replace(/\\s+/g, ' ') + '" -> Correto (' + (c.autor || 'equipe') + '): ' + c.correcao).join(NL) || '(nenhuma)');
 const modeloNovo = /claude-(sonnet|opus|fable)-5|claude-(sonnet|opus)-4-[678]/.test(String(cfg.modelo));
 const corpo = { model: cfg.modelo, max_tokens: 12000, system: system, messages: [{ role: 'user', content: user }] };
 if (modeloNovo) corpo.output_config = { effort: 'high' };
@@ -41,6 +53,10 @@ if (!itens.length) return [{ json: { ok: true, pulado: 'Claude nao propos itens'
 const token = TOKEN + '-' + Math.random().toString(36).slice(2, 10);
 const ins = await sql('insert into serena_base_propostas (periodo_ini, periodo_fim, resumo, itens, status, token) values ((now() at time zone ' + E('America/Sao_Paulo') + ')::date - 7, (now() at time zone ' + E('America/Sao_Paulo') + ')::date, ' + E(j.resumo || '') + ', ' + E(JSON.stringify(itens)) + '::jsonb, ' + E('pendente') + ', ' + E(token) + ') returning id');
 const id = ins[0].id;
+// lacuna que o Claude viu e nao ligou a nenhum item ja esta coberta (ou e ruido): fecha, para a lista de abertas refletir so o que falta
+const ligadas = new Set(itens.flatMap(it => it.lacunas));
+const semItem = lacunas.map(l => Number(l.id)).filter(x => x && !ligadas.has(x));
+if (semItem.length) { try { await sql("update serena_lacunas set status = 'resolvida', resolvido_por = 'proposta:sem_item', atualizado_em = now() where status = 'aberta' and id in (" + semItem.join(',') + ")"); } catch (e) {} }
 const link = (acao, item) => APROVAR + '?t=' + encodeURIComponent(token) + '&id=' + id + '&acao=' + acao + (item ? '&item=' + item : '');
 const ICON = { novo: '\\u2795', ajuste: '\\u270F\\uFE0F', pergunta: '\\u2753' };
 function montar(prev) {

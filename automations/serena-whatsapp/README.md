@@ -610,6 +610,26 @@ Por que `system_prompt` e não `base_treinamento`: a base é sobrescrita a cada 
 
 Tabela: `serena_base_propostas` (id, criado_em, periodo_ini, periodo_fim, resumo, itens jsonb, status pendente|aplicada|parcial|descartada, token, aplicado_em, telegram_msg_id). Config nova: `base_proposta` (on).
 
+**Mutirão das lacunas (02/11/2026).** As propostas 2 a 7 (de 14/09 a 02/11) ficaram sem aprovação: 46 itens, muitos
+repetidos, e 493 lacunas abertas.
+
+1. **Triagem.** Uma rodada de IA (Haiku, com os trechos da base ligados a cada pergunta) separou as lacunas:
+   - 105 alarmes falsos: a Serena tinha respondido certo. Fechadas como `triagem:alarme_falso`.
+   - 88 ruídos ou casos de um pedido específico. Fechadas como `triagem:ruido`.
+   - O resto foi ligado à proposta nova.
+2. **Proposta 8, consolidada.** Tem 16 itens e substitui as propostas 2 a 7, agora com status `substituida`. Os fatos
+   foram conferidos na Shopify e na base: preços, 650 mg por cápsula, PIX de 30 min (o da conversa; o do checkout dura
+   24 h), Kit 9 do Liquid. Erros das propostas antigas foram corrigidos, como a Cris apresentada com título de saúde
+   (proibido desde 04/06) e o link antigo dos depoimentos.
+   - O item 14 dá uma conduta geral de saúde para quadro ou remédio que a base não cita, cobrindo 89 lacunas.
+   - Ao aplicar, as 298 lacunas ligadas fecham.
+   - Duas ficam abertas esperando informação da equipe: quantas cápsulas tem a D3 diária e por quanto tempo dar o
+     ImunoPet.
+3. **Rotina semanal.** O `[Serena] Proposta Semanal da Base` mudou em três pontos:
+   - Com proposta pendente, não gera outra: manda no Telegram um lembrete com o link de aprovação.
+   - Lê as lacunas abertas sem a janela de 7 dias, então nada se perde enquanto espera.
+   - Fecha como `proposta:sem_item` a lacuna que ele leu e não ligou a nenhum item, porque já está coberta ou é ruído.
+
 
 ## Lista de versões completa (04/09, 07h)
 
