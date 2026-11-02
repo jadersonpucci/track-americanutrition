@@ -121,3 +121,7 @@ o PDF chega anexado na conversa. Funciona em três peças:
 - Uma pergunta sobre dose, na mesma conversa, não trouxe a nota.
 
 O fato e as mensagens do teste foram apagados.
+
+**Robô antigo desligado (02/11/2026).** O `[Serena] Nota Fiscal no Pedido` (`48bwyfca3QCCojEy`) colocava a tag
+`NOTA FISCAL` no pedido quando o cliente pedia nota, para a equipe emitir na mão. A nota agora sai sozinha, e a tag
+podia fazer alguém emitir de novo, então o robô foi desativado no n8n. Para voltar, basta reativar o workflow.
