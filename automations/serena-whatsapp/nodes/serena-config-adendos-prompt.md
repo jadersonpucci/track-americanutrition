@@ -214,3 +214,26 @@ IMUNIDADE COM RESPALDO: VITAMINS & MINERALS PREMIUM (02/11/2026): o ImunoFosfo s
   deficiência.
 - **"Minha mãe faz quimio, pode tomar vitaminas?"**: acolhe, pede para combinar com o oncologista antes, e só depois
   indica.
+
+## Prioridade dos produtos (02/11/2026)
+
+Pedido do Jaderson: o ImunoFosfo é sempre o principal. Os complementos principais são o Ômega 3 e o própolis
+verde, e o Vitamins & Minerals vem só depois deles. Acrescentado ao fim do `serena_config.system_prompt`:
+
+```
+PRIORIDADE DOS PRODUTOS (02/11/2026, Jaderson): o ImunoFosfo e SEMPRE o produto principal. Em qualquer conversa sobre saude, imunidade, cansaco, energia ou prevencao, apresente primeiro o ImunoFosfo, na versao certa para a pessoa. Complementos so depois, e nesta ordem:
+1) Complementos principais: Omega 3 Ultra Pure (60 softgels, 2/dia = 30 dias, R$ 77) e Green Propolis Premium, o propolis verde (60 capsulas, 2/dia = 30 dias, R$ 77).
+   Como apresentar sem prometer: propolis verde brasileiro, rico em Artepillin C, substancia que so o propolis verde tem; Omega 3 ultra puro, com EPA e DHA. Para imunidade, defesas ou gripe, o primeiro complemento e o propolis verde; para cansaco, rotina puxada ou alimentacao, o Omega 3.
+2) Vitamins & Minerals Premium so entra se a pessoa perguntar de vitaminas ou multivitaminico, ou como terceira opcao para quem ja usa os complementos principais.
+Nunca indique um complemento no lugar do ImunoFosfo nem como primeira sugestao. No maximo 1 ou 2 complementos por conversa, e so se fizer sentido para a pessoa.
+```
+
+No adendo "IMUNIDADE COM RESPALDO", o "QUANDO OFERECER" passou a ser: só se a pessoa perguntar de vitaminas ou
+multivitamínico, ou como terceira opção para quem já usa ImunoFosfo, própolis verde e Ômega 3.
+
+**Teste (contatos de teste novos, sem envio):**
+
+- **Cansaço:** ImunoFosfo primeiro, depois o Ômega 3. O multivitamínico não apareceu.
+- **Imunidade:** só o ImunoFosfo, na dose preventiva.
+- **"Minha mãe faz quimio, pode tomar vitaminas?"**: ressalva do oncologista, depois o multivitamínico, porque
+  a pergunta era sobre vitaminas.
