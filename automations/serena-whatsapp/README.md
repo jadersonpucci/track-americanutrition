@@ -2944,3 +2944,12 @@ carrinho" caiu de 15 para 3 e "link: recusa" de 8 para 0.
 **Página da D3 50.000 UI (02/11/2026).** A descrição na Shopify dizia "Produto de uso diário" e "pensada para a rotina
 diária", mas a dose é 1 cápsula por semana. Agora diz "Uso semanal: 1 cápsula por semana" e "pensada para a sua rotina".
 
+**Outubro Rosa saiu do site (03/11/2026).** Pedido do Jaderson. Tudo pode ser revertido:
+
+- **Faixa da home** (seção `an-outubro-rosa`): foi desativada no `templates/index.json` do tema principal
+  (`155877212332`), com `"disabled": true`. Ela já ficava vazia fora de outubro, mas continuava no tema. Para voltar no
+  próximo outubro, basta tirar o `disabled`.
+- **Artigo do blog** "Outubro Rosa: autocuidado, alimentação e hábitos…" (`outubro-rosa-autocuidado`): foi
+  despublicado, não apagado. Ele aparecia no bloco de artigos da home.
+- **Endereço antigo do artigo:** redireciona (301) para o blog, para o link antigo não dar erro.
+

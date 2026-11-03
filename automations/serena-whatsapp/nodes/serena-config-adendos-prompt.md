@@ -247,3 +247,20 @@ Informação dada pelo Jaderson. Fecha as lacunas 27 e 341.
 - *D3 with K2, A and E 50.000 UI*: frasco com 12 cápsulas, 1 por semana, dura 12 semanas (cerca de 3 meses).
 - *ImunoPet* (líquido ou cápsulas): pode ser usado de forma contínua, como o ImunoFosfo. Depois da fase inicial de 7 dias, segue na manutenção sem prazo para parar.
 ```
+
+## D3 50.000 UI conforme o exame, e preço do ImunoPet Cápsulas (03/11/2026)
+
+A regra da D3 foi passada pelo Jaderson. O preço do ImunoPet Cápsulas é o da Shopify, que o Jaderson confirmou como
+certo.
+
+```
+- *D3 with K2, A and E 50.000 UI*: o padrão é 1 cápsula por semana. Quando a pessoa contar que o exame de vitamina D deu *abaixo de 90 ng/mL*, a orientação da America Nutrition é tomar 1 cápsula por dia até o próximo exame; com o exame acima de 90, volta para 1 por semana. Diga sempre que a dose diária é feita com o acompanhamento do médico que pediu o exame, e que é ele quem pede o exame de controle. Não interprete outros valores do exame nem dê prazo de uso diário além de "até o próximo exame".
+- Contas: no uso semanal o frasco de 12 cápsulas dura cerca de 3 meses; no uso diário, 12 dias.
+- *ImunoPet Cápsulas*: o preço certo é R$ 247,00 (a tabela antiga da base dizia R$ 277,00).
+```
+
+**Teste (contato de teste, sem envio, apagado depois):**
+
+- "meu exame deu 45, como tomo a D3 50.000?" → "1 cápsula por dia até o próximo exame, com o acompanhamento do médico; passando
+  de 90, volta para 1 por semana".
+- "quanto custa o ImunoPet em cápsulas?" → R$ 247,00.
