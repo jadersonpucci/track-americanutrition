@@ -2953,3 +2953,11 @@ diária", mas a dose é 1 cápsula por semana. Agora diz "Uso semanal: 1 cápsul
   despublicado, não apagado. Ele aparecia no bloco de artigos da home.
 - **Endereço antigo do artigo:** redireciona (301) para o blog, para o link antigo não dar erro.
 
+**Gerar PIX: desconto em reais (03/11/2026).** A ferramenta `[Serena Tool] Gerar PIX` (`SkETGTmcqtlTR0Lp`) aceita
+`desconto_valor` (R$), que vira `appliedDiscount` `FIXED_AMOUNT` e vale no lugar do `desconto_pct`. A Shopify só aceita
+porcentagem com 2 casas, então um preço especial como 2x R$ 327 a R$ 200 cada (R$ 254 de desconto) saía R$ 399,99 com
+38,84%. A Serena não usa esse campo: é para pedido feito na mão, pela equipe.
+
+Ponto pendente: com `desconto_valor` e `cupom`, o aviso do Telegram e a nota interna ainda dizem "cupom sem porcentagem,
+não aplicado", mas o valor sai certo.
+

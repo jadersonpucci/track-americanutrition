@@ -168,3 +168,11 @@ O aviso vai para o grupo de alertas do Telegram, no máximo uma vez a cada 12 h 
 **Teste (03/11):** 37 pedidos, nenhum problema. Um pedido marcado de propósito como `revisar` foi detectado; o teste foi
 desfeito.
 
+## Venda sem nota: tag `SEM NFE` (03/11/2026)
+
+Pedido com a tag `SEM NFE` (também vale `sem-nfe` ou `Sem NF-e`) fica `ignorado` no robô de emissão e não entra no vigia.
+Serve para venda comercial que não leva nota, como a venda do estoque da Nair dos Santos.
+
+O primeiro caso foi o rascunho `#D4181`: Nair dos Santos, 2x ImunoFosfo 90 a R$ 200, PIX de R$ 400,00. Tags: `AF: Nair`,
+`AF: Nair dos Santos`, `SEM NFE`, `venda comercial`, `pagamento:pix` e `cupom:NAIR`.
+

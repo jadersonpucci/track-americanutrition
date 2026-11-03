@@ -343,6 +343,11 @@ for (const o of pedidos) {
     if (st !== 'ignorado') { await gravar(o.name, { shopify_order_id: o.id, status: 'ignorado', mensagem: 'entrega fora do Brasil (' + pais + '): sem NF-e brasileira' }); saida.novas.push({ pedido: o.name, status: 'ignorado' }); }
     continue;
   }
+  // 03/11/2026: venda comercial que nao leva nota (ex.: venda do estoque da Nair dos Santos): tag SEM NFE no pedido.
+  if ((o.tags || []).some((t) => /^sem[\s_-]*nf-?e$/i.test(String(t).trim()))) {
+    if (st !== 'ignorado') { await gravar(o.name, { shopify_order_id: o.id, status: 'ignorado', mensagem: 'venda sem NF-e (tag SEM NFE)' }); saida.novas.push({ pedido: o.name, status: 'ignorado' }); }
+    continue;
+  }
   // Aviso da Shopify chega tambem para pedido antigo editado/pago depois: so vale o que ainda nao foi enviado e e de nfe_desde em diante.
   if (evShopify && (o.displayFulfillmentStatus === 'FULFILLED' || o.createdAt < new Date(desde).toISOString())) continue;
   try {

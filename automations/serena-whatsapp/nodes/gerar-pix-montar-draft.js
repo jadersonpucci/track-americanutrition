@@ -56,6 +56,15 @@ if (pct > 0) {
   if (ctx.cupom) draftInput.tags.push('cupom:' + ctx.cupom);
 }
 
+// DESCONTO EM REAIS (03/11/2026): preco especial exato (desconto_valor), no lugar da porcentagem.
+const dval = Number(ctx.desconto_valor || 0);
+if (!(pct > 0) && dval > 0) {
+  const rotuloV = ctx.cupom ? ('Cupom ' + ctx.cupom) : ('Desconto R$ ' + dval.toFixed(2).replace('.', ','));
+  draftInput.appliedDiscount = { valueType: 'FIXED_AMOUNT', value: dval, title: rotuloV.slice(0, 80), description: ('Preco especial: ' + rotuloV).slice(0, 200) };
+  draftInput.note = draftInput.note + ' - ' + rotuloV;
+  if (ctx.cupom) draftInput.tags.push('cupom:' + ctx.cupom);
+}
+
 // FRETE (13/09/2026): a linha de frete entra no draft, e o totalPrice que a Shopify devolve (e vira o
 // valor do Pix) ja sai com ela. Frete gratis entra como linha de R$ 0 para a equipe ver a escolha.
 if (ctx.frete && Number(ctx.frete.valor) > 0) {

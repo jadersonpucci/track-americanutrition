@@ -40,6 +40,12 @@ const cupom = (body.cupom || '').toString().trim().toUpperCase().slice(0, 40);
 let descontoPct = Number(body.desconto_pct != null ? body.desconto_pct : body.desconto);
 if (!isFinite(descontoPct) || descontoPct <= 0) descontoPct = 0;
 descontoPct = Math.min(50, Math.round(descontoPct * 100) / 100);
+// 03/11/2026: desconto_valor (R$) para preco especial exato (ex.: Nair, 2x R$ 327 a R$ 200 = R$ 254 de desconto).
+// A Shopify so aceita porcentagem com 2 casas, e 38,84% dava R$ 399,99. Quando vem, vale no lugar do desconto_pct.
+let descontoValor = Number(String(body.desconto_valor == null ? '' : body.desconto_valor).replace(',', '.'));
+if (!isFinite(descontoValor) || descontoValor <= 0) descontoValor = 0;
+descontoValor = Math.round(descontoValor * 100) / 100;
+if (descontoValor > 0) descontoPct = 0;
 
 
 // CPF (19/09/2026). So contar 11 digitos deixava passar CPF com digito trocado: em 19/09 o Emerson mandou
@@ -148,6 +154,7 @@ return [{ json: {
   itens: itens,
   cupom: cupom,
   desconto_pct: descontoPct,
+  desconto_valor: descontoValor,
   frete: { valor: freteValor, titulo: freteTitulo, origem: freteOrigem, prazo: fretePrazo, subtotal_cotado: subtotalCotado },
   cliente: {
     nome: nome,
