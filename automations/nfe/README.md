@@ -147,3 +147,24 @@ Mais dois casos corrigidos:
 **Notas emitidas na mão:** 277 a 285, para o AN-16355 e do AN-16361 ao AN-16368. Todas foram autorizadas e anexadas.
 Os pedidos AN-16306 a AN-16316 são de 30/10 antes das 16h e já tinham sido enviados, então ficaram fora, como combinado.
 
+## Vigia: pedido pago sem nota (03/11/2026)
+
+Workflow **AN · NF-e Vigia (pedido pago sem nota)** (`IRt0HC1j4C4kH5HL`). Código em
+[`nodes/vigia.js`](nodes/vigia.js) e tabela em [`vigia.sql`](vigia.sql). Roda de hora em hora, no minuto 25, separado do
+robô de emissão: se o robô quebrar, o vigia continua.
+
+Ele procura pedido pago há mais de 2 h, dos últimos 3 dias, com entrega no Brasil, que ainda não tem nota autorizada:
+
+| Situação | O que o vigia faz |
+|---|---|
+| Sem registro na `nfe_emissoes` (o robô nem viu o pedido) | Pede a nota ao robô na hora e avisa o resultado. |
+| `revisar` ou `erro` | Avisa com o motivo, porque precisa de alguém. |
+| `processando` ou `autorizado_sem_anexo` há mais de 2 h | Avisa. |
+
+O aviso vai para o grupo de alertas do Telegram, no máximo uma vez a cada 12 h por pedido (`nfe_vigia_alertas`).
+
+**Rodar na mão:** `GET /webhook/nfe-vigia?t=<NFE_VIGIA_TOKEN>`. Com `&avisar=0`, só mostra o resultado, sem avisar.
+
+**Teste (03/11):** 37 pedidos, nenhum problema. Um pedido marcado de propósito como `revisar` foi detectado; o teste foi
+desfeito.
+
