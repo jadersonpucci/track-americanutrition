@@ -141,3 +141,22 @@ Bloquear cookies do site no navegador quebraria carrinho e checkout, então o op
   - link com `ref`/`bg_ref`/`d` não grava nada, e nem uma escrita forçada de `an_aff` passa;
   - no checkout, `__AN_REF()` volta vazio;
   - `?noaff=0` faz `?ref=` voltar a gravar.
+
+## Utmify sem UTMs nos links internos da loja (03/11/2026)
+
+**O problema.** O link "produtos" da home ia para `/collections/america-nutrition?utm_source=FB&utm_campaign=…`. Quem
+faz isso é a Utmify (`cdn.utmify.com.br/scripts/utms/latest.js`, em `layout/theme.liquid`): ela guarda os UTMs do
+anúncio por 7 dias no navegador e os cola em todos os links do site, inclusive na navegação interna.
+
+**Correção** (`nodes/utmify-links-internos.html`, no tema logo antes da tag da Utmify):
+- a tag da Utmify ganhou `data-utmify-ignore-classes="an-int"`;
+- um bloco marca com `an-int` os links para `americanutrition.com` / `www`. Ele roda no `DOMContentLoaded`, antes do
+  `load` em que a Utmify decora, e tem um observador para os links que aparecem depois.
+
+Os links para o checkout, o WhatsApp e outros sites continuam com os UTMs. A origem do tráfego segue no cookie
+`an_src`, que vale para todo o domínio `.americanutrition.com`.
+
+**Teste** (Chromium, HTML real da home e o script da Utmify, chegando com UTMs do Facebook):
+- antes: os 97 links internos ficavam com UTM;
+- depois: nenhum, incluindo um link criado depois do carregamento;
+- o link do checkout continua com os UTMs.
