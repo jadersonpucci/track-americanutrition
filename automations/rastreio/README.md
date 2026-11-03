@@ -111,3 +111,28 @@ A página já tinha o estado `returned` ("Voltou pra gente"). O rastreio proativ
 não manda mensagem.
 
 **Testado** no código acima. Os Correios recentes saíram iguais a antes.
+
+## Rastreio dos EUA pela Shopify (03/11/2026)
+
+**O problema.** Para código dos EUA (UPS `1Z…` ou USPS `9…`), `/webhook/rastreio/buscar` respondia vazio
+(AN-16353, `1Z212B90YW25124077`). Havia duas causas:
+- **A fonte nunca foi alimentada.** A rota EUA lia `rastreios_logistica`, que a Shippo alimentaria, mas a tabela só
+  tem linhas de teste de junho. As etiquetas dos EUA são compradas pelo Shopify Shipping, e o fluxo antigo do
+  checkout US (`carrinhos_us`) só gerou 2 etiquetas, em junho.
+- **O fluxo parava sem resposta.** O `alwaysOutputData` do nó `Supabase - Buscar Rastreio USA` estava dentro dos
+  parâmetros, onde não vale. Sem linha na tabela, o fluxo parava ali.
+
+**Correção:**
+- `alwaysOutputData` agora está nas configurações do nó.
+- `Normalizar USA` (`nodes/normalizar-usa.js`): sem linha na tabela, lê o fulfillment da Shopify que tem o código
+  (`displayStatus`, `events`, `estimatedDeliveryAt`, `deliveredAt`) e traduz os status: etiqueta criada, coletado,
+  em trânsito, saiu para entrega, tentativa, não entregue, entregue e etiqueta cancelada.
+- O pedido é buscado pelo número quando ele vem do início do fluxo. Sem número (a busca por código só enxerga os
+  250 pedidos enviados mais recentes), procura entre os pedidos com a tag `USA`, até 200 pedidos. Nesse caso
+  também monta número, data e produtos para a página.
+- Na etiqueta não aparece cidade, porque a Shopify põe a cidade da cliente. A previsão vem de `estimatedDeliveryAt`,
+  menos 6h (fim do dia em UTC), e o "+2 dias" de exibição continua valendo. Com problema na entrega, a previsão
+  some e aparece a orientação de falar no WhatsApp.
+
+**Teste:** os 16 códigos dos EUA de agosto a novembro respondem com o mesmo status da Shopify, em cerca de 1
+segundo.
