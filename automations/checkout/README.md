@@ -112,3 +112,32 @@ criado.
 **A correção:** o gate agora só repete a resposta guardada se ela tiver **menos de 30 minutos**. Isso continua
 cobrindo clique duplo e recarregamento da página. O código está em
 [`nodes/gate-idempotencia.js`](nodes/gate-idempotencia.js), com a chave da Supabase como marcador.
+
+## Modo sem afiliado (03/11/2026)
+
+Pedido do Jaderson: nos navegadores da equipe não pode ficar cookie de afiliado (`an_aff`, `an_ref`, `an_bg_ref`).
+Bloquear cookies do site no navegador quebraria carrinho e checkout, então o opt-out foi feito no código.
+
+- **Como usar:** abrir uma vez `https://americanutrition.com/?noaff=1` em cada navegador (aparece o aviso "Modo sem
+  afiliado LIGADO"). Grava o cookie `an_noaff=1` em `.americanutrition.com` por 1 ano, valendo para a loja e o checkout.
+  `?noaff=0` desliga. Também funciona abrindo direto no checkout.
+- **O que faz com o modo ligado** (`nodes/noaff-guard.html`):
+  - apaga `an_aff`, `an_ref` e `an_bg_ref`, e o `an_bg_ref` do localStorage do checkout;
+  - tira `ref`, `aff`, `bg_ref` e `d` da URL antes dos outros scripts lerem, sem mexer no resto (o `items=` fica
+    intacto);
+  - impede a gravação desses cookies e do `an_bg_ref` no localStorage.
+
+  O checkout então manda o pedido sem afiliado e não avisa o BixGrow. Cupom por `?discount=` continua funcionando.
+- **Sem o cookie `an_noaff`, o script não faz nada**, então clientes não são afetados.
+- **Onde está:**
+  - loja: tema principal (`155877212332`), `layout/theme.liquid`, logo depois do `<meta charset="utf-8">`;
+  - checkout: HTML publicado pelo `/webhook/checkout-deploy`, logo depois do `<head>`.
+
+  Os dois ficam antes dos scripts de afiliado. O deploy do checkout guardou a versão de 27/10 (`action: rollback`
+  volta).
+- **Teste (Chromium, com o HTML real das duas páginas):**
+  - sem o modo, `?ref=` grava como antes;
+  - com `?noaff=1`, os cookies de afiliado que já existiam somem;
+  - link com `ref`/`bg_ref`/`d` não grava nada, e nem uma escrita forçada de `an_aff` passa;
+  - no checkout, `__AN_REF()` volta vazio;
+  - `?noaff=0` faz `?ref=` voltar a gravar.
