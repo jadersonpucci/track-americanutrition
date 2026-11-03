@@ -51,6 +51,57 @@ try {
     // 110 que nao e extravio (recente, ou desmarcado pela equipe): sem "information" cru na tela
     for (const ev of evs) if (/^information$/i.test(String(ev.status || '').trim())) ev.status = 'Ocorrência registrada pela transportadora';
     if (/^information$/i.test(String(R.status_atual || '').trim())) R.status_atual = 'Ocorrência registrada pela transportadora';
+
+    // 03/11/2026 (AN-16220, 888031005427277): o 110 da J&T as vezes vem com um codigo de motivo no texto ("1"), e a
+    // pagina mostrava "1". Depois de "saiu para entrega" (94), sem entrega no meio, o 110 e a entrega que nao deu certo.
+    const prefixo = s => String(s || '').trim().replace(' ', 'T').slice(0, 19);
+    const evDoScan = s => evs.find(ev => String(ev.data || '').indexOf(prefixo(s.e.date)) === 0);
+    let topoMudou = false;
+    scans.forEach((s, i) => {
+      if (String(s.e.description || '').trim() !== '110') return;
+      const ev = evDoScan(s);
+      if (!ev) return;
+      if (ev === evs[0]) topoMudou = true;
+      const loc = String(s.e.location || '').trim();
+      const textoReal = loc.length > 3 && !/^\d+$/.test(loc);
+      const anterior = scans.slice(i + 1).find(x => String(x.e.description || '').trim() !== '110');
+      if (anterior && String(anterior.e.description || '').trim() === '94') {
+        ev.status = 'Tentativa de entrega sem sucesso';
+        ev.status_chave = 'exception';
+        ev.detalhe = 'O entregador não conseguiu entregar o pacote neste dia.';
+      } else if (!textoReal) {
+        ev.status = 'Ocorrência registrada pela transportadora';
+        ev.detalhe = '';
+      }
+    });
+    for (const ev of evs) if (/^\d{1,3}$/.test(String(ev.status || '').trim())) { ev.status = 'Ocorrência registrada pela transportadora'; ev.detalhe = ''; if (ev === evs[0]) topoMudou = true; }
+
+    // Devolucao: depois do primeiro evento de devolucao (sem entrega depois), o pacote esta voltando para a America
+    // Nutrition. Antes, a saida seguinte aparecia como "Saiu de Maringá" em transito, como se fosse para a cliente.
+    const iDev = evs.findIndex(ev => ev.status_chave === 'returned');
+    if (iDev >= 0) {
+      // "entregue" depois da devolucao e a entrega de volta para nos, nao para a cliente
+      const voltou = evs.slice(0, iDev).some(ev => ev.status_chave === 'delivered');
+      for (let k = 0; k <= iDev; k++) {
+        const ev = evs[k];
+        if (/escaneador|esscaneador|verificado/i.test(String(ev.detalhe || ''))) ev.detalhe = 'A transportadora registrou a devolução do pacote.';
+        if (k === iDev) continue;
+        if (ev.status_chave === 'delivered') { ev.status = 'Pacote devolvido à America Nutrition'; ev.detalhe = ''; }
+        ev.status_chave = 'returned';
+        if (/^Sa[íi]u /.test(String(ev.status || ''))) ev.status = 'Em devolução: ' + ev.status.charAt(0).toLowerCase() + ev.status.slice(1);
+        else if (/^Chegou /.test(String(ev.status || ''))) ev.status = 'Em devolução: ' + ev.status.charAt(0).toLowerCase() + ev.status.slice(1);
+      }
+      R.status_chave = 'returned';
+      R.status_atual = voltou ? 'Pacote devolvido à America Nutrition' : 'Pacote em devolução';
+      R.detalhe_atual = 'A ' + (R.transportadora || 'transportadora') + ' não conseguiu entregar e o pacote ' + (voltou ? 'voltou' : 'está voltando') + ' para a America Nutrition. Fale com a gente pelo WhatsApp para combinar o reenvio.';
+      R.entregue_em = null;
+      R.recebido_por = null;
+      R.previsao_entrega = null;
+      R.atrasado = false;
+    } else if (topoMudou) {
+      R.status_atual = evs[0].status;
+      if (evs[0].status_chave === 'exception') { R.status_chave = 'exception'; R.detalhe_atual = evs[0].detalhe || R.detalhe_atual; }
+    }
     return [{ json: j }];
   }
 

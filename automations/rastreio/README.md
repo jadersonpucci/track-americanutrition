@@ -83,3 +83,31 @@ As fotos vêm de `rastreio.comprovante`, montado no nó "Ajustar Previsao +2d": 
 com a assinatura e os dados do recebedor, e `podEvidences` vem vazio. As outras fotos da J&T (pacote na porta) ficam
 no sistema da própria J&T. O site deles tem captcha, então só daria para buscar com a API oficial (JMS), liberada ao
 cliente pelo comercial da J&T.
+
+## Tentativa de entrega e devolução da J&T (03/11/2026)
+
+**O problema.** AN-16220 (`888031005427277`, Maringá/PR): a página mostrava um evento "1" em 30/10 09:38, e o status
+atual era "Saiu de Maringá", em trânsito.
+
+Pela Envia, a J&T tinha mandado esta sequência:
+- **30/10 07:22, código 94:** saiu para entrega.
+- **30/10 09:38, código 110:** "Information", com `location: "1"`, que é o código de motivo da ocorrência. O
+  `Normalizar Resposta` usava o texto cru como status.
+- **31/10 16:29, código 172:** "Return problem", o pacote devolvido.
+- **31/10 16:52, código 50:** saída de Maringá para a base de SP, ou seja, a volta para nós.
+
+**Correção** no nó `Detectar Extravio` (`nodes/detectar-extravio.js`), só quando não é extravio:
+- 110 logo depois de um 94 (sem entrega no meio) vira "Tentativa de entrega sem sucesso" (`exception`), com "O
+  entregador não conseguiu entregar o pacote neste dia.";
+- outro 110 com texto que é só número ou vazio vira "Ocorrência registrada pela transportadora";
+- status só numérico na linha do tempo nunca aparece;
+- **depois de um evento de devolução**, os eventos seguintes viram `returned`: "Em devolução: saiu de …" e
+  "Em devolução: chegou …", e uma entrega vira "Pacote devolvido à America Nutrition". O rastreio fica com
+  `status_chave: returned`, "Pacote em devolução" (ou "devolvido") e a mensagem para falar no WhatsApp e combinar o
+  reenvio, sem previsão de entrega;
+- o detalhe do 172 ("o esscaneador é [nome]") vira "A transportadora registrou a devolução do pacote.".
+
+A página já tinha o estado `returned` ("Voltou pra gente"). O rastreio proativo trata `returned` como encerrado e
+não manda mensagem.
+
+**Testado** no código acima. Os Correios recentes saíram iguais a antes.
