@@ -2961,3 +2961,29 @@ porcentagem com 2 casas, então um preço especial como 2x R$ 327 a R$ 200 cada 
 Ponto pendente: com `desconto_valor` e `cupom`, o aviso do Telegram e a nota interna ainda dizem "cupom sem porcentagem,
 não aplicado", mas o valor sai certo.
 
+
+**Gerar PIX pelo Banco Inter (03/11/2026).** Pedido do Jaderson: todo PIX sai pelo Banco Inter, como o checkout novo.
+Antes a ferramenta `[Serena Tool] Gerar PIX` (`SkETGTmcqtlTR0Lp`) criava um rascunho na Shopify e cobrava pelo Pagar.me
+(Stone), com validade de 30 minutos.
+
+- **Novo nó `Criar PIX Inter`** (`nodes/gerar-pix-criar-inter.js`), entre o `Dados validos?` e o caminho antigo:
+  - pede o PIX ao `/webhook/checkout-criar-pedido`, o mesmo do checkout (`pix_provider=inter`);
+  - usa o preço cheio do `catalogo_precos` e rateia o desconto (`desconto_pct` ou `desconto_valor`) nos itens, como a
+    Venda Manual faz;
+  - manda `ref` `serena`, `serena-ig` ou `serena-msg` conforme o canal (o pedido sai com as tags `AF: Serena` + `WPP`,
+    `SERENA-IG` ou `SERENA-MSG`) e a tag extra `origem:serena` (mais `cupom:X` quando houver);
+  - a saída tem o formato do `Extrair PIX` e segue para `PIX ok?` e `Formatar resposta`.
+- **Não existe mais rascunho.** O pedido nasce pago na Shopify quando o PIX cai, pela Confirmação Pago de sempre
+  (webhook do Inter, mais a consulta periódica do provedor Inter).
+- **O PIX vale 24 horas** (`checkout_config.inter_pix_expiracao_seg`). O `Formatar resposta` mostra "pague até DD/MM às
+  HH:MM" e só cita minutos quando o prazo é de até 90 minutos. Os textos do `system_prompt` e da `base_treinamento`
+  foram trocados (ver `nodes/serena-config-adendos-prompt.md`).
+- **Página do Pix** (`pagina-pix.workflow.js`, `Checar Pagamento`): link com `pagarme_order_id` `inter_…` consulta o
+  `/webhook/pix-inter-status`, que também dispara a confirmação se o PIX caiu e o pedido ainda não nasceu.
+- **Voltar ao caminho antigo:** `serena_config.serena_pix_provider = 'pagarme'` (o padrão, sem a chave, é `inter`). O IF
+  `Caminho antigo?` manda para o `Montar draft`. O nó também volta sozinho para o caminho antigo se o catálogo estiver
+  fora do ar ou o produto não estiver no catálogo.
+
+Teste em 03/11 (dados internos, telefone da equipe, sem pagamento): 1x ImunoFosfo 42 com 10% e frete saiu R$ 188,96
+(R$ 177,30 + R$ 11,66). O código veio do `spi-qrcode.bancointer.com.br`, e a página e o `pix-status` responderam
+corretamente.

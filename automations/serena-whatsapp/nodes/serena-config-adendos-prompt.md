@@ -264,3 +264,23 @@ certo.
 - "meu exame deu 45, como tomo a D3 50.000?" → "1 cápsula por dia até o próximo exame, com o acompanhamento do médico; passando
   de 90, volta para 1 por semana".
 - "quanto custa o ImunoPet em cápsulas?" → R$ 247,00.
+
+## PIX da Serena pelo Banco Inter (03/11/2026)
+
+Pedido do Jaderson: todo PIX sai pelo Banco Inter, como no checkout novo. O `gerar_pix` deixou de criar rascunho na
+Shopify e de cobrar pelo Pagar.me (ver `gerar-pix-criar-inter.js`). Trocas feitas por `replace` no `serena_config`
+(backup antes da troca na sessão):
+
+`system_prompt`, de "PIX gerado na conversa vale 30 minutos. Passou disso, gere um novo com gerar_pix (não reenvie o
+antigo)." para:
+
+```
+PIX gerado na conversa sai pelo Banco Inter e vale 24 horas (o prazo exato vem na resposta do gerar_pix, em nota_serena). Passou disso, gere um novo com gerar_pix (não reenvie o antigo). Não existe mais rascunho: o número do pedido (AN-xxxxx) só nasce depois do pagamento.
+```
+
+`base_treinamento`, nas Regras do PIX, de "O código PIX expira em 30 minutos. Avisar o cliente do prazo e dizer que, se
+expirar, é só pedir um novo." para:
+
+```
+O código PIX sai pelo Banco Inter e vale 24 horas (desde 03/11/2026; antes era Pagar.me, 30 minutos). Avisar o cliente do prazo que vem na resposta do gerar_pix e dizer que, se expirar, é só pedir um novo.
+```

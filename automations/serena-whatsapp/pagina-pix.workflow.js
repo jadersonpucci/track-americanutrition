@@ -153,6 +153,7 @@ const entradaStatus = trigger({ type: 'n8n-nodes-base.webhook', version: 2.1, co
 const checar = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Checar Pagamento', parameters: { jsCode: `const SK = 'SUPABASE_SERVICE_KEY';
 const SB = 'https://supabase.americanutrition.com/pg/query';
 const SHOPIFY = 'https://n8n.americanutrition.com/webhook/shopify-admin';
+const INTER_STATUS = 'https://n8n.americanutrition.com/webhook/pix-inter-status';
 const self = this;
 async function sql(q) { const r = await self.helpers.httpRequest({ method: 'POST', url: SB, headers: { apikey: SK, Authorization: 'Bearer ' + SK, 'Content-Type': 'application/json' }, body: { query: q }, json: true, timeout: 20000 }); if (r && r.error) throw new Error(String(r.error).slice(0, 300)); return r; }
 const E = v => "'" + String(v == null ? '' : v).replace(/'/g, "''") + "'";
@@ -167,18 +168,26 @@ if (!p) return [{ json: { pago: false, erro: 'nao encontrado' } }];
 if (p.pago) return [{ json: { pago: true } }];
 
 let pago = false;
+const oid = String(p.pagarme_order_id || '');
 if (p.draft_id) {
-  // Pix de venda: o draft order da Shopify vira "completed" quando a Confirmacao de Pagamento fecha o pedido.
+  // Pix de venda antigo (Pagar.me): o draft order da Shopify vira "completed" quando a Confirmacao de Pagamento fecha o pedido pago.
   try {
     const r = await self.helpers.httpRequest({ method: 'POST', url: SHOPIFY, json: true, timeout: 20000, body: { acao: 'consultar', endpoint: 'draft_orders/' + p.draft_id + '.json' } });
     const d = r && r.ok && r.dados && r.dados.draft_order;
     if (d && (String(d.status || '') === 'completed' || d.order_id)) pago = true;
   } catch (e) { pago = false; }
-} else if (p.pagarme_order_id) {
+} else if (/^inter_/.test(oid)) {
+  // 03/11/2026: Pix da Serena pelo Banco Inter (mesmo caminho do checkout). O pix-inter-status consulta a cobranca no
+  // Inter e, se ja caiu e o pedido ainda nao nasceu, dispara a confirmacao (cria o pedido pago na Shopify).
+  try {
+    const r = await self.helpers.httpRequest({ method: 'GET', url: INTER_STATUS + '?order_id=' + encodeURIComponent(oid), json: true, timeout: 50000 });
+    if (r && r.paid) pago = true;
+  } catch (e) { pago = false; }
+} else if (oid) {
   // Pix de renovacao de assinatura: nao existe draft order. Quem marca pago e a
   // "AN - Assinatura PIX Confirmar", em assinatura_cobrancas.
   try {
-    const r = await sql("select status from assinatura_cobrancas where pix_order_id = " + E(p.pagarme_order_id) + " limit 1");
+    const r = await sql("select status from assinatura_cobrancas where pix_order_id = " + E(oid) + " limit 1");
     if (r && r[0] && String(r[0].status || '') === 'pago') pago = true;
   } catch (e) { pago = false; }
 }
