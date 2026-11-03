@@ -185,3 +185,27 @@ aceitava pontos repetidos no domínio e a Shopify recusava o pedido. Sobrou só 
 - os três pagamentos de 18/09 sem vínculo já tinham pedido e foram ligados: AN-15517, AN-15519 e AN-15520.
 
 Hoje não sobra nenhum PIX do Inter pago sem pedido.
+
+## Afiliado: o cupom digitado vence o link guardado (03/11/2026)
+
+**Caso.** Sueli Maria Gonçalves Pimenta usa o cupom PROMO5 (Vivian Fortunato), mas a comissão caía para o Pedro Mello.
+Em junho ela entrou por um link do Pedro (`bg_ref=5U7GaXBXoC`, o código dele no BixGrow), e o checkout guardou esse
+código no navegador **sem prazo**. Desde então, todo pedido dela saiu com dois afiliados:
+- o cupom digitado ficou só na anotação "Cupom usado";
+- o `bg_ref` foi como código de desconto.
+
+O `resolver_afiliado` dá a vitória ao primeiro código que for de um afiliado, então o link ganhava: AN-14808, AN-15582 e
+AN-16220. A mesma varredura (1.807 pedidos desde agosto) achou o caso inverso: VIDA5 (Lilian) com link da Vivian
+guardado, nos pedidos AN-14800 e AN-16155.
+
+**Regra decidida pelo Jaderson:** o cupom digitado vence.
+- **Nó novo `Cupom Digitado Primeiro`** (`nodes/afiliado-cupom-digitado-primeiro.js`) no "Afiliados - Registrar
+  Comissão" (`PNAFMdGMpTr8GSfU`), antes do `Registrar Conversao`: põe o cupom de "Cupom usado" no início de
+  `discount_codes`. Um cupom da casa (IMUNOFOSFO etc.) não é de afiliado, então o link continua valendo nesse caso.
+  Testado no `resolver_afiliado`: `[PROMO5, 5U7GaXBXoC]` dá Vivian e `[IMUNOFOSFO, 5U7GaXBXoC]` dá Pedro.
+- **Checkout:** o `an_bg_ref` guardado no navegador agora vale 30 dias (`an_bg_ref_em`). Os guardados sem data, da
+  versão antiga, são descartados. Quem ainda está na janela recebe o código de novo pela loja, cujo cookie dura 30 dias.
+
+**Retroativo** (decisão: só o que não foi pago): a comissão do AN-16220 (R$ 93,20, aprovada e não paga) passou do
+Pedro para a Vivian, os saldos dos dois foram recalculados e a tag do pedido virou "AF: Vivian Fortunato". Os quatro já
+pagos (AN-14808 e AN-15582 ao Pedro, AN-14800 e AN-16155 à Vivian) ficaram como estavam.
