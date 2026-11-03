@@ -160,3 +160,28 @@ Os links para o checkout, o WhatsApp e outros sites continuam com os UTMs. A ori
 - antes: os 97 links internos ficavam com UTM;
 - depois: nenhum, incluindo um link criado depois do carregamento;
 - o link do checkout continua com os UTMs.
+
+## PIX pago sem pedido por e-mail com ".." (03/11/2026)
+
+**Caso.** Comprovante da Veronica Firmino dos Santos: R$ 342,02 em 01/11 às 19:10, descrição "Pedido
+AN-1793570783070". O Inter confirmou (`checkout_pix_inter`, `CONCLUIDA`, E2E `E60746948202611012209A0793Mh2agQ`),
+mas o pedido não nasceu na Shopify. O e-mail foi digitado como `veronica2008pb@gmail..com`: a validação do checkout
+aceitava pontos repetidos no domínio e a Shopify recusava o pedido. Sobrou só o alerta "Cobrança paga SEM pedido"
+(Telegram, tópico 13). A busca achou o mesmo problema com Fabiano Saul Rover: R$ 355,85 em 27/09, e-mail
+`contato@fabianorover..com.br`, sem pedido havia 5 semanas.
+
+**Correção:**
+- **Checkout:** `validarEmail` recusa `..` e ponto no começo ou colado no `@`, então a cliente vê o erro no campo e
+  corrige. O deploy guardou a versão anterior.
+- **Confirmação** (`nodes/confirmacao-pago-limpar-email.js`, no nó `Truncar Tags (max 40)`): limpa o e-mail antes
+  de criar o pedido (`..` vira `.`, espaços e pontos soltos saem). Se o e-mail continuar inválido, o pedido sai sem
+  e-mail em vez de falhar.
+
+**Recuperação** (autorizada pelo Jaderson):
+- os dois pedidos foram criados pelo fluxo normal, com um `order.paid` montado a partir da `checkout_pix_inter`.
+  O id leva o sufixo `-r` porque o fluxo guarda os ids já processados e descartaria a repetição;
+- Veronica: **AN-16377** (afiliada Vivian Fortunato, cupom PROMO5), com a confirmação no WhatsApp enviada;
+- Fabiano: **AN-16378** (Nova Trento/SC, Sedex), com a confirmação agendada;
+- os três pagamentos de 18/09 sem vínculo já tinham pedido e foram ligados: AN-15517, AN-15519 e AN-15520.
+
+Hoje não sobra nenhum PIX do Inter pago sem pedido.
