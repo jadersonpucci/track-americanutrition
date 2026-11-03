@@ -125,3 +125,25 @@ O fato e as mensagens do teste foram apagados.
 **Robô antigo desligado (02/11/2026).** O `[Serena] Nota Fiscal no Pedido` (`48bwyfca3QCCojEy`) colocava a tag
 `NOTA FISCAL` no pedido quando o cliente pedia nota, para a equipe emitir na mão. A nota agora sai sozinha, e a tag
 podia fazer alguém emitir de novo, então o robô foi desativado no n8n. Para voltar, basta reativar o workflow.
+
+## Correção de 03/11/2026: pedidos sem nota
+
+Do AN-16361 ao AN-16368 (pagos entre 02/11 às 12h59 e 21h40) ficaram sem nota. Foram duas falhas no robô:
+
+1. **No aviso da Shopify**, o robô procurava o pedido pela busca (`name:AN-x`). A busca leva alguns segundos para achar
+   um pedido recém-criado, voltava vazia e o robô desistia sem avisar. Agora o aviso busca o pedido direto pelo id.
+2. **A rede de segurança de hora em hora** pegava os 40 pedidos pagos e não enviados **mais antigos** desde
+   `nfe_desde`. Com mais de 40 pedidos ainda não marcados como enviados na Shopify, os novos nunca entravam. Agora a busca
+   vai do mais novo para o mais antigo, até 100 pedidos.
+
+Mais dois casos corrigidos:
+
+- **AN-16355** ficou em `revisar` com "forma de pagamento não reconhecida". É um PIX gerado pela Serena na conversa,
+  que chega sem o atributo `Pagamento` do checkout. Agora a forma de pagamento também vem da tag
+  `pagamento:pix|boleto|cartao`.
+- **AN-16353** é do checkout dos EUA (entrega na Flórida). Pedido com entrega fora do Brasil ou com a tag `USA` agora fica
+  `ignorado`, porque não leva NF-e brasileira.
+
+**Notas emitidas na mão:** 277 a 285, para o AN-16355 e do AN-16361 ao AN-16368. Todas foram autorizadas e anexadas.
+Os pedidos AN-16306 a AN-16316 são de 30/10 antes das 16h e já tinham sido enviados, então ficaram fora, como combinado.
+

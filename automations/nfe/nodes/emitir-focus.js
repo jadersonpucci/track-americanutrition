@@ -190,7 +190,10 @@ async function montar(o) {
     return it;
   });
 
-  const pag = limpa(attr(o, 'Pagamento')).toLowerCase();
+  // 03/11/2026: PIX, boleto e cartao gerados pela Serena na conversa (draft order) nao tem o atributo Pagamento do
+  // checkout; a forma vem na tag pagamento:pix|boleto|cartao (caso AN-16355, que ficou em revisar).
+  const tagPag = ((o.tags || []).find((t) => /^pagamento:/i.test(String(t))) || '').replace(/^pagamento:/i, '');
+  const pag = limpa(attr(o, 'Pagamento') || tagPag).toLowerCase();
   const parcelas = Number(dig(attr(o, 'Parcelas')) || 1);
   let fp = { indicador_pagamento: 0, forma_pagamento: '17', valor_pagamento: total };
   if (/cart/.test(pag) && /d[eé]bito/.test(pag)) fp = { indicador_pagamento: 0, forma_pagamento: '04', valor_pagamento: total, tipo_integracao: 2 };
@@ -309,12 +312,21 @@ if (modo === 'on') {
 
 // 2) novos pedidos
 const filtro = pedidoUnico ? ('name:' + pedidoUnico) : ("created_at:>='" + desde + "' financial_status:paid fulfillment_status:unfulfilled -status:cancelled");
-const QO = 'query($q:String!){ orders(first:40, query:$q, sortKey:CREATED_AT){ nodes{ id name createdAt displayFinancialStatus displayFulfillmentStatus cancelledAt email phone customAttributes{ key value }'
+// 03/11/2026: duas falhas deixaram AN-16361 a AN-16368 sem nota. (1) No aviso da Shopify o pedido era procurado pela busca
+// (name:AN-x), que demora alguns segundos para achar pedido recem-criado: voltava vazio e o robo desistia. Agora o aviso
+// busca o pedido direto pelo id. (2) A rede de seguranca pegava os 40 MAIS ANTIGOS pagos e nao enviados desde nfe_desde;
+// com mais de 40 pedidos ainda nao marcados como enviados na Shopify, os novos nunca entravam. Agora vem do mais novo para o
+// mais antigo, ate 100.
+const CAMPOS = 'id name createdAt displayFinancialStatus displayFulfillmentStatus cancelledAt email phone customAttributes{ key value }'
   + ' localizationExtensions(first:5){ nodes{ purpose title value } } currentTotalPriceSet{ shopMoney{ amount } }'
-  + ' shippingAddress{ name firstName lastName address1 address2 city provinceCode zip phone }'
+  + ' tags shippingAddress{ name firstName lastName address1 address2 city provinceCode zip phone countryCodeV2 }'
   + ' shippingLines(first:3){ nodes{ title discountedPriceSet{ shopMoney{ amount } } } }'
-  + ' lineItems(first:40){ nodes{ title variantTitle quantity variant{ id } product{ id } originalUnitPriceSet{ shopMoney{ amount } } discountedUnitPriceAfterAllDiscountsSet{ shopMoney{ amount } } discountedTotalSet{ shopMoney{ amount } } } } } } }';
-const pedidos = (await gql(QO, { q: filtro })).orders.nodes;
+  + ' lineItems(first:40){ nodes{ title variantTitle quantity variant{ id } product{ id } originalUnitPriceSet{ shopMoney{ amount } } discountedUnitPriceAfterAllDiscountsSet{ shopMoney{ amount } } discountedTotalSet{ shopMoney{ amount } } } }';
+const QO = 'query($q:String!){ orders(first:100, query:$q, sortKey:CREATED_AT, reverse:true){ nodes{ ' + CAMPOS + ' } } }';
+const QI = 'query($id:ID!){ order(id:$id){ ' + CAMPOS + ' } }';
+const pedidos = evShopify
+  ? [(await gql(QI, { id: String(corpo.admin_graphql_api_id) })).order].filter(Boolean)
+  : (await gql(QO, { q: filtro })).orders.nodes;
 const nomes = pedidos.map((o) => o.name);
 const ja = {};
 if (nomes.length) (await sql('select pedido, status from nfe_emissoes where pedido in (' + nomes.map(E).join(', ') + ')')).forEach((x) => { ja[x.pedido] = x.status; });
@@ -324,6 +336,13 @@ for (const o of pedidos) {
   // Ja emitida ou em andamento nao volta. Simulado pode virar emissao; erro/revisar so com pedido unico (manual).
   if (st && !(st === 'simulado' && modo === 'on') && !(manual && pedidoUnico && /^(erro|revisar|simulado)$/.test(st))) continue;
   if (o.cancelledAt || !/PAID/i.test(o.displayFinancialStatus)) continue;
+  // 03/11/2026: pedido do checkout US (entrega fora do Brasil, sai do estoque dos EUA) nao leva NF-e brasileira
+  // (caso AN-16353, Florida, que ficou em revisar).
+  const pais = String(((o.shippingAddress || {}).countryCodeV2) || 'BR').toUpperCase();
+  if (pais !== 'BR' || (o.tags || []).some((t) => String(t).toUpperCase() === 'USA')) {
+    if (st !== 'ignorado') { await gravar(o.name, { shopify_order_id: o.id, status: 'ignorado', mensagem: 'entrega fora do Brasil (' + pais + '): sem NF-e brasileira' }); saida.novas.push({ pedido: o.name, status: 'ignorado' }); }
+    continue;
+  }
   // Aviso da Shopify chega tambem para pedido antigo editado/pago depois: so vale o que ainda nao foi enviado e e de nfe_desde em diante.
   if (evShopify && (o.displayFulfillmentStatus === 'FULFILLED' || o.createdAt < new Date(desde).toISOString())) continue;
   try {
