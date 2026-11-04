@@ -47,3 +47,6 @@ em [`cotacao-checkout-normalizar.js`](cotacao-checkout-normalizar.js) (token com
 - Mantidos: sem SEDEX Hoje, sem J&T para o Pará, +2 dias no prazo exibido ("Renomear JT"), ordenação por prazo.
 - O servidor não recalcula o frete: o valor escolhido no checkout vai para o pedido.
 - As ferramentas da Serena (Calcular Frete, Consultar Frete Região) ainda cotam pela Envia.
+- 04/11/2026: a **Serena** (`/webhook/calcular-frete`, usado também pelo Gerar PIX e Gerar Boleto) passa a usar a
+  mesma cotação do checkout: o nó "Formatar resposta" chama o `/webhook/frete-cotacao` (código em
+  `automations/serena-whatsapp/nodes/calcular-frete-formatar-resposta.js`). Envia só de reserva, também com +2%.
