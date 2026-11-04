@@ -202,3 +202,11 @@ e as imagens já nos Arquivos da Shopify, sem nenhuma variável do Klaviyo):
 Em cada e-mail da automação: apagar as seções padrão do modelo, adicionar a seção **Custom Liquid** (Liquid
 personalizado), colar o conteúdo inteiro do arquivo, e preencher assunto e prévia conforme as seções acima. O rodapé de
 descadastro a Shopify adiciona sozinha.
+
+## 04/11/2026 (noite): migração suspensa, Klaviyo de volta
+
+Sem API para controlar as automações do Shopify Email, o Jaderson decidiu manter o Klaviyo por enquanto.
+Revertido: os 9 fluxos voltaram a `live` (workflow n8n `7KnxBKb4iY2ch05q`, lista fixa de IDs), o app embed do Klaviyo
+voltou a ficar ligado no tema, o "AN Klaviyo Carrinho Abandonado" foi republicado e o nó "Evento Klaviyo Falha" do
+Dunning foi religado. As automações do Shopify Email devem ficar desativadas no painel. O export e os e-mails em
+Custom Liquid continuam aqui para uma migração futura (próprio sistema via n8n + Amazon SES).
