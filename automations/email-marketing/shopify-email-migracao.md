@@ -184,3 +184,21 @@ O e-mail "Pedido confirmado" do Klaviyo **não** entra: a Shopify já manda a co
 No tema publicado (155877212332), o app embed **Klaviyo onsite** (pop-ups de inscrição e rastreamento) foi desligado em
 `config/settings_data.json` (bloco `855628211100114053`, `disabled: true`). Backup do arquivo anterior no scratchpad da
 sessão. Site e checkout conferidos: nenhuma chamada ao Klaviyo.
+
+## Visual igual ao do Klaviyo: bloco "Custom Liquid"
+
+Os blocos padrão do Shopify Email deixam o e-mail com outra cara. Para manter o visual do Klaviyo, cada e-mail tem a
+versão pronta em `shopify-custom-liquid/` (mesmo HTML do Klaviyo, com `{{ customer.first_name }}`, o cupom IMUNOFOSFO
+e as imagens já nos Arquivos da Shopify, sem nenhuma variável do Klaviyo):
+
+| E-mail | Arquivo |
+|---|---|
+| 1.1 a 1.4 Boas-vindas | `1.1-boas-vindas-cupom.html` … `1.4-boas-vindas-depoimentos.html` |
+| 2.1 a 2.6 Pós-compra | `2.1-pos-compra-guia-de-uso.html` … `2.6-pos-compra-4-semanas.html` |
+| 3.1 Recompra | `3.1-recompra-imunofosfo.html` |
+| 4.1 Navegação abandonada | `4.1-navegacao-abandonada.html` (aponta para o ImunoFosfo) |
+| 5.1 VIP | `5.1-cliente-vip.html` |
+
+Em cada e-mail da automação: apagar as seções padrão do modelo, adicionar a seção **Custom Liquid** (Liquid
+personalizado), colar o conteúdo inteiro do arquivo, e preencher assunto e prévia conforme as seções acima. O rodapé de
+descadastro a Shopify adiciona sozinha.
