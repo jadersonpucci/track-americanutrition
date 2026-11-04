@@ -136,3 +136,17 @@ não manda mensagem.
 
 **Teste:** os 16 códigos dos EUA de agosto a novembro respondem com o mesmo status da Shopify, em cerca de 1
 segundo.
+
+## Código com espaços e link de rastreio na Shopify (04/11/2026)
+
+- Desde 26/10 a equipe lança o código na Shopify com espaços (`AP 694 051 291 BR`). A busca por código
+  ("Casar Tracking com Pedido") comparava o texto exato, não achava o pedido e a página ficava sem os frascos reais
+  (aparecia a garrafa genérica "pedido"). Agora `Validar Input`, `Casar Tracking com Pedido` e
+  `Validar Pedido e Extrair Tracking` comparam só letras e números.
+- Workflow **AN - Link de rastreio na Shopify** (`LvVcylwv0syHUeS9`, `link-rastreio-shopify.workflow.js`, nó em
+  `nodes/link-rastreio-shopify.js`): a cada 5 min, nos pedidos atualizados nas últimas 3 h, tira os espaços do código e
+  troca o link do envio por `https://track.americanutrition.com/CODIGO` (antes vinha correios.com.br, Frenet, UPS, USPS),
+  sem avisar a cliente. Correção retroativa feita em 04/11 nos envios desde 20/09 (187 envios).
+- O e-mail de envio da Shopify sai na hora em que a equipe marca o pedido como enviado, antes da correção. Para o
+  e-mail também levar o nosso link, o modelo **Confirmação de envio** (e **Atualização de envio**) em
+  Configurações > Notificações usa `track.americanutrition.com` + o código sem espaços (ver trecho na conversa de 04/11).
