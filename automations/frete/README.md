@@ -34,3 +34,16 @@ de R$ 43 (Norte).
 
 Quando a Frenet liberar o token de parceiro, troque a cotação pelo valor cobrado e regrave as vendas com
 `frete_origem = 'frenet_cotacao'`.
+
+## Cotação do checkout pela Frenet, +2% (04/11/2026)
+
+O `POST /webhook/frete-cotacao` (workflow **Envia.com — Cotação de Frete**, `lszlpy1Pl4dnHW2w`), usado pelo checkout,
+passa a cotar pela **Frenet** (`api.frenet.com.br/shipping/quote`). Código do nó "Normalizar Opcoes + Regra Gratis"
+em [`cotacao-checkout-normalizar.js`](cotacao-checkout-normalizar.js) (token como `<FRENET_TOKEN>`).
+
+- Todo valor de frete leva **+2%** (`MARGEM`), arredondado no centavo. Frete Grátis (R$ 250+) continua R$ 0.
+- Ficam Correios (SEDEX e PAC) e J&T, como era na Envia. Jadlog vem da Frenet e fica de fora.
+- A Envia continua sendo chamada e só entra (também com +2%) se a Frenet falhar ou não devolver opção.
+- Mantidos: sem SEDEX Hoje, sem J&T para o Pará, +2 dias no prazo exibido ("Renomear JT"), ordenação por prazo.
+- O servidor não recalcula o frete: o valor escolhido no checkout vai para o pedido.
+- As ferramentas da Serena (Calcular Frete, Consultar Frete Região) ainda cotam pela Envia.

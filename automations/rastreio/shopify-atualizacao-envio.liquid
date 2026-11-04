@@ -1,0 +1,361 @@
+{% assign an_cod = fulfillment.tracking_numbers.first | remove: ' ' | upcase %}
+{% assign an_link = 'https://track.americanutrition.com/' | append: an_cod %}
+{%- comment -%} ===== IDIOMA: EN se o pedido tiver a tag USA, senão PT-BR ===== {%- endcomment -%}
+{% assign is_us = false %}
+{% if tags contains 'USA' %}{% assign is_us = true %}{% endif %}
+
+{%- comment -%} ===== TÍTULO/CORPO (bilíngue) ===== {%- endcomment -%}
+{% if is_us %}
+  {% capture email_title %}Your shipping status was updated{% endcapture %}
+  {% capture email_body %}The items below have been updated with new shipping information.{% endcapture %}
+{% else %}
+  {% capture email_title %}O status de frete foi atualizado{% endcapture %}
+  {% capture email_body %}Os itens a seguir foram atualizados com novas informações de frete.{% endcapture %}
+{% endif %}
+
+{%- comment -%} ===== RÓTULOS BILÍNGUE (única fonte de tradução) ===== {%- endcomment -%}
+{% if is_us %}
+  {% assign t_order_label = 'Order' %}
+  {% assign t_eyebrow = '🔄 Delivery update' %}
+  {% assign t_title_1 = 'An update on' %}
+  {% assign t_title_2 = 'your delivery.' %}
+  {% assign t_tracking_updated = 'Tracking updated' %}
+  {% assign t_track_btn = 'Track order' %}
+  {% assign t_view_order = 'View my order' %}
+  {% assign t_track_live = 'Track live' %}
+  {% assign t_visit_store = 'Visit our store' %}
+  {% assign t_visit_store_solo = 'Visit our store' %}
+  {% assign t_items_shipment = 'Items in this shipment' %}
+  {% assign t_qty = 'Qty' %}
+  {% assign t_of = 'of' %}
+  {% assign t_refunded = 'Refunded' %}
+  {% assign t_updated_badge = '🔄 Updated' %}
+  {% assign t_support_q = 'Questions about your delivery?' %}
+  {% assign t_support_sub = 'Our team is tracking your order, available 24/7' %}
+  {% assign t_footer_text = 'Questions? Contact us at' %}
+{% else %}
+  {% assign t_order_label = 'Pedido' %}
+  {% assign t_eyebrow = '🔄 Atualização de entrega' %}
+  {% assign t_title_1 = 'Novidade sobre' %}
+  {% assign t_title_2 = 'sua entrega.' %}
+  {% assign t_tracking_updated = 'Rastreamento atualizado' %}
+  {% assign t_track_btn = 'Rastrear pedido' %}
+  {% assign t_view_order = 'Ver meu pedido' %}
+  {% assign t_track_live = 'Rastrear ao vivo' %}
+  {% assign t_visit_store = 'Visitar a loja' %}
+  {% assign t_visit_store_solo = 'Acessar nossa loja' %}
+  {% assign t_items_shipment = 'Itens nesta remessa' %}
+  {% assign t_qty = 'Qtd' %}
+  {% assign t_of = 'de' %}
+  {% assign t_refunded = 'Reembolsado' %}
+  {% assign t_updated_badge = '🔄 Atualizado' %}
+  {% assign t_support_q = 'Ficou com dúvidas sobre a entrega?' %}
+  {% assign t_support_sub = 'Nossa equipe acompanha seu pedido — disponível 24h' %}
+  {% assign t_footer_text = 'Dúvidas? Entre em contato pelo e-mail' %}
+{% endif %}
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="{% if is_us %}en{% else %}pt-BR{% endif %}">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>{{ email_title }}</title>
+<style type="text/css">
+  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500;600&display=swap');
+  body, table, td, a { -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; }
+  table, td { mso-table-lspace:0pt; mso-table-rspace:0pt; }
+  img { -ms-interpolation-mode:bicubic; border:0; outline:none; text-decoration:none; display:block; }
+  body { margin:0 !important; padding:0 !important; background-color:#f0f3f8; }
+  a { color:#07388E; text-decoration:none; }
+  .btn-primary, .btn-primary:link, .btn-primary:visited, .btn-primary:hover, .btn-primary:active { color:#ffffff !important; text-decoration:none !important; }
+  .btn-secondary, .btn-secondary:link, .btn-secondary:visited, .btn-secondary:hover, .btn-secondary:active { color:#07388E !important; text-decoration:none !important; }
+  .btn-track, .btn-track:link, .btn-track:visited, .btn-track:hover, .btn-track:active { color:#ffffff !important; text-decoration:none !important; }
+  @media screen and (max-width:600px) {
+    .email-wrap { width:100% !important; }
+    .mobile-pad { padding-left:20px !important; padding-right:20px !important; }
+    .hero-title { font-size:22px !important; }
+  }
+</style>
+<!--[if mso]><style>body,table,td{font-family:Arial,sans-serif !important;}</style><![endif]-->
+</head>
+<body style="margin:0;padding:0;background-color:#f0f3f8;">
+<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#f0f3f8;">
+<tr><td align="center" style="padding:24px 16px 40px;">
+<table class="email-wrap" role="presentation" border="0" cellpadding="0" cellspacing="0" width="600" style="max-width:600px;">
+
+
+<!-- ═══ HEADER ═══ -->
+<tr>
+  <td style="background-color:#07388E; border-radius:10px 10px 0 0; padding:24px 40px;">
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+    <tr>
+      <td valign="middle">
+        <img src="https://cdn.shopify.com/s/files/1/0643/9000/4908/files/LOGOTIPO_BRANCO_FUNDO_TRANSPARENTE.png"
+             alt="America Nutrition" width="180"
+             style="display:block; width:180px; height:auto;">
+      </td>
+      <td align="right" valign="middle" style="white-space:nowrap;">
+        <div style="font-family:'Barlow Condensed',Arial,sans-serif; font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:rgba(255,255,255,0.6);">{{ t_order_label }}</div>
+        <div style="font-family:'Barlow Condensed',Arial,sans-serif; font-size:18px; font-weight:700; color:#ffffff; letter-spacing:0.5px;">{% if is_us %}{{ order_name | replace: '-BR', '' }}{% else %}{{ order_name }}{% endif %}</div>
+      </td>
+    </tr>
+    </table>
+  </td>
+</tr>
+
+<!-- Linha bicolor -->
+<tr>
+  <td style="padding:0; font-size:0; line-height:0;">
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+    <tr>
+      <td width="420" height="4" bgcolor="#052a6a" style="background-color:#052a6a; font-size:0;">&nbsp;</td>
+      <td height="4" bgcolor="#AD0404" style="background-color:#AD0404; font-size:0;">&nbsp;</td>
+    </tr>
+    </table>
+  </td>
+</tr>
+
+
+<!-- ═══ HERO ATUALIZAÇÃO ═══ -->
+<tr>
+  <td style="background-color:#ffffff; padding:32px 40px 28px;" class="mobile-pad">
+
+    <!-- Eyebrow -->
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin-bottom:10px;">
+    <tr>
+      <td width="20" height="2" bgcolor="#07388E" style="background-color:#07388E; font-size:0;">&nbsp;</td>
+      <td width="8" style="font-size:0;">&nbsp;</td>
+      <td style="font-family:'Barlow Condensed',Arial,sans-serif; font-size:11px; font-weight:700; letter-spacing:2.5px; text-transform:uppercase; color:#07388E;" valign="middle">{{ t_eyebrow }}</td>
+    </tr>
+    </table>
+
+    <!-- Título -->
+    <div class="hero-title" style="font-family:'Barlow Condensed',Arial,sans-serif; font-size:28px; font-weight:700; color:#07388E; line-height:1.1; margin-bottom:10px;">
+      {{ t_title_1 }}<br><span style="color:#AD0404;">{{ t_title_2 }}</span>
+    </div>
+
+    <!-- Corpo -->
+    <p style="font-family:'Barlow',Arial,sans-serif; font-size:14px; color:#555555; line-height:1.7; margin:0 0 16px;">{{ email_body }}</p>
+
+    <!-- email_emphasis (conteúdo extra livre do Shopify) -->
+    {% if email_emphasis != blank %}
+      <p style="font-family:'Barlow',Arial,sans-serif; font-size:14px; color:#555555; line-height:1.7; margin:0 0 16px;">{{ email_emphasis }}</p>
+    {% endif %}
+
+    <!-- Rastreamento: sempre o rastreio personalizado (track.americanutrition.com), codigo sem espacos -->
+    {% if fulfillment.tracking_numbers.size > 0 %}
+      <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#f4f7fe; border:1px solid #dce2f0; border-radius:8px; margin-bottom:20px;">
+      <tr>
+        <td style="padding:14px 18px;">
+          <div style="font-family:'Barlow Condensed',Arial,sans-serif; font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#07388E; margin-bottom:8px;">{{ t_tracking_updated }}</div>
+          {% if fulfillment.tracking_numbers.size == 1 and fulfillment.tracking_company %}
+            <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+            <tr>
+              <td valign="middle">
+                <div style="font-family:'Barlow',Arial,sans-serif; font-size:13px; color:#888888;">{{ fulfillment.tracking_company }}</div>
+                <div style="font-family:'Barlow Condensed',Arial,sans-serif; font-size:15px; font-weight:700; color:#07388E; letter-spacing:0.5px;">{{ an_cod }}</div>
+              </td>
+              <td align="right" valign="middle">
+                <table role="presentation" border="0" cellpadding="0" cellspacing="0"><tr>
+                  <td style="border-radius:3px; background-color:#07388E; border-bottom:2px solid #052a6a;" bgcolor="#07388E">
+                    <a href="{{ an_link }}" class="btn-track"
+                       style="display:inline-block; font-family:'Barlow Condensed',Arial,sans-serif; font-size:12px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:#ffffff !important; text-decoration:none; padding:9px 18px;">
+                      {{ t_track_btn }}
+                    </a>
+                  </td>
+                </tr></table>
+              </td>
+            </tr>
+            </table>
+          {% elsif fulfillment.tracking_numbers.size == 1 %}
+            <div style="font-family:'Barlow Condensed',Arial,sans-serif; font-size:15px; font-weight:700; color:#07388E;">
+              <a href="{{ an_link }}" style="color:#07388E;">{{ an_cod }}</a>
+            </div>
+          {% else %}
+            <div style="font-family:'Barlow',Arial,sans-serif; font-size:13px; color:#888888; margin-bottom:6px;">{{ fulfillment.tracking_company }}</div>
+            {% for tracking_number in fulfillment.tracking_numbers %}
+              {% assign an_c = tracking_number | remove: ' ' | upcase %}
+              <div style="font-family:'Barlow Condensed',Arial,sans-serif; font-size:14px; font-weight:700; color:#07388E; margin-bottom:4px;">
+                <a href="https://track.americanutrition.com/{{ an_c }}" style="color:#07388E;">{{ an_c }}</a>
+              </div>
+            {% endfor %}
+          {% endif %}
+        </td>
+      </tr>
+      </table>
+    {% endif %}
+
+    <!-- Botões CTA -->
+    {% if order_status_url %}
+      <table role="presentation" border="0" cellpadding="0" cellspacing="0">
+      <tr>
+        <td style="border-radius:3px; background-color:#AD0404; border-bottom:3px solid #7a0303;" bgcolor="#AD0404">
+          <a href="{{ order_status_url }}" class="btn-primary"
+             style="display:inline-block; font-family:'Barlow Condensed',Arial,sans-serif; font-size:13px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:#ffffff !important; text-decoration:none; padding:11px 26px;">
+            {{ t_view_order }}
+          </a>
+        </td>
+        {% if fulfillment.tracking_numbers.size > 0 %}
+          <td width="12" style="font-size:0;">&nbsp;</td>
+          <td style="border-radius:3px; border:2px solid #07388E;">
+            <a href="{{ an_link }}" class="btn-secondary"
+               style="display:inline-block; font-family:'Barlow Condensed',Arial,sans-serif; font-size:13px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:#07388E !important; text-decoration:none; padding:9px 20px;">
+              {{ t_track_live }}
+            </a>
+          </td>
+        {% elsif shop.url %}
+          <td width="12" style="font-size:0;">&nbsp;</td>
+          <td style="border-radius:3px; border:2px solid #07388E;">
+            <a href="{{ shop.url }}" class="btn-secondary"
+               style="display:inline-block; font-family:'Barlow Condensed',Arial,sans-serif; font-size:13px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:#07388E !important; text-decoration:none; padding:9px 20px;">
+              {{ t_visit_store }}
+            </a>
+          </td>
+        {% endif %}
+      </tr>
+      </table>
+    {% elsif shop.url %}
+      <table role="presentation" border="0" cellpadding="0" cellspacing="0"><tr>
+        <td style="border-radius:3px; background-color:#07388E; border-bottom:3px solid #052a6a;" bgcolor="#07388E">
+          <a href="{{ shop.url }}" class="btn-primary"
+             style="display:inline-block; font-family:'Barlow Condensed',Arial,sans-serif; font-size:13px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:#ffffff !important; text-decoration:none; padding:11px 26px;">
+            {{ t_visit_store_solo }}
+          </a>
+        </td>
+      </tr></table>
+    {% endif %}
+
+  </td>
+</tr>
+
+
+<!-- ═══ ITENS DA REMESSA ═══ -->
+<tr>
+  <td style="background-color:#ffffff; padding:0 40px 8px;" class="mobile-pad">
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+    <tr><td height="1" style="background-color:#e0e4ed; font-size:0;">&nbsp;</td></tr>
+    </table>
+  </td>
+</tr>
+<tr>
+  <td style="background-color:#ffffff; padding:16px 40px 4px;" class="mobile-pad">
+    <div style="font-family:'Barlow Condensed',Arial,sans-serif; font-size:12px; font-weight:700; letter-spacing:2.5px; text-transform:uppercase; color:#AD0404; margin-bottom:4px;">{{ t_items_shipment }}</div>
+  </td>
+</tr>
+
+{% for line in fulfillment.fulfillment_line_items %}
+  {% unless line.line_item.nested_line_child? %}
+    <tr>
+      <td style="background-color:#ffffff; padding:6px 40px;" class="mobile-pad">
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="border:1px solid #eaedf2; border-radius:8px;">
+        <tr>
+          <td width="84" valign="top" style="padding:12px 0 12px 12px;">
+            {% if line.line_item.image %}
+              <img src="{{ line.line_item | img_url: 'compact_cropped' }}"
+                   alt="{{ line.line_item.product.title }}" width="60" height="60"
+                   style="display:block; width:60px; height:60px; border-radius:6px; object-fit:cover; border:1px solid #eaedf2;">
+            {% else %}
+              <div style="width:60px; height:60px; background-color:#f4f7fe; border-radius:6px; border:1px solid #eaedf2;"></div>
+            {% endif %}
+          </td>
+          <td valign="middle" style="padding:12px 12px 12px 10px;">
+            <div style="font-family:'Barlow Condensed',Arial,sans-serif; font-size:14px; font-weight:700; color:#07388E; margin-bottom:2px;">
+              {% if line.line_item.presentment_title %}{{ line.line_item.presentment_title }}
+              {% elsif line.line_item.title %}{{ line.line_item.title }}
+              {% else %}{{ line.line_item.product.title }}{% endif %}
+            </div>
+            {% if line.line_item.variant.title != 'Default Title' %}
+              <div style="font-family:'Barlow',Arial,sans-serif; font-size:11px; color:#888888; margin-bottom:4px;">{{ line.line_item.variant.title }}</div>
+            {% endif %}
+            <div style="font-family:'Barlow',Arial,sans-serif; font-size:12px; color:#3a3a3a;">
+              {{ t_qty }}: <strong>
+                {% if line.quantity < line.line_item.quantity %}
+                  {{ line.quantity }} {{ t_of }} {{ line.line_item.quantity }}
+                {% else %}
+                  {{ line.line_item.quantity }}
+                {% endif %}
+              </strong>
+            </div>
+            {% if line.line_item.selling_plan_allocation %}
+              <div style="font-family:'Barlow',Arial,sans-serif; font-size:11px; color:#888888; margin-top:2px;">{{ line.line_item.selling_plan_allocation.selling_plan.name }}</div>
+            {% endif %}
+            {% if line.line_item.refunded_quantity > 0 %}
+              <div style="font-family:'Barlow',Arial,sans-serif; font-size:11px; color:#AD0404; margin-top:2px;">{{ t_refunded }}</div>
+            {% endif %}
+            {% if line.line_item.discount_allocations %}
+              {% for discount_allocation in line.line_item.discount_allocations %}
+                {% if discount_allocation.discount_application.target_selection != 'all' %}
+                  <div style="font-family:'Barlow',Arial,sans-serif; font-size:11px; color:#2d7a3a; margin-top:2px;">🏷 {{ discount_allocation.discount_application.title | upcase }} (-{{ discount_allocation.amount | money }})</div>
+                {% endif %}
+              {% endfor %}
+            {% endif %}
+          </td>
+          <td valign="middle" align="right" style="padding:12px 14px 12px 0; white-space:nowrap;">
+            <table role="presentation" border="0" cellpadding="0" cellspacing="0"><tr>
+              <td style="background-color:#e8edf8; border-radius:100px; padding:4px 10px;">
+                <span style="font-family:'Barlow Condensed',Arial,sans-serif; font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:#07388E;">{{ t_updated_badge }}</span>
+              </td>
+            </tr></table>
+          </td>
+        </tr>
+        </table>
+      </td>
+    </tr>
+  {% endunless %}
+{% endfor %}
+
+
+<!-- ═══ SUPORTE SERENA ═══ -->
+<tr>
+  <td style="background-color:#ffffff; padding:16px 40px 24px;" class="mobile-pad">
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#f4f7fe; border:1px solid #dce2f0; border-radius:8px;">
+    <tr>
+      <td style="padding:16px 20px;">
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+        <tr>
+          <td valign="middle">
+            <div style="font-family:'Barlow Condensed',Arial,sans-serif; font-size:13px; font-weight:700; color:#07388E; margin-bottom:2px;">{{ t_support_q }}</div>
+            <div style="font-family:'Barlow',Arial,sans-serif; font-size:12px; color:#888888;">{{ t_support_sub }}</div>
+          </td>
+          <td align="right" valign="middle" style="white-space:nowrap; padding-left:16px;">
+            <table role="presentation" border="0" cellpadding="0" cellspacing="0"><tr>
+              <td style="border-radius:100px; background-color:#25D366;" bgcolor="#25D366">
+                <a href="https://wa.me/16462068419"
+                   style="display:inline-block; font-family:'Barlow Condensed',Arial,sans-serif; font-size:12px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:#ffffff !important; text-decoration:none; padding:8px 18px;">
+                  💬 WhatsApp
+                </a>
+              </td>
+            </tr></table>
+          </td>
+        </tr>
+        </table>
+      </td>
+    </tr>
+    </table>
+  </td>
+</tr>
+
+
+<!-- ═══ FOOTER ═══ -->
+<tr>
+  <td style="background-color:#07388E; border-radius:0 0 10px 10px; padding:20px 40px;" align="center">
+    <div style="font-family:'Barlow Condensed',Arial,sans-serif; font-size:13px; font-weight:600; letter-spacing:1px; color:rgba(255,255,255,0.8); margin-bottom:6px;">America Nutrition</div>
+    <p style="font-family:'Barlow',Arial,sans-serif; font-size:12px; color:rgba(255,255,255,0.5); line-height:1.6; margin:0;">
+      {{ t_footer_text }} <a href="mailto:{{ shop.email }}" style="color:rgba(255,255,255,0.7);">{{ shop.email }}</a>
+    </p>
+  </td>
+</tr>
+
+<tr>
+  <td style="padding:16px 0; font-size:0; line-height:0;">&nbsp;</td>
+</tr>
+
+</table>
+</td></tr>
+</table>
+
+<img src="{{ 'notifications/spacer.png' | shopify_asset_url }}" class="spacer" height="1" />
+
+</body>
+</html>
