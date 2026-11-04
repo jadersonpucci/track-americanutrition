@@ -178,3 +178,9 @@ O e-mail "Pedido confirmado" do Klaviyo **não** entra: a Shopify já manda a co
 1. Mandar um e-mail de teste de cada automação.
 2. No Klaviyo, cancelar o plano em **Configurações → Billing**. Antes disso, exportar a lista de inscritos
    (Audience → Lists & Segments → exportar CSV) para guardar o histórico de consentimento.
+
+## 04/11/2026: Klaviyo desligado do site
+
+No tema publicado (155877212332), o app embed **Klaviyo onsite** (pop-ups de inscrição e rastreamento) foi desligado em
+`config/settings_data.json` (bloco `855628211100114053`, `disabled: true`). Backup do arquivo anterior no scratchpad da
+sessão. Site e checkout conferidos: nenhuma chamada ao Klaviyo.
