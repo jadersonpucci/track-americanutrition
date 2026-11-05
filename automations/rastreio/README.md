@@ -152,7 +152,9 @@ segundo.
   Configurações > Notificações usa `track.americanutrition.com` + o código sem espaços (ver trecho na conversa de 04/11).
 
 ## Etiqueta Frenet -> Shopify (05/11/2026)
-- n8n `[Rastreio] Etiqueta Frenet -> Shopify` (`uotvaGJaWQ9EOpas`, `frenet-etiqueta-shopify.workflow.js`), a cada 5 min.
+- n8n `[Rastreio] Etiqueta Frenet -> Shopify` (`uotvaGJaWQ9EOpas`, `frenet-etiqueta-shopify.workflow.js`), a cada 1 min.
+  Memória do workflow (static data): envio já conferido não consulta a Shopify de novo. Webhook da Frenet não serve:
+  não vale para pedidos da integração Shopify nem para etiquetas geradas no painel.
 - Lê os 100 envios mais novos da Frenet (`GET whitelabel.apifrenet.com.br/v1/shipments?page=0&per_page=100`;
   **a página começa em 0**: `page=1` pula os 100 mais novos), headers `token` + `x-partner-token`
   na credencial **Frenet API** do tipo Custom Auth no n8n; os tokens não entram no repositório).
