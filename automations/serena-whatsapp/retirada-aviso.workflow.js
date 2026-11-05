@@ -57,7 +57,9 @@ for (const it of lista) {
   } catch (e) { x = null; }
   const statusTxt = x ? String(x.status_atual || '') : 'sem retorno do rastreio';
   const r = x && x.retirada && x.retirada.aguardando ? x.retirada : null;
-  const finalizado = !!(x && !r && (x.status_chave === 'delivered' || x.extraviado || /entregue|devolvid|devolu|cancelad|extraviad/i.test(statusTxt)));
+  // 05/11: 'Objeto nao entregue - ...' casava com /entregue/ e encerrava o acompanhamento antes da retirada.
+  const naoEntregue = /n[aã]o\\s+entregue/i.test(statusTxt);
+  const finalizado = !!(x && !r && (x.status_chave === 'delivered' || x.extraviado || /prazo de retirada encerrado/i.test(statusTxt) || (!naoEntregue && /entregue|devolvid|devolu|cancelad|extraviad/i.test(statusTxt))));
   const row = { codigo: it.codigo, pedido: it.pedido, telefone: it.telefone, nome: it.nome || '', status_chave: x ? (x.status_chave || null) : null, status_txt: statusTxt.slice(0, 200), finalizado, retirada_endereco: r ? (r.endereco || [r.cidade, r.uf].filter(Boolean).join('/')) : null, retirada_desde: r ? r.desde : null, retirada_prazo: r ? r.prazo_ate : null, avisou: null };
   let tipo = null;
   if (r && horaOk) {

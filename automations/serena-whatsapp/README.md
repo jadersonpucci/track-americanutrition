@@ -2756,6 +2756,9 @@ Testado no webhook de produção, sem confirmar (nada muda no banco):
 - `serena_config.retirada_aviso`: `off` | `simulacao` (nada é enviado; Telegram recebe a lista) | `on`.
 - O `[Serena] Rastreio Proativo` trata retirada como `exception` e fecha o acompanhamento dele, então os dois não
   avisam o mesmo pacote.
+- 05/11/2026: "Objeto não entregue - ..." casava com `/entregue/` e encerrava o acompanhamento antes de o pacote ir
+  para a agência (caso AN-16310, AE089031284BR, sem aviso). Agora "não entregue" não encerra; só entregue, devolvido,
+  extraviado, cancelado ou "prazo de retirada encerrado". 10 pacotes encerrados por engano foram reabertos.
 
 ## Tempo de ouvir o áudio (26/10/2026)
 Um áudio de 1:44 era respondido no mesmo minuto e o cliente brincou "caramba, já ouviu o áudio kkk". Agora o
