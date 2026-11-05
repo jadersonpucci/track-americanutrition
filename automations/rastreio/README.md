@@ -152,7 +152,7 @@ segundo.
   Configurações > Notificações usa `track.americanutrition.com` + o código sem espaços (ver trecho na conversa de 04/11).
 
 ## Etiqueta Frenet -> Shopify (05/11/2026)
-- n8n `[Rastreio] Etiqueta Frenet -> Shopify` (`NaUWmG5knDxIt7PO`, `frenet-etiqueta-shopify.workflow.js`), a cada 5 min.
+- n8n `[Rastreio] Etiqueta Frenet -> Shopify` (`uotvaGJaWQ9EOpas`, `frenet-etiqueta-shopify.workflow.js`), a cada 5 min.
 - Lê os últimos 100 envios da Frenet (`GET whitelabel.apifrenet.com.br/v1/shipments`, headers `token` + `x-partner-token`
   na credencial **Frenet API** do tipo Custom Auth no n8n; os tokens não entram no repositório).
 - Etiqueta (`volumes[].labelId`) de pedido da Shopify (`orderId` numérico) que ainda não foi enviado → `fulfillmentCreate`
