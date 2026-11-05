@@ -42,7 +42,20 @@ Início em 05/11/2026. O Klaviyo continua ativo até este sistema assumir.
   motivo (opcional), permite voltar a receber e muda o consentimento de marketing do cliente na Shopify.
 - Antes de qualquer envio de marketing: pular quem não está `inscrito` em `email_contatos`.
 
+## Bounce, spam e eventos (05/11/2026)
+- SES: configuration set `an-marketing` (padrão do domínio; supressão BOUNCE/COMPLAINT; métricas de reputação) com
+  destino `sns-n8n` para os eventos BOUNCE, COMPLAINT, DELIVERY, DELIVERY_DELAY, REJECT, RENDERING_FAILURE, OPEN e CLICK.
+- SNS: tópico `arn:aws:sns:sa-east-1:368672081051:an-ses-eventos`, inscrição https em `/webhook/ses-eventos`.
+- n8n `[Email] Eventos SES` (`ZVbEox3td4zeJmyx`, publicado; `eventos.workflow.js`): confere a assinatura do SNS com o
+  certificado da AWS, confirma a inscrição sozinho e grava cada evento com `email_registrar_evento()` (`eventos.sql`).
+- Bloqueio em `email_contatos`: bounce permanente ou 3 temporários em 30 dias → `bounce`; marcou como spam →
+  `reclamacao` e descadastra na Shopify. A supressão da conta no SES continua como segunda barreira.
+- No envio: `ConfigurationSetName: 'an-marketing'` e `EmailTags: [{ Name: 'modelo', Value: <slug com _ no lugar de .> }]`
+  (a tag aparece em `email_eventos.detalhe.modelo`, para medir entrega/abertura/clique por email).
+- Testado com o simulador da AWS (success/bounce/complaint@simulator.amazonses.com): eventos em ~3 s, bloqueios certos.
+- `AN - SES Admin` (`OxrgTAAz0dVYHw7o`) também chama o SNS (API Query por GET).
+
 ## Próximos passos
-1. Monitoramento: configuration set + SNS (bounce, complaint, delivery) → webhook n8n → `email_contatos`/`email_eventos`.
-2. Contatos: espelho dos inscritos da Shopify no Supabase.
+1. Contatos: espelho dos inscritos da Shopify no Supabase.
+2. Fluxos (boas-vindas, pós-compra, recompra, VIP, carrinho) com envio que pula quem não está `inscrito`.
 3. Fluxos: boas-vindas, pós-compra, recompra, VIP, carrinho abandonado, assinatura. Depois, desligar os do Klaviyo.
