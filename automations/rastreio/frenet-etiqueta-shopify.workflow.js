@@ -11,7 +11,7 @@ const relogio = trigger({ type: 'n8n-nodes-base.scheduleTrigger', version: 1.2, 
 
 const frenet = node({ type: 'n8n-nodes-base.httpRequest', version: 4.2, config: { name: 'Frenet envios', parameters: {
   method: 'GET',
-  url: 'https://whitelabel.apifrenet.com.br/v1/shipments?page=1&per_page=100',
+  url: 'https://whitelabel.apifrenet.com.br/v1/shipments?page=0&per_page=100',
   authentication: 'genericCredentialType',
   genericAuthType: 'httpCustomAuth',
   options: { timeout: 30000 } } } });
