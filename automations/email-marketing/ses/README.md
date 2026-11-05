@@ -30,7 +30,19 @@ Início em 05/11/2026. O Klaviyo continua ativo até este sistema assumir.
   `{{ link_descadastro }}` (enquanto a página não existe, o teste usa o site).
 - O conteúdo é o mesmo dos emails do Klaviyo, reorganizado nos blocos novos.
 
+## Descadastro (05/11/2026)
+- Banco (`descadastro.sql`): `email_contatos` (status inscrito/descadastrado/bounce/reclamacao), `email_eventos`
+  (histórico) e `email_config` (segredo do link, gerado no próprio banco; nunca sai dele). RLS ligado nas 4 tabelas.
+- Link de cada pessoa: `select email_link_descadastro(email)` →
+  `https://n8n.americanutrition.com/webhook/descadastro?e=<email base64url>&t=<token>`. Vai no rodapé
+  (`{{ link_descadastro }}`) e nos cabeçalhos `List-Unsubscribe` + `List-Unsubscribe-Post: List-Unsubscribe=One-Click`
+  (botão "cancelar inscrição" do Gmail/Apple). No SES v2: `Content.Simple.Headers`.
+- n8n `[Email] Descadastro` (`MBgdT5Cy65pGQie3`, publicado; `descadastro.workflow.js`): GET mostra a página (não muda
+  nada, por causa de antivírus que abrem links); POST confirma pelo botão ou pelo One-Click. Grava no banco, pede o
+  motivo (opcional), permite voltar a receber e muda o consentimento de marketing do cliente na Shopify.
+- Antes de qualquer envio de marketing: pular quem não está `inscrito` em `email_contatos`.
+
 ## Próximos passos
-1. Monitoramento: configuration set + SNS (bounce, complaint, delivery) → webhook n8n → supressão + revogar consentimento na Shopify.
-2. Contatos: espelho dos inscritos da Shopify no Supabase + página de descadastro + cabeçalhos List-Unsubscribe.
+1. Monitoramento: configuration set + SNS (bounce, complaint, delivery) → webhook n8n → `email_contatos`/`email_eventos`.
+2. Contatos: espelho dos inscritos da Shopify no Supabase.
 3. Fluxos: boas-vindas, pós-compra, recompra, VIP, carrinho abandonado, assinatura. Depois, desligar os do Klaviyo.
