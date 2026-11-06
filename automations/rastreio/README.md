@@ -165,3 +165,21 @@ segundo.
   (ON_HOLD), parcialmente enviados e com mais de 20 dias; no máximo 15 por rodada. `SIMULAR = true` só lista.
 - Pedidos com `orderId` UUID na Frenet (não vieram da integração da Shopify) ficam de fora.
 - Na Frenet: status 1 = aguardando pagamento, 5 = postado (visto nos dados); 7 e 9 = cancelado/estornado.
+
+## Comprovante de entrega dos Correios via painel da Frenet (06/11/2026)
+
+O comprovante (assinatura do recebedor) dos envios dos Correios feitos pela Frenet agora aparece na página de
+rastreio, no mesmo cartão "Comprovante de entrega" da J&T.
+
+- A Frenet não tem API para o comprovante; ele só existe no painel (`/Order/DocumentCarrier?shippingOrderID=`),
+  que devolve um PDF com a imagem da assinatura. O fluxo usa a sessão do painel guardada na credencial
+  **Frenet Painel (sessão)** (Header Auth, header `Cookie`). O login tem reCAPTCHA e não é automatizado.
+- **[Rastreio] Comprovante Correios (Frenet)** (`vzmhY9lCvOnBXlA0`, `comprovante-correios-frenet.workflow.js`),
+  a cada 30 min: escolhe até 25 envios dos Correios, confere no rastreio da Frenet quem foi entregue, baixa o PDF,
+  tira a assinatura (PNG, inflate/deflate em JS puro porque o Code node bloqueia `zlib`) e grava em
+  `rastreio_comprovantes` (`comprovante-correios.sql`). Espera de 1h a 6h entre tentativas, até 40 por código.
+- `GET /webhook/rastreio/comprovante-correios?codigo=...` serve a imagem (cache de 1 dia); `&check=1` responde `{ok}`.
+- O motor (`Pobps91zvSWe9wCA`, nó "Ajustar Previsao +2d", `nodes/ajustar-previsao-comprovante.js`) usa esse
+  comprovante quando o código é dos Correios, está entregue e não veio POD de outra fonte.
+- **Sessão vencida:** chega alerta no Telegram (1 por dia). Para voltar: entrar no painel da Frenet, copiar o cookie
+  de novo (DevTools → Network → DocumentCarrier → Headers → cookie) e atualizar a credencial no n8n.
