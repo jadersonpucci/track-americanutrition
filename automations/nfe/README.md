@@ -176,3 +176,13 @@ Serve para venda comercial que não leva nota, como a venda do estoque da Nair d
 O primeiro caso foi o rascunho `#D4181`: Nair dos Santos, 2x ImunoFosfo 90 a R$ 200, PIX de R$ 400,00. Tags: `AF: Nair`,
 `AF: Nair dos Santos`, `SEM NFE`, `venda comercial`, `pagamento:pix` e `cupom:NAIR`.
 
+
+## Cupom rateado na linha de juros (06/11/2026)
+
+**AN-16418** ficou em `revisar` desde 04/11 com "total do pedido (1381.86) nao fecha com itens + frete + juros
+(1389.25)". O cupom PROMO5 (R$ 59,70) foi rateado pela Shopify em todas as linhas, inclusive na linha "Juros de
+parcelamento" (R$ 7,38). O robô lia os juros sem esse desconto e calculava cada item pelo preço unitário já
+arredondado.
+
+Agora o líquido de cada linha, juros inclusive, é preço cheio × quantidade menos os descontos rateados
+(`discountAllocations`). A nota do AN-16418 saiu (nº 356, série 1) e foi anexada ao pedido.

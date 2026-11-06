@@ -110,15 +110,18 @@ async function montar(o) {
   // Itens, frete e juros
   const linhas = (o.lineItems || {}).nodes || [];
   const prods = [], juros = [];
+  // 06/11/2026 (AN-16418): cupom do pedido inteiro (ex.: PROMO5) vem rateado em discountAllocations, inclusive na linha
+  // de juros. Liquido = preco cheio x qtd - descontos rateados (sem arredondar por unidade).
+  const aloc = li => r2(((li.discountAllocations) || []).reduce((s, a) => s + Number(((a.allocatedAmountSet || {}).shopMoney || {}).amount || 0), 0));
   for (const li of linhas) {
     const qtd = Number(li.quantity || 0);
     if (!qtd) continue;
     if (!li.variant) {
-      if (/juros/i.test(li.title)) { juros.push(Number(li.discountedTotalSet.shopMoney.amount)); continue; }
+      if (/juros/i.test(li.title)) { juros.push(r2(qtd * Number(li.originalUnitPriceSet.shopMoney.amount) - aloc(li))); continue; }
       probs.push('item sem produto: ' + li.title); continue;
     }
     const unit = Number(li.originalUnitPriceSet.shopMoney.amount);
-    const liq = r2(qtd * Number(li.discountedUnitPriceAfterAllDiscountsSet.shopMoney.amount));
+    const liq = li.discountAllocations ? r2(qtd * unit - aloc(li)) : r2(qtd * Number(li.discountedUnitPriceAfterAllDiscountsSet.shopMoney.amount));
     if (!(unit > 0) || !(liq > 0)) { probs.push('item sem valor (brinde?): ' + li.title); continue; }
     prods.push({ li: li, qtd: qtd, unit: unit, bruto: r2(unit * qtd), liq: liq });
   }
@@ -321,7 +324,7 @@ const CAMPOS = 'id name createdAt displayFinancialStatus displayFulfillmentStatu
   + ' localizationExtensions(first:5){ nodes{ purpose title value } } currentTotalPriceSet{ shopMoney{ amount } }'
   + ' tags shippingAddress{ name firstName lastName address1 address2 city provinceCode zip phone countryCodeV2 }'
   + ' shippingLines(first:3){ nodes{ title discountedPriceSet{ shopMoney{ amount } } } }'
-  + ' lineItems(first:40){ nodes{ title variantTitle quantity variant{ id } product{ id } originalUnitPriceSet{ shopMoney{ amount } } discountedUnitPriceAfterAllDiscountsSet{ shopMoney{ amount } } discountedTotalSet{ shopMoney{ amount } } } }';
+  + ' lineItems(first:40){ nodes{ title variantTitle quantity variant{ id } product{ id } originalUnitPriceSet{ shopMoney{ amount } } discountedUnitPriceAfterAllDiscountsSet{ shopMoney{ amount } } discountedTotalSet{ shopMoney{ amount } } discountAllocations{ allocatedAmountSet{ shopMoney{ amount } } } } }';
 const QO = 'query($q:String!){ orders(first:100, query:$q, sortKey:CREATED_AT, reverse:true){ nodes{ ' + CAMPOS + ' } } }';
 const QI = 'query($id:ID!){ order(id:$id){ ' + CAMPOS + ' } }';
 const pedidos = evShopify
