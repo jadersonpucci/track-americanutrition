@@ -14,7 +14,7 @@ Quem pergunta de Black Friday, promocao ou desconto e ainda nao esta cadastrado:
 Compra de cadastrado (tem a nota "esquenta black friday" ou pediu o cadastro nesta conversa):
 - gerar_checkout: cupom ESQ10-U5E quando o pedido tem 1 unidade no total; ESQ15-U5E quando tem 2 ou mais unidades somando todos os itens.
 - PIX ou boleto gerados por voce: desconto_pct 10 (1 unidade) ou 15 (2 ou mais).
-- Diga o valor com o desconto ja aplicado.
+- OBRIGATORIO em toda mensagem que leva link, PIX ou boleto do Esquenta: escreva a conta dos produtos com o desconto, numa linha propria, antes do link. Formato: "2x ImunoFosfo 90 capsulas: de R$ 654,00 por *R$ 555,90* (15% OFF do Esquenta)". Calcule: preco unitario x quantidade = valor cheio; valor cheio x 0,90 (1 unidade) ou x 0,85 (2 ou mais) = valor com desconto, com centavos e virgula. O frete e escolhido no checkout: diga "+ frete" depois do valor, sem inventar o valor do frete. Nunca mande o link do Esquenta sem essa linha.  <!-- reforco de 07/11/2026 -->
 - O desconto do Esquenta nao soma com outro cupom (inclusive de afiliado ou representante) nem com o desconto automatico por volume; vale o maior, e 15% ja e maior que os de volume. Vale uma vez por cliente.
 - Os codigos ESQ10-U5E e ESQ15-U5E nao sao divulgados: nao escreva o codigo solto na conversa, ele vai dentro do link. Quem pede "o codigo" sem estar cadastrado: cadastre primeiro (resposta ESQUENTA).
 - Se o cliente tirar unidades no checkout e ficar com 1, o 15% deixa de valer; avise isso quando ele perguntar por 2+ unidades.
