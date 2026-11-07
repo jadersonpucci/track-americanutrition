@@ -13,6 +13,7 @@ with novos as (
        and (upper(m.texto) like '%' || upper(a.cupom_code) || '%' or upper(m.texto) like '%' || upper(coalesce(nullif(a.ref_code, ''), a.cupom_code)) || '%')
        order by length(a.cupom_code) desc limit 1) af on true
   where m.papel = 'cliente' and m.texto ~* 'esquenta'
+    and coalesce(c.session_site, '') not like '%teste-%'   -- sessoes do chat de teste nao entram
     and m.criado_em > now() - interval '3 hours'
     and m.criado_em >= '2026-11-06 22:00-03' and m.criado_em < '2026-11-27 00:00-03'
   order by m.contato_id, m.criado_em

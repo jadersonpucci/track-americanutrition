@@ -33,3 +33,8 @@ O link da Serena leva o cupom do Esquenta, que é da casa. Para a venda não se 
 3. A regra de **cap em promoção da casa** continua valendo, como em toda promoção: comissão = % do programa − %
    do desconto. Programa de 30% (QualiVita, Vix) fica com 15% no pedido de 2+ unidades e 20% no de 1 unidade;
    programa de 10% zera com o desconto de 15%.
+
+## No ar (07/11/2026)
+
+Slider ligado às 23h31 de 06/11 (`an_site.esquenta_popup = on`). Lista começou vazia; as sessões do chat de teste
+(`session_site` com `teste-`) não entram no cadastro.
