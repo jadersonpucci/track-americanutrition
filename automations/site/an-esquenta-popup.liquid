@@ -1,0 +1,98 @@
+{%- comment -%}
+  AN · Popup Esquenta Black Friday (07 a 26/11/2026)
+  Convida o visitante a mandar "Quero participar do Esquenta Black Friday" para a Serena no WhatsApp.
+  A Serena cadastra (workflow [Serena] Esquenta Black Friday (cadastro)) e libera 10% OFF em 1 unidade
+  ou 15% OFF a partir de 2 unidades, so para cadastrados.
+
+  Liga/desliga: metafield da loja an_site.esquenta_popup = "on" | "off".
+  Previa sem ligar: abrir qualquer pagina com ?esquenta=preview.
+  Sai do ar sozinho depois de 26/11/2026 23h59 (horario de Brasilia).
+  Aparece depois de 6 s (ou ao tentar sair da pagina no computador), no maximo 1 vez a cada 2 dias;
+  quem clicou no botao nao ve de novo.
+{%- endcomment -%}
+{%- assign esq_flag = shop.metafields.an_site.esquenta_popup.value | default: shop.metafields.an_site.esquenta_popup | default: 'off' -%}
+{%- unless template.name == 'cart' or template.name contains 'customers' -%}
+<div id="anEsq" class="anesq" role="dialog" aria-modal="true" aria-labelledby="anEsqTit" hidden>
+  <div class="anesq-fundo" data-fechar></div>
+  <div class="anesq-card">
+    <button type="button" class="anesq-x" data-fechar aria-label="Fechar">&times;</button>
+    <div class="anesq-faixa">🔥 ESQUENTA BLACK FRIDAY</div>
+    <div class="anesq-corpo">
+      <img class="anesq-img" src="https://cdn.shopify.com/s/files/1/0643/9000/4908/files/ImunoFosfo_90_C_psulas.jpg?v=1771893996&width=300" alt="ImunoFosfo" width="150" height="150" loading="lazy">
+      <div class="anesq-txt">
+        <h2 id="anEsqTit">Até <b>15% OFF</b> antes de todo mundo</h2>
+        <p>Cadastre-se com a <b>Serena</b> no WhatsApp e libere seu desconto exclusivo:</p>
+        <ul>
+          <li><b>10% OFF</b> levando 1 unidade</li>
+          <li><b>15% OFF</b> a partir de 2 unidades</li>
+        </ul>
+        <p class="anesq-ate">Só para cadastrados · em todos os produtos · até 26/11</p>
+      </div>
+    </div>
+    <a class="anesq-bt" id="anEsqBt" target="_blank" rel="noopener"
+       href="https://wa.me/13472225493?text=Quero%20participar%20do%20Esquenta%20Black%20Friday%20%F0%9F%94%A5">
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm5.3 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.3-.7-2.8-1.1-4.6-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.9 0-1.4.7-2 1-2.3.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .6l-.3.5-.4.4c-.1.1-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.3 2.4 1.5.3.1.5.1.6-.1l.9-1c.2-.3.4-.2.6-.1l1.9.9c.3.1.5.2.5.3.1.2.1.7-.1 1.3Z"/></svg>
+      Quero me cadastrar pelo WhatsApp
+    </a>
+    <p class="anesq-rod">Leva 10 segundos. Sem formulário: é só enviar a mensagem pronta.</p>
+  </div>
+</div>
+<style>
+.anesq{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:16px}
+.anesq[hidden]{display:none}
+.anesq-fundo{position:absolute;inset:0;background:rgba(15,27,51,.55);backdrop-filter:blur(2px)}
+.anesq-card{position:relative;width:100%;max-width:440px;background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 24px 60px rgba(7,56,142,.35);font-family:var(--font-body-family,Inter),Arial,sans-serif;color:#0F1B33;animation:anesqIn .35s ease-out}
+@keyframes anesqIn{from{opacity:0;transform:translateY(16px) scale(.98)}to{opacity:1;transform:none}}
+.anesq-x{position:absolute;top:6px;right:8px;width:36px;height:36px;border:0;background:transparent;color:#fff;font-size:28px;line-height:1;cursor:pointer;z-index:2}
+.anesq-faixa{background:linear-gradient(90deg,#AD0404,#D9121B);color:#fff;font-weight:800;letter-spacing:.08em;font-size:13px;padding:12px 48px 12px 18px}
+.anesq-corpo{display:flex;gap:14px;padding:18px 18px 8px;align-items:center}
+.anesq-img{width:108px;height:108px;object-fit:contain;border-radius:12px;background:#F4F6FB;flex:0 0 auto}
+.anesq-txt h2{margin:0 0 6px;font-size:22px;line-height:1.15;color:#07388E;font-weight:800}
+.anesq-txt h2 b{color:#D9121B}
+.anesq-txt p{margin:0 0 6px;font-size:14px;line-height:1.4;color:#5B6475}
+.anesq-txt ul{margin:4px 0 6px;padding:0;list-style:none;font-size:15px}
+.anesq-txt li{padding:2px 0 2px 22px;position:relative}
+.anesq-txt li::before{content:"✓";position:absolute;left:0;color:#D9121B;font-weight:800}
+.anesq-ate{font-size:12px!important;color:#8A94A6!important}
+.anesq-bt{display:flex;align-items:center;justify-content:center;gap:8px;margin:10px 18px 6px;padding:15px 16px;border-radius:12px;background:#1FAF55;color:#fff!important;font-weight:800;font-size:16px;text-decoration:none!important;box-shadow:0 8px 20px rgba(31,175,85,.35)}
+.anesq-bt:hover{filter:brightness(1.05)}
+.anesq-rod{margin:0;padding:4px 18px 16px;text-align:center;font-size:12px;color:#8A94A6}
+@media (max-width:480px){
+  .anesq{align-items:flex-end;padding:0}
+  .anesq-card{max-width:none;border-radius:18px 18px 0 0}
+  .anesq-img{width:84px;height:84px}
+  .anesq-txt h2{font-size:20px}
+}
+</style>
+<script>
+(function () {
+  var ativo = {{ esq_flag | json }} === 'on';
+  var fim = new Date('2026-11-27T00:00:00-03:00').getTime();
+  var previa = /[?&]esquenta=preview/.test(location.search);
+  if (!previa && (!ativo || Date.now() >= fim)) return;
+  var el = document.getElementById('anEsq'); if (!el) return;
+  var K = 'an_esq_bf_visto', KC = 'an_esq_bf_clicou';
+  function ler(k) { try { return Number(localStorage.getItem(k) || 0); } catch (e) { return 0; } }
+  function gravar(k) { try { localStorage.setItem(k, String(Date.now())); } catch (e) {} }
+  if (!previa && (ler(KC) || (ler(K) && Date.now() - ler(K) < 2 * 864e5))) return;
+  var aberto = false;
+  function abrir() {
+    if (aberto) return; aberto = true; gravar(K);
+    el.hidden = false; document.documentElement.style.overflow = 'hidden';
+    try { if (window.fbq) fbq('trackCustom', 'EsquentaPopupView'); } catch (e) {}
+  }
+  function fechar() { el.hidden = true; document.documentElement.style.overflow = ''; }
+  el.addEventListener('click', function (e) { if (e.target.hasAttribute('data-fechar')) fechar(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !el.hidden) fechar(); });
+  document.getElementById('anEsqBt').addEventListener('click', function () {
+    gravar(KC);
+    try { if (window.fbq) fbq('track', 'Contact', { content_name: 'Esquenta Black Friday' }); } catch (e) {}
+    setTimeout(fechar, 400);
+  });
+  setTimeout(abrir, previa ? 800 : 6000);
+  if (!previa && window.matchMedia('(pointer:fine)').matches) {
+    document.addEventListener('mouseout', function (e) { if (!e.relatedTarget && e.clientY < 10) abrir(); });
+  }
+})();
+</script>
+{%- endunless -%}
