@@ -1,98 +1,138 @@
 {%- comment -%}
-  AN · Popup Esquenta Black Friday (07 a 26/11/2026)
-  Convida o visitante a mandar "Quero participar do Esquenta Black Friday" para a Serena no WhatsApp.
-  A Serena cadastra (workflow [Serena] Esquenta Black Friday (cadastro)) e libera 10% OFF em 1 unidade
-  ou 15% OFF a partir de 2 unidades, so para cadastrados.
+  AN · Slider Esquenta Black Friday (07 a 26/11/2026)
+  Card no canto inferior esquerdo (nao bloqueia a navegacao) que convida a mandar
+  "Quero participar do Esquenta Black Friday" para a Serena no WhatsApp. O desconto NAO aparece aqui:
+  quem conta a condicao e a Serena, so para cadastrados (workflow [Serena] Esquenta Black Friday (cadastro)).
 
   Liga/desliga: metafield da loja an_site.esquenta_popup = "on" | "off".
   Previa sem ligar: abrir qualquer pagina com ?esquenta=preview.
   Sai do ar sozinho depois de 26/11/2026 23h59 (horario de Brasilia).
-  Aparece depois de 6 s (ou ao tentar sair da pagina no computador), no maximo 1 vez a cada 2 dias;
-  quem clicou no botao nao ve de novo.
+  Entra depois de 5 s. Fechar recolhe numa etiqueta "Esquenta" na lateral (so nesta visita);
+  volta aberto no maximo 1 vez a cada 2 dias; quem clicou no botao nao ve de novo.
+  Imagem: assets/an-esquenta-bf.webp (Higgsfield, 07/11/2026, 16:9, frasco a direita).
 {%- endcomment -%}
 {%- assign esq_flag = shop.metafields.an_site.esquenta_popup.value | default: shop.metafields.an_site.esquenta_popup | default: 'off' -%}
 {%- unless template.name == 'cart' or template.name contains 'customers' -%}
-<div id="anEsq" class="anesq" role="dialog" aria-modal="true" aria-labelledby="anEsqTit" hidden>
-  <div class="anesq-fundo" data-fechar></div>
+<aside id="anEsq" class="anesq{% if template.name == 'product' %} is-prod{% endif %}" aria-label="Esquenta Black Friday" hidden>
   <div class="anesq-card">
-    <button type="button" class="anesq-x" data-fechar aria-label="Fechar">&times;</button>
-    <div class="anesq-faixa">🔥 ESQUENTA BLACK FRIDAY</div>
-    <div class="anesq-corpo">
-      <img class="anesq-img" src="https://cdn.shopify.com/s/files/1/0643/9000/4908/files/ImunoFosfo_90_C_psulas.jpg?v=1771893996&width=300" alt="ImunoFosfo" width="150" height="150" loading="lazy">
-      <div class="anesq-txt">
-        <h2 id="anEsqTit">Até <b>15% OFF</b> antes de todo mundo</h2>
-        <p>Cadastre-se com a <b>Serena</b> no WhatsApp e libere seu desconto exclusivo:</p>
-        <ul>
-          <li><b>10% OFF</b> levando 1 unidade</li>
-          <li><b>15% OFF</b> a partir de 2 unidades</li>
-        </ul>
-        <p class="anesq-ate">Só para cadastrados · em todos os produtos · até 26/11</p>
-      </div>
+    <div class="anesq-hero">
+      <img src="{{ 'an-esquenta-bf.webp' | asset_url }}" alt="ImunoFosfo no Esquenta Black Friday" width="800" height="452" loading="lazy">
+      <span class="anesq-brasas" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+      <button type="button" class="anesq-x" id="anEsqX" aria-label="Fechar">&times;</button>
+      <div class="anesq-selo"><span class="anesq-fogo">🔥</span> ESQUENTA <b>BLACK FRIDAY</b></div>
     </div>
-    <a class="anesq-bt" id="anEsqBt" target="_blank" rel="noopener"
-       href="https://wa.me/13472225493?text=Quero%20participar%20do%20Esquenta%20Black%20Friday%20%F0%9F%94%A5">
-      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm5.3 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.3-.7-2.8-1.1-4.6-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.9 0-1.4.7-2 1-2.3.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .6l-.3.5-.4.4c-.1.1-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.3 2.4 1.5.3.1.5.1.6-.1l.9-1c.2-.3.4-.2.6-.1l1.9.9c.3.1.5.2.5.3.1.2.1.7-.1 1.3Z"/></svg>
-      Quero me cadastrar pelo WhatsApp
-    </a>
-    <p class="anesq-rod">Leva 10 segundos. Sem formulário: é só enviar a mensagem pronta.</p>
+    <div class="anesq-txt">
+      <h2>Acesso antecipado à<br><span>Black Friday</span></h2>
+      <p>Cadastre-se com a <b>Serena</b> no WhatsApp e receba condições exclusivas antes de todo mundo.</p>
+      <div class="anesq-tempo" aria-label="Tempo até o fim do Esquenta">
+        <div><b data-t="d">00</b><small>dias</small></div><div><b data-t="h">00</b><small>horas</small></div><div><b data-t="m">00</b><small>min</small></div><div><b data-t="s">00</b><small>seg</small></div>
+      </div>
+      <a class="anesq-bt" id="anEsqBt" target="_blank" rel="noopener"
+         href="https://wa.me/13472225493?text=Quero%20participar%20do%20Esquenta%20Black%20Friday%20%F0%9F%94%A5">
+        <svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm5.3 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.3-.7-2.8-1.1-4.6-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.9 0-1.4.7-2 1-2.3.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .6l-.3.5-.4.4c-.1.1-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.3 2.4 1.5.3.1.5.1.6-.1l.9-1c.2-.3.4-.2.6-.1l1.9.9c.3.1.5.2.5.3.1.2.1.7-.1 1.3Z"/></svg>
+        Quero meu acesso
+      </a>
+      <p class="anesq-rod">Vagas do Esquenta até 26/11 · sem formulário</p>
+    </div>
   </div>
-</div>
+</aside>
+<button type="button" id="anEsqTab" class="anesq-tab" aria-label="Abrir Esquenta Black Friday" hidden><span>🔥</span> Esquenta</button>
 <style>
-.anesq{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:16px}
-.anesq[hidden]{display:none}
-.anesq-fundo{position:absolute;inset:0;background:rgba(15,27,51,.55);backdrop-filter:blur(2px)}
-.anesq-card{position:relative;width:100%;max-width:440px;background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 24px 60px rgba(7,56,142,.35);font-family:var(--font-body-family,Inter),Arial,sans-serif;color:#0F1B33;animation:anesqIn .35s ease-out}
-@keyframes anesqIn{from{opacity:0;transform:translateY(16px) scale(.98)}to{opacity:1;transform:none}}
-.anesq-x{position:absolute;top:6px;right:8px;width:36px;height:36px;border:0;background:transparent;color:#fff;font-size:28px;line-height:1;cursor:pointer;z-index:2}
-.anesq-faixa{background:linear-gradient(90deg,#AD0404,#D9121B);color:#fff;font-weight:800;letter-spacing:.08em;font-size:13px;padding:12px 48px 12px 18px}
-.anesq-corpo{display:flex;gap:14px;padding:18px 18px 8px;align-items:center}
-.anesq-img{width:108px;height:108px;object-fit:contain;border-radius:12px;background:#F4F6FB;flex:0 0 auto}
-.anesq-txt h2{margin:0 0 6px;font-size:22px;line-height:1.15;color:#07388E;font-weight:800}
-.anesq-txt h2 b{color:#D9121B}
-.anesq-txt p{margin:0 0 6px;font-size:14px;line-height:1.4;color:#5B6475}
-.anesq-txt ul{margin:4px 0 6px;padding:0;list-style:none;font-size:15px}
-.anesq-txt li{padding:2px 0 2px 22px;position:relative}
-.anesq-txt li::before{content:"✓";position:absolute;left:0;color:#D9121B;font-weight:800}
-.anesq-ate{font-size:12px!important;color:#8A94A6!important}
-.anesq-bt{display:flex;align-items:center;justify-content:center;gap:8px;margin:10px 18px 6px;padding:15px 16px;border-radius:12px;background:#1FAF55;color:#fff!important;font-weight:800;font-size:16px;text-decoration:none!important;box-shadow:0 8px 20px rgba(31,175,85,.35)}
-.anesq-bt:hover{filter:brightness(1.05)}
-.anesq-rod{margin:0;padding:4px 18px 16px;text-align:center;font-size:12px;color:#8A94A6}
+.anesq{position:fixed;left:16px;bottom:16px;z-index:2147482000;width:328px;max-width:calc(100vw - 96px);font-family:var(--font-body-family,Inter),Arial,sans-serif;color:#0F1B33;transform:translateX(calc(-100% - 40px));opacity:0;transition:transform .7s cubic-bezier(.2,1.2,.3,1),opacity .4s}
+.anesq.on{transform:none;opacity:1}
+.anesq[hidden],.anesq-tab[hidden]{display:none}
+.anesq-card{position:relative;border-radius:20px;overflow:hidden;background:#fff;box-shadow:0 18px 50px rgba(7,24,60,.38),0 2px 6px rgba(7,24,60,.2);isolation:isolate}
+.anesq-card::before{content:"";position:absolute;inset:-60%;z-index:-2;background:conic-gradient(from 0deg,#D9121B,#FF8A00,#FFD27A,#1656C9,#07388E,#D9121B);animation:anesqGira 6s linear infinite}
+.anesq-card::after{content:"";position:absolute;inset:2.5px;z-index:-1;border-radius:18px;background:#fff}
+@keyframes anesqGira{to{transform:rotate(1turn)}}
+.anesq-hero{position:relative;aspect-ratio:16/9;margin:2.5px 2.5px 0;border-radius:18px 18px 0 0;overflow:hidden;background:#07388E}
+.anesq-hero img{width:100%;height:100%;object-fit:cover;object-position:50% 50%;transform-origin:78% 60%;animation:anesqZoom 9s ease-in-out infinite alternate}
+@keyframes anesqZoom{to{transform:scale(1.06)}}
+.anesq-hero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(7,24,60,.35) 0%,rgba(7,24,60,0) 30%,rgba(7,24,60,0) 86%,rgba(255,255,255,.75) 100%);pointer-events:none}
+.anesq-brasas{position:absolute;inset:0;z-index:1;pointer-events:none}
+.anesq-brasas i{position:absolute;bottom:-8px;width:4px;height:4px;border-radius:50%;background:#FFB347;box-shadow:0 0 8px 2px #FF6A00;opacity:0;animation:anesqBrasa 4.2s ease-in infinite}
+.anesq-brasas i:nth-child(1){left:8%;animation-delay:0s}.anesq-brasas i:nth-child(2){left:18%;animation-delay:1.1s;width:3px;height:3px}
+.anesq-brasas i:nth-child(3){left:29%;animation-delay:2.3s}.anesq-brasas i:nth-child(4){left:41%;animation-delay:.6s;width:2px;height:2px}
+.anesq-brasas i:nth-child(5){left:55%;animation-delay:1.8s}.anesq-brasas i:nth-child(6){left:64%;animation-delay:3s;width:3px;height:3px}
+.anesq-brasas i:nth-child(7){left:73%;animation-delay:.3s}.anesq-brasas i:nth-child(8){left:82%;animation-delay:2.6s;width:2px;height:2px}
+.anesq-brasas i:nth-child(9){left:90%;animation-delay:1.4s}.anesq-brasas i:nth-child(10){left:47%;animation-delay:3.6s;width:3px;height:3px}
+@keyframes anesqBrasa{0%{opacity:0;transform:translate(0,0) scale(1)}12%{opacity:1}100%{opacity:0;transform:translate(14px,-190px) scale(.3)}}
+.anesq-x{position:absolute;top:8px;right:8px;z-index:3;width:30px;height:30px;border:0;border-radius:50%;background:rgba(7,24,60,.55);color:#fff;font-size:20px;line-height:30px;cursor:pointer;backdrop-filter:blur(4px);transition:background .2s}
+.anesq-x:hover{background:rgba(217,18,27,.9)}
+.anesq-selo{position:absolute;top:10px;left:10px;z-index:3;display:inline-flex;align-items:center;gap:5px;padding:6px 10px;border-radius:999px;font-size:11px;font-weight:800;letter-spacing:.08em;color:#fff;background:linear-gradient(90deg,#AD0404,#D9121B,#FF6A00,#D9121B,#AD0404);background-size:250% 100%;animation:anesqBrilho 3s linear infinite;box-shadow:0 4px 14px rgba(217,18,27,.45)}
+.anesq-selo b{font-weight:900}
+@keyframes anesqBrilho{to{background-position:-250% 0}}
+.anesq-fogo{display:inline-block;animation:anesqFogo 1.2s ease-in-out infinite alternate;transform-origin:50% 90%}
+@keyframes anesqFogo{to{transform:scale(1.18) rotate(-6deg)}}
+.anesq-txt{padding:10px 16px 14px}
+.anesq-txt h2{margin:0 0 6px;font-size:20px;line-height:1.12;font-weight:800;color:#07388E}
+.anesq-txt h2 span{background:linear-gradient(90deg,#D9121B,#FF6A00,#D9121B);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:anesqBrilho 4s linear infinite}
+.anesq-txt p{margin:0 0 10px;font-size:13.5px;line-height:1.4;color:#5B6475}
+.anesq-tempo{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:0 0 12px}
+.anesq-tempo div{text-align:center;background:#F4F6FB;border:1px solid #E1E6F0;border-radius:10px;padding:6px 0 4px}
+.anesq-tempo b{display:block;font-size:18px;font-weight:800;color:#0F1B33;font-variant-numeric:tabular-nums;line-height:1.1}
+.anesq-tempo small{font-size:10px;color:#8A94A6;text-transform:uppercase;letter-spacing:.06em}
+.anesq-bt{position:relative;display:flex;align-items:center;justify-content:center;gap:8px;padding:13px 14px;border-radius:12px;background:linear-gradient(180deg,#25C462,#1A9E4E);color:#fff!important;font-weight:800;font-size:15.5px;text-decoration:none!important;box-shadow:0 8px 20px rgba(31,175,85,.38);overflow:hidden;animation:anesqPulso 2.4s ease-in-out infinite}
+.anesq-bt::after{content:"";position:absolute;top:0;left:-60%;width:40%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.45),transparent);transform:skewX(-20deg);animation:anesqReflexo 3.2s ease-in-out infinite}
+@keyframes anesqPulso{0%,100%{box-shadow:0 8px 20px rgba(31,175,85,.38),0 0 0 0 rgba(37,196,98,.45)}50%{box-shadow:0 8px 20px rgba(31,175,85,.38),0 0 0 10px rgba(37,196,98,0)}}
+@keyframes anesqReflexo{0%,60%{left:-60%}100%{left:130%}}
+.anesq-bt:hover{filter:brightness(1.06)}
+.anesq-rod{margin:8px 0 0!important;text-align:center;font-size:11.5px!important;color:#8A94A6!important}
+.anesq-tab{position:fixed;left:0;bottom:120px;z-index:2147482000;display:flex;align-items:center;gap:6px;padding:10px 14px 10px 10px;border:0;border-radius:0 999px 999px 0;background:linear-gradient(90deg,#AD0404,#D9121B,#FF6A00);background-size:200% 100%;animation:anesqBrilho 3s linear infinite;color:#fff;font:800 13px/1 var(--font-body-family,Inter),Arial,sans-serif;letter-spacing:.04em;cursor:pointer;box-shadow:0 6px 18px rgba(217,18,27,.4)}
+.anesq-tab span{animation:anesqFogo 1.2s ease-in-out infinite alternate}
 @media (max-width:480px){
-  .anesq{align-items:flex-end;padding:0}
-  .anesq-card{max-width:none;border-radius:18px 18px 0 0}
-  .anesq-img{width:84px;height:84px}
-  .anesq-txt h2{font-size:20px}
+  .anesq{left:10px;bottom:10px;width:292px}
+  .anesq.is-prod{bottom:84px}
+  .anesq-rod{display:none}
+  .anesq-tempo{gap:5px;margin-bottom:10px}
+  .anesq-tempo div{padding:4px 0 3px}
+  .anesq-txt h2{font-size:18px}
+  .anesq-txt p{font-size:13px;margin-bottom:8px}
+  .anesq-tempo b{font-size:16px}
 }
+@media (prefers-reduced-motion:reduce){.anesq,.anesq *,.anesq-tab{animation:none!important;transition:none!important}}
 </style>
 <script>
 (function () {
   var ativo = {{ esq_flag | json }} === 'on';
-  var fim = new Date('2026-11-27T00:00:00-03:00').getTime();
+  var FIM = new Date('2026-11-27T00:00:00-03:00').getTime();
   var previa = /[?&]esquenta=preview/.test(location.search);
-  if (!previa && (!ativo || Date.now() >= fim)) return;
-  var el = document.getElementById('anEsq'); if (!el) return;
-  var K = 'an_esq_bf_visto', KC = 'an_esq_bf_clicou';
-  function ler(k) { try { return Number(localStorage.getItem(k) || 0); } catch (e) { return 0; } }
-  function gravar(k) { try { localStorage.setItem(k, String(Date.now())); } catch (e) {} }
-  if (!previa && (ler(KC) || (ler(K) && Date.now() - ler(K) < 2 * 864e5))) return;
-  var aberto = false;
+  if (!previa && (!ativo || Date.now() >= FIM)) return;
+  var el = document.getElementById('anEsq'), tab = document.getElementById('anEsqTab');
+  if (!el || !tab) return;
+  var K = 'an_esq_bf_visto', KC = 'an_esq_bf_clicou', KS = 'an_esq_bf_recolhido';
+  function ler(k, s) { try { return Number((s ? sessionStorage : localStorage).getItem(k) || 0); } catch (e) { return 0; } }
+  function gravar(k, s) { try { (s ? sessionStorage : localStorage).setItem(k, String(Date.now())); } catch (e) {} }
+  if (!previa && ler(KC)) return;
+  var t = {};
+  ['d', 'h', 'm', 's'].forEach(function (x) { t[x] = el.querySelector('[data-t="' + x + '"]'); });
+  function dois(n) { return (n < 10 ? '0' : '') + n; }
+  function relogio() {
+    var r = Math.max(0, Math.floor((FIM - Date.now()) / 1000));
+    t.d.textContent = dois(Math.floor(r / 86400)); t.h.textContent = dois(Math.floor(r % 86400 / 3600));
+    t.m.textContent = dois(Math.floor(r % 3600 / 60)); t.s.textContent = dois(r % 60);
+  }
+  var tick = null;
   function abrir() {
-    if (aberto) return; aberto = true; gravar(K);
-    el.hidden = false; document.documentElement.style.overflow = 'hidden';
+    tab.hidden = true; el.hidden = false; relogio();
+    if (!tick) tick = setInterval(relogio, 1000);
+    requestAnimationFrame(function () { requestAnimationFrame(function () { el.classList.add('on'); }); });
     try { if (window.fbq) fbq('trackCustom', 'EsquentaPopupView'); } catch (e) {}
   }
-  function fechar() { el.hidden = true; document.documentElement.style.overflow = ''; }
-  el.addEventListener('click', function (e) { if (e.target.hasAttribute('data-fechar')) fechar(); });
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !el.hidden) fechar(); });
+  function recolher() {
+    el.classList.remove('on'); gravar(KS, true);
+    setTimeout(function () { el.hidden = true; tab.hidden = false; if (tick) { clearInterval(tick); tick = null; } }, 450);
+  }
+  document.getElementById('anEsqX').addEventListener('click', recolher);
+  tab.addEventListener('click', abrir);
   document.getElementById('anEsqBt').addEventListener('click', function () {
     gravar(KC);
     try { if (window.fbq) fbq('track', 'Contact', { content_name: 'Esquenta Black Friday' }); } catch (e) {}
-    setTimeout(fechar, 400);
+    setTimeout(recolher, 500);
   });
-  setTimeout(abrir, previa ? 800 : 6000);
-  if (!previa && window.matchMedia('(pointer:fine)').matches) {
-    document.addEventListener('mouseout', function (e) { if (!e.relatedTarget && e.clientY < 10) abrir(); });
-  }
+  // ja recolheu nesta visita, ou viu aberto ha menos de 2 dias: fica so a etiqueta
+  if (!previa && (ler(KS, true) || (ler(K) && Date.now() - ler(K) < 2 * 864e5))) { tab.hidden = false; return; }
+  setTimeout(function () { gravar(K); abrir(); }, previa ? 600 : 5000);
 })();
 </script>
 {%- endunless -%}

@@ -7,7 +7,7 @@ de 2 unidades**, em todos os produtos, uma vez por cliente, até 26/11 às 23h59
 
 | Peça | Onde | O que faz |
 | --- | --- | --- |
-| Popup do site | `automations/site/an-esquenta-popup.liquid` → `snippets/an-esquenta-popup.liquid` do tema publicado, chamado no `layout/theme.liquid` | Botão abre o WhatsApp da Serena (+1 347 222-5493) com "Quero participar do Esquenta Black Friday 🔥". Liga com o metafield da loja `an_site.esquenta_popup = on`; prévia com `?esquenta=preview`; sai sozinho depois de 26/11. Aparece depois de 6 s (ou ao sair da página no computador), 1 vez a cada 2 dias; quem clicou não vê de novo. Eventos no Pixel: `EsquentaPopupView` e `Contact`. |
+| Slider do site | `automations/site/an-esquenta-popup.liquid` → `snippets/an-esquenta-popup.liquid` do tema publicado, chamado no `layout/theme.liquid`; imagem `assets/an-esquenta-bf.webp` (Higgsfield, cópia em `automations/site/`) | Card no canto inferior esquerdo, **sem mostrar desconto** ("Acesso antecipado à Black Friday"), com contagem regressiva até 26/11, borda em brilho, brasas e botão pulsando. O botão abre o WhatsApp da Serena (+1 347 222-5493) com "Quero participar do Esquenta Black Friday 🔥". Entra depois de 5 s; fechar recolhe numa etiqueta "🔥 Esquenta" na lateral; volta aberto no máximo 1 vez a cada 2 dias; quem clicou não vê de novo. Liga com o metafield da loja `an_site.esquenta_popup = on`; prévia com `?esquenta=preview`; sai sozinho depois de 26/11. Eventos no Pixel: `EsquentaPopupView` e `Contact`. |
 | Cadastro | Workflow `[Serena] Esquenta Black Friday (cadastro)` (`ZlZIbmHyCkAk9zB5`), `cadastro.sql` | A cada 1 min, quem escreveu "esquenta" para a Serena entra em `esquenta_bf` e ganha a nota da equipe "esquenta black friday". Se a mensagem traz o cupom de um afiliado (texto dos representantes), grava a indicação. |
 | Serena | Adendo de 06/11 em `serena_config.system_prompt` (`adendo-serena.md`) | Confirma o cadastro sem mandar link, explica a regra e, na compra, aplica o cupom certo pela quantidade (link, PIX ou boleto). |
 | Cupons | Shopify | `ESQ10-U5E` (10%, sem mínimo) e `ESQ15-U5E` (15%, mínimo de 2 unidades). Uma vez por cliente, sem somar com outro cupom nem com o PACK 3+/6+ (a Shopify aplica o maior). Fim: 26/11 23h59. Os códigos não são divulgados: vão dentro do link da Serena. |
@@ -20,8 +20,16 @@ de 2 unidades**, em todos os produtos, uma vez por cliente, até 26/11 às 23h59
   sem link. "Quero 2 frascos do ImunoFosfo 90" → link com `items=…:2&discount=ESQ15-U5E`. O cadastro de teste
   entrou em `esquenta_bf` com a nota e foi apagado depois.
 
-## Atenção
+## Comissão dos representantes (atribuição automática, 07/11)
 
-- O cupom do Esquenta substitui o cupom de afiliado no link, então a comissão do representante não é gerada
-  pelo cupom. A indicação fica registrada em `esquenta_bf.indicacao` para acerto manual ou para ligar a
-  atribuição depois.
+O link da Serena leva o cupom do Esquenta, que é da casa. Para a venda não se perder:
+
+1. O texto dos representantes pede para o cliente mandar "Quero participar do Esquenta Black Friday – SEUCUPOM".
+   O cadastro grava o representante em `esquenta_bf.indicacao` e o cupom dele em `esquenta_bf.indicacao_cupom`.
+2. No `Afiliados - Registrar Comissão` (`PNAFMdGMpTr8GSfU`), o nó novo **Esquenta: Cupom do Representante**
+   (`nodes/comissao-esquenta-representante.js`) roda antes do `Registrar Conversao`: se o pedido usou ESQ10/ESQ15
+   e o telefone (DDD + 8 últimos dígitos, tolera +55 e o 9) está em `esquenta_bf` com indicação, o cupom do
+   representante entra no início de `discount_codes` com valor 0 e o `resolver_afiliado` dá a venda para ele.
+3. A regra de **cap em promoção da casa** continua valendo, como em toda promoção: comissão = % do programa − %
+   do desconto. Programa de 30% (QualiVita, Vix) fica com 15% no pedido de 2+ unidades e 20% no de 1 unidade;
+   programa de 10% zera com o desconto de 15%.
