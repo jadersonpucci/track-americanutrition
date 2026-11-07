@@ -2855,6 +2855,16 @@ Quando a pessoa aparece no `grupos_membros` depois do convite, o convite ganha `
 
 **Manual:** `GET /webhook/comunidade-convite?t=<TOKEN>&modo=simulacao|on`.
 
+**Facebook (07/11/2026).** Pedido do Jaderson: convidar também para o grupo do Facebook
+(`facebook.com/groups/fosfoetanolamina`), porque os grupos do WhatsApp lotam.
+
+- Todo convite do WhatsApp leva o Facebook como segunda opção ("Se preferir o Facebook, a comunidade também está lá").
+- Quando todos os grupos do WhatsApp estão cheios, o convite vai só para o Facebook (`grupo_jid = 'facebook'`), em vez de
+  pular a pessoa como antes (`sem_vaga`).
+- Na conversa, a Serena oferece o Facebook quando pedem para entrar na comunidade ou dizem que o grupo do WhatsApp está
+  cheio (adendo de 07/11).
+- Em 07/11 o #1 estava no limite (986 membros + 16 convites pendentes); os outros grupos ainda tinham vaga.
+
 **Primeira simulação (02/11):** de 8 candidatos, a IA convidou 6 (5 compradores e 1 engajado) e recusou 2:
 
 - um porque a Serena ainda esperava resposta sobre uma promoção;

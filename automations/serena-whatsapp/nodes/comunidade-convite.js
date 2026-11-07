@@ -15,6 +15,8 @@
 // Quem entra num grupo depois do convite ganha entrou_em (pelo grupos_membros, atualizado todo dia).
 // serena_config.comunidade_convite: off | simulacao (monta e grava o texto, nao envia) | on.
 // serena_config.comunidade_convite_dia: teto de convites por dia (20).
+// 07/11/2026, pedido do Jaderson: quando todos os grupos do WhatsApp estao cheios, o convite vai para o grupo da
+// comunidade no Facebook (facebook.com/groups/fosfoetanolamina) em vez de pular a pessoa (antes ficava 'sem_vaga').
 const SK = 'SUPABASE_SERVICE_KEY';
 const SB = 'https://supabase.americanutrition.com/pg/query';
 const ADM = 'https://n8n.americanutrition.com/webhook/shopify-admin';
@@ -40,6 +42,7 @@ const DIABETES = {
   '120363407289053552@g.us': '#1 ImunoFosfo Diabetes'
 };
 const LIMITE_GRUPO = 1000;
+const FACEBOOK = { jid: 'facebook', nome: 'Facebook · Fosfoetanolamina', link: 'https://www.facebook.com/groups/fosfoetanolamina' };
 const EQUIPE = ['5513981885555', '16464270203', '13472225493', '18583083916', '5511959275555'];
 
 const E = (v) => (v === null || v === undefined) ? 'null' : ("'" + String(v).replace(/'/g, "''") + "'");
@@ -153,12 +156,20 @@ function primeiroNome(nome) {
   if (!/^[A-Za-zÀ-ÿ]{2,}$/.test(n)) return '';
   return n.charAt(0).toUpperCase() + n.slice(1).toLowerCase();
 }
-function texto(perfil, nome, link) {
+function texto(perfil, nome, link, fb) {
   const oi = nome ? nome + ', ' : '';
   const fim = NL + link + NL + NL + 'Sem compromisso, e você pode sair quando quiser.';
-  if (perfil === 'conteudo') return (nome ? nome + ', obrigada' : 'Obrigada') + ' por compartilhar sua experiência com a gente 💙 Temos uma comunidade no WhatsApp com quem usa o ImunoFosfo, e relatos como o seu ajudam muito quem está começando. Se quiser participar, é só entrar pelo link:' + fim;
-  if (perfil === 'comprador') return oi + (nome ? 'posso' : 'Posso') + ' te fazer um convite? 💙 Temos uma comunidade no WhatsApp com quem usa o ImunoFosfo: o pessoal troca experiências, tira dúvidas e a equipe compartilha conteúdos e novidades. Se quiser participar, é só entrar pelo link:' + fim;
-  return oi + (nome ? 'quer' : 'Quer') + ' participar da nossa comunidade no WhatsApp? 💙 Lá tem muita gente que usa o ImunoFosfo trocando experiências e tirando dúvidas, e a equipe compartilha conteúdos e novidades. É só entrar pelo link:' + fim;
+  // 07/11/2026: todo convite do WhatsApp leva tambem o grupo do Facebook como segunda opcao
+  const fimWpp = NL + link + NL + NL + 'Se preferir o Facebook, a comunidade também está lá:' + NL + FACEBOOK.link + NL + NL + 'Sem compromisso, e você pode sair quando quiser.';
+  if (fb) {
+    // grupos do WhatsApp lotados: convite para o grupo do Facebook
+    const abre = perfil === 'conteudo' ? ((nome ? nome + ', obrigada' : 'Obrigada') + ' por compartilhar sua experiência com a gente 💙 Relatos como o seu ajudam muito quem está começando.')
+      : (oi + (nome ? 'posso' : 'Posso') + ' te fazer um convite? 💙');
+    return abre + ' Nossa comunidade de quem usa o ImunoFosfo está no Facebook: o pessoal troca experiências, tira dúvidas e a equipe compartilha conteúdos e novidades. Os grupos do WhatsApp estão lotados no momento, então lá é o melhor lugar para participar. É só entrar pelo link:' + fim;
+  }
+  if (perfil === 'conteudo') return (nome ? nome + ', obrigada' : 'Obrigada') + ' por compartilhar sua experiência com a gente 💙 Temos uma comunidade no WhatsApp com quem usa o ImunoFosfo, e relatos como o seu ajudam muito quem está começando. Se quiser participar, é só entrar pelo link:' + fimWpp;
+  if (perfil === 'comprador') return oi + (nome ? 'posso' : 'Posso') + ' te fazer um convite? 💙 Temos uma comunidade no WhatsApp com quem usa o ImunoFosfo: o pessoal troca experiências, tira dúvidas e a equipe compartilha conteúdos e novidades. Se quiser participar, é só entrar pelo link:' + fimWpp;
+  return oi + (nome ? 'quer' : 'Quer') + ' participar da nossa comunidade no WhatsApp? 💙 Lá tem muita gente que usa o ImunoFosfo trocando experiências e tirando dúvidas, e a equipe compartilha conteúdos e novidades. É só entrar pelo link:' + fimWpp;
 }
 
 // ---------- rodada ----------
@@ -174,10 +185,11 @@ for (const c of cands) {
       saida.convites.push({ nome: c.nome, status: 'recusado_ia', motivo: d.motivo });
       continue;
     }
-    const g = escolherGrupo(d.diabetes);
-    if (!g) { saida.convites.push({ nome: c.nome, status: 'sem_vaga' }); continue; }
-    const link = await linkConvite(g.jid);
-    const msg = texto(d.perfil, primeiroNome(c.nome), link);
+    let g = escolherGrupo(d.diabetes);
+    const fb = !g;
+    if (fb) g = FACEBOOK;   // WhatsApp lotado: vai para o Facebook
+    const link = fb ? FACEBOOK.link : await linkConvite(g.jid);
+    const msg = texto(d.perfil, primeiroNome(c.nome), link, fb);
     let status = 'simulado';
     if (modo === 'on') {
       const r = await self.helpers.httpRequest({ method: 'POST', url: ENVIAR, json: true, timeout: 60000, body: { number: c.tel, text: msg, delay: 1500 } });
