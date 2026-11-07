@@ -2865,6 +2865,18 @@ Quando a pessoa aparece no `grupos_membros` depois do convite, o convite ganha `
   cheio (adendo de 07/11).
 - Em 07/11 o #1 estava no limite (986 membros + 16 convites pendentes); os outros grupos ainda tinham vaga.
 
+**Limite da Comunidade (07/11/2026).** Grupos dentro de uma Comunidade do WhatsApp dividem o limite de **2.000 membros
+da comunidade** (soma de todos os grupos + Avisos), além dos 1.024 de cada grupo. A comunidade "🔵Fosfoetanolamina
+(ImunoFosfo)" (#1, #2, Connect, Depoimentos, USA) estava com 1.992 no grupo de Avisos: lotada. Os 71 convites dos
+últimos 7 dias para o Connect não tiveram nenhuma entrada.
+
+- O robô agora calcula o total de cada comunidade (o maior grupo dela no `grupos_snapshot`, que é o de Avisos) mais os
+  convites pendentes e pula o grupo cuja comunidade passou de 1.990 (`LIMITE_COMUNIDADE`).
+- Saíram da lista os grupos de **Avisos** da comunidade #2 ("🔵 Fosfoetanolamina (ImunoFosfo) #2") e da Diabetes
+  ("ImunoFosfo Diabetes - Comunidade Oficial"): neles só admin escreve, e quem entra não conversa com ninguém.
+- Em 07/11: comunidade ImunoFosfo 1.992 (lotada), ImunoFosfo #2 232 (convites vão para o #3), Diabetes 50 (convites
+  vão para o #1 ImunoFosfo Diabetes). Com tudo lotado, o convite vai para o Facebook.
+
 **Primeira simulação (02/11):** de 8 candidatos, a IA convidou 6 (5 compradores e 1 engajado) e recusou 2:
 
 - um porque a Serena ainda esperava resposta sobre uma promoção;

@@ -32,16 +32,22 @@ const self = this;
 
 const GERAIS = {
   '120363407686844370@g.us': '#3 ImunoFosfo - Fosfoetanolamina',
-  '120363423321725793@g.us': 'Fosfoetanolamina (ImunoFosfo) #2',
+  // '120363423321725793@g.us' (Fosfoetanolamina (ImunoFosfo) #2) saiu em 07/11/2026: e o grupo de Avisos da comunidade #2
+  // (so admin escreve); quem entra la nao conversa com ninguem.
   '120363307265095030@g.us': '#2 ImunoFosfo - Fosfoetanolamina',
   '120363353982971871@g.us': 'ImunoFosfo Connect - Tratamentos/Terapias Oncologicas',
   '120363246659395526@g.us': '#1 ImunoFosfo - Fosfoetanolamina'
 };
 const DIABETES = {
-  '120363404254700593@g.us': 'ImunoFosfo Diabetes - Comunidade Oficial',
+  // '120363404254700593@g.us' (ImunoFosfo Diabetes - Comunidade Oficial) saiu em 07/11/2026: e o grupo de Avisos da
+  // comunidade Diabetes.
   '120363407289053552@g.us': '#1 ImunoFosfo Diabetes'
 };
 const LIMITE_GRUPO = 1000;
+// 07/11/2026: grupos dentro de uma Comunidade do WhatsApp dividem o limite de 2.000 membros da comunidade (soma de todos
+// os grupos + Avisos). A comunidade 'ImunoFosfo' chegou a 1.992 e os convites para o Connect e o #2 paravam na porta.
+// O total de cada comunidade e o maior grupo dela no snapshot (o de Avisos, que tem todo mundo).
+const LIMITE_COMUNIDADE = 1990;
 const FACEBOOK = { jid: 'facebook', nome: 'Facebook · Fosfoetanolamina', link: 'https://www.facebook.com/groups/fosfoetanolamina' };
 const EQUIPE = ['5513981885555', '16464270203', '13472225493', '18583083916', '5511959275555'];
 
@@ -106,13 +112,18 @@ if (!cands.length) return [{ json: { ok: true, modo: modo, candidatos: 0 } }];
 // ---------- ocupacao dos grupos ----------
 const ocup = {};
 (await sql("select grupo_jid, membros from grupos_snapshot where dia = (select max(dia) from grupos_snapshot)")).forEach((x) => { ocup[x.grupo_jid] = Number(x.membros || 0); });
-(await sql("select grupo_jid, count(*)::int n from serena_comunidade_convites where status = 'enviado' and entrou_em is null and enviado_em > now() - interval '7 days' group by 1")).forEach((x) => { ocup[x.grupo_jid] = (ocup[x.grupo_jid] || 0) + Number(x.n || 0); });
+const pend = {};
+(await sql("select grupo_jid, count(*)::int n from serena_comunidade_convites where status = 'enviado' and entrou_em is null and enviado_em > now() - interval '7 days' group by 1")).forEach((x) => { pend[x.grupo_jid] = Number(x.n || 0); ocup[x.grupo_jid] = (ocup[x.grupo_jid] || 0) + Number(x.n || 0); });
+const comDe = {}, comTot = {}, comPend = {};
+(await sql("select grupo_jid, comunidade, max(membros) over (partition by comunidade) as total from grupos_snapshot where dia = (select max(dia) from grupos_snapshot) and comunidade is not null")).forEach((x) => { comDe[x.grupo_jid] = x.comunidade; comTot[x.comunidade] = Number(x.total || 0); });
+Object.keys(pend).forEach((jid) => { const cm = comDe[jid]; if (cm) comPend[cm] = (comPend[cm] || 0) + pend[jid]; });
+const comunidadeCheia = (jid) => { const cm = comDe[jid]; return !!cm && (comTot[cm] || 0) + (comPend[cm] || 0) >= LIMITE_COMUNIDADE; };
 function escolherGrupo(diabetes) {
   const pool = diabetes ? DIABETES : GERAIS;
   let melhor = null;
   for (const jid of Object.keys(pool)) {
     const n = ocup[jid] == null ? 0 : ocup[jid];
-    if (n >= LIMITE_GRUPO) continue;
+    if (n >= LIMITE_GRUPO || comunidadeCheia(jid)) continue;
     if (!melhor || n > melhor.n) melhor = { jid: jid, nome: pool[jid], n: n };
   }
   if (!melhor && diabetes) return escolherGrupo(false);
@@ -198,7 +209,7 @@ for (const c of cands) {
     }
     await sql('insert into serena_comunidade_convites (contato_id, telefone, nome, perfil, grupo_jid, grupo_nome, status, motivo, texto, pedidos, enviado_em) values ('
       + [E(c.contato_id), E(c.tel), E(c.nome), E(d.perfil), E(g.jid), E(g.nome), E(status), E(d.motivo), E(msg), pedidos, status === 'enviado' ? 'now()' : 'null'].join(', ') + ')');
-    if (status !== 'erro') { vagas -= 1; ocup[g.jid] = (ocup[g.jid] || 0) + 1; }
+    if (status !== 'erro') { vagas -= 1; ocup[g.jid] = (ocup[g.jid] || 0) + 1; if (comDe[g.jid]) comPend[comDe[g.jid]] = (comPend[comDe[g.jid]] || 0) + 1; }
     saida.convites.push({ nome: c.nome, status: status, perfil: d.perfil, grupo: g.nome, motivo: d.motivo });
   } catch (e) {
     saida.convites.push({ nome: c.nome, erro: String(e.message).slice(0, 200) });
