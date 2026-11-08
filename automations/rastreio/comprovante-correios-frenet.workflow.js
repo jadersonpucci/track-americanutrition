@@ -25,8 +25,10 @@ const conferidos = node({ type: 'n8n-nodes-base.postgres', version: 2.6, credent
 
 const escolher = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Escolher envios', parameters: { jsCode: `
 // Escolhe envios dos Correios (Frenet) para buscar o comprovante de entrega no painel.
-// Lista os 200 envios mais novos da Frenet (pagina comeca em 0), confere no rastreio da Frenet quem ja foi entregue
+// Lista os 500 envios mais novos da Frenet (pagina comeca em 0; ate 08/11/2026 eram 200, e entregas de mais de ~1 semana ficavam de fora), confere no rastreio da Frenet quem ja foi entregue
 // e respeita uma espera crescente por envio (1h, 2h... ate 6h) para nao consultar demais.
+// PRIORIDADE: codigos pedidos pela equipe entram primeiro na fila da rodada.
+const PRIORIDADE = ['AE069586903BR'];
 const TOKEN = '<FRENET_TOKEN>';
 const PARTNER = '<FRENET_PARTNER_TOKEN>';
 const H = { token: TOKEN, 'x-partner-token': PARTNER, Accept: 'application/json' };
@@ -35,12 +37,14 @@ let conhecidos = $input.first().json.lista || [];
 if (typeof conhecidos === 'string') { try { conhecidos = JSON.parse(conhecidos); } catch (e) { conhecidos = []; } }
 const mapa = {}; for (const r of conhecidos) mapa[r.codigo] = r;
 let envs = [];
-for (const p of [0, 1]) {
+for (const p of [0, 1, 2, 3, 4]) {
   try {
     const r = await this.helpers.httpRequest({ method: 'GET', url: 'https://whitelabel.apifrenet.com.br/v1/shipments?page=' + p + '&per_page=100', headers: H, json: true, timeout: 30000 });
     envs = envs.concat((r && r.shipments) || []);
   } catch (e) {}
 }
+const codDe = (s) => { const v = (s.volumes || []).find(x => x.labelId); return v ? String(v.labelId).toUpperCase().replace(/[^A-Z0-9]/g, '') : ''; };
+envs.sort((a, b) => (PRIORIDADE.indexOf(codDe(b)) >= 0) - (PRIORIDADE.indexOf(codDe(a)) >= 0));
 const agora = Date.now(), out = [];
 for (const s of envs) {
   if (out.length >= MAX) break;
@@ -54,7 +58,7 @@ for (const s of envs) {
   if (k && k.obtido_em) continue;
   const tent = k ? Number(k.tentativas || 0) : 0;
   if (tent >= 40) continue;
-  if (k && k.ultima_tentativa && agora - new Date(k.ultima_tentativa).getTime() < Math.min(6, Math.max(1, tent)) * 3600000) continue;
+  if (PRIORIDADE.indexOf(cod) < 0 && k && k.ultima_tentativa && agora - new Date(k.ultima_tentativa).getTime() < Math.min(6, Math.max(1, tent)) * 3600000) continue;
   let entregue = false;
   try {
     const t = await this.helpers.httpRequest({ method: 'POST', url: 'https://api.frenet.com.br/tracking/trackinginfo', headers: { token: TOKEN, 'Content-Type': 'application/json' }, body: { ShippingServiceCode: String(q.shippingServiceCode || ''), TrackingNumber: cod }, json: true, timeout: 20000 });

@@ -183,3 +183,7 @@ rastreio, no mesmo cartão "Comprovante de entrega" da J&T.
   comprovante quando o código é dos Correios, está entregue e não veio POD de outra fonte.
 - **Sessão vencida:** chega alerta no Telegram (1 por dia). Para voltar: entrar no painel da Frenet, copiar o cookie
   de novo (DevTools → Network → DocumentCarrier → Headers → cookie) e atualizar a credencial no n8n.
+
+- **08/11/2026:** a busca passou de 200 para os **500 envios** mais novos da Frenet (o AE069586903BR, entregue em 27/10,
+  já tinha saído da janela). Constante `PRIORIDADE` no nó "Escolher envios": códigos pedidos pela equipe entram primeiro
+  na rodada. O Envia não tem comprovante de etiqueta feita na Frenet ("No shipments found").
