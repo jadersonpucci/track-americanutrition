@@ -18,6 +18,38 @@
 <title>Esquenta Black Friday · America Nutrition</title>
 <meta name="description" content="Acesso antecipado e exclusivo à Black Friday da America Nutrition. Cadastre-se e receba as condições do Esquenta pelo WhatsApp. Só até 26/11.">
 <meta name="theme-color" content="#06142E">
+{%- comment -%}
+  09/11/2026: a pagina usa layout none, entao o script de afiliados do theme.liquid nao roda aqui
+  e o ?ref= nao gravava clique no painel do afiliado nem o cookie an_aff. Este bloco repete o do tema:
+  grava an_aff (prazo = janela do painel, cookie an_jan) e an_ref, e loga o clique no /aff-api.
+  Respeita o modo sem afiliado (cookie an_noaff=1 da equipe). Nao grava an_cupom: o cupom do
+  Esquenta e exclusivo e vem pela Serena.
+{%- endcomment -%}
+<script>
+(function () {
+  try {
+    var D = '.americanutrition.com', N8N = 'https://n8n.americanutrition.com/webhook';
+    function ler(n) { var m = document.cookie.match('(?:^|; )' + n + '=([^;]*)'); return m ? decodeURIComponent(m[1]) : ''; }
+    function gravar(n, v, dias) { try { document.cookie = n + '=' + encodeURIComponent(v) + '; domain=' + D + '; path=/; max-age=' + (86400 * dias) + '; SameSite=Lax; Secure'; } catch (e) {} }
+    if (ler('an_noaff') === '1') return;
+    var sp = new URLSearchParams(location.search);
+    var ref = (sp.get('ref') || sp.get('aff') || sp.get('d') || '').trim();
+    if (!ref) return;
+    var prev = ler('an_aff');
+    var jan = parseInt(ler('an_jan'), 10);
+    gravar('an_aff', ref, jan > 0 ? jan : 30);
+    gravar('an_ref', ref, 30);
+    if (!(jan > 0)) {
+      fetch(N8N + '/aff-cfg', { mode: 'cors' }).then(function (r) { return r.json(); })
+        .then(function (d) { if (d && d.janela > 0) { gravar('an_jan', String(d.janela), 1); gravar('an_aff', ref, d.janela); } }).catch(function () {});
+    }
+    fetch(N8N + '/aff-api', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, keepalive: true, mode: 'cors',
+      body: JSON.stringify({ action: 'click', ref: ref.toLowerCase() === 'serena' ? 'SERENA01' : ref, url: location.href, ua: navigator.userAgent, prev: prev || null, referrer: document.referrer || null })
+    }).catch(function () {});
+  } catch (e) {}
+})();
+</script>
 <meta property="og:title" content="Esquenta Black Friday · America Nutrition">
 <meta property="og:description" content="Acesso antecipado e exclusivo. Só até 26/11.">
 <meta property="og:image" content="https:{{ 'an-esquenta-landing.webp' | asset_url }}">

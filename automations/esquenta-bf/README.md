@@ -46,6 +46,11 @@ Slider ligado às 23h31 de 06/11 (`an_site.esquenta_popup = on`). Lista começou
   `assets/an-esquenta-landing.webp` (Higgsfield, 1:1). Pede nome, WhatsApp (máscara BR) e e-mail, com aceite LGPD.
   Não mostra desconto. Aceita `?ref=CUPOM` (vai na mensagem para a Serena, e o cadastro atribui o representante como
   no fluxo acima) e `utm_*`.
+  **Clique do afiliado (09/11):** como a página usa `layout none`, o script de afiliados do `theme.liquid` não
+  rodava e o `?ref=` não aparecia no painel do afiliado (0 cliques na landing até então). A página agora tem o mesmo
+  bloco do tema: grava `an_aff` (prazo = janela do painel) e `an_ref` e loga o clique no `/aff-api`
+  (`afiliado_cliques`). Respeita o modo sem afiliado (`an_noaff`). Não grava `an_cupom`, porque o cupom do Esquenta
+  é exclusivo e vem pela Serena.
 - **Workflow** `[Esquenta] Landing: leads` (`1m6U1d74zXfDEJsD`): `POST /webhook/esquenta-lead`
   `{nome, email, whatsapp, aceite, ref?, utm_*}`. Valida, grava em `esquenta_leads` (um por telefone; reenvio
   atualiza e soma `envios`), completa o e-mail do contato da Serena quando estiver vazio e devolve
