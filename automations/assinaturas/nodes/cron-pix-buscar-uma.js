@@ -1,6 +1,7 @@
-// Node "Buscar Uma" do workflow "AN - Assinaturas Cron PIX" (n8n VxyloA6hZtppGEja).
-// Chaves reais so no n8n.
-//
+// Node "Buscar Uma" do workflow "AN - Assinaturas Cron PIX" (n8n VxyloA6hZtppGEja). Copia fiel do n8n em 09/11/2026.
+// Chaves fora do codigo (09/11/2026): ficam no no desligado "Chaves (não apagar)" deste workflow.
+const _fonteChaves = String((($('Chaves (não apagar)').params) || {}).jsCode || '');
+function _chave(k) { const m = _fonteChaves.match(new RegExp('const ' + k + " = '([^']*)'")); return m ? m[1] : ''; }
 // GERACAO SOB DEMANDA (11/09/2026). O cron das 10h so olha assinaturas 'ativa' ou 'inadimplente'.
 // Quem esta 'pausada' nunca recebe Pix - e exatamente quem liga pedindo para renovar. Este caminho
 // cobre esse caso: gera o Pix de UMA assinatura, sem tocar em nenhuma outra.
@@ -12,10 +13,10 @@
 // ciclo_hoje -> realinha proximo_ciclo para hoje, para o proximo ciclo contar do pagamento e nao
 //               de uma data vencida ha semanas (senao o cliente pagaria hoje e seria cobrado em dias)
 //
-// Daqui para frente o cron cuida normalmente: lembrete no vencimento, lembrete em +2 dias e pausa
-// em +5 dias sem pagamento. Se ele nao pagar, a assinatura volta a pausar sozinha.
+// 22/09/2026: o PIX de renovacao sai pelo Inter; pagarme_customer_id so e necessario no fallback Pagar.me,
+// entao deixou de ser obrigatorio (assinaturas nascidas pelo Inter nao tem esse id).
 const TOKEN = 'an-assin-7Wq3Xv';
-const SK = 'SUPABASE_SERVICE_KEY';
+const SK = _chave('SK');
 const self = this;
 const sql = async (q) => {
   const r = await self.helpers.httpRequest({ method: 'POST', url: 'https://supabase.americanutrition.com/pg/query', headers: { apikey: SK, Authorization: 'Bearer ' + SK, 'Content-Type': 'application/json' }, body: { query: q }, json: true, timeout: 30000 });
@@ -28,7 +29,6 @@ if (!/^[0-9a-fA-F-]{36}$/.test(id)) return [{ json: { erro: 'assinatura_id inval
 const reativar = String(b.reativar == null ? '1' : b.reativar) !== 'false' && String(b.reativar) !== '0';
 const cicloHoje = String(b.ciclo_hoje == null ? '1' : b.ciclo_hoje) !== 'false' && String(b.ciclo_hoje) !== '0';
 
-// Trava global de assinaturas: se estiver ligada, nem o avulso passa.
 const trava = await sql('select 1 as x from assinatura_config where pausar_todas = true limit 1');
 if (trava.length) return [{ json: { erro: 'assinatura_config.pausar_todas esta ligado' } }];
 
@@ -36,9 +36,7 @@ const base = await sql("select id::text as id, nome, status, metodo, coalesce(ca
 if (!base.length) return [{ json: { erro: 'assinatura nao encontrada' } }];
 const a0 = base[0];
 if (String(a0.metodo || '') !== 'pix') return [{ json: { erro: 'assinatura nao e pix, e ' + a0.metodo } }];
-if (!a0.pagarme_customer_id) return [{ json: { erro: 'assinatura sem pagarme_customer_id' } }];
 
-// Nunca refaz uma cobranca que ja foi paga.
 const cicloAlvo = cicloHoje ? null : a0.ciclo;
 const jaPago = await sql("select 1 as x from assinatura_cobrancas where assinatura_id = '" + id + "'::uuid and ciclo_ref = " + (cicloAlvo ? ("'" + cicloAlvo + "'") : "to_char(current_date,'YYYY-MM-DD')") + " and status = 'pago' limit 1");
 if (jaPago.length) return [{ json: { erro: 'ja existe cobranca paga para este ciclo' } }];
@@ -50,8 +48,6 @@ if (mudancas.length) {
   await sql('update assinaturas set ' + mudancas.join(', ') + ', atualizado_em = now() where id = ' + "'" + id + "'::uuid");
 }
 
-// Mesma consulta do cron (mesmos campos, mesmo calculo de premio e de valor), mas para um id so
-// e sem o filtro de status.
 const rows = await sql(
   "select a.id, a.nome, a.whatsapp, a.pagarme_customer_id, a.shipping, a.freight, a.shopify_items, a.valor_centavos, coalesce(a.renovacoes,0) as renovacoes, a.desconto_proxima_pct, " +
   "((coalesce(a.renovacoes,0)+2) % 6 = 0 and coalesce(a.valor_cheio_centavos,0) > 0 and a.desconto_proxima_pct is null) as mes_premio, " +

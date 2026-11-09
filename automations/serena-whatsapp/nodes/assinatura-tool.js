@@ -1,5 +1,7 @@
-// Node "Gerenciar" do workflow "[Serena Tool] Assinatura" (webhook POST /webhook/serena-assinatura).
-// Chaves reais so no n8n.
+// Node "Gerenciar" do workflow "[Serena Tool] Assinatura" (n8n WfxlFkDA9U9yYeR7). Copia fiel do n8n em 09/11/2026.
+// Chaves fora do codigo (09/11/2026): ficam no no desligado "Chaves (não apagar)" deste workflow.
+const _fonteChaves = String((($('Chaves (não apagar)').params) || {}).jsCode || '');
+function _chave(k) { const m = _fonteChaves.match(new RegExp('const ' + k + " = '([^']*)'")); return m ? m[1] : ''; }
 //
 // A Serena chama com acao consultar | pausar | cancelar | reativar | trocar. O Core injeta telefone, email e
 // contato_id: a ferramenta acha a assinatura sozinha, a Serena nunca pede dado ao cliente para isso.
@@ -7,9 +9,9 @@
 // (caso Carlos M., renovacao de assinatura que ele nao lembrava de ter feito). Sem confirmado, a
 // ferramenta devolve erro pedindo a confirmacao explicita, e nada muda no banco.
 const body = $input.first().json.body || $input.first().json;
-const SK = 'SUPABASE_SERVICE_KEY';
+const SK = _chave('SK');
 const SB = 'https://supabase.americanutrition.com/pg/query';
-const TG = 'https://api.telegram.org/bot<TOKEN_ALERTAS>/sendMessage';
+const TG = 'https://api.telegram.org/bot' + _chave('TG_BOT') + '/sendMessage';
 const self = this;
 const req = async (o) => { try { return await self.helpers.httpRequest(o); } catch (e) { return null; } };
 const sql = async (q) => { const r = await req({ method: 'POST', url: SB, headers: { apikey: SK, Authorization: 'Bearer ' + SK, 'Content-Type': 'application/json' }, body: { query: q }, json: true, timeout: 20000 }); return Array.isArray(r) ? r : []; };
@@ -99,7 +101,7 @@ if (email) conds.push('lower(email) = ' + E(email));
 const rows = await sql("select id, nome, whatsapp, email, status, metodo, items, valor_centavos, valor_cheio_centavos, desconto_pct, ciclo_dias, proximo_ciclo, renovacoes, card_brand, card_last4, criado_em, cancelar_no_fim, atualizado_em, (select jsonb_agg(jsonb_build_object('ciclo', c.ciclo_ref, 'status', c.status, 'valor_centavos', c.valor_centavos) order by c.ciclo_ref desc) from (select * from assinatura_cobrancas cc where cc.assinatura_id = a.id order by cc.ciclo_ref desc limit 4) c) as cobrancas from assinaturas a where " + conds.join(' or ') + " order by (status = 'ativa') desc, (status in ('pausada','inadimplente')) desc, atualizado_em desc limit 5");
 const cand = rows.filter((r) => !kTel || chave(r.whatsapp) === kTel || (email && String(r.email || '').toLowerCase() === email));
 const a = cand[0] || null;
-if (!a) return [{ json: { sucesso: false, encontrado: false, resultado: 'Nenhuma assinatura encontrada para este cliente.', nota_serena: 'Este cliente NAO tem assinatura recorrente. Se ele fala de cobranca repetida, verifique os pedidos e escale para a equipe.' } }];
+if (!a) return [{ json: { sucesso: false, encontrado: false, resultado: 'Nenhuma Compra Programada encontrada para este cliente.', nota_serena: 'Este cliente NAO tem Compra Programada (assinatura recorrente). Se ele fala de cobranca repetida, verifique os pedidos e escale para a equipe.' } }];
 
 let itens = '';
 let itensAtuais = [];
@@ -122,7 +124,7 @@ async function telegram(titulo, extra) {
 }
 
 if (acao === 'consultar') {
-  return [{ json: { sucesso: true, encontrado: true, assinatura: resumo(), resultado: 'Assinatura ' + a.status + ': ' + itens + ', ' + brlc(a.valor_centavos) + ' a cada ' + (a.ciclo_dias || 30) + ' dias ' + pagamento + ', feita em ' + dt(a.criado_em) + (a.status === 'ativa' ? ', proxima renovacao ' + dt(a.proximo_ciclo) : '') + '. Cobrancas: ' + (cobr || 'nenhuma') + '.' } }];
+  return [{ json: { sucesso: true, encontrado: true, assinatura: resumo(), resultado: 'Compra Programada ' + a.status + ': ' + itens + ', ' + brlc(a.valor_centavos) + ' a cada ' + (a.ciclo_dias || 30) + ' dias ' + pagamento + ', feita em ' + dt(a.criado_em) + (a.status === 'ativa' ? ', proxima renovacao ' + dt(a.proximo_ciclo) : '') + '. Cobrancas: ' + (cobr || 'nenhuma') + '.' } }];
 }
 if (acao === 'trocar') {
   const pedidos = parseItens();
@@ -132,7 +134,7 @@ if (acao === 'trocar') {
     const v = await variante(it.variant_id);
     if (!v) return [{ json: { sucesso: false, resultado: 'Nao encontrei o produto ' + it.variant_id + ' na loja. Confira o variant_id com consultar_produto.' } }];
     if (!v.ativo) return [{ json: { sucesso: false, resultado: v.titulo + ' nao esta mais a venda.', nota_serena: 'Ofereca outra versao ou tamanho equivalente.' } }];
-    if (v.sem_estoque) return [{ json: { sucesso: false, sem_estoque: true, item: v.titulo, resultado: v.titulo + ' esta sem estoque agora; nao da para colocar na assinatura.', nota_serena: 'Diga que esse tamanho esta sem estoque no momento e ofereca montar a assinatura com a quantidade equivalente de outro tamanho (ex.: 2x 90 capsulas no lugar do 180), mantendo o desconto. Nao cancele a assinatura por causa disso.' } }];
+    if (v.sem_estoque) return [{ json: { sucesso: false, sem_estoque: true, item: v.titulo, resultado: v.titulo + ' esta sem estoque agora; nao da para colocar na Compra Programada.', nota_serena: 'Diga que esse tamanho esta sem estoque no momento e ofereca montar a Compra Programada com a quantidade equivalente de outro tamanho (ex.: 2x 90 capsulas no lugar do 180), mantendo o desconto. Nao cancele a Compra Programada por causa disso.' } }];
     novos.push({ price: v.preco, quantity: it.quantity, variant_id: v.variant_id, titulo: v.titulo });
   }
   const desc = Number(a.desconto_pct || 10) || 10;
@@ -142,15 +144,15 @@ if (acao === 'trocar') {
   const reativa = a.status !== 'ativa' || a.cancelar_no_fim === true;
   const proposta = { itens_novos: itensNovos, valor_novo: brlc(novo), valor_cheio_novo: brlc(cheio), valor_atual: brlc(a.valor_centavos), desconto_pct: desc, proximo_ciclo: dt(a.proximo_ciclo), reativa: reativa, frete: cheio >= 25000 ? 'gratis' : 'cobrado na renovacao' };
   if (!confirmado) {
-    return [{ json: { sucesso: false, precisa_confirmacao: true, assinatura: resumo(), proposta: proposta, resultado: 'Proposta de troca: a assinatura passaria de ' + itens + ' (' + brlc(a.valor_centavos) + ') para ' + itensNovos + ' por ' + brlc(novo) + ' a cada ' + (a.ciclo_dias || 30) + ' dias (de ' + brlc(cheio) + ', ' + desc + '% de assinante)' + (reativa ? ', e a assinatura voltaria a ficar ativa' : '') + '. Explique isso ao cliente e pergunte se confirma. Repita com confirmado=true SOMENTE depois de um sim explicito.' } }];
+    return [{ json: { sucesso: false, precisa_confirmacao: true, assinatura: resumo(), proposta: proposta, resultado: 'Proposta de troca: a Compra Programada passaria de ' + itens + ' (' + brlc(a.valor_centavos) + ') para ' + itensNovos + ' por ' + brlc(novo) + ' a cada ' + (a.ciclo_dias || 30) + ' dias (de ' + brlc(cheio) + ', ' + desc + '% da Compra Programada)' + (reativa ? ', e a Compra Programada voltaria a ficar ativa' : '') + '. Explique isso ao cliente e pergunte se confirma. Repita com confirmado=true SOMENTE depois de um sim explicito.' } }];
   }
   const EJ = (o) => "'" + JSON.stringify(o).replace(/'/g, "''") + "'::jsonb";
   const gravar = novos.map((i) => ({ price: i.price, quantity: i.quantity, variant_id: i.variant_id }));
   await sql('update assinaturas set items = ' + EJ(gravar) + ', shopify_items = ' + EJ(gravar) + ', valor_cheio_centavos = ' + cheio + ', valor_centavos = ' + novo + (reativa ? ", status = 'ativa', cancelar_no_fim = false, tentativas = 0, proximo_ciclo = greatest(coalesce(proximo_ciclo, current_date), current_date + 1)" : '') + ', atualizado_em = now() where id = ' + E(a.id));
   const r3 = await sql('select proximo_ciclo from assinaturas where id = ' + E(a.id));
   const prox3 = r3[0] ? dt(r3[0].proximo_ciclo) : dt(a.proximo_ciclo);
-  await telegram('\u{1F501} <b>ASSINATURA TROCADA pela Serena</b>', 'Novo plano: ' + esc(itensNovos) + ' \u00b7 ' + esc(brlc(novo)) + ' (de ' + esc(brlc(cheio)) + ', -' + desc + '%)' + (reativa ? '\nReativada. ' : '\n') + 'Proximo ciclo: ' + esc(prox3));
-  return [{ json: { sucesso: true, assinatura: Object.assign(resumo('ativa'), { itens: itensNovos, valor: brlc(novo), valor_cheio: brlc(cheio), proximo_ciclo: prox3 }), resultado: 'Assinatura trocada para ' + itensNovos + ': ' + brlc(novo) + ' a cada ' + (a.ciclo_dias || 30) + ' dias (' + desc + '% de assinante ja aplicado)' + (reativa ? ', reativada' : '') + '. Proxima renovacao: ' + prox3 + '.', nota_serena: 'Confirme ao cliente o novo item, o valor com desconto e a data da proxima renovacao. Se ele quiser o item novo ja agora, gere PIX ou boleto com desconto_pct=' + desc + ' e cupom ASSINANTE.' } }];
+  await telegram('\u{1F501} <b>ASSINATURA TROCADA pela Serena</b>', 'Novo plano: ' + esc(itensNovos) + ' · ' + esc(brlc(novo)) + ' (de ' + esc(brlc(cheio)) + ', -' + desc + '%)' + (reativa ? '\nReativada. ' : '\n') + 'Proximo ciclo: ' + esc(prox3));
+  return [{ json: { sucesso: true, assinatura: Object.assign(resumo('ativa'), { itens: itensNovos, valor: brlc(novo), valor_cheio: brlc(cheio), proximo_ciclo: prox3 }), resultado: 'Compra Programada trocada para ' + itensNovos + ': ' + brlc(novo) + ' a cada ' + (a.ciclo_dias || 30) + ' dias (' + desc + '% da Compra Programada ja aplicado)' + (reativa ? ', reativada' : '') + '. Proxima renovacao: ' + prox3 + '.', nota_serena: 'Confirme ao cliente o novo item, o valor com desconto e a data da proxima renovacao. Se ele quiser o item novo ja agora, gere PIX ou boleto com desconto_pct=' + desc + ' e cupom ASSINANTE.' } }];
 }
 // PRECO TRAVADO (16/10/2026, decisao do Jaderson): quando a loja aumenta o preco, a assinatura continua no
 // valor antigo. Se o cliente pedir para cancelar, a Serena avisa ANTES que perde esse valor: voltando depois,
@@ -178,26 +180,26 @@ if (acao === 'cancelar' && a.status !== 'cancelada') {
 }
 if (!confirmado) {
   if (precoTravado) {
-    return [{ json: { sucesso: false, precisa_confirmacao: true, preco_travado: precoTravado, assinatura: resumo(), resultado: 'ATENCAO, PRECO TRAVADO: o preco da loja subiu (' + precoTravado.aumentos.join('; ') + '), mas a assinatura deste cliente continua no valor antigo, ' + precoTravado.valor_travado + ' por ciclo. Antes de cancelar, avise com calma: se cancelar e quiser voltar depois, a assinatura sai por ' + precoTravado.valor_se_voltar_assinando + ' por ciclo (ou ' + precoTravado.valor_avulso_hoje + ' na compra avulsa). Se ele so quer dar um tempo, ofereca PAUSAR: pausada, o valor antigo continua garantido. Sem pressionar: se ele mantiver o pedido de cancelar, repita a chamada com confirmado=true.' } }];
+    return [{ json: { sucesso: false, precisa_confirmacao: true, preco_travado: precoTravado, assinatura: resumo(), resultado: 'ATENCAO, PRECO TRAVADO: o preco da loja subiu (' + precoTravado.aumentos.join('; ') + '), mas a Compra Programada deste cliente continua no valor antigo, ' + precoTravado.valor_travado + ' por ciclo. Antes de cancelar, avise com calma: se cancelar e quiser voltar depois, a Compra Programada sai por ' + precoTravado.valor_se_voltar_assinando + ' por ciclo (ou ' + precoTravado.valor_avulso_hoje + ' na compra avulsa). Se ele so quer dar um tempo, ofereca PAUSAR: pausada, o valor antigo continua garantido. Sem pressionar: se ele mantiver o pedido de cancelar, repita a chamada com confirmado=true.' } }];
   }
   return [{ json: { sucesso: false, precisa_confirmacao: true, assinatura: resumo(), resultado: 'Antes de ' + acao + ', explique ao cliente o que muda e pergunte se ele confirma. Repita a chamada com confirmado=true SOMENTE depois de um sim explicito.' } }];
 }
 if (acao === 'cancelar') {
-  if (a.status === 'cancelada') return [{ json: { sucesso: true, assinatura: resumo(), resultado: 'A assinatura ja estava cancelada.' } }];
+  if (a.status === 'cancelada') return [{ json: { sucesso: true, assinatura: resumo(), resultado: 'A Compra Programada ja estava cancelada.' } }];
   await sql("update assinaturas set status = 'cancelada', cancelar_no_fim = true, atualizado_em = now() where id = " + E(a.id));
   await telegram('\u{1F6D1} <b>ASSINATURA CANCELADA pela Serena</b>', 'Se a ultima renovacao foi paga e o cliente contestou, o estorno e manual: pedido na Shopify (tag ASSINATURA) e POST /webhook/pagarme-estorno.');
-  return [{ json: { sucesso: true, assinatura: resumo('cancelada'), resultado: 'Assinatura cancelada. Nenhuma renovacao sera cobrada daqui em diante.', nota_serena: 'Confirme ao cliente que a assinatura foi cancelada e que nada mais sera cobrado. Ele perde o desconto de assinante nas proximas compras. Se ele contestou uma renovacao JA PAGA, chame escalar_humano com motivo "estorno de renovacao de assinatura, pedido <numero>" e diga que a equipe confirma o estorno por aqui.' } }];
+  return [{ json: { sucesso: true, assinatura: resumo('cancelada'), resultado: 'Compra Programada cancelada. Nenhuma renovacao sera cobrada daqui em diante.', nota_serena: 'Confirme ao cliente que a Compra Programada foi cancelada e que nada mais sera cobrado. Ele perde o desconto da Compra Programada nas proximas compras. Se ele contestou uma renovacao JA PAGA, chame escalar_humano com motivo "estorno de renovacao de assinatura, pedido <numero>" e diga que a equipe confirma o estorno por aqui.' } }];
 }
 if (acao === 'pausar') {
-  if (a.status === 'pausada') return [{ json: { sucesso: true, assinatura: resumo(), resultado: 'A assinatura ja estava pausada.' } }];
+  if (a.status === 'pausada') return [{ json: { sucesso: true, assinatura: resumo(), resultado: 'A Compra Programada ja estava pausada.' } }];
   await sql("update assinaturas set status = 'pausada', atualizado_em = now() where id = " + E(a.id));
   await telegram('\u{23F8} <b>ASSINATURA PAUSADA pela Serena</b>', '');
-  return [{ json: { sucesso: true, assinatura: resumo('pausada'), resultado: 'Assinatura pausada. Nada sera cobrado ate o cliente pedir para reativar.', nota_serena: 'Diga ao cliente que a assinatura esta pausada, que nada sera cobrado e que e so avisar por aqui para reativar (o desconto de assinante continua valendo).' } }];
+  return [{ json: { sucesso: true, assinatura: resumo('pausada'), resultado: 'Compra Programada pausada. Nada sera cobrado ate o cliente pedir para reativar.', nota_serena: 'Diga ao cliente que a Compra Programada esta pausada, que nada sera cobrado e que e so avisar por aqui para reativar (o desconto da Compra Programada continua valendo).' } }];
 }
 // reativar
-if (a.status === 'ativa' && !a.cancelar_no_fim) return [{ json: { sucesso: true, assinatura: resumo(), resultado: 'A assinatura ja esta ativa.' } }];
+if (a.status === 'ativa' && !a.cancelar_no_fim) return [{ json: { sucesso: true, assinatura: resumo(), resultado: 'A Compra Programada ja esta ativa.' } }];
 await sql("update assinaturas set status = 'ativa', cancelar_no_fim = false, tentativas = 0, proximo_ciclo = greatest(coalesce(proximo_ciclo, current_date), current_date + 1), atualizado_em = now() where id = " + E(a.id));
 const r2 = await sql('select proximo_ciclo from assinaturas where id = ' + E(a.id));
 const prox = r2[0] ? dt(r2[0].proximo_ciclo) : '';
 await telegram('\u{25B6} <b>ASSINATURA REATIVADA pela Serena</b>', prox ? 'Proximo ciclo: ' + esc(prox) : '');
-return [{ json: { sucesso: true, assinatura: Object.assign(resumo('ativa'), { proximo_ciclo: prox }), resultado: 'Assinatura reativada. Proxima renovacao: ' + prox + '.', nota_serena: 'Diga ao cliente que a assinatura voltou a valer e a data da proxima renovacao.' } }];
+return [{ json: { sucesso: true, assinatura: Object.assign(resumo('ativa'), { proximo_ciclo: prox }), resultado: 'Compra Programada reativada. Proxima renovacao: ' + prox + '.', nota_serena: 'Diga ao cliente que a Compra Programada voltou a valer e a data da proxima renovacao.' } }];

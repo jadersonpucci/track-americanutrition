@@ -91,3 +91,24 @@ A tabela `assinatura_elegibilidade` continua sendo gravada, mas não decide mais
 
 **No checkout:** quem não tem direito vê que esta compra sai sem desconto porque já tem uma assinatura ativa ou
 pagou uma nos últimos 60 dias, e que os 10% valem a partir da 2ª entrega.
+
+## "Compra Programada" e chaves fora do código (09/11/2026)
+
+**Nome.** Para o cliente, a assinatura passou a se chamar **Compra Programada**. Os clientes achavam que "assinatura" tinha custo extra.
+- Mudou: checkout, portal, Área do Cliente, mensagens de WhatsApp (ativação, renovação, lembretes, pausa, cobrança falha), descrição do item no Pagar.me e respostas da tool da Serena.
+- Ficou igual: tabelas, tag ASSINATURA, cupom ASSINANTE, webhooks e eventos do Klaviyo ("Assinatura Ativada", "Assinatura Cobranca Falhou").
+- Os textos dos e-mails desses eventos ficam no Klaviyo e precisam ser trocados lá.
+
+**Chaves.** Os nós Code destes workflows não têm mais a chave do Supabase (nem a da Evolution ou do Telegram) no código. Cada workflow tem um nó **"Chaves (não apagar)"**, desligado e solto, com as linhas `const SK = '...';`. Os nós leem esse texto com `$('Chaves (não apagar)').params.jsCode`. Para trocar uma chave, troque só nesse nó.
+
+| Workflow | Nós que leem a chave | Estado em 09/11 |
+|---|---|---|
+| AN - Portal Assinatura API (cliente) `JxJZZhSVAR2UeEM0` | Roteador, Aplicar Cartao | publicado e testado |
+| AN - Area Cliente API `k0rSmjNa6o7QI4NO` | Roteador (SK + EVOKEY) | publicado e testado |
+| AN - Assinaturas Cron PIX `VxyloA6hZtppGEja` | Buscar Acoes, Pos Gerar, Pos Outros, Buscar Uma, Agendar Cobr Auto, Tentar Inter (Renov) | rascunho; falta colar a SK |
+| AN - Assinatura PIX Confirmar `82sA0cxUG3JrTtb5` | Processar | rascunho; falta colar a SK |
+| AN - Assinatura Criar (Checkout) `ZkCJD7EQcD77KBHm` | Montar WhatsApp BV | rascunho; falta colar a SK |
+| [Serena Tool] Assinatura `WfxlFkDA9U9yYeR7` | Gerenciar (SK + TG_BOT) | rascunho; falta colar SK e TG_BOT |
+| AN - Respond Set Link (assinatura) `aBqaIv3QVIWwxKPk` | Prep | rascunho; falta colar a SK |
+
+Nos rascunhos, o nó de chaves está com `COLE_AQUI`. A versão publicada continua a antiga até alguém colar as chaves e publicar.
