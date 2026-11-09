@@ -1,7 +1,7 @@
 // No 'Painel' do workflow AN · NF-e Focus (emitir e anexar) (s1JHMJosqDcEeWbr), depois do webhook 'Painel API'
 // (POST /webhook/nfe-painel-api). Painel de NF-e da Central Administrativa (card "Notas Fiscais", assets/painel-nfe.html).
 // 09/11/2026: o painel mora dentro do workflow do emissor para usar as chaves que ja estao aqui (Focus, token manual,
-// banco), lidas em tempo de execucao do no 'Emitir e Anexar'; nao ha copia de chave neste codigo nem credencial nova.
+// banco), lidas em tempo de execucao do no 'Chaves NF-e (não apagar)'; nao ha copia de chave neste codigo nem credencial nova.
 //
 // Corpo: { k, acao: 'ver'|'emitir', pedido: '16477'|'AN-16477', documento?, ie? }
 //  - ver: pedido na Shopify + situacao da NF-e (nfe_emissoes / Focus).
@@ -11,7 +11,7 @@
 //    Caso de origem: AN-16477, CNPJ de empresa de SP, rejeicao 232 "IE do destinatario nao informada".
 const CHAVE = '<NFE_PAINEL_CHAVE>';
 const self = this;
-const fonte = String((($('Emitir e Anexar').params) || {}).jsCode || '');
+const fonte = String((($('Chaves NF-e (não apagar)').params) || {}).jsCode || '');
 const cfg = (k) => { const m = fonte.match(new RegExp('const ' + k + " = '([^']*)'")); return m ? m[1] : ''; };
 const SK = cfg('SK'), SB = cfg('SB'), ADM = cfg('ADM'), FOCUS = cfg('FOCUS'), FOCUS_TOKEN = cfg('FOCUS_TOKEN'), TOKEN_MANUAL = cfg('TOKEN_MANUAL');
 const responder = (o) => [{ json: o }];

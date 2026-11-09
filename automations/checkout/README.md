@@ -209,3 +209,11 @@ guardado, nos pedidos AN-14800 e AN-16155.
 **Retroativo** (decisão: só o que não foi pago): a comissão do AN-16220 (R$ 93,20, aprovada e não paga) passou do
 Pedro para a Vivian, os saldos dos dois foram recalculados e a tag do pedido virou "AF: Vivian Fortunato". Os quatro já
 pagos (AN-14808 e AN-15582 ao Pedro, AN-14800 e AN-16155 à Vivian) ficaram como estavam.
+
+## Inscrição estadual para CNPJ (AN-IE, 09/11/2026)
+
+Com CNPJ no campo CPF/CNPJ (modo PJ), aparece "Inscrição Estadual (IE) da empresa" com a caixa **Isento**. Para CNPJ
+é obrigatório (2 a 14 dígitos ou Isento); a IE vai em `shipping.ie` (`ISENTO` quando marcado), chega no metadata do
+Pagar.me e o `Criar Pedido Shopify` grava o atributo `IE` e o metafield `an_fiscal.ie`, que o emissor de NF-e usa.
+Marcado no HTML com `AN-IE`. Publicado em 09/11 às 12h30 (backup automático: versão de 03/11). Testado no Chromium
+antes e depois do deploy.

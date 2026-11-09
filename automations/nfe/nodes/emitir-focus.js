@@ -18,17 +18,22 @@
 //   ImunoPet 2309.90.90, Life Protein 2106.10.00. Unidade UN. GTIN: SEM GTIN.
 //   Juros do parcelamento (linha "Juros de parcelamento") entram como outras despesas, rateados nos itens.
 // Pedido que nao fecha (sem CPF, item sem preco, total diferente) fica "revisar" e vai para o Telegram.
-const SK = 'SUPABASE_SERVICE_KEY';
+// 09/11/2026: as chaves ficam so no no 'Chaves NF-e (não apagar)' deste workflow (desativado, nao executa) e sao lidas
+// aqui em tempo de execucao. Este codigo nao carrega chave nenhuma e e igual no repo e no n8n.
+const _fonte = String((($('Chaves NF-e (não apagar)').params) || {}).jsCode || '');
+const _chave = (k) => { const m = _fonte.match(new RegExp('const ' + k + " = '([^']*)'")); return m ? m[1] : ''; };
+const SK = _chave('SK');
 const SB = 'https://supabase.americanutrition.com/pg/query';
 const ADM = 'https://n8n.americanutrition.com/webhook/shopify-admin';
 const FOCUS = 'https://api.focusnfe.com.br';
-const FOCUS_TOKEN = '<FOCUS_TOKEN_AN>';
-const TG_BOT = '<TOKEN_ALERTAS>';
+const FOCUS_TOKEN = _chave('FOCUS_TOKEN');
+const TG_BOT = _chave('TG_BOT');
 const TG_CHAT = '-1003766435449';
-const TOKEN_MANUAL = '<NFE_TOKEN_MANUAL>';
-const TOKEN_EVENTO = '<NFE_TOKEN_EVENTO>';
+const TOKEN_MANUAL = _chave('TOKEN_MANUAL');
+const TOKEN_EVENTO = _chave('TOKEN_EVENTO');
 const CNPJ = '11298909000194';
 const self = this;
+if (!SK || !FOCUS_TOKEN || !TOKEN_MANUAL || !TOKEN_EVENTO) return [{ json: { ok: false, erro: 'chaves do emissor nao encontradas no no Chaves NF-e (não apagar)' } }];
 
 const NCM = { '8010079666348': '23099090', '8414425350316': '21061000' };
 const NCM_PADRAO = '21069030';
@@ -40,7 +45,7 @@ const ICMS_SP = 18, ICMS_INTER_IMPORTADO = 4, ORIGEM = 1;
 
 const r2 = (v) => Math.round((Number(v) + Number.EPSILON) * 100) / 100;
 const dig = (s) => String(s == null ? '' : s).replace(/\D/g, '');
-const limpa = (s) => String(s == null ? '' : s).replace(/[⁠​‌‍﻿]/g, '').replace(/\s+/g, ' ').trim();
+const limpa = (s) => String(s == null ? '' : s).replace(/[\u2060\u200B\u200C\u200D\uFEFF]/g, '').replace(/\s+/g, ' ').trim();
 const E = (v) => (v === null || v === undefined) ? 'null' : ("'" + String(v).replace(/'/g, "''") + "'");
 const J = (o) => E(JSON.stringify(o)) + '::jsonb';
 
@@ -227,6 +232,21 @@ async function montar(o) {
     items: items
   };
   if (doc.length === 14) nf.cnpj_destinatario = doc; else nf.cpf_destinatario = doc;
+  // 09/11/2026: IE do cliente PJ (checkout: atributo 'IE' e metafield an_fiscal.ie). Com IE = contribuinte de ICMS
+  // (indicador 1); ISENTO = indicador 2; sem IE, CNPJ segue como nao contribuinte (9). Contribuinte de outro estado nao
+  // leva a partilha do DIFAL (EC 87 vale para nao contribuinte; o DIFAL fica com o destinatario).
+  const ie = limpa(attr(o, 'IE') || ((o.ieMf || {}).value) || '').toUpperCase();
+  if (doc.length === 14 && ie) {
+    if (/^ISENT/.test(ie)) nf.indicador_inscricao_estadual_destinatario = 2;
+    else if (dig(ie)) {
+      nf.indicador_inscricao_estadual_destinatario = 1;
+      nf.inscricao_estadual_destinatario = dig(ie);
+      if (!interna) {
+        nf.items.forEach((it) => { Object.keys(it).forEach((k) => { if (/_uf_destino$|_uf_remetente$|^icms_aliquota_interestadual$|^icms_percentual_partilha$/.test(k)) delete it[k]; }); });
+        nf.informacoes_adicionais_contribuinte = nf.informacoes_adicionais_contribuinte.replace(/ICMS DIFAL para a UF de destino[^.]*\.(\s|$)/, '');
+      }
+    }
+  }
   if (complemento) nf.complemento_destinatario = complemento.slice(0, 60);
   if (vc && vc.ibge) nf.codigo_municipio_destinatario = vc.ibge;
   if (tel.length >= 10) nf.telefone_destinatario = tel;
@@ -322,6 +342,7 @@ const filtro = pedidoUnico ? ('name:' + pedidoUnico) : ("created_at:>='" + desde
 // mais antigo, ate 100.
 const CAMPOS = 'id name createdAt displayFinancialStatus displayFulfillmentStatus cancelledAt email phone customAttributes{ key value }'
   + ' localizationExtensions(first:5){ nodes{ purpose title value } } currentTotalPriceSet{ shopMoney{ amount } }'
+  + ' ieMf: metafield(namespace:"an_fiscal", key:"ie"){ value }'
   + ' tags shippingAddress{ name firstName lastName address1 address2 city provinceCode zip phone countryCodeV2 }'
   + ' shippingLines(first:3){ nodes{ title discountedPriceSet{ shopMoney{ amount } } } }'
   + ' lineItems(first:40){ nodes{ title variantTitle quantity variant{ id } product{ id } originalUnitPriceSet{ shopMoney{ amount } } discountedUnitPriceAfterAllDiscountsSet{ shopMoney{ amount } } discountedTotalSet{ shopMoney{ amount } } discountAllocations{ allocatedAmountSet{ shopMoney{ amount } } } } }';

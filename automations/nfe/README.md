@@ -213,3 +213,29 @@ execução, então não existe cópia de chave nem credencial nova. A chave do c
 
 Primeiro caso: **AN-16477** (CNPJ de empresa de SP, rejeição 232 "IE do destinatário não informada"). Reenviado pelo
 painel com a IE em 09/11 e autorizado: NF-e 405, série 1, anexada no pedido.
+
+## Chaves fora do código e IE do cliente PJ (09/11/2026)
+
+**Chaves.** O código do `Emitir e Anexar` ([`nodes/emitir-focus.js`](nodes/emitir-focus.js)) não tem mais chave
+nenhuma e é igual no repo e no n8n. As chaves (Supabase, Focus, Telegram, token manual e de evento) ficam só no nó
+**`Chaves NF-e (não apagar)`**: desativado, sem conexão, com as linhas `const X = '...';`. O `Emitir e Anexar` e o
+`Painel` leem esse nó em tempo de execução (`$('Chaves NF-e (não apagar)').params.jsCode`). Não apagar nem renomear o
+nó; trocar uma chave é editar a linha dela ali. Se as chaves não forem lidas, o emissor responde
+`chaves do emissor nao encontradas` e não faz nada. (Só diferença repo × n8n: na linha do `limpa`, o n8n guarda os
+caracteres invisíveis e o repo guarda os escapes `\u2060...`; o comportamento é o mesmo.)
+
+**IE do cliente PJ.** Desde 09/11 a SEFAZ passou a recusar NF-e para CNPJ contribuinte sem a inscrição estadual
+(rejeição 232). Agora:
+
+- **Checkout:** com CNPJ aparece o campo "Inscrição Estadual (IE) da empresa" com a opção **Isento**. É obrigatório
+  para CNPJ (IE com 2 a 14 dígitos ou Isento). Vai para o pedido junto do endereço (`shipping.ie`).
+- **Pedido na Shopify:** o `Criar Pedido Shopify` (`dtDYBZJuAbFZV3cB`) grava o atributo `IE` e o metafield
+  `an_fiscal.ie` ("Inscrição estadual do cliente", número ou `ISENTO`).
+- **Emissor:** CNPJ com IE vai como contribuinte (`indicador 1` + IE); `ISENTO` vai com `indicador 2`; CNPJ sem IE
+  continua `9`. Contribuinte de outro estado não leva a partilha do DIFAL (o DIFAL é do destinatário) e a linha de
+  DIFAL some das informações complementares.
+- Pedido antigo ou sem IE: corrigir pelo painel (card Notas Fiscais → Corrigir e reenviar).
+
+Testado: simulação local do emissor no AN-16477 (IE → indicador 1, ISENTO → 2, sem IE → 9, contribuinte em MG sem
+DIFAL); checkout no navegador antes e depois de publicar (CNPJ mostra o campo, sem IE bloqueia, Isento manda
+`ISENTO`, CPF esconde).

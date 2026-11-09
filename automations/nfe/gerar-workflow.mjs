@@ -13,6 +13,10 @@ const manual = trigger({ type: 'n8n-nodes-base.webhook', version: 2.1, config: {
 
 const eventos = trigger({ type: 'n8n-nodes-base.webhook', version: 2.1, config: { name: 'Eventos (Shopify e Focus)', parameters: { httpMethod: 'POST', path: 'nfe-focus-evento', responseMode: 'onReceived', options: {} } }, output: [{ query: { t: 'x' }, body: { name: 'AN-1' } }] });
 
+// 09/11/2026: as chaves ficam so no no 'Chaves NF-e (não apagar)' (desativado, sem conexao). No repo vao placeholders;
+// no n8n o codigo dele tem as linhas const SK/FOCUS_TOKEN/TG_BOT/TOKEN_MANUAL/TOKEN_EVENTO = '...'; lidas em execucao.
+const chaves = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Chaves NF-e (não apagar)', disabled: true, parameters: { jsCode: "// Guarda as chaves do emissor (lidas em execucao pelo 'Emitir e Anexar' e pelo 'Painel'). Nao executa.\nconst SK = '<SUPABASE_SERVICE_KEY>';\nconst FOCUS_TOKEN = '<FOCUS_TOKEN_AN>';\nconst TG_BOT = '<TOKEN_ALERTAS>';\nconst TOKEN_MANUAL = '<NFE_TOKEN_MANUAL>';\nconst TOKEN_EVENTO = '<NFE_TOKEN_EVENTO>';\nreturn [];" } } });
+
 const emitir = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Emitir e Anexar', parameters: { jsCode: ${JSON.stringify(code)} } }, output: [{ ok: true }] });
 
 // Painel de NF-e da Central Administrativa (09/11/2026): le as chaves do 'Emitir e Anexar' em tempo de execucao.
@@ -23,5 +27,5 @@ const painelResp = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5,
 const nota = sticky('## NF-e pela Focus\\n\\nNa hora (POST /webhook/nfe-focus-evento): aviso da Shopify (orders/create e orders/paid) emite a nota do pedido; aviso da Focus (gatilho nfe) anexa a nota autorizada. A cada 60 min, rede de seguranca: acompanha as notas em processamento (autorizada = DANFE e XML anexados no pedido da Shopify, metafields nfe.*, tag NF-e) e emite as dos pedidos pagos e nao enviados desde serena_config.nfe_desde. Modo em serena_config.nfe_modo (off / simulacao / on). Manual: GET /webhook/nfe-focus?t=TOKEN&pedido=AN-123&modo=on. Controle em nfe_emissoes.', [emitir], { color: 4 });
 
 export default workflow('an-nfe-focus', 'AN · NF-e Focus (emitir e anexar)', { settings: { executionOrder: 'v1' } })
-  .add(eventos).to(emitir).add(cron).to(emitir).add(manual).to(emitir).add(painelApi).to(painel).to(painelResp).add(nota);
+  .add(eventos).to(emitir).add(cron).to(emitir).add(manual).to(emitir).add(painelApi).to(painel).to(painelResp).add(chaves).add(nota);
 `);
