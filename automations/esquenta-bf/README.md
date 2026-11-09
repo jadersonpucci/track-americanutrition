@@ -57,3 +57,14 @@ Slider ligado às 23h31 de 06/11 (`an_site.esquenta_popup = on`). Lista começou
   `enviar_em` 09/11/2026 10:00 (Brasília). Cancelar antes: `update broadcasts_grupos set status = 'cancelado' where id = 234`.
 - Testado: POST válido 200, inválido 400, CORS ok; envio pelo navegador (celular) gravou e abriu o WhatsApp com o REF.
   Leads de teste (5511900000001 a 0003) apagados.
+
+## Cupom do Esquenta não soma com outros cupons (09/11)
+
+- **Shopify:** ESQ10-U5E e ESQ15-U5E com `combinesWith` todo `false` (pedido, produto e frete). Antes o frete
+  podia combinar; agora nenhum outro desconto entra junto, nem o PACK 3+/6+ (vale o maior).
+- **Checkout próprio:** o campo de cupom aceita vários códigos separados por vírgula (desconto + frete grátis +
+  brinde). No `Shopify — Validar Cupom` (`rIOXH8eJm1Yb2t21`), o nó `Guardas (Meia-Noite + Esquenta exclusivo)`
+  (`automations/checkout/nodes/cupom-guardas.js`) deixa só o cupom do Esquenta válido e marca os outros como
+  inválidos ("não pode ser usado junto com outros cupons").
+- Testado: `ESQ15-U5E` sozinho continua válido (15%). `ESQ15-U5E,IMUNOFOSFO` e `IMUNOFOSFO,ESQ10-U5E` deixam só o
+  do Esquenta. `IMUNOFOSFO,PROMO5` segue como antes.
