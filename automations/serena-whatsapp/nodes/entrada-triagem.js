@@ -46,7 +46,7 @@ const base = {
 if (key.fromMe === true) {
   const src = String(d.source || '').toLowerCase();
   const doCelular = ['android', 'ios', 'web', 'desktop'].indexOf(src) >= 0;
-  if (!doCelular || !texto || !tel) return [];
+  if (!doCelular || !texto || (!tel && !lid)) return [];  // 09/11: conversa so com LID tambem registra a intervencao humana
   const cmd = texto.match(/^#serena\s*(on|off)\b/i);
   return [{ json: Object.assign({}, base, { tipo: 'humano', texto: texto, comando: cmd ? cmd[1].toLowerCase() : '' }) }];
 }

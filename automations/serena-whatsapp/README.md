@@ -3012,3 +3012,26 @@ Antes a ferramenta `[Serena Tool] Gerar PIX` (`SkETGTmcqtlTR0Lp`) criava um rasc
 Teste em 03/11 (dados internos, telefone da equipe, sem pagamento): 1x ImunoFosfo 42 com 10% e frete saiu R$ 188,96
 (R$ 177,30 + R$ 11,66). O código veio do `spi-qrcode.bancointer.com.br`, e a página e o `pix-status` responderam
 corretamente.
+
+## Cliente só com LID (nome de usuário no WhatsApp) — 09/11/2026
+
+**Problema.** Quem usa nome de usuário no WhatsApp (ex.: @josehonorato, 09/11 11h59) pode mandar mensagem com o número escondido: chega só `remoteJid = <LID>@lid`, sem `remoteJidAlt` ou `senderPn`.
+- Quando o LID não estava em `wa_identidades`, o buffer exigia telefone e descartava a mensagem sem aviso. A Serena não respondia e o watchdog também não via.
+
+**Como ficou.** Quem chega só com LID vira a identidade **`000` + LID**. Nenhum telefone real começa com 0, então o prefixo é seguro, e ele passa intacto pelos nós que só mantêm dígitos.
+
+| Onde | O que faz |
+|---|---|
+| Entrada `Registrar no Buffer + Config` | telefone = o informado; senão o de `wa_identidades` pelo LID; senão `000` + LID |
+| Entrada `Registrar Intervencao Humana` | mesma resolução: quem responde à mão um cliente só com LID pausa a Serena para ele |
+| Entrada `Triagem` | mensagem nossa (do celular) para conversa só com LID também vira intervenção humana |
+| Entrada `Fatiar Resposta` | `000<LID>` vira `number = <LID>@lid` |
+| Entrada `Enviar Arquivo` | para LID manda só o link; o `[Serena] Enviar Arquivo` reduziria o número a dígitos |
+| `[Serena WhatsApp] Envio Samuel` (`serena-samuel-enviar`), nó Preparar | aceita `<LID>@lid` ou `000<LID>` e manda para `<LID>@lid`; vale para ack, áudio, lista, transacionais e reprocessamento |
+| `[Serena] Core`, nó Normalizar | número que começa com `000` não ganha o `55` (contato `+000<LID>`) |
+
+A Evolution 2.3.7 aceita enviar para `<LID>@lid`; testado com um número da equipe.
+
+Se o mesmo LID aparecer depois com o número real, o `wa_identidades` aprende e as próximas mensagens vão pelo telefone. O histórico anterior fica no contato `+000<LID>`.
+
+**Teste de 09/11.** Dois LIDs fictícios entraram pelo `/webhook/serena-wpp-in`: buffer `000…`, Serena respondeu, envio para `…@lid`, mensagem marcada como entregue e contato gravado `+000…`. Os registros de teste foram apagados depois.

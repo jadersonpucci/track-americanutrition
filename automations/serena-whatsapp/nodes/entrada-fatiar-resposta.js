@@ -49,6 +49,9 @@ if (m) {
 }
 
 const number = String(r.telefone || '').replace(/\D/g, '');
+// 09/11/2026: cliente que so tem LID (usa nome de usuario no WhatsApp e o numero vem escondido) chega como
+// '000' + LID; a Evolution manda direto para '<LID>@lid'. Nenhum telefone real comeca com 0.
+const numeroEnvio = /^000\d{8,}$/.test(number) ? number.slice(3) + '@lid' : number;
 // Ordem das partes: a Evolution aplica o 'delay' (digitando...) de cada envio por conta propria, entao uma parte curta
 // com delay menor chegava ANTES de uma parte longa enviada antes dela. Cada parte agora espera pelo menos
 // o delay da anterior + 600 ms, garantindo a ordem.
@@ -59,5 +62,5 @@ return partes.map((t, i) => {
   anterior = delay;
   // arquivo (PDF/imagem marcado com [[ARQUIVO: ...]] no Core) e a lista vao junto da ultima parte, para o no seguinte enviar depois do texto
   const ultimo = i === partes.length - 1;
-  return { json: { number: number, text: t, delay: delay, contato_id: r.contato_id, parte: i + 1, total: partes.length, arquivo: ultimo ? (r.arquivo || null) : null, lista: ultimo ? (r.lista || null) : null } };
+  return { json: { number: numeroEnvio, text: t, delay: delay, contato_id: r.contato_id, parte: i + 1, total: partes.length, arquivo: ultimo ? (r.arquivo || null) : null, lista: ultimo ? (r.lista || null) : null } };
 });

@@ -8,7 +8,8 @@ if (modo === 'sugerir' && String(b.t || '') !== 'an-serena-9Kx4Lm2Q') { throw ne
 const contatoId = /^[0-9a-f-]{36}$/i.test(String(b.contato_id || '')) ? String(b.contato_id).toLowerCase() : '';
 
 let tel = String(b.telefone || '').replace(/\D/g, '');
-if (tel && tel.length >= 10 && !tel.startsWith('55')) tel = '55' + tel;
+// 09/11/2026: '000' + LID e o cliente do WhatsApp que so tem LID (numero escondido); nao e telefone, nao ganha 55.
+if (tel && tel.length >= 10 && !tel.startsWith('55') && !tel.startsWith('000')) tel = '55' + tel;
 // Canonico: celular brasileiro sem o nono digito (JID antigo do WhatsApp) vira o numero com 9, para nao duplicar contato
 if (tel.startsWith('55') && tel.length === 12 && '6789'.indexOf(tel.charAt(4)) >= 0) tel = tel.slice(0, 4) + '9' + tel.slice(4);
 tel = tel ? '+' + tel : '';
@@ -31,4 +32,3 @@ if (!entrada.telefone && !entrada.email && !entrada.session_site && !entrada.con
   throw new Error('informe telefone, email, session_site ou contato_id');
 }
 return [{ json: { entrada: entrada, payload: JSON.stringify(entrada) } }];
-
