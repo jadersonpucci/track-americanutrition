@@ -28,17 +28,17 @@ const comPagina = (txt) => pagina ? (txt + NL + NL + 'Ou abra aqui, com *QR Code
 
 if (r.acao === 'lembrete1') {
   await sql("update assinatura_cobrancas set lembrete1_em=now(), atualizado_em=now() where id='" + esc(r.cobranca_id) + "'::uuid;");
-  if (num && r.pix_qr) { await wpp(num, comPagina(oi + '\u{1F4CB} Passando pra lembrar: o PIX da *renovação da sua assinatura* vence *hoje*. Segue o código de novo — copia e cola no app do banco \u{1F447}')); await wpp(num, r.pix_qr); }
+  if (num && r.pix_qr) { await wpp(num, comPagina(oi + '\u{1F4CB} Passando pra lembrar: o PIX da *renovação da sua Compra Programada* vence *hoje*. Segue o código de novo — copia e cola no app do banco \u{1F447}')); await wpp(num, r.pix_qr); }
   return { json: { ok: true, lembrete1: r.id, pagina_pix: pagina || null } };
 }
 if (r.acao === 'lembrete2') {
   await sql("update assinatura_cobrancas set lembrete2_em=now(), atualizado_em=now() where id='" + esc(r.cobranca_id) + "'::uuid;");
-  if (num && r.pix_qr) { await wpp(num, comPagina(oi + '⏳ Último lembrete: se o PIX da renovação não for pago até *' + r.limite_fmt + '*, sua assinatura será *pausada* (sem multa — dá pra reativar depois). Código abaixo \u{1F447}')); await wpp(num, r.pix_qr); }
+  if (num && r.pix_qr) { await wpp(num, comPagina(oi + '⏳ Último lembrete: se o PIX da renovação não for pago até *' + r.limite_fmt + '*, sua Compra Programada será *pausada* (sem multa — dá pra reativar depois). Código abaixo \u{1F447}')); await wpp(num, r.pix_qr); }
   return { json: { ok: true, lembrete2: r.id, pagina_pix: pagina || null } };
 }
 if (r.acao === 'pausar') {
   await sql("update assinatura_cobrancas set status='falhou', erro='pix_nao_pago', atualizado_em=now() where id='" + esc(r.cobranca_id) + "'::uuid; update assinaturas set status='pausada', atualizado_em=now() where id='" + esc(r.id) + "'::uuid;");
-  if (num) { await wpp(num, oi + 'sua assinatura America Nutrition foi *pausada* porque não recebemos o PIX da renovação. \u{1F499}' + NL + NL + 'Sem multa nenhuma — quando quiser *reativar*, é só me chamar aqui que eu resolvo na hora!'); }
+  if (num) { await wpp(num, oi + 'sua Compra Programada America Nutrition foi *pausada* porque não recebemos o PIX da renovação. \u{1F499}' + NL + NL + 'Sem multa nenhuma — quando quiser *reativar*, é só me chamar aqui que eu resolvo na hora!'); }
   return { json: { ok: true, pausada: r.id } };
 }
 return { json: { ok: true, nada: true } };

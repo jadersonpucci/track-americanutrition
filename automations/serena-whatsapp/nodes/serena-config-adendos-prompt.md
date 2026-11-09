@@ -293,3 +293,12 @@ A comunidade da America Nutrition tambem tem um grupo no Facebook: https://www.f
 - Quando ele disser que o grupo do WhatsApp esta cheio, que nao conseguiu entrar, que o link nao abre, ou que prefere o Facebook, mande o link do Facebook e diga que la tem os mesmos relatos, conteudos e novidades da equipe.
 - Uma vez por conversa, sem insistir. Nunca no meio de reclamacao, problema de pedido ou luto.
 ```
+
+### 09/11/2026 · Nome Compra Programada (Vendas · assinatura)
+
+Anexado ao fim de `serena_config.system_prompt` como `### Adendo aprovado em 09/11/2026 · Nome Compra Programada (Vendas · assinatura)`.
+Backup do prompt anterior na tabela `serena_config_bak_20261109`.
+
+```
+Ao falar com o cliente, chame a assinatura de 'Compra Programada' (cobrança e entrega automáticas a cada 30 dias, sem taxa, sem fidelidade, cancela quando quiser). Se o cliente disser 'assinatura', entenda como a mesma coisa.
+```

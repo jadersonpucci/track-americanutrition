@@ -38,21 +38,21 @@ function textoPagoAssinatura(nome, pedido, cf) {
   const desc = Number(cf.assinatura_desconto || 0);
   const proximo = dataBr(cf.assinatura_proximo);
   const pix = String(cf.assinatura_metodo || '') === 'pix';
-  const descTxt = desc > 0 ? (desc + '% de desconto de assinante') : 'o desconto de assinante';
+  const descTxt = desc > 0 ? (desc + '% de desconto da Compra Programada') : 'o desconto da Compra Programada';
   let corpo;
   if (tipo === 'primeira') {
-    corpo = '🔁 Sua *assinatura* foi ativada e o primeiro pedido dela, ' + pedido + ', já está confirmado!' + NL + NL
-      + '*Como funciona:* a cada ' + ciclo + ' dias a renovação acontece automaticamente, com ' + descTxt + ', e um pedido novo sai para você sem precisar fazer nada'
+    corpo = '🔁 Sua *Compra Programada* foi ativada e o primeiro pedido dela, ' + pedido + ', já está confirmado!' + NL + NL
+      + '*Como funciona:* a cada ' + ciclo + ' dias a renovação acontece automaticamente, sem taxa e sem fidelidade, com ' + descTxt + ', e um pedido novo sai para você sem precisar fazer nada'
       + (pix ? ' (o Pix da renovação chega por aqui uns dias antes)' : ' (a cobrança vai no cartão cadastrado)') + '. A cada renovação você recebe esta confirmação por aqui.'
       + (proximo ? ' A primeira renovação será em ' + proximo + '.' : '') + NL + NL
-      + 'Quer pausar, cancelar ou mudar algo na assinatura? É só me chamar por aqui, a qualquer momento.';
+      + 'Quer pausar, cancelar ou mudar algo na Compra Programada? É só me chamar por aqui, a qualquer momento.';
   } else if (tipo === 'renovacao') {
-    corpo = '🔁 Sua *assinatura* renovou! O pedido ' + pedido + ' é desta renovação, gerado automaticamente como combinado, com ' + descTxt + '.'
+    corpo = '🔁 Sua *Compra Programada* renovou! O pedido ' + pedido + ' é desta renovação, gerado automaticamente como combinado, com ' + descTxt + '.'
       + (proximo ? ' A próxima renovação será em ' + proximo + '.' : '') + NL + NL
-      + 'Se quiser pausar, cancelar ou mudar algo na assinatura, é só me chamar por aqui.';
+      + 'Se quiser pausar, cancelar ou mudar algo na Compra Programada, é só me chamar por aqui.';
   } else {
-    corpo = '🔁 O pedido ' + pedido + ' faz parte da sua *assinatura* e já está confirmado!' + NL + NL
-      + 'Se quiser pausar, cancelar ou mudar algo na assinatura, é só me chamar por aqui.';
+    corpo = '🔁 O pedido ' + pedido + ' faz parte da sua *Compra Programada* e já está confirmado!' + NL + NL
+      + 'Se quiser pausar, cancelar ou mudar algo na Compra Programada, é só me chamar por aqui.';
   }
   return 'Olá, ' + nome + ' 😊' + NL + NL + corpo + NL + NL + RODAPE_PAGO;
 }
