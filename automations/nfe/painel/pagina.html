@@ -51,11 +51,6 @@ dt{color:var(--sub)}dd{margin:0;font-weight:600;word-break:break-word}
   <h1>🧾 Painel de NF-e</h1>
   <p class="sub">America Nutrition · digite o número do pedido para consultar ou gerar a nota.</p>
 
-  <div class="card" id="login" hidden>
-    <label for="senha">Senha do painel</label>
-    <input id="senha" type="password" autocomplete="current-password" placeholder="A senha que você cadastrou no n8n">
-    <div class="linha"><button id="btEntrar">Entrar</button></div>
-  </div>
 
   <div class="card">
     <label for="ped">Número do pedido</label>
@@ -91,12 +86,9 @@ dt{color:var(--sub)}dd{margin:0;font-weight:600;word-break:break-word}
   var API = 'https://n8n.americanutrition.com/webhook/nfe-painel-api';
   var q = new URLSearchParams(location.search);
   var $ = function(id){ return document.getElementById(id); };
-  var S = '';
-  try { S = localStorage.getItem('nfe_senha') || ''; } catch(e){}
-  function pedirSenha(msg){ $('login').hidden = false; if (msg) toast(msg); $('senha').focus(); }
-  if (!S) setTimeout(function(){ pedirSenha(); }, 0);
-  $('btEntrar').onclick = function(){ S = $('senha').value.trim(); if (!S) return; try { localStorage.setItem('nfe_senha', S); } catch(e){} $('login').hidden = true; if ($('ped').value) chamar('ver'); };
-  $('senha').addEventListener('keydown', function(e){ if (e.key === 'Enter') $('btEntrar').click(); });
+  // Chave do painel: vem no link do card da Central Administrativa (?k=...), sem senha para digitar.
+  var K = q.get('k') || '';
+  try { if (K) localStorage.setItem('nfe_k', K); else K = localStorage.getItem('nfe_k') || ''; } catch(e){}
   if (q.get('pedido')) $('ped').value = q.get('pedido');
 
   function toast(t){ var e=$('toast'); e.textContent=t; e.classList.add('on'); setTimeout(function(){e.classList.remove('on');}, 2600); }
@@ -138,20 +130,17 @@ dt{color:var(--sub)}dd{margin:0;font-weight:600;word-break:break-word}
 
   function chamar(acao, extra){
     var ped = $('ped').value.trim();
-    if (!S){ pedirSenha('Digite a senha do painel.'); return; }
     if (!ped){ toast('Digite o número do pedido.'); $('ped').focus(); return; }
     var bts = document.querySelectorAll('button'); bts.forEach(function(b){ b.disabled = true; });
     var alvo = acao === 'ver' ? $('btVer') : (extra ? $('btCorr') : $('btGerar'));
     var txt = alvo.textContent; alvo.textContent = acao === 'ver' ? 'Consultando...' : 'Gerando...';
-    var corpo = Object.assign({ acao: acao, pedido: ped }, extra || {});
-    fetch(API, { method:'POST', headers:{'Content-Type':'application/json', 'X-Painel-Senha': S}, body: JSON.stringify(corpo) })
-      .then(function(r){
-        if (r.status === 401 || r.status === 403){ S = ''; try { localStorage.removeItem('nfe_senha'); } catch(e){} pedirSenha('Senha incorreta.'); throw 'senha'; }
-        return r.json(); })
+    var corpo = Object.assign({ k: K, acao: acao, pedido: ped }, extra || {});
+    fetch(API, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(corpo) })
+      .then(function(r){ return r.json(); })
       .then(render)
-      .catch(function(e){ if (e !== 'senha') render({ ok:false, erro:'Sem resposta do servidor. Tente de novo.' }); })
+      .catch(function(){ render({ ok:false, erro:'Sem resposta do servidor. Tente de novo.' }); })
       .finally(function(){ bts.forEach(function(b){ b.disabled = false; }); alvo.textContent = txt;
-        try { history.replaceState(null, '', '?pedido=' + encodeURIComponent(ped)); } catch(e){} });
+        try { history.replaceState(null, '', '?k=' + encodeURIComponent(K) + '&pedido=' + encodeURIComponent(ped)); } catch(e){} });
   }
   $('btVer').onclick = function(){ chamar('ver'); };
   $('btGerar').onclick = function(){ chamar('emitir'); };
@@ -162,7 +151,7 @@ dt{color:var(--sub)}dd{margin:0;font-weight:600;word-break:break-word}
     chamar('emitir', { documento: doc, ie: ie });
   };
   $('ped').addEventListener('keydown', function(e){ if (e.key === 'Enter') chamar('ver'); });
-  if ($('ped').value && S) chamar('ver');
+  if ($('ped').value) chamar('ver');
 })();
 </script>
 </body>

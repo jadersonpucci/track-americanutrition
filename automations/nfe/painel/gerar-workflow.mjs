@@ -1,6 +1,7 @@
 // Gera o codigo do SDK do workflow "AN · NF-e Painel" (so a API) a partir dos arquivos desta pasta.
-// A pagina (pagina.html) sobe como templates/page.nfe-painel.liquid no tema da Shopify.
-// Sem chave no codigo: senha do painel, token do robo e token da Focus ficam em credenciais do n8n.
+// A pagina (pagina.html) sobe como assets/painel-nfe.html no tema 153190498476 (o mesmo da Central Administrativa).
+// Sem chave no codigo: token do robo e token da Focus ficam em credenciais do n8n; a chave do painel (<NFE_PAINEL_CHAVE>)
+// so no n8n e no link do card da Central.
 // Uso: node gerar-workflow.mjs > painel.workflow.js
 import { readFileSync } from 'node:fs';
 const ler = (f) => readFileSync(new URL(f, import.meta.url), 'utf8');
@@ -14,7 +15,7 @@ const SQL_NFE = "select pedido, status, mensagem, numero, serie, chave, danfe_ur
 const roboParams = { method: 'GET', url: 'https://n8n.americanutrition.com/webhook/nfe-focus', authentication: 'genericCredentialType', genericAuthType: 'httpQueryAuth',
   sendQuery: true, queryParameters: { parameters: [{ name: 'pedido', value: "={{ $('Agir').first().json.pedido }}" }, { name: 'modo', value: 'on' }] },
   options: { timeout: 150000, response: { response: { neverError: true } } } };
-const api = trigger({ type: 'n8n-nodes-base.webhook', version: 2.1, credentials: { httpHeaderAuth: newCredential('Painel NF-e (senha)') }, config: { name: 'API', parameters: { httpMethod: 'POST', path: 'nfe-painel-api', authentication: 'headerAuth', responseMode: 'responseNode', options: { allowedOrigins: '*' } } }, output: [{ body: { acao: 'ver', pedido: '16477' } }] });
+const api = trigger({ type: 'n8n-nodes-base.webhook', version: 2.1, config: { name: 'API', parameters: { httpMethod: 'POST', path: 'nfe-painel-api', responseMode: 'responseNode', options: { allowedOrigins: '*' } } }, output: [{ body: { k: 'x', acao: 'ver', pedido: '16477' } }] });
 const preparar = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Preparar', parameters: { jsCode: ${js(ler('preparar.js'))} } } });
 const lerNfe = node({ type: 'n8n-nodes-base.postgres', version: 2.6, credentials: PG, config: { name: 'Ler NF-e', alwaysOutputData: true, parameters: { operation: 'executeQuery', query: SQL_NFE, options: { queryReplacement: '={{ [$json.pedido] }}' } } } });
 const agir = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Agir', parameters: { jsCode: ${js(ler('agir.js'))} } } });
@@ -31,7 +32,7 @@ const acompanhar = node({ type: 'n8n-nodes-base.httpRequest', version: 4.2, cred
 const reler = node({ type: 'n8n-nodes-base.postgres', version: 2.6, credentials: PG, config: { name: 'Reler NF-e', alwaysOutputData: true, executeOnce: true, parameters: { operation: 'executeQuery', query: SQL_NFE, options: { queryReplacement: "={{ [$('Agir').first().json.pedido || ''] }}" } } } });
 const montar = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Montar resposta', parameters: { jsCode: ${js(ler('montar-resposta.js'))} } } });
 const resp = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Responder', parameters: { respondWith: 'json', responseBody: '={{ JSON.stringify($json) }}', options: CORS } } });
-const nota = sticky(${js('## Painel de NF-e\n\nPagina: americanutrition.com/pages/nfe-painel (tema: templates/page.nfe-painel.liquid). API: POST /webhook/nfe-painel-api {acao: ver|emitir, pedido, documento?, ie?} com header X-Painel-Senha.\nEmitir sem correcao chama o robo AN · NF-e Focus. Com correcao troca CPF/CNPJ/IE no payload que o robo montou (nfe_emissoes) e reenvia para a Focus com a mesma ref; o robo acompanha e anexa no pedido.\nCredenciais: Painel NF-e (senha) [Header Auth], NF-e robo (token manual) [Query Auth, nome t], Focus NFe [Basic Auth, usuario = token da Focus, senha vazia]. Codigo em automations/nfe/painel/.')});
+const nota = sticky(${js('## Painel de NF-e\n\nCard "Notas Fiscais" da Central Administrativa (assets/america_admin.html) -> assets/painel-nfe.html?k=CHAVE. API: POST /webhook/nfe-painel-api {k, acao: ver|emitir, pedido, documento?, ie?}. Sem senha para digitar; a chave vai no link do card e e conferida no Preparar.\nEmitir sem correcao chama o robo AN · NF-e Focus. Com correcao troca CPF/CNPJ/IE no payload que o robo montou (nfe_emissoes) e reenvia para a Focus com a mesma ref; o robo acompanha e anexa no pedido.\nCredenciais: NF-e robo (token manual) [Query Auth, nome t] e Focus NFe [Basic Auth, usuario = token da Focus, senha vazia]. Codigo em automations/nfe/painel/.')});
 export default workflow('nfe-painel', 'AN · NF-e Painel', { settings: { executionOrder: 'v1' } })
   .add(api).to(preparar).to(lerNfe).to(agir).to(rota
     .onCase(0, robo.to(reler))
