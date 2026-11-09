@@ -38,3 +38,22 @@ O link da Serena leva o cupom do Esquenta, que é da casa. Para a venda não se 
 
 Slider ligado às 23h31 de 06/11 (`an_site.esquenta_popup = on`). Lista começou vazia; as sessões do chat de teste
 (`session_site` com `teste-`) não entram no cadastro.
+
+## Landing de cadastro e post nos grupos de avisos (09/11)
+
+- **Página** `americanutrition.com/pages/esquenta` (Shopify page 143119646892, `templateSuffix: esquenta`), com o template
+  `automations/site/page.esquenta.liquid` (`{% layout none %}`, sem header/rodapé da loja) e a imagem
+  `assets/an-esquenta-landing.webp` (Higgsfield, 1:1). Pede nome, WhatsApp (máscara BR) e e-mail, com aceite LGPD.
+  Não mostra desconto. Aceita `?ref=CUPOM` (vai na mensagem para a Serena, e o cadastro atribui o representante como
+  no fluxo acima) e `utm_*`.
+- **Workflow** `[Esquenta] Landing: leads` (`1m6U1d74zXfDEJsD`): `POST /webhook/esquenta-lead`
+  `{nome, email, whatsapp, aceite, ref?, utm_*}`. Valida, grava em `esquenta_leads` (um por telefone; reenvio
+  atualiza e soma `envios`), completa o e-mail do contato da Serena quando estiver vazio e devolve
+  `{ok, whatsapp}` com o link `wa.me/13472225493` e a mensagem "Quero participar do Esquenta Black Friday 🔥 – REF".
+  Erro de validação: HTTP 400 `{ok:false, erros:[...]}`. A página redireciona para o link (o site passa por
+  `/url?q=`, que dá 302 para o wa.me). O cadastro no Esquenta acontece quando a pessoa envia a mensagem.
+- **Post** `broadcasts_grupos` id 234: imagem `assets/an-esquenta-post.jpg` + legenda com o link da landing,
+  `mencionar_todos = true`, avisos da comunidade 1 (`120363233277583685@g.us`) e 2 (`120363423321725793@g.us`),
+  `enviar_em` 09/11/2026 10:00 (Brasília). Cancelar antes: `update broadcasts_grupos set status = 'cancelado' where id = 234`.
+- Testado: POST válido 200, inválido 400, CORS ok; envio pelo navegador (celular) gravou e abriu o WhatsApp com o REF.
+  Leads de teste (5511900000001 a 0003) apagados.

@@ -1,0 +1,191 @@
+{%- comment -%}
+  AN · Landing do Esquenta Black Friday (/pages/esquenta) · 09/11/2026
+  Template: templates/page.esquenta.liquid (pagina "esquenta", templateSuffix "esquenta").
+  Coleta nome + WhatsApp + e-mail, grava via POST no n8n ([Esquenta] Landing: leads,
+  /webhook/esquenta-lead -> tabela esquenta_leads) e manda a pessoa para o WhatsApp da Serena
+  com "Quero participar do Esquenta Black Friday 🔥" (+ codigo do representante se veio ?ref=).
+  A partir dai o cron [Serena] Esquenta Black Friday (cadastro) cadastra o numero.
+  O desconto NAO aparece aqui: quem conta a condicao e a Serena.
+  Aceita ?ref=CUPOM e utm_source/utm_medium/utm_campaign/utm_content/utm_term.
+  Imagem: assets/an-esquenta-landing.webp (Higgsfield, 09/11/2026, 1:1).
+{%- endcomment -%}
+{%- layout none -%}
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Esquenta Black Friday · America Nutrition</title>
+<meta name="description" content="Acesso antecipado e exclusivo à Black Friday da America Nutrition. Cadastre-se e receba as condições do Esquenta pelo WhatsApp. Só até 26/11.">
+<meta name="theme-color" content="#06142E">
+<meta property="og:title" content="Esquenta Black Friday · America Nutrition">
+<meta property="og:description" content="Acesso antecipado e exclusivo. Só até 26/11.">
+<meta property="og:image" content="https:{{ 'an-esquenta-landing.webp' | asset_url }}">
+<meta property="og:type" content="website">
+<link rel="canonical" href="{{ canonical_url }}">
+{%- if settings.favicon != blank -%}<link rel="icon" href="{{ settings.favicon | image_url: width: 64 }}">{%- endif -%}
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;800;900&display=swap" rel="stylesheet">
+{{ content_for_header }}
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;background:#06142E;color:#fff;font-family:Montserrat,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+body{min-height:100vh;overflow-x:hidden;background:radial-gradient(120% 70% at 15% 75%,rgba(255,90,0,.28),transparent 60%),radial-gradient(90% 60% at 90% 10%,rgba(22,86,201,.45),transparent 60%),#06142E}
+.brasas{position:fixed;inset:0;pointer-events:none;z-index:0}
+.brasas i{position:absolute;bottom:-10px;width:4px;height:4px;border-radius:50%;background:#FFB347;box-shadow:0 0 10px 3px #FF6A00;opacity:0;animation:sobe 6s ease-in infinite}
+@keyframes sobe{0%{opacity:0;transform:translate(0,0) scale(1)}10%{opacity:1}100%{opacity:0;transform:translate(30px,-90vh) scale(.3)}}
+.wrap{position:relative;z-index:1;max-width:1040px;margin:0 auto;padding:22px 16px 40px;display:grid;gap:26px;grid-template-columns:1fr}
+@media(min-width:880px){.wrap{grid-template-columns:1.05fr .95fr;align-items:center;padding:48px 24px 56px;min-height:100vh}}
+.topo{display:flex;align-items:center;justify-content:center}
+.topo img{height:30px;width:auto;filter:brightness(0) invert(1)}
+.topo span{font-weight:900;letter-spacing:.14em;font-size:14px}
+@media(min-width:880px){.topo{position:absolute;top:22px;left:24px}}
+.hero{position:relative;border-radius:24px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.5);isolation:isolate;aspect-ratio:1/1;max-width:520px;width:100%;margin:0 auto}
+.hero::before{content:"";position:absolute;inset:-50%;z-index:-2;background:conic-gradient(from 0deg,#D9121B,#FF8A00,#FFD27A,#1656C9,#07388E,#D9121B);animation:gira 6s linear infinite}
+.hero::after{content:"";position:absolute;inset:3px;z-index:-1;border-radius:21px;background:#06142E}
+@keyframes gira{to{transform:rotate(1turn)}}
+.hero img{position:absolute;inset:3px;width:calc(100% - 6px);height:calc(100% - 6px);border-radius:21px;object-fit:cover;animation:zoom 10s ease-in-out infinite alternate}
+@keyframes zoom{to{transform:scale(1.04)}}
+.card{background:#fff;color:#0F1B33;border-radius:22px;padding:24px 20px 20px;box-shadow:0 24px 60px rgba(0,0,0,.45);max-width:520px;width:100%;margin:0 auto}
+.selo{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;font-size:11.5px;font-weight:800;letter-spacing:.08em;color:#fff;background:linear-gradient(90deg,#AD0404,#D9121B,#FF6A00,#D9121B,#AD0404);background-size:250% 100%;animation:brilho 3s linear infinite}
+@keyframes brilho{to{background-position:250% 0}}
+h1{margin:12px 0 6px;font-size:26px;line-height:1.1;font-weight:900;color:#07388E}
+h1 span{background:linear-gradient(90deg,#D9121B,#FF6A00);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{margin:0 0 14px;font-size:14.5px;line-height:1.45;color:#5B6475;font-weight:500}
+.tempo{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:0 0 16px}
+.tempo div{background:#F2F5FB;border-radius:10px;padding:8px 0;text-align:center}
+.tempo b{display:block;font-size:20px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1}
+.tempo small{font-size:10px;color:#8A94A6;text-transform:uppercase;letter-spacing:.06em}
+form{display:grid;gap:10px}
+label{display:block;font-size:12.5px;font-weight:700;color:#0F1B33;margin:0 0 4px}
+input[type=text],input[type=tel],input[type=email]{width:100%;height:48px;border:1.5px solid #D5DCE8;border-radius:12px;padding:0 14px;font:500 16px Montserrat,Arial,sans-serif;color:#0F1B33;background:#fff;outline:none;transition:border-color .2s,box-shadow .2s}
+input:focus{border-color:#1656C9;box-shadow:0 0 0 4px rgba(22,86,201,.15)}
+input.erro{border-color:#D9121B;box-shadow:0 0 0 4px rgba(217,18,27,.12)}
+.ok{display:flex;gap:9px;align-items:flex-start;font-size:12px;line-height:1.4;color:#5B6475;margin:2px 0}
+.ok input{margin:2px 0 0;width:18px;height:18px;flex:0 0 18px;accent-color:#1A9E4E}
+.ok a{color:#07388E}
+.hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+button{position:relative;display:flex;align-items:center;justify-content:center;gap:9px;height:54px;border:0;border-radius:14px;background:linear-gradient(180deg,#25C462,#1A9E4E);color:#fff;font:800 16.5px Montserrat,Arial,sans-serif;cursor:pointer;box-shadow:0 10px 24px rgba(31,175,85,.4);overflow:hidden;animation:pulso 2.4s ease-in-out infinite}
+button::after{content:"";position:absolute;top:0;left:-60%;width:40%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.45),transparent);transform:skewX(-20deg);animation:reflexo 3.2s ease-in-out infinite}
+@keyframes pulso{50%{transform:scale(1.02)}}
+@keyframes reflexo{60%,100%{left:130%}}
+button[disabled]{opacity:.7;cursor:wait;animation:none}
+.msg{min-height:18px;margin:2px 0 0;font-size:13px;font-weight:600;color:#D9121B;text-align:center}
+.rod{margin:12px 0 0;text-align:center;font-size:11.5px;color:#8A94A6}
+.feito{display:none;text-align:center}
+.feito h2{margin:6px 0 6px;font-size:22px;color:#07388E}
+.feito p{margin:0 0 14px;color:#5B6475;font-size:14px;line-height:1.45}
+.feito a{display:flex;align-items:center;justify-content:center;gap:9px;height:54px;border-radius:14px;background:linear-gradient(180deg,#25C462,#1A9E4E);color:#fff;font-weight:800;font-size:16.5px;text-decoration:none}
+.card.enviado form,.card.enviado .tempo,.card.enviado .sub{display:none}
+.card.enviado .feito{display:block}
+@media(min-width:880px){h1{font-size:32px}.card{padding:30px 28px 24px}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+</head>
+<body>
+<div class="brasas" aria-hidden="true">{%- for i in (1..16) -%}<i style="left:{{ i | times: 6 | minus: 3 }}%;animation-delay:{{ i | times: 37 | modulo: 60 | divided_by: 10.0 }}s"></i>{%- endfor -%}</div>
+<main class="wrap">
+  <div class="topo">
+    {%- if settings.logo != blank -%}
+      <img src="{{ settings.logo | image_url: width: 300 }}" alt="{{ shop.name }}">
+    {%- else -%}
+      <span>AMERICA NUTRITION</span>
+    {%- endif -%}
+  </div>
+  <div class="hero"><img src="{{ 'an-esquenta-landing.webp' | asset_url }}" alt="Esquenta Black Friday ImunoFosfo · Acesso antecipado e exclusivo · Só até 26/11" width="900" height="900" fetchpriority="high"></div>
+  <section class="card" id="card">
+    <span class="selo">🔥 ESQUENTA BLACK FRIDAY</span>
+    <h1>Entre antes de todo mundo na <span>Black Friday</span></h1>
+    <p class="sub">Deixe seu nome, WhatsApp e e-mail. A <b>Serena</b>, nossa assistente, te chama no WhatsApp com as condições exclusivas do Esquenta, que <b>não</b> vão estar no site.</p>
+    <div class="tempo" aria-label="Tempo até o fim do Esquenta">
+      <div><b data-t="d">00</b><small>dias</small></div><div><b data-t="h">00</b><small>horas</small></div><div><b data-t="m">00</b><small>min</small></div><div><b data-t="s">00</b><small>seg</small></div>
+    </div>
+    <form id="f" novalidate>
+      <div><label for="nome">Seu nome</label><input id="nome" name="nome" type="text" autocomplete="name" placeholder="Como você se chama?" required></div>
+      <div><label for="whatsapp">WhatsApp com DDD</label><input id="whatsapp" name="whatsapp" type="tel" inputmode="numeric" autocomplete="tel-national" placeholder="(11) 99999-9999" required></div>
+      <div><label for="email">E-mail</label><input id="email" name="email" type="email" autocomplete="email" inputmode="email" placeholder="voce@email.com" required></div>
+      <div class="hp" aria-hidden="true"><label for="site">Site</label><input id="site" name="site" type="text" tabindex="-1" autocomplete="off"></div>
+      <label class="ok"><input id="aceite" type="checkbox" checked> <span>Aceito receber as condições do Esquenta e novidades da America Nutrition por WhatsApp e e-mail. Posso sair quando quiser. <a href="/policies/privacy-policy" target="_blank" rel="noopener">Privacidade</a></span></label>
+      <button type="submit" id="bt">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm5.3 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.3-.7-2.8-1.1-4.6-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.9 0-1.4.7-2 1-2.3.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .6l-.3.5-.4.4c-.1.1-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.3 2.4 1.5.3.1.5.1.6-.1l.9-1c.2-.3.4-.2.6-.1l1.9.9c.3.1.5.2.5.3.1.2.1.7-.1 1.3Z"/></svg>
+        <span>Quero participar do Esquenta</span>
+      </button>
+      <p class="msg" id="msg" role="alert"></p>
+    </form>
+    <div class="feito" id="feito">
+      <span class="selo">✅ CADASTRO RECEBIDO</span>
+      <h2>Agora é só mandar a mensagem</h2>
+      <p>Abrimos o WhatsApp da Serena com a mensagem pronta. Toque em <b>enviar</b> para confirmar sua participação.</p>
+      <a id="wa" href="https://wa.me/13472225493?text=Quero%20participar%20do%20Esquenta%20Black%20Friday%20%F0%9F%94%A5" target="_blank" rel="noopener">Abrir WhatsApp da Serena</a>
+    </div>
+    <p class="rod">Esquenta válido até 26/11 · vagas limitadas</p>
+  </section>
+</main>
+<script>
+(function(){
+  var FIM = new Date('2026-11-27T02:59:59Z').getTime(); // 26/11 23:59:59 BRT
+  var API = 'https://n8n.americanutrition.com/webhook/esquenta-lead';
+  var q = new URLSearchParams(location.search);
+  function dois(n){return (n<10?'0':'')+n}
+  function tick(){
+    var s = Math.max(0, Math.floor((FIM - Date.now())/1000));
+    var v = {d:Math.floor(s/86400), h:Math.floor(s%86400/3600), m:Math.floor(s%3600/60), s:s%60};
+    document.querySelectorAll('[data-t]').forEach(function(el){el.textContent = dois(v[el.getAttribute('data-t')])});
+  }
+  tick(); setInterval(tick, 1000);
+
+  var tel = document.getElementById('whatsapp');
+  tel.addEventListener('input', function(){
+    var d = tel.value.replace(/\D/g,'');
+    if (d.length > 11 && d.indexOf('55') === 0) d = d.slice(2);
+    d = d.slice(0,11);
+    var r = d;
+    if (d.length > 2) r = '(' + d.slice(0,2) + ') ' + d.slice(2);
+    if (d.length > 6) r = '(' + d.slice(0,2) + ') ' + d.slice(2, d.length - 4) + '-' + d.slice(d.length - 4);
+    tel.value = r;
+  });
+
+  var f = document.getElementById('f'), bt = document.getElementById('bt'), msg = document.getElementById('msg');
+  function erro(el, t){ if (el) { el.classList.add('erro'); el.focus(); } msg.textContent = t; }
+  f.addEventListener('input', function(e){ e.target.classList && e.target.classList.remove('erro'); msg.textContent=''; });
+
+  f.addEventListener('submit', function(e){
+    e.preventDefault();
+    if (document.getElementById('site').value) return;
+    var nome = document.getElementById('nome'), email = document.getElementById('email');
+    var d = tel.value.replace(/\D/g,'');
+    if (nome.value.trim().length < 2) return erro(nome, 'Digite seu nome.');
+    if (d.length < 10 || d.length > 11) return erro(tel, 'Digite o WhatsApp com DDD.');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.value.trim())) return erro(email, 'Confira o e-mail.');
+    if (!document.getElementById('aceite').checked) return erro(null, 'Marque o aceite para participar.');
+    bt.disabled = true; bt.querySelector('span').textContent = 'Enviando...';
+    var corpo = {
+      nome: nome.value.trim(), email: email.value.trim(), whatsapp: d, aceite: true,
+      ref: q.get('ref') || '',
+      utm_source: q.get('utm_source') || '', utm_medium: q.get('utm_medium') || '', utm_campaign: q.get('utm_campaign') || '',
+      utm_content: q.get('utm_content') || '', utm_term: q.get('utm_term') || ''
+    };
+    fetch(API, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(corpo)})
+      .then(function(r){ return r.json().catch(function(){ return {}; }).then(function(j){ return {ok:r.ok, j:j}; }); })
+      .then(function(res){
+        if (!res.ok || !res.j || !res.j.ok) {
+          var e = (res.j && res.j.erros) || [];
+          var t = {nome: 'Digite seu nome.', whatsapp: 'Confira o WhatsApp com DDD.', email: 'Confira o e-mail.', aceite: 'Marque o aceite para participar.'};
+          throw new Error(e.length && t[e[0]] ? t[e[0]] : 'Não deu certo agora. Tente de novo.');
+        }
+        var link = res.j.whatsapp || document.getElementById('wa').href;
+        document.getElementById('wa').href = link;
+        document.getElementById('card').classList.add('enviado');
+        try { if (window.fbq) fbq('track', 'Lead', {content_name: 'Esquenta Black Friday'}); } catch(_){}
+        try { if (window.gtag) gtag('event', 'generate_lead', {event_category: 'esquenta'}); } catch(_){}
+        setTimeout(function(){ location.href = link; }, 600);
+      })
+      .catch(function(err){
+        bt.disabled = false; bt.querySelector('span').textContent = 'Quero participar do Esquenta';
+        erro(null, err.message || 'Não deu certo agora. Tente de novo.');
+      });
+  });
+})();
+</script>
+</body>
+</html>
