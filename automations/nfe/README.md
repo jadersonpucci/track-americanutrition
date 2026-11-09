@@ -191,8 +191,7 @@ Agora o líquido de cada linha, juros inclusive, é preço cheio × quantidade m
 
 Card **Notas Fiscais** na Central Administrativa (`/webhook/admin`, grupo Operação). Abre
 `assets/painel-nfe.html` do tema `153190498476` (o mesmo tema de onde a Central lê o `america_admin.html`), sem senha:
-o link do card leva a chave `?k=`, que a página manda para a API e o nó `Preparar` confere. Sem a chave, a API
-responde "Acesso negado".
+o link do card leva a chave `?k=`, que a página manda para a API. Sem a chave, a API responde "Acesso negado".
 
 Digita-se o número do pedido (16477 ou AN-16477):
 
@@ -203,18 +202,14 @@ Digita-se o número do pedido (16477 ou AN-16477):
 - **Corrigir e reenviar** (aparece quando a nota foi recusada): CPF/CNPJ e/ou inscrição estadual (número ou ISENTO).
   Usa o payload que o robô já montou (`nfe_emissoes.payload`), troca só o destinatário e reenvia para a Focus com a
   mesma `ref`. Grava `processando` e chama o robô para acompanhar e anexar no pedido. CNPJ com IE vira contribuinte
-  (`indicador 1`); em outro estado a partilha do DIFAL sai do item. Caso de origem: AN-16477, CNPJ de empresa de SP,
-  rejeição 232 "IE do destinatário não informada".
+  (`indicador 1`); em outro estado a partilha do DIFAL sai do item.
 
-Arquivos em [`painel/`](painel/): `pagina.html`, o código dos nós (`preparar.js`, `agir.js`, `avaliar-reenvio.js`,
-`montar-resposta.js`) e `gerar-workflow.mjs`, que gera o `painel.workflow.js`. Workflow **AN · NF-e Painel**
-(`jZZEzzntEB4M9Tox`), `POST /webhook/nfe-painel-api`. A chave do painel fica só no n8n e no link do card.
+**Onde roda:** dentro do próprio workflow do robô, `AN · NF-e Focus (emitir e anexar)` (`s1JHMJosqDcEeWbr`): webhook
+`Painel API` (`POST /webhook/nfe-painel-api`) → `Painel` ([`painel/painel-no-emissor.js`](painel/painel-no-emissor.js))
+→ `Painel Responder`. O `Painel` lê as chaves (Focus, token manual, banco) do código do `Emitir e Anexar` em tempo de
+execução, então não existe cópia de chave nem credencial nova. A chave do card fica só no n8n e no link do card
+(no repo, `<NFE_PAINEL_CHAVE>`). O `gerar-workflow.mjs` já monta esses três nós junto com o robô. A página é
+[`painel/pagina.html`](painel/pagina.html).
 
-Gerar e corrigir dependem de duas credenciais do n8n (sem elas só a consulta funciona):
-
-| Credencial | Tipo | Campos | Nós |
-|---|---|---|---|
-| NF-e robo (token manual) | Query Auth | Name `t`, Value = token manual do robô | Robô, Robô (acompanhar) |
-| Focus NFe | Basic Auth | User = token da Focus, Password vazio | Focus reenviar |
-
-Testado em 09/11: card aberto na Central, consulta do AN-16477 mostrando a rejeição 232; sem chave, "Acesso negado".
+Primeiro caso: **AN-16477** (CNPJ de empresa de SP, rejeição 232 "IE do destinatário não informada"). Reenviado pelo
+painel com a IE em 09/11 e autorizado: NF-e 405, série 1, anexada no pedido.
