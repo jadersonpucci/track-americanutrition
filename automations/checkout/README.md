@@ -217,3 +217,18 @@ Com CNPJ no campo CPF/CNPJ (modo PJ), aparece "Inscrição Estadual (IE) da empr
 Pagar.me e o `Criar Pedido Shopify` grava o atributo `IE` e o metafield `an_fiscal.ie`, que o emissor de NF-e usa.
 Marcado no HTML com `AN-IE`. Publicado em 09/11 às 12h30 (backup automático: versão de 03/11). Testado no Chromium
 antes e depois do deploy.
+
+## Assinatura virou "Compra Programada" (09/11/2026)
+
+Os clientes achavam que "assinatura" tinha custo extra. No checkout, todo texto visível passou a dizer **Compra Programada**:
+- selo "COMPRA PROGRAMADA (opcional) · entrega e cobrança automáticas a cada 30 dias, sem taxa e sem fidelidade";
+- botões "Quero programar e economizar" e "Compra Programada ativada";
+- botão de pagar "Programar e pagar";
+- resumo "Desconto Compra Programada";
+- parcela "À vista (Compra Programada)";
+- consentimento "Entendi que é uma COMPRA PROGRAMADA (cobrança automática a cada 30 dias)";
+- link "Gerenciar minha Compra Programada".
+
+O "Ciclo de fidelidade" do bônus do 6º mês virou "Ciclo de bônus", para não brigar com o "sem fidelidade".
+Ids, funções (`an-assin-*`, `setAssinatura`), payload (`assinatura: true`) e webhooks continuam iguais.
+`?programada=1` liga o toggle, como `?assinar=1`. Deploy de 09/11 12:54Z; o backup é a versão de 12:30Z (AN-IE).
