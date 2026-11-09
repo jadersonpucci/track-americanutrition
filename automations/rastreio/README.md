@@ -187,3 +187,20 @@ rastreio, no mesmo cartão "Comprovante de entrega" da J&T.
 - **08/11/2026:** a busca passou de 200 para os **500 envios** mais novos da Frenet (o AE069586903BR, entregue em 27/10,
   já tinha saído da janela). Constante `PRIORIDADE` no nó "Escolher envios": códigos pedidos pela equipe entram primeiro
   na rodada. O Envia não tem comprovante de etiqueta feita na Frenet ("No shipments found").
+
+## CPF/CNPJ para a Frenet: metafield do pedido (09/11/2026)
+
+O app da Frenet na Shopify só lê o CPF/CNPJ de um **metafield do pedido** (tela "Metacampos de Pedido": campos
+"CPF ou CNPJ" e "Nota fiscal"). O CPF dos nossos pedidos ficava no campo fiscal da Shopify (`localizationExtensions`,
+TAX) e no atributo `CPF`, que a Frenet não enxerga. Por isso as etiquetas saíam sem CPF.
+
+- **Metafield** `an_fiscal.cpf_cnpj` ("CPF/CNPJ do cliente", texto, só números, fixado no pedido). Definição
+  `gid://shopify/MetafieldDefinition/514743861420`.
+- **Na criação:** no `Pagar.me — Confirmação Pago → Shopify` (`dtDYBZJuAbFZV3cB`), o corpo do nó
+  `Criar Pedido Shopify` passou a incluir `order.metafields` com o CPF/CNPJ (vem do `cpf` do `Montar Pedido Shopify`).
+  Sem documento válido (11 ou 14 dígitos), o pedido sai como antes.
+- **Rede de segurança:** `[Frenet] CPF no metafield do pedido` (`a4Ro3xzPIFyKZaY6`, `frenet-cpf-metafield.js`), a cada
+  5 min, preenche os pedidos dos últimos 2 dias que ainda não têm (PIX, draft da Serena, venda manual).
+- **Retroativo:** 538 pedidos dos últimos 30 dias preenchidos em 09/11 (os 8 restantes não têm documento, ex.: EUA).
+- **No app da Frenet:** Metacampos de Pedido → CPF ou CNPJ = `an_fiscal:cpf_cnpj`; Nota fiscal = `nfe:chave`;
+  Salvar e Sincronizar.
