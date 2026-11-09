@@ -36,12 +36,16 @@
     var ref = (sp.get('ref') || sp.get('aff') || sp.get('d') || '').trim();
     if (!ref) return;
     var prev = ler('an_aff');
+    // Black 2026: ate 01/12 o ref da Serena nao sobrescreve um afiliado de verdade que ja esta no cookie
+    var segura = Date.now() < Date.parse('2026-12-01T03:00:00Z') && /^serena/i.test(ref) && prev && !/^serena/i.test(prev);
     var jan = parseInt(ler('an_jan'), 10);
-    gravar('an_aff', ref, jan > 0 ? jan : 30);
-    gravar('an_ref', ref, 30);
+    if (!segura) {
+      gravar('an_aff', ref, jan > 0 ? jan : 30);
+      gravar('an_ref', ref, 30);
+    }
     if (!(jan > 0)) {
       fetch(N8N + '/aff-cfg', { mode: 'cors' }).then(function (r) { return r.json(); })
-        .then(function (d) { if (d && d.janela > 0) { gravar('an_jan', String(d.janela), 1); gravar('an_aff', ref, d.janela); } }).catch(function () {});
+        .then(function (d) { if (d && d.janela > 0) { gravar('an_jan', String(d.janela), 1); if (!segura) gravar('an_aff', ref, d.janela); } }).catch(function () {});
     }
     fetch(N8N + '/aff-api', {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, keepalive: true, mode: 'cors',

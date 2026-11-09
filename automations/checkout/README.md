@@ -232,3 +232,24 @@ Os clientes achavam que "assinatura" tinha custo extra. No checkout, todo texto 
 O "Ciclo de fidelidade" do bônus do 6º mês virou "Ciclo de bônus", para não brigar com o "sem fidelidade".
 Ids, funções (`an-assin-*`, `setAssinatura`), payload (`assinatura: true`) e webhooks continuam iguais.
 `?programada=1` liga o toggle, como `?assinar=1`. Deploy de 09/11 12:54Z; o backup é a versão de 12:30Z (AN-IE).
+
+## Black 2026: link da Serena não tira a venda do afiliado (09/11/2026)
+
+Caso AN-16507: a cliente veio da Vivian (PROMO5, cookie `an_aff`), mas pagou por um link de checkout da Serena (`ref=serena`). Pela regra de último clique, a venda foi para a Serena (R$ 0). A Vivian recebeu à mão (conversão 2499, R$ 51,51) e a tag do pedido passou a "AF: Vivian Fortunato".
+
+**Regra até 01/12/2026:** um `ref` da Serena (`serena`, `serena-ig`, `serena-msg`) não sobrescreve um afiliado de verdade que já está no cookie, e o `__AN_REF()` devolve o afiliado.
+- Afiliado contra afiliado continua por último clique.
+- Sem afiliado no cookie, o link da Serena continua valendo para ela.
+
+| Onde | Mudança |
+|---|---|
+| Checkout (HTML no n8n) | script BG-AFILIADO-COOKIE (`SERENA_PROTEGE_ATE`) |
+| Tema publicado | `layout/theme.liquid`: script de afiliados e `__AN_REF`. Na captura, o `ref` da Serena não troca `an_ref` nem o cupom do afiliado. Backup em `scratchpad/theme_backup_20261109.liquid` |
+| Landing do Esquenta | `page.esquenta.liquid` |
+
+Testado no navegador:
+- cookie PROMO5 + link da Serena → PROMO5;
+- sem cookie → serena;
+- cookie PROMO5 + outro afiliado → o outro.
+
+Para manter a regra depois da Black, basta mudar a data de `SERENA_PROTEGE_ATE` nos três lugares.
