@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#07388E">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="NF-e AN">
+<title>Painel de NF-e · America Nutrition</title>
+<style>
+:root{--azul:#07388E;--azul2:#1656C9;--verm:#D9121B;--verde:#1A9E4E;--amar:#B7791F;--txt:#0F1B33;--sub:#5B6475;--borda:#D5DCE8;--fundo:#F2F5FB;--card:#fff}
+@media (prefers-color-scheme:dark){:root{--txt:#E8EDF7;--sub:#A3AEC2;--borda:#2C3954;--fundo:#0B1324;--card:#121C31;--azul:#6E9BFF;--azul2:#8BB0FF}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fundo);color:var(--txt);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{max-width:620px;margin:0 auto;padding:max(16px,env(safe-area-inset-top)) 16px 40px}
+h1{font-size:21px;margin:6px 0 2px}
+.sub{color:var(--sub);margin:0 0 16px;font-size:13.5px}
+.card{background:var(--card);border:1px solid var(--borda);border-radius:16px;padding:16px;margin:0 0 14px}
+label{display:block;font-size:12.5px;font-weight:700;margin:0 0 5px}
+input{width:100%;height:48px;border:1.5px solid var(--borda);border-radius:12px;padding:0 14px;font-size:17px;font-weight:600;font-family:inherit;color:var(--txt);background:var(--card);outline:none}
+input:focus{border-color:var(--azul2);box-shadow:0 0 0 4px rgba(22,86,201,.15)}
+.linha{display:flex;gap:10px;margin-top:12px}
+button{flex:1;height:48px;border:0;border-radius:12px;font-size:15.5px;font-weight:700;font-family:inherit;cursor:pointer;color:#fff;background:var(--azul)}
+button.sec{background:transparent;color:var(--azul);border:1.5px solid var(--azul)}
+button.verde{background:var(--verde)}
+button[disabled]{opacity:.6;cursor:wait}
+.tag{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:800;letter-spacing:.03em;text-transform:uppercase}
+.ok{background:rgba(26,158,78,.15);color:var(--verde)}
+.erro{background:rgba(217,18,27,.13);color:var(--verm)}
+.esp{background:rgba(183,121,31,.15);color:var(--amar)}
+.neu{background:rgba(91,100,117,.15);color:var(--sub)}
+dl{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;margin:12px 0 0;font-size:14px}
+dt{color:var(--sub)}dd{margin:0;font-weight:600;word-break:break-word}
+.msg{margin:12px 0 0;padding:10px 12px;border-radius:10px;background:var(--fundo);font-size:13.5px;white-space:pre-wrap}
+.msg.ruim{background:rgba(217,18,27,.09);color:var(--verm)}
+.acoes{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.acoes a{flex:1;min-width:140px;display:flex;align-items:center;justify-content:center;height:46px;border-radius:12px;background:var(--verde);color:#fff;font-weight:700;text-decoration:none}
+.acoes a.sec{background:transparent;color:var(--azul);border:1.5px solid var(--azul)}
+.corr h2{font-size:16px;margin:0 0 4px}
+.corr p{margin:0 0 12px;color:var(--sub);font-size:13px}
+.corr .g{display:grid;gap:10px}
+.hid{display:none}
+.chave{font:12px ui-monospace,Menlo,monospace;color:var(--sub)}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#0F1B33;color:#fff;padding:10px 16px;border-radius:10px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw}
+#toast.on{opacity:1}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🧾 Painel de NF-e</h1>
+  <p class="sub">America Nutrition · digite o número do pedido para consultar ou gerar a nota.</p>
+
+  <div class="card" id="login" hidden>
+    <label for="senha">Senha do painel</label>
+    <input id="senha" type="password" autocomplete="current-password" placeholder="A senha que você cadastrou no n8n">
+    <div class="linha"><button id="btEntrar">Entrar</button></div>
+  </div>
+
+  <div class="card">
+    <label for="ped">Número do pedido</label>
+    <input id="ped" inputmode="numeric" autocomplete="off" placeholder="16477 ou AN-16477">
+    <div class="linha">
+      <button class="sec" id="btVer">Consultar</button>
+      <button id="btGerar">Gerar NF-e</button>
+    </div>
+  </div>
+
+  <div class="card hid" id="res">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+      <b id="rPed" style="font-size:18px"></b><span class="tag" id="rTag"></span>
+    </div>
+    <dl id="rDados"></dl>
+    <div class="msg hid" id="rMsg"></div>
+    <div class="acoes" id="rLinks"></div>
+  </div>
+
+  <div class="card corr hid" id="corr">
+    <h2>Corrigir e reenviar</h2>
+    <p>Use quando a SEFAZ recusar por causa do destinatário: CPF/CNPJ errado ou empresa que precisa da inscrição estadual (IE).</p>
+    <div class="g">
+      <div><label for="doc">CPF ou CNPJ para a nota</label><input id="doc" inputmode="numeric" placeholder="Vazio = manter o do pedido"></div>
+      <div><label for="ie">Inscrição estadual (só para CNPJ)</label><input id="ie" placeholder="Número da IE ou ISENTO"></div>
+    </div>
+    <div class="linha"><button class="verde" id="btCorr">Reenviar com correção</button></div>
+  </div>
+</div>
+<div id="toast"></div>
+<script>
+(function(){
+  var API = 'https://n8n.americanutrition.com/webhook/nfe-painel-api';
+  var q = new URLSearchParams(location.search);
+  var $ = function(id){ return document.getElementById(id); };
+  var S = '';
+  try { S = localStorage.getItem('nfe_senha') || ''; } catch(e){}
+  function pedirSenha(msg){ $('login').hidden = false; if (msg) toast(msg); $('senha').focus(); }
+  if (!S) setTimeout(function(){ pedirSenha(); }, 0);
+  $('btEntrar').onclick = function(){ S = $('senha').value.trim(); if (!S) return; try { localStorage.setItem('nfe_senha', S); } catch(e){} $('login').hidden = true; if ($('ped').value) chamar('ver'); };
+  $('senha').addEventListener('keydown', function(e){ if (e.key === 'Enter') $('btEntrar').click(); });
+  if (q.get('pedido')) $('ped').value = q.get('pedido');
+
+  function toast(t){ var e=$('toast'); e.textContent=t; e.classList.add('on'); setTimeout(function(){e.classList.remove('on');}, 2600); }
+  function brl(v){ return 'R$ ' + Number(v||0).toFixed(2).replace('.', ','); }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function fmtDoc(d){ d=String(d||''); if(d.length===11) return d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/,'$1.$2.$3-$4'); if(d.length===14) return d.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,'$1.$2.$3/$4-$5'); return d||'—'; }
+  var NOMES = { autorizado:'Autorizada', autorizado_sem_anexo:'Autorizada', processando:'Processando', processando_autorizacao:'Processando', erro:'Rejeitada', erro_autorizacao:'Rejeitada', denegado:'Denegada', revisar:'Em revisão', simulado:'Simulada', cancelado:'Cancelada', ignorado:'Sem NF-e', 'sem registro':'Sem nota', nao_enviada:'Sem nota' };
+  var PAG = { PAID:'Pago', PENDING:'Pendente', REFUNDED:'Reembolsado', PARTIALLY_REFUNDED:'Reembolso parcial', VOIDED:'Cancelado', AUTHORIZED:'Autorizado' };
+  var ENV = { FULFILLED:'Enviado', UNFULFILLED:'Não enviado', IN_PROGRESS:'Em andamento', PARTIALLY_FULFILLED:'Parcial', ON_HOLD:'Em espera' };
+
+  function render(j){
+    $('res').classList.remove('hid');
+    if (!j || !j.ok){ $('rPed').textContent = 'Erro'; $('rTag').className='tag erro'; $('rTag').textContent='!'; $('rDados').innerHTML='';
+      $('rMsg').className='msg ruim'; $('rMsg').textContent = (j && j.erro) || 'Não deu certo.'; $('rLinks').innerHTML=''; $('corr').classList.add('hid'); return; }
+    var n = j.nfe || {}, f = j.focus || {}, s = j.shopify || {};
+    var st = n.danfe ? 'autorizado' : (f.status && f.status !== 'nao_enviada' ? f.status : n.status);
+    var cls = /autoriz/.test(st) ? 'ok' : (/erro|denegado|revisar/.test(st) ? 'erro' : (/process|simulado/.test(st) ? 'esp' : 'neu'));
+    $('rPed').textContent = j.pedido;
+    $('rTag').className = 'tag ' + cls; $('rTag').textContent = NOMES[st] || st;
+    var linhas = [['Cliente', s.cliente], ['Cidade', s.cidade], ['Total', brl(s.total)], ['Pagamento', (PAG[s.pagamento]||s.pagamento) + (s.cancelado?' · cancelado':'')],
+      ['Envio', ENV[s.envio]||s.envio], ['CPF/CNPJ', fmtDoc(s.documento)]];
+    if (n.numero) linhas.push(['NF-e', n.numero]);
+    $('rDados').innerHTML = linhas.map(function(l){ return '<dt>'+esc(l[0])+'</dt><dd>'+esc(l[1]||'—')+'</dd>'; }).join('') + (n.chave ? '<dt>Chave</dt><dd class="chave">'+esc(n.chave)+'</dd>' : '');
+    var msgs = [];
+    (j.avisos||[]).forEach(function(a){ msgs.push(a); });
+    if (!n.danfe){
+      if (f.mensagem) msgs.push('SEFAZ' + (f.sefaz ? ' ' + f.sefaz : '') + ': ' + f.mensagem);
+      else if (n.mensagem && /erro|revisar/.test(n.status)) msgs.push(n.mensagem);
+      if (/process/.test(st)) msgs.push('A SEFAZ ainda está processando. Toque em Consultar daqui a alguns segundos.');
+    }
+    $('rMsg').className = 'msg' + (cls==='erro' ? ' ruim' : '') + (msgs.length ? '' : ' hid');
+    $('rMsg').textContent = msgs.join('\n');
+    var links = '';
+    if (n.danfe) links += '<a href="'+esc(n.danfe)+'" target="_blank" rel="noopener">Abrir DANFE (PDF)</a>';
+    if (n.xml) links += '<a class="sec" href="'+esc(n.xml)+'" target="_blank" rel="noopener">XML</a>';
+    $('rLinks').innerHTML = links;
+    $('corr').classList.toggle('hid', !(cls === 'erro' && !n.danfe));
+  }
+
+  function chamar(acao, extra){
+    var ped = $('ped').value.trim();
+    if (!S){ pedirSenha('Digite a senha do painel.'); return; }
+    if (!ped){ toast('Digite o número do pedido.'); $('ped').focus(); return; }
+    var bts = document.querySelectorAll('button'); bts.forEach(function(b){ b.disabled = true; });
+    var alvo = acao === 'ver' ? $('btVer') : (extra ? $('btCorr') : $('btGerar'));
+    var txt = alvo.textContent; alvo.textContent = acao === 'ver' ? 'Consultando...' : 'Gerando...';
+    var corpo = Object.assign({ acao: acao, pedido: ped }, extra || {});
+    fetch(API, { method:'POST', headers:{'Content-Type':'application/json', 'X-Painel-Senha': S}, body: JSON.stringify(corpo) })
+      .then(function(r){
+        if (r.status === 401 || r.status === 403){ S = ''; try { localStorage.removeItem('nfe_senha'); } catch(e){} pedirSenha('Senha incorreta.'); throw 'senha'; }
+        return r.json(); })
+      .then(render)
+      .catch(function(e){ if (e !== 'senha') render({ ok:false, erro:'Sem resposta do servidor. Tente de novo.' }); })
+      .finally(function(){ bts.forEach(function(b){ b.disabled = false; }); alvo.textContent = txt;
+        try { history.replaceState(null, '', '?pedido=' + encodeURIComponent(ped)); } catch(e){} });
+  }
+  $('btVer').onclick = function(){ chamar('ver'); };
+  $('btGerar').onclick = function(){ chamar('emitir'); };
+  $('btCorr').onclick = function(){
+    var doc = $('doc').value.replace(/\D/g,''), ie = $('ie').value.trim();
+    if (!doc && !ie){ toast('Preencha o CPF/CNPJ ou a IE.'); return; }
+    if (doc && doc.length !== 11 && doc.length !== 14){ toast('CPF tem 11 dígitos e CNPJ 14.'); return; }
+    chamar('emitir', { documento: doc, ie: ie });
+  };
+  $('ped').addEventListener('keydown', function(e){ if (e.key === 'Enter') chamar('ver'); });
+  if ($('ped').value && S) chamar('ver');
+})();
+</script>
+</body>
+</html>

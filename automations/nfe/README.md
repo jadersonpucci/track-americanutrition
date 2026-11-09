@@ -186,3 +186,30 @@ arredondado.
 
 Agora o líquido de cada linha, juros inclusive, é preço cheio × quantidade menos os descontos rateados
 (`discountAllocations`). A nota do AN-16418 saiu (nº 356, série 1) e foi anexada ao pedido.
+
+## Painel de NF-e (09/11/2026)
+
+Página **americanutrition.com/pages/nfe-painel** (fora do sitemap, `noindex`). Pede a senha uma vez (fica salva no
+aparelho), recebe o número do pedido e tem dois botões:
+
+- **Consultar**: mostra cliente, total, pagamento, envio, CPF/CNPJ e a situação da NF-e (com o motivo da recusa da
+  SEFAZ, se houver) e os links do DANFE e do XML quando autorizada.
+- **Gerar NF-e**: chama o robô (`/webhook/nfe-focus?pedido=...&modo=on`) para aquele pedido. Pedido já com nota,
+  cancelado ou não pago não é emitido.
+- **Corrigir e reenviar** (aparece quando a nota foi recusada): CPF/CNPJ e/ou inscrição estadual (número ou ISENTO).
+  Usa o payload que o robô já montou (`nfe_emissoes.payload`), troca só o destinatário e reenvia para a Focus com a
+  mesma `ref`. Grava `processando` e chama o robô para acompanhar e anexar no pedido. CNPJ com IE vira contribuinte
+  (`indicador 1`); em outro estado a partilha do DIFAL sai do item. Caso de origem: AN-16477, CNPJ de empresa de SP,
+  rejeição 232 "IE do destinatário não informada".
+
+Arquivos em [`painel/`](painel/): `pagina.html` (sobe como `templates/page.nfe-painel.liquid` no tema), o código dos
+nós (`preparar.js`, `agir.js`, `avaliar-reenvio.js`, `montar-resposta.js`) e `gerar-workflow.mjs`, que gera o
+`painel.workflow.js`. Workflow **AN · NF-e Painel** (`jZZEzzntEB4M9Tox`), `POST /webhook/nfe-painel-api`.
+
+Sem chave no código. Três credenciais do n8n:
+
+| Credencial | Tipo | Campos | Nó |
+|---|---|---|---|
+| Painel NF-e (senha) | Header Auth | Name `X-Painel-Senha`, Value = senha do painel | API (webhook) |
+| NF-e robo (token manual) | Query Auth | Name `t`, Value = token manual do robô | Robô, Robô (acompanhar) |
+| Focus NFe | Basic Auth | User = token da Focus, Password vazio | Focus reenviar |
