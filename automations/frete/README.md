@@ -69,14 +69,14 @@ vale para o checkout e para a Serena:
 
 Quando o frete pago mais lento passa de **10 dias úteis** (já com os +2 e o corte das 12h), o Frete Grátis deixa de mostrar "10 a 15 dias úteis". Esse prazo ficava igual ou mais rápido que o pago.
 
-Nesse caso ele passa a mostrar **(mais lento + 1) a (mais lento + 5) dias úteis**, contados como o pago, e a data estimada fica sempre depois da do pago mais lento.
+Nesse caso ele passa a mostrar **(mais lento + 4) a (mais lento + 8) dias úteis** (folga de +3 pedida no mesmo dia), contados como o pago, e a data estimada fica sempre depois da do pago mais lento.
 
 O cálculo fica no nó "Renomear JT" (`cotacao-renomear-jt-prazo.js`). A opção grátis leva também `eta_ajustado_pago` com o prazo do pago usado como base.
 
-Teste ao vivo, mesma cotação, às 10h de 09/11:
+Teste ao vivo de 09/11 (antes do corte; os números da tabela já com a folga de +3):
 
 | Destino | Pago mais lento | Frete Grátis |
 |---|---|---|
-| Manaus | PAC, 22 dias | 23 a 27 dias |
-| Macapá | PAC, 17 dias | 18 a 22 dias |
+| Manaus | PAC, 22 dias | 26 a 30 dias |
+| Macapá | PAC, 17 dias | 21 a 25 dias |
 | São Paulo | PAC, 7 dias | continua 10 a 15 dias |

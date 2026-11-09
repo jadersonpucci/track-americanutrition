@@ -9,7 +9,8 @@
 // Frete Gratis (eta_aprox=false, prazo interno 10-15 dias) permanece como esta no texto; ganha so a data estimada.
 // + FRETE GRATIS MAIS LENTO QUE O PAGO (09/11/2026, Jaderson): quando o frete pago mais lento passa de 10 dias
 //   uteis (ja com os +2 e o corte), o "10 a 15" do Frete Gratis ficava igual ou mais rapido que o pago e nao fazia
-//   sentido. Nesse caso o Frete Gratis vira "(mais lento + 1) a (mais lento + 5) dias uteis", contado como o pago
+//   sentido. Nesse caso o Frete Gratis vira "(mais lento + 4) a (mais lento + 8) dias uteis" (folga de 3 dias uteis
+//   pedida pelo Jaderson no mesmo dia), contado como o pago
 //   (a partir de hoje), e a data estimada fica sempre depois da do pago mais lento.
 // ATENCAO (set/2026): este no REORDENA no fim. Se o aviso de greve estiver ativo,
 // a transportadora precisa continuar no topo — senao a ordem definida no no anterior
@@ -85,7 +86,7 @@ if (j && Array.isArray(j.options)) {
   if (maisLento > 10) {
     j.options.forEach(function(o){
       if (!o || o.id !== 'gratis') return;
-      const de = maisLento + 1, ate = maisLento + 5;
+      const de = maisLento + 4, ate = maisLento + 8;
       o.eta = de + ' a ' + ate + ' dias úteis';
       o.eta_dias = ate;
       o.eta_ajustado_pago = maisLento;
