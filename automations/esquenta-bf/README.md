@@ -73,3 +73,14 @@ Slider ligado às 23h31 de 06/11 (`an_site.esquenta_popup = on`). Lista começou
   inválidos ("não pode ser usado junto com outros cupons").
 - Testado: `ESQ15-U5E` sozinho continua válido (15%). `ESQ15-U5E,IMUNOFOSFO` e `IMUNOFOSFO,ESQ10-U5E` deixam só o
   do Esquenta. `IMUNOFOSFO,PROMO5` segue como antes.
+
+## Arte com toda a linha (09/11/2026)
+
+A arte anterior mostrava só o ImunoFosfo, mas o Esquenta vale para todos os produtos. A arte nova é `esquenta-black-todos-produtos.jpg` (1080×1080), com os 15 produtos ativos da loja. Só fica de fora o ImunoFosfo USA, duplicado, e o Life Protein, com 2 unidades.
+
+Como foi feita:
+1. **Cenário:** gerado no Higgsfield (`gpt_image_2_6`), com pódio de 3 degraus azul-marinho, fogo e brasas, sem texto nem produto.
+2. **Produtos:** os mockups da Shopify, com o fundo removido pelo `image_background_remover` do Higgsfield. São os rótulos reais, nada gerado por IA.
+3. **Montagem:** em HTML (`arte-todos/arte.html`, com as posições em `layout.json`), fotografada com o Chromium (`node render.js 2 saida.png`). Texto em Montserrat, sem mostrar desconto.
+
+`arte.html` usa como fundo o `bg1.png` (cenário do Higgsfield) e os recortes em `trim/`, que ficaram só no scratchpad. Para refazer, gere o cenário e os recortes de novo.
