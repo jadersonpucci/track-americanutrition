@@ -64,3 +64,19 @@ vale para o checkout e para a Serena:
   `postagem_txt` e `corte_12h`. O checkout ainda mostra só o prazo em dias; a data está disponível para exibir.
 - Testado: ter 10h30 → posta hoje; ter 13h → posta qua (+1); sáb → posta seg; qui 19/11 à tarde → posta seg 23/11
   (20/11 é feriado). No ar às 9h40 de 09/11: prazos iguais (antes do corte) e datas preenchidas.
+
+## Frete Grátis sempre mais lento que o pago (09/11/2026)
+
+Quando o frete pago mais lento passa de **10 dias úteis** (já com os +2 e o corte das 12h), o Frete Grátis deixa de mostrar "10 a 15 dias úteis". Esse prazo ficava igual ou mais rápido que o pago.
+
+Nesse caso ele passa a mostrar **(mais lento + 1) a (mais lento + 5) dias úteis**, contados como o pago, e a data estimada fica sempre depois da do pago mais lento.
+
+O cálculo fica no nó "Renomear JT" (`cotacao-renomear-jt-prazo.js`). A opção grátis leva também `eta_ajustado_pago` com o prazo do pago usado como base.
+
+Teste ao vivo, mesma cotação, às 10h de 09/11:
+
+| Destino | Pago mais lento | Frete Grátis |
+|---|---|---|
+| Manaus | PAC, 22 dias | 23 a 27 dias |
+| Macapá | PAC, 17 dias | 18 a 22 dias |
+| São Paulo | PAC, 7 dias | continua 10 a 15 dias |

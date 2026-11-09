@@ -7,6 +7,10 @@
 //   postagem, entao depois do corte o prazo ganha +1 dia util. Cada opcao leva tambem a data estimada de entrega
 //   (entrega_ate, contando so dias uteis: sem sabado, domingo e feriado nacional).
 // Frete Gratis (eta_aprox=false, prazo interno 10-15 dias) permanece como esta no texto; ganha so a data estimada.
+// + FRETE GRATIS MAIS LENTO QUE O PAGO (09/11/2026, Jaderson): quando o frete pago mais lento passa de 10 dias
+//   uteis (ja com os +2 e o corte), o "10 a 15" do Frete Gratis ficava igual ou mais rapido que o pago e nao fazia
+//   sentido. Nesse caso o Frete Gratis vira "(mais lento + 1) a (mais lento + 5) dias uteis", contado como o pago
+//   (a partir de hoje), e a data estimada fica sempre depois da do pago mais lento.
 // ATENCAO (set/2026): este no REORDENA no fim. Se o aviso de greve estiver ativo,
 // a transportadora precisa continuar no topo — senao a ordem definida no no anterior
 // ("Normalizar Opcoes") seria desfeita aqui.
@@ -75,6 +79,19 @@ if (j && Array.isArray(j.options)) {
       const t = somarDiasUteis(postagem, o.eta_dias); o.entrega_ate = new Date(t).toISOString().slice(0, 10); o.entrega_ate_txt = dataTxt(t);
     }
   });
+  // Frete Gratis sempre mais lento que o pago mais lento (quando o pago passa de 10 dias uteis)
+  const pagos = j.options.filter(function(o){ return o && Number(o.price) > 0 && typeof o.eta_dias === 'number' && o.eta_dias < 999; });
+  const maisLento = pagos.length ? Math.max.apply(null, pagos.map(function(o){ return o.eta_dias; })) : 0;
+  if (maisLento > 10) {
+    j.options.forEach(function(o){
+      if (!o || o.id !== 'gratis') return;
+      const de = maisLento + 1, ate = maisLento + 5;
+      o.eta = de + ' a ' + ate + ' dias úteis';
+      o.eta_dias = ate;
+      o.eta_ajustado_pago = maisLento;
+      const t = somarDiasUteis(hojeBR, ate); o.entrega_ate = new Date(t).toISOString().slice(0, 10); o.entrega_ate_txt = dataTxt(t);
+    });
+  }
   if (greveAtiva) {
     j.options.sort(function(a, b){
       return (prioridade(a) - prioridade(b)) || (a.eta_dias - b.eta_dias) || (a.price - b.price);
