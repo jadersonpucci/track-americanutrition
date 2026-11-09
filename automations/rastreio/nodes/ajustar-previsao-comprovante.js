@@ -1,4 +1,5 @@
-// 1) REGRA DE EXIBICAO (jul/2026): soma 2 dias a previsao de entrega vinda da API
+// 1) REGRA DE EXIBICAO (jul/2026): soma 2 dias a previsao de entrega vinda da API. Desde 09/11/2026 (Jaderson) sao
+//    2 DIAS UTEIS: sabado, domingo e feriado nacional nao contam, e a previsao nunca cai em dia sem entrega.
 //    (Envia/PacoteVicio na rota BR, Shippo/Supabase na rota USA).
 // 2) COMPROVANTE DE ENTREGA (ago/2026): anexa o POD (canhoto assinado) que a
 //    transportadora envia, servido pelo nosso proxy /webhook/rastreio/comprovante
@@ -8,20 +9,44 @@
 //    servida em /webhook/rastreio/comprovante-correios.
 const j = ($input.first() && $input.first().json) ? $input.first().json : {};
 
-// ---------- previsao +2d ----------
+// ---------- dias uteis (sem fim de semana e sem feriado nacional) ----------
+// Feriados nacionais fixos + moveis pela Pascoa: Carnaval (seg e ter), Sexta-feira Santa e Corpus Christi.
+// 20/11 (Consciencia Negra) e nacional desde 2024. Feriado estadual/municipal nao entra.
+const DIA_MS = 86400000;
+function pascoa(y) {
+  const a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
+  return Date.UTC(y, Math.floor((h + l - 7 * m + 114) / 31) - 1, ((h + l - 7 * m + 114) % 31) + 1);
+}
+const _feriados = {};
+function ehFeriado(t) {
+  const y = new Date(t).getUTCFullYear();
+  if (!_feriados[y]) {
+    const p = pascoa(y);
+    const lista = ['01-01', '04-21', '05-01', '09-07', '10-12', '11-02', '11-15', '11-20', '12-25'].map((s) => Date.UTC(y, +s.slice(0, 2) - 1, +s.slice(3)));
+    lista.push(p - 48 * DIA_MS, p - 47 * DIA_MS, p - 2 * DIA_MS, p + 60 * DIA_MS);
+    _feriados[y] = new Set(lista);
+  }
+  return _feriados[y].has(t);
+}
+const diaUtil = (t) => { const w = new Date(t).getUTCDay(); return w !== 0 && w !== 6 && !ehFeriado(t); };
+// soma n dias uteis a uma data (t = meia-noite UTC do dia); o resultado sempre e dia util
+function somarDiasUteis(t, n) {
+  let k = 0;
+  while (k < n) { t += DIA_MS; if (diaUtil(t)) k++; }
+  while (!diaUtil(t)) t += DIA_MS;
+  return t;
+}
+
+// ---------- previsao +2 dias uteis ----------
 try {
   if (j && j.rastreio && j.rastreio.previsao_entrega) {
     const raw = String(j.rastreio.previsao_entrega).split('T')[0].split(' ')[0];
     const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
     if (m) {
-      const pd = new Date(raw + 'T12:00:00-03:00');
-      if (!isNaN(pd)) {
-        pd.setDate(pd.getDate() + 2);
-        const y = pd.getFullYear();
-        const mo = String(pd.getMonth() + 1).padStart(2, '0');
-        const da = String(pd.getDate()).padStart(2, '0');
-        j.rastreio.previsao_entrega = y + '-' + mo + '-' + da;
-      }
+      const t = somarDiasUteis(Date.UTC(+m[1], +m[2] - 1, +m[3]), 2);
+      j.rastreio.previsao_entrega = new Date(t).toISOString().slice(0, 10);
     }
   }
 } catch (e) {

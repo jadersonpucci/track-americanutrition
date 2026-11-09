@@ -34,6 +34,30 @@ const hojeISO = new Date().toLocaleDateString('en-CA', { timeZone: TZ });   // 2
 const diaNum = s => { const m = String(s == null ? '' : s).match(/(\d{4})-(\d{2})-(\d{2})/); return m ? Date.UTC(+m[1], +m[2] - 1, +m[3]) : null; };
 const difDias = (a, b) => (a === null || b === null) ? null : Math.round((a - b) / 86400000);
 const hojeNum = diaNum(hojeISO);
+// 09/11/2026 (Jaderson): prazo de entrega so conta DIA UTIL. Sabado, domingo e feriado nacional (fixos + Carnaval,
+// Sexta-feira Santa e Corpus Christi pela Pascoa; 20/11 desde 2024) nao contam. A data da previsao ja vem do motor em dia util.
+const DIA_MS = 86400000;
+function pascoa(y) {
+  const a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
+  return Date.UTC(y, Math.floor((h + l - 7 * m + 114) / 31) - 1, ((h + l - 7 * m + 114) % 31) + 1);
+}
+const _feriados = {};
+function ehFeriado(t) {
+  const y = new Date(t).getUTCFullYear();
+  if (!_feriados[y]) {
+    const p = pascoa(y);
+    const lista = ['01-01', '04-21', '05-01', '09-07', '10-12', '11-02', '11-15', '11-20', '12-25'].map((s) => Date.UTC(y, +s.slice(0, 2) - 1, +s.slice(3)));
+    lista.push(p - 48 * DIA_MS, p - 47 * DIA_MS, p - 2 * DIA_MS, p + 60 * DIA_MS);
+    _feriados[y] = new Set(lista);
+  }
+  return _feriados[y].has(t);
+}
+const diaUtil = (t) => { const w = new Date(t).getUTCDay(); return w !== 0 && w !== 6 && !ehFeriado(t); };
+// dias uteis no intervalo (a, b], com a < b
+const uteisEntre = (a, b) => { let n = 0; for (let t = a + DIA_MS; t <= b; t += DIA_MS) if (diaUtil(t)) n++; return n; };
+const nUteis = (n) => n + (n === 1 ? ' dia util' : ' dias uteis');
 // data de evento -> dia do calendario em BRT (o motor manda com e sem fuso)
 function diaDoEvento(v) {
   if (!v) return null;
@@ -77,15 +101,18 @@ function fmtPrevisao(p) {
 
 const ondeEsta = (eventos[0] && (eventos[0].local_destino || eventos[0].local_origem)) || null;
 const prev = fmtPrevisao(r.previsao_entrega);
-// dias ATE a previsao: positivo = falta, 0 = e hoje, negativo = o prazo passou
-const diasPrev = difDias(diaNum(r.previsao_entrega), hojeNum);
+// dias ATE a previsao: positivo = falta, 0 = e hoje, negativo = o prazo passou (calendario; o texto conta dia util)
+const prevNum = diaNum(r.previsao_entrega);
+const diasPrev = difDias(prevNum, hojeNum);
+const uteisAtePrev = (diasPrev !== null && diasPrev > 0) ? uteisEntre(hojeNum, prevNum) : 0;
+const uteisDesdePrev = (diasPrev !== null && diasPrev < 0) ? Math.max(1, uteisEntre(prevNum, hojeNum)) : 0;
 let prevSituacao = null;
 if (diasPrev !== null) {
-  if (diasPrev > 1) prevSituacao = 'faltam ' + diasPrev + ' dias';
+  if (diasPrev === 0) prevSituacao = 'e HOJE';
   else if (diasPrev === 1) prevSituacao = 'e amanha';
-  else if (diasPrev === 0) prevSituacao = 'e HOJE';
+  else if (diasPrev > 1) prevSituacao = (uteisAtePrev === 1 ? 'falta 1 dia util' : 'faltam ' + nUteis(uteisAtePrev));
   else if (diasPrev === -1) prevSituacao = 'era ontem, o prazo passou';
-  else prevSituacao = 'o prazo passou ha ' + (-diasPrev) + ' dias';
+  else prevSituacao = 'o prazo passou ha ' + nUteis(uteisDesdePrev);
 }
 // o flag do motor vinha false com previsao vencida: vale o que a conta diz
 const atrasado = entregue ? false : ((diasPrev !== null && diasPrev < 0) || r.atrasado === true);
@@ -98,7 +125,7 @@ if (r.status_atual) msg += '*Situacao atual:* ' + r.status_atual + NL;
 if (r.detalhe_atual && !/\[AVALIACAO_CARD\]/.test(r.detalhe_atual)) msg += '_' + r.detalhe_atual + '_' + NL;
 if (ondeEsta && !entregue) msg += E_PIN + ' *Onde esta:* ' + ondeEsta + NL;
 if (!entregue && prev) msg += E_CAL + ' *Previsao de entrega:* ' + prev + (prevSituacao ? ' (' + prevSituacao + ')' : '') + NL;
-if (atrasado) msg += E_WARN + ' O prazo estimado passou' + (diasPrev !== null && diasPrev < 0 ? (diasPrev === -1 ? ' ontem' : ' ha ' + (-diasPrev) + ' dias') : '') + '.' + NL;
+if (atrasado) msg += E_WARN + ' O prazo estimado passou' + (diasPrev !== null && diasPrev < 0 ? (diasPrev === -1 ? ' ontem' : ' ha ' + nUteis(uteisDesdePrev)) : '') + '.' + NL;
 if (parado) msg += E_WARN + ' Sem nova movimentacao ' + emPalavras(diasParado) + '.' + NL;
 msg += E_TAG + ' *Codigo:* ' + codigo + NL;
 
@@ -150,6 +177,7 @@ return [{ json: {
   previsao_entrega: prev || null,
   previsao_situacao: prevSituacao,
   dias_para_previsao: diasPrev,
+  dias_uteis_para_previsao: diasPrev !== null ? (diasPrev >= 0 ? uteisAtePrev : -uteisDesdePrev) : null,
   dias_sem_movimentacao: diasParado,
   entregue: entregue,
   atrasado: atrasado,

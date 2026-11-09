@@ -50,3 +50,17 @@ em [`cotacao-checkout-normalizar.js`](cotacao-checkout-normalizar.js) (token com
 - 04/11/2026: a **Serena** (`/webhook/calcular-frete`, usado também pelo Gerar PIX e Gerar Boleto) passa a usar a
   mesma cotação do checkout: o nó "Formatar resposta" chama o `/webhook/frete-cotacao` (código em
   `automations/serena-whatsapp/nodes/calcular-frete-formatar-resposta.js`). Envia só de reserva, também com +2%.
+
+## Horário de corte das 12h e data estimada (09/11/2026)
+
+No "Renomear JT" da cotação (`lszlpy1Pl4dnHW2w`, [`cotacao-renomear-jt-prazo.js`](cotacao-renomear-jt-prazo.js)), que
+vale para o checkout e para a Serena:
+
+- **Corte às 12h (Brasília):** pedido em dia útil até 12h é postado no mesmo dia; depois das 12h, ou em sábado,
+  domingo e feriado, é postado no próximo dia útil. Como o prazo da transportadora conta da postagem, depois do corte
+  o prazo exibido ganha **+1 dia útil** (além dos +2 de sempre). O Frete Grátis mantém o texto "10 a 15 dias úteis".
+- **Data estimada:** cada opção leva `entrega_ate` (AAAA-MM-DD) e `entrega_ate_txt` ("qui, 12/11"), contando só dias
+  úteis (sem fim de semana e feriado nacional, mesma tabela do rastreio). A resposta leva também `postagem`,
+  `postagem_txt` e `corte_12h`. O checkout ainda mostra só o prazo em dias; a data está disponível para exibir.
+- Testado: ter 10h30 → posta hoje; ter 13h → posta qua (+1); sáb → posta seg; qui 19/11 à tarde → posta seg 23/11
+  (20/11 é feriado). No ar às 9h40 de 09/11: prazos iguais (antes do corte) e datas preenchidas.

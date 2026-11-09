@@ -204,3 +204,18 @@ TAX) e no atributo `CPF`, que a Frenet não enxerga. Por isso as etiquetas saía
 - **Retroativo:** 538 pedidos dos últimos 30 dias preenchidos em 09/11 (os 8 restantes não têm documento, ex.: EUA).
 - **No app da Frenet:** Metacampos de Pedido → CPF ou CNPJ = `an_fiscal:cpf_cnpj`; Nota fiscal = `nfe:chave`;
   Salvar e Sincronizar.
+
+## Previsão de entrega só em dias úteis (09/11/2026)
+
+Regra do Jaderson: previsão de entrega conta só dia útil; sábado, domingo e feriado não contam.
+
+- **Motor** (`Pobps91zvSWe9wCA`, nó "Ajustar Previsao +2d", `nodes/ajustar-previsao-comprovante.js`): os +2 dias de
+  exibição viraram **+2 dias úteis**, e a data final nunca cai em fim de semana ou feriado. Vale para a página
+  track.americanutrition.com e para tudo que lê o motor (Serena, alertas de rastreio).
+- **Feriados:** nacionais fixos (01/01, 21/04, 01/05, 07/09, 12/10, 02/11, 15/11, 20/11, 25/12) e móveis pela Páscoa
+  (Carnaval segunda e terça, Sexta-feira Santa, Corpus Christi). Feriado estadual e municipal não entra.
+- **Serena** (`[Serena Tool] Consultar Status Pedido`, `84YAdtnfbX1Iscxa`, `serena-whatsapp/nodes/status-pedido-resumir.js`):
+  "faltam N dias úteis" e "o prazo passou há N dias úteis" (hoje/amanhã/ontem continuam no calendário); campo novo
+  `dias_uteis_para_previsao`.
+- Conferido depois de publicar: previsões no ar caindo só em dia útil; AP706147431BR com previsão 19/11 → "faltam 8
+  dias úteis" em 09/11.
