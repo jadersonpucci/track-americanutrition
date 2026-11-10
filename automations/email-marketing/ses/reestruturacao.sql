@@ -222,7 +222,7 @@ create or replace function email_agendar() returns jsonb
 language plpgsql security definer set search_path = public, extensions as $$
 declare ini timestamptz := (select valor from email_config where chave = 'fluxos_inicio')::timestamptz;
   a int := 0; c int := 0; e int := 0; g int := 0; k int := 0; r int := 0; v int := 0;
-  pd record; d jsonb; car carrinhos_abandonados; fim date; rg jsonb; n bigint; rref text;
+  pd record; d jsonb; car carrinhos_abandonados; fim date; rg jsonb; n bigint; rref text; nv record; w int := 0;
 begin
   -- 1) Boas-vindas: inscreveu depois do inicio e ainda nao comprou (3 emails)
   with novos as (
@@ -330,6 +330,28 @@ begin
     update email_pedidos set agendado_em = now() where pedido_id = pd.pedido_id;
   end loop;
 
+  -- 5b) Navegacao abandonada (site, so pessoas identificadas): viu produto ha mais de 2h (e menos de 2 dias),
+  --     nao comprou nem abriu carrinho desde entao e nao recebeu este email nos ultimos 7 dias.
+  for nv in
+    select e.email, min(e.criado_em) primeiro, max(e.criado_em) ultimo from email_nav_eventos e
+     where e.criado_em > now() - interval '2 days' and e.criado_em >= ini
+     group by e.email having max(e.criado_em) < now() - interval '2 hours'
+  loop
+    continue when exists (select 1 from email_fila f where f.email = nv.email and f.slug = '4.1-navegacao-abandonada'
+                           and f.criado_em > now() - interval '7 days');
+    continue when exists (select 1 from email_pedidos p where p.email = nv.email and p.criado_em > nv.primeiro - interval '1 hour');
+    continue when exists (select 1 from carrinhos_abandonados c where lower(trim(c.email)) = nv.email
+                           and c.criado_em > nv.primeiro - interval '1 hour');
+    d := email_dados_nav(nv.email, nv.primeiro);
+    continue when d is null;
+    insert into email_fila (email, slug, fluxo, ref, enviar_em, prioridade, dados)
+    values (nv.email, '4.1-navegacao-abandonada', 'navegacao', 'nav:' || to_char(nv.ultimo at time zone 'UTC', 'YYYYMMDDHH24MI'),
+            email_janela(now()), 2, d)
+    on conflict do nothing;
+    w := w + 1;
+  end loop;
+  delete from email_nav_eventos where criado_em < now() - interval '45 days';
+
   -- 5) VIP: o pedido pago que fez o cliente chegar a 3 pedidos (3 dias depois, para nao bater com o resto)
   with ins as (
     insert into email_fila (email, slug, fluxo, ref, enviar_em, prioridade)
@@ -338,7 +360,7 @@ begin
     on conflict do nothing returning 1)
   select count(*) into v from ins;
 
-  return jsonb_build_object('boas_vindas', a, 'carrinho', c, 'guia', g, 'complemento', k, 'avaliacao', e, 'recompra', r, 'vip', v);
+  return jsonb_build_object('boas_vindas', a, 'carrinho', c, 'guia', g, 'complemento', k, 'avaliacao', e, 'recompra', r, 'navegacao', w, 'vip', v);
 end $$;
 
 -- ------------------------------------------------------------------ despachante (com controle de frequencia)
@@ -389,6 +411,10 @@ begin
      and exists (select 1 from email_pedidos p cross join lateral jsonb_array_elements(coalesce(p.itens, '[]'::jsonb)) i
                   where p.email = f.email and not p.cancelado and p.criado_em > f.criado_em - interval '30 days'
                     and email_produto(i->>'titulo') = f.dados->>'complemento_chave');
+  update email_fila f set status = 'pulado', motivo = 'comprou ou abriu carrinho depois de navegar'
+   where f.status = 'pendente' and f.fluxo = 'navegacao' and f.enviar_em <= now()
+     and (exists (select 1 from email_pedidos p where p.email = f.email and not p.cancelado and p.criado_em > f.criado_em - interval '3 hours')
+          or exists (select 1 from carrinhos_abandonados c where lower(trim(c.email)) = f.email and c.criado_em > f.criado_em - interval '3 hours'));
   -- marketing para quem recebeu 5+ emails em 60 dias e nao abriu nem clicou nenhum: para
   update email_fila f set status = 'pulado', motivo = 'sem engajamento'
    where f.status = 'pendente' and f.prioridade = 2 and f.enviar_em <= now()
@@ -424,7 +450,7 @@ begin
       email_preencher(regexp_replace(t.assunto, '\{\{\s*nome\s*\}\}', n.nome, 'g'), f.dados) as assunto,
       email_preencher(regexp_replace(regexp_replace(t.html, '\{\{\s*nome\s*\}\}', n.nome, 'g'),
         '\{\{\s*link_descadastro\s*\}\}', email_link_descadastro(f.email), 'g'), f.dados) as html,
-      email_link_descadastro(f.email) as link, f.dados->>'checkout_url' as checkout_url
+      email_link_descadastro(f.email) as link, f.dados->>'checkout_url' as checkout_url, email_nav_token(f.id) as nav
       from email_fila f join email_templates t on t.slug = f.slug left join email_contatos e on e.email = f.email
       cross join lateral (select coalesce(nullif(initcap(split_part(trim(coalesce(e.nome, '')), ' ', 1)), ''),
                                           nullif(f.dados->>'nome', ''), 'você') as nome) n

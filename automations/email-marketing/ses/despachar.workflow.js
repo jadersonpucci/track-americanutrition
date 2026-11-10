@@ -1,4 +1,4 @@
-// n8n "[Email] Despachar fila (SES)", cron 5 min. Ate 150 por rodada, 10 por segundo (limite da conta: 14/s).
+// n8n "[Email] Despachar fila (SES)" (y6lJyKkXGLnLOuqX), cron 5 min. Ate 150 por rodada, 10 por segundo (limite da conta: 14/s).
 // Credenciais do n8n (Postgres account, AWS SES, Shopify API Token).
 // v2 (10/11/2026, noite): substitui rkAbBsGIbcznBPjk. O ultimo email do carrinho (6.3) ganha um cupom de 10% unico,
 // de uso unico, valido por 24h a partir do envio, criado na Shopify na hora (discountCodeBasicCreate). O link do
@@ -48,12 +48,13 @@ const itens = (r.itens || []).filter(it => !precisa(it) || teste || cupom[it.id]
   const troca = (t) => String(t || '').split('{{ cupom_codigo }}').join(cod).split('{{ checkout_cupom_url }}').join(url.replace(/&/g, '&amp;'));
   return Object.assign({}, it, { html: troca(it.html), assunto: troca(it.assunto) });
 });
-// UTM (10/11/2026): links do site ganham utm_source=email, utm_medium=fluxo, utm_campaign=<fluxo>, utm_content=<modelo>.
-const comUtm = (html, fluxo, slug) => String(html || '').replace(/href="(https:\\/\\/(?:www\\.)?americanutrition\\.com[^"]*)"/g, function (m, u) {
+// UTM (10/11/2026): links do site ganham utm_source=email, utm_medium=fluxo, utm_campaign=<fluxo>, utm_content=<modelo>
+// e an_e=<token> (identifica quem clicou, para a navegacao abandonada; o token e assinado no banco).
+const comUtm = (html, fluxo, slug, nav) => String(html || '').replace(/href="(https:\\/\\/(?:www\\.)?americanutrition\\.com[^"]*)"/g, function (m, u) {
   if (/utm_source=/.test(u)) return m;
   const amp = u.replace(/&amp;/g, '&');
   const [base, hash] = amp.split('#');
-  const q = 'utm_source=email&utm_medium=fluxo&utm_campaign=' + encodeURIComponent(fluxo) + '&utm_content=' + encodeURIComponent(slug);
+  const q = 'utm_source=email&utm_medium=fluxo&utm_campaign=' + encodeURIComponent(fluxo) + '&utm_content=' + encodeURIComponent(slug) + (nav ? '&an_e=' + encodeURIComponent(nav) : '');
   const novo = base + (base.indexOf('?') >= 0 ? '&' : '?') + q + (hash ? '#' + hash : '');
   return 'href="' + novo.replace(/&/g, '&amp;') + '"';
 });
@@ -67,7 +68,7 @@ return itens.map(function (it) {
     EmailTags: [{ Name: 'modelo', Value: tag(it.slug) }, { Name: 'fluxo', Value: tag(it.fluxo) }, { Name: 'fila', Value: String(it.id) }],
     Content: { Simple: {
       Subject: { Data: (teste ? '[TESTE] ' : '') + it.assunto, Charset: 'UTF-8' },
-      Body: { Html: { Data: comUtm(it.html, it.fluxo, it.slug), Charset: 'UTF-8' } },
+      Body: { Html: { Data: comUtm(it.html, it.fluxo, it.slug, teste ? '' : it.nav), Charset: 'UTF-8' } },
       Headers: [
         { Name: 'List-Unsubscribe', Value: '<' + it.link + '>' },
         { Name: 'List-Unsubscribe-Post', Value: 'List-Unsubscribe=One-Click' }

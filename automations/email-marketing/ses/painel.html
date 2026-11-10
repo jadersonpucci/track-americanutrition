@@ -215,7 +215,7 @@ tbody tr:hover td{background:var(--surface-2)}
   function dt(s){ if(!s) return '—'; var d = new Date(s); return d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}) + ' ' + d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); }
   function dia(s){ var p = String(s).split('-'); return p[2] + '/' + p[1]; }
   function css(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
-  var FLUXOS = { boas_vindas:['Boas-vindas','Quem se inscreve na lista e ainda não comprou'], carrinho:['Carrinho abandonado','Quem começou o checkout e não pagou: itens, link do carrinho e aviso de cartão recusado'], pos_compra:['Entrega','Começa quando o pedido é entregue: guia de uso de cada produto, complemento certo e avaliação'], recompra:['Recompra','Data calculada pela dose de cada produto, contando do dia seguinte à entrega'], vip:['VIP','Quem chega ao 3º pedido'], navegacao:['Navegação abandonada','Ainda no Klaviyo (precisa do rastreio do site)'] };
+  var FLUXOS = { boas_vindas:['Boas-vindas','Quem se inscreve na lista e ainda não comprou'], carrinho:['Carrinho abandonado','Quem começou o checkout e não pagou: itens, link do carrinho e aviso de cartão recusado'], pos_compra:['Entrega','Começa quando o pedido é entregue: guia de uso de cada produto, complemento certo e avaliação'], recompra:['Recompra','Data calculada pela dose de cada produto, contando do dia seguinte à entrega'], vip:['VIP','Quem chega ao 3º pedido'], navegacao:['Navegação abandonada','Quem viu um produto no site e não comprou (só visitantes identificados: clicaram num email nosso, estão logados ou preencheram um formulário)'] };
   function nomeFluxo(f){ return (FLUXOS[f] || [f])[0]; }
 
   document.getElementById('tema').onclick = function(){
@@ -306,7 +306,7 @@ tbody tr:hover td{background:var(--surface-2)}
     ['boas_vindas','carrinho','pos_compra','recompra','vip','navegacao'].forEach(function(k){
       if (!grupos[k]) return;
       var fi = FLUXOS[k] || [k, ''];
-      var ativo = k !== 'navegacao';
+      var ativo = true;
       h += '<div class="flow"><div class="flow-h"><h3>' + fi[0] + '</h3>' + chip(ativo ? 'good' : 'neutral', ativo ? 'ativo' : 'Klaviyo') + '<span class="meta" style="margin:0">' + fi[1] + '</span></div><div class="emails">';
       grupos[k].forEach(function(m){
         var s = pm[m.slug] || {}, e = s.entregues || 0;

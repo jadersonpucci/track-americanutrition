@@ -1,0 +1,43 @@
+{%- comment -%}
+  AN navegacao (10/11/2026): registra produto visto SO de visitante identificado, para o email de navegacao abandonada.
+  Identificacao: link de email nosso (?an_e=), cliente logado (id assinado aqui no Liquid) ou formulario com email.
+  Visitante anonimo nao manda nada. Envia por sendBeacon (form-urlencoded) para o webhook n8n an-nav.
+  NAV_SEGREDO = email_config.nav_segredo (so no tema publicado, nunca no repositorio).
+{%- endcomment -%}
+<script>
+(function () {
+  try {
+    var URL_N = 'https://n8n.americanutrition.com/webhook/an-nav', K = 'an_nav_id', LS = null, id = null, cid = null;
+    try { LS = window.localStorage; id = LS.getItem(K); cid = LS.getItem('an_cid'); } catch (e) {}
+    var m = location.search.match(/[?&]an_e=([0-9]+-[0-9a-f]{16})/);
+    if (m) id = 'e:' + m[1];
+    {%- if customer %}
+    id = 'c:{{ customer.id }}-{{ customer.id | append: '' | hmac_sha256: 'NAV_SEGREDO' | slice: 0, 16 }}';
+    {%- endif %}
+    if (!cid) cid = Math.random().toString(36).slice(2) + Date.now().toString(36);
+    try { if (id) LS.setItem(K, id); LS.setItem('an_cid', cid); } catch (e) {}
+    var enviar = function (o) {
+      if (!id) return;
+      o.id = id; o.cid = cid;
+      var b = new URLSearchParams(); b.set('d', JSON.stringify(o));
+      if (navigator.sendBeacon) navigator.sendBeacon(URL_N, b);
+      else fetch(URL_N, { method: 'POST', body: b, mode: 'no-cors', keepalive: true });
+    };
+    document.addEventListener('submit', function (ev) {
+      try {
+        if (id) return;
+        var i = ev.target && ev.target.querySelector && ev.target.querySelector('input[type=email], input[name*=email]');
+        var v = i && String(i.value || '').trim().toLowerCase();
+        if (v && /^[^@\s]+@[^@\s]+\.[a-z]{2,}$/.test(v)) { id = 'f:' + v; try { LS.setItem(K, id); } catch (e) {} enviar({ tipo: 'id' }); }
+      } catch (e) {}
+    }, true);
+    {%- if template.name == 'product' and product %}
+    {%- assign an_v = product.selected_or_first_available_variant %}
+    enviar({ tipo: 'produto', produto: {
+      titulo: {{ product.title | json }}, handle: {{ product.handle | json }}, variant_id: '{{ an_v.id }}',
+      preco: '{{ an_v.price | divided_by: 100.0 }}', foto: {{ product.featured_image | image_url: width: 600 | prepend: 'https:' | json }},
+      url: {{ shop.url | append: product.url | json }} } });
+    {%- endif %}
+  } catch (e) {}
+})();
+</script>

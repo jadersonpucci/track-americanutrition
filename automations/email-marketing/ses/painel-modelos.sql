@@ -22,7 +22,7 @@ language sql stable security definer set search_path = public, extensions as $$
       ('3.1-recompra-acabando', 'recompra', 41, 'Alguns dias antes de acabar (calculado)'),
       ('3.2-recompra-acabou', 'recompra', 42, '3 dias depois de acabar'),
       ('5.1-cliente-vip', 'vip', 51, '3 dias após o 3º pedido'),
-      ('4.1-navegacao-abandonada', 'navegacao', 61, 'Ainda no Klaviyo')) m(slug, fluxo, ordem, quando) on m.slug = t.slug), '[]'::jsonb) end
+      ('4.1-navegacao-abandonada', 'navegacao', 61, '~2h depois de ver um produto no site')) m(slug, fluxo, ordem, quando) on m.slug = t.slug), '[]'::jsonb) end
 $$;
 
 create or replace function email_modelo_html(p_token text, p_slug text) returns text
@@ -52,3 +52,12 @@ update email_templates set exemplo = email_dados_carrinho(row(0, 'maria@exemplo.
 update email_templates set exemplo = exemplo || jsonb_build_object('cupom_codigo', 'VOLTA10-K7XQ2M',
    'checkout_cupom_url', 'https://checkout.americanutrition.com/?items=44436756234412%3A2%2C43843399712940%3A1&amp;discount=VOLTA10-K7XQ2M')
  where slug = '6.3-carrinho-ultima-chamada';
+
+-- exemplo da navegacao: viu o ImunoFosfo e tambem olhou o Omega
+update email_templates t set exemplo = jsonb_build_object('produto_nome', p.nome, 'produto_foto', p.foto, 'produto_url', p.url,
+    'nav_bloco', p.nav_html, 'nav_outros',
+    '<div style="font-family:''Inter'',Arial,Helvetica,sans-serif;font-size:12px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:#8A94A6;margin:6px 0 10px;text-align:center;">Você também olhou</div>' ||
+    replace(replace(replace(replace((select valor from email_config where chave = 'molde_item'), '__FOTO__', o.foto), '__NOME__', o.nome),
+      '__DETALHE__', '<a href="' || o.url || '" style="color:#07388E;font-weight:700;">Ver de novo &rarr;</a>'), '__VALOR__', email_brl(o.preco)))
+  from email_produtos p, email_produtos o
+ where p.chave = 'imunofosfo' and o.chave = 'omega' and t.slug = '4.1-navegacao-abandonada';

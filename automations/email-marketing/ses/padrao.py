@@ -312,25 +312,6 @@ EMAILS["2.3-pos-entrega-avaliacao"] = [
     aviso(f"💬 Ainda com dúvidas sobre seu produto? <a href=\"{SERENA}\" style=\"color:#ffffff;text-decoration:underline;font-weight:700;\">A Serena responde 24h</a>.", NAVY),
 ]
 
-EMAILS["4.1-navegacao-abandonada"] = [
-    hero("Aproveite", "Você viu algo interessante", f"{NOME}, ainda está pensando nisso?",
-         "Você visitou o ImunoFosfo e foi embora sem levar. Acontece. Mas algumas decisões valem a pena ser retomadas.",
-         IMG["imuno"], btn("Quero este produto", PROD, "red")),
-    texto("Tomar uma decisão de saúde nunca é por impulso. E está certo que seja assim.",
-          "Mas existe uma diferença entre pensar com calma e deixar para depois sem necessidade.",
-          f"{b('O organismo não espera o momento perfeito.')} O cuidado que começa hoje já faz diferença amanhã."),
-    checklist("Por que a America Nutrition", [
-        "Suplementos de alta pureza desenvolvidos com tecnologia americana",
-        "Mais de 10.000 avaliações verificadas no Judge.me",
-        "Sem efeitos colaterais conhecidos: uso seguro e prolongado",
-        "Pagamento seguro · Frete grátis acima de R$ 250 · Entrega rastreada"]),
-    depoimento("Fiquei semanas olhando e saindo sem comprar. Quando finalmente decidi, me arrependi de não ter comprado antes. A diferença foi perceptível desde a primeira semana.", "Cliente America Nutrition"),
-    acao([("Ver o produto agora", PROD, "red"), ("Ver depoimentos", DEP, "navy")], "🔒 Pagamento seguro · 📦 Entrega rastreada"),
-    serena(["Ficou com alguma dúvida sobre o ImunoFosfo?", "Me chama aqui: respondo em minutos, 24h 💚"], "Tirar uma dúvida &rarr;"),
-    titulo("Entre para a comunidade", "Faça parte antes de decidir", pad="4px 32px 16px"),
-    canais([("💬", GREEN, "WhatsApp", "Grupo oficial com suporte da equipe e novidades", "Entrar", GRUPO_WA),
-            ("f", "#1877F2", "Facebook", "Depoimentos reais e troca de experiências", "Participar", FB)]),
-]
 
 EMAILS["5.1-cliente-vip"] = [
     hero("👑 VIP", "Você é VIP", f"Você merece esse tratamento especial, {NOME}.",
@@ -476,6 +457,19 @@ def complemento_bloco(pr):
             f'{btn("Adicionar à minha rotina", ck, "red")}'
             f'<div style="height:10px;line-height:10px;font-size:0;">&nbsp;</div>{btn("Conhecer o produto", pr["url"], "navy")}</td></tr></table>')
 
+def nav_bloco(pr):
+    """cartao do produto que a pessoa viu no site (email de navegacao abandonada)"""
+    ck = f'{CHECKOUT}{pr["vid"]}%3A1'
+    preco = f'R$ {pr["preco"]:.2f}'.replace(".", ",")
+    return (f'<table {TB} style="border-collapse:separate;background:#fff;border:1px solid #E3E8F2;border-radius:16px;">'
+            f'<tr><td align="center" style="padding:22px 22px 6px;"><a href="{pr["url"]}"><img src="{pr["foto"]}" width="210" alt="{pr["nome"]}" style="display:block;width:210px;height:auto;border:0;"></a></td></tr>'
+            f'<tr><td style="padding:6px 24px 22px;text-align:center;"><div style="{S}font-size:11px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:{RED};">Você viu</div>'
+            f'<div style="{T}font-size:30px;font-weight:700;color:{NAVY};line-height:1.1;margin-top:2px;">{pr["nome"]}</div>'
+            f'<div style="{S}font-size:15px;line-height:1.6;color:{MUTED};margin:8px 0 6px;">{pr["pitch"]}</div>'
+            f'<div style="{T}font-size:28px;font-weight:700;color:{RED};margin:6px 0 16px;">{preco}</div>'
+            f'{btn("Quero o meu", ck, "red")}'
+            f'<div style="height:10px;line-height:10px;font-size:0;">&nbsp;</div>{btn("Ver detalhes do produto", pr["url"], "navy")}</td></tr></table>')
+
 EMAILS["2.1-pos-entrega-leia-antes"] = [
     hero("Pedido entregue", "Leia antes de abrir", f"Chegou, {NOME}! Comece do jeito certo.",
          "O jeito de usar faz toda a diferença no resultado. Separamos aqui o modo de uso de cada produto do seu pedido.", V % "produto_foto"),
@@ -553,6 +547,21 @@ EMAILS["6.3-carrinho-ultima-chamada"] = [
     acao([("Finalizar com 10% OFF", V % "checkout_cupom_url", "red")], "🔒 Pagamento seguro · 📦 Entrega rastreada · 💬 Serena 24h"),
 ]
 
+EMAILS["4.1-navegacao-abandonada"] = [
+    hero("Você viu", "Ainda pensando?", f"{NOME}, o {V % 'produto_nome'} continua te esperando.",
+         "Vimos que você deu uma olhada e não levou. Decisão de saúde se toma com calma, então separamos o que você precisa saber.",
+         V % "produto_foto", btn("Ver de novo", V % "produto_url", "white")),
+    lista_var("nav_bloco", "28px 32px 18px"),
+    lista_var("nav_outros", "0 32px 8px"),
+    checklist("Por que a America Nutrition", [
+        "Suplementos de alta pureza, com tecnologia americana",
+        "Milhares de avaliações verificadas de clientes",
+        "Pagamento seguro e entrega rastreada para todo o Brasil",
+        f"Suporte da {b('Serena')} 24h no WhatsApp, antes e depois da compra"]),
+    depoimento("Fiquei semanas olhando e saindo sem comprar. Quando finalmente decidi, me arrependi de não ter comprado antes.", "Cliente America Nutrition"),
+    serena(["Ficou com alguma dúvida sobre esse produto?", "Me chama aqui: respondo em minutos, 24h 💚"], "Tirar uma dúvida &rarr;"),
+]
+
 ASSUNTOS = {
     "1.1-boas-vindas-cupom": "{{ nome }}, seu cupom de 10% OFF chegou 🎁",
     "1.3-boas-vindas-como-age": "{{ nome }}, sabe como o ImunoFosfo age no seu organismo?",
@@ -562,7 +571,7 @@ ASSUNTOS = {
     "2.3-pos-entrega-avaliacao": "⭐ {{ nome }}, como está sendo com o {{ produto_principal }}?",
     "3.1-recompra-acabando": "{{ nome }}, seu {{ produto_principal }} acaba por volta de {{ data_fim }}",
     "3.2-recompra-acabou": "Seu {{ produto_principal }} acabou, {{ nome }}?",
-    "4.1-navegacao-abandonada": "O que faz você se sentir equilibrado?",
+    "4.1-navegacao-abandonada": "{{ nome }}, ainda pensando no {{ produto_nome }}?",
     "5.1-cliente-vip": "👑 Você é VIP, {{ nome }}: sua recompensa exclusiva chegou",
     "6.1-carrinho-itens": "{{ nome }}, seu carrinho ficou guardado 🛒",
     "6.2-carrinho-duvidas": "Ficou alguma dúvida, {{ nome }}?",
@@ -577,7 +586,7 @@ PREVIAS = {
     "2.3-pos-entrega-avaliacao": "Sua avaliação ajuda outras pessoas e ainda garante 5% OFF na próxima compra.",
     "3.1-recompra-acabando": "Fizemos a conta pela dose recomendada. Peça agora e não interrompa o uso.",
     "3.2-recompra-acabou": "Dá tempo de retomar sem perder o ritmo. O carrinho já abre com os mesmos produtos.",
-    "4.1-navegacao-abandonada": "Você visitou e foi embora. Mas algumas decisões valem a pena ser retomadas.",
+    "4.1-navegacao-abandonada": "Separamos o que você precisa saber para decidir com calma.",
     "5.1-cliente-vip": "Você faz parte de um grupo seleto. Preparamos um cupom exclusivo de 15% para você.",
     "6.1-carrinho-itens": "Tudo continua separado: é só tocar no botão para concluir.",
     "6.2-carrinho-duvidas": "Relatos de quem já usa, e a Serena para responder qualquer pergunta.",
@@ -593,16 +602,17 @@ def gerar_sql(out_dir):
     for i, pr in enumerate(PRODUTOS):
         comp = next((x for x in PRODUTOS if x["chave"] == pr["comp"]), None)
         vals = [pr["chave"], pr["padrao"], pr["nome"], pr["foto"], pr["url"], pr["vid"]]
+        extra = f", {sql_texto(pr['pitch'])}, {sql_texto(nav_bloco(pr))}"
         linhas.append("(" + ", ".join(sql_texto(v) for v in vals) + f", {pr['preco']}, {i + 1}, {pr['un'] or 'null'}, {pr['dose'] or 'null'}, "
                       f"{pr['fixo'] or 'null'}, {sql_texto(pr['comp'])}, {'true' if pr['rec'] else 'false'}, "
-                      f"{sql_texto(guia_bloco(pr))}, {sql_texto(complemento_bloco(pr))})")
+                      f"{sql_texto(guia_bloco(pr))}, {sql_texto(complemento_bloco(pr))}" + extra + ")")
     sql = ("-- Gerado por padrao.py (nao editar a mao). Catalogo dos emails por produto, 10/11/2026.\n"
-           "insert into email_produtos (chave, padrao, nome, foto, url, variant_id, preco, ordem, unidades, dose_dia, dias_fixos, complemento, recompra, guia_html, card_html) values\n"
+           "insert into email_produtos (chave, padrao, nome, foto, url, variant_id, preco, ordem, unidades, dose_dia, dias_fixos, complemento, recompra, guia_html, card_html, pitch, nav_html) values\n"
            + ",\n".join(linhas) +
            "\non conflict (chave) do update set padrao = excluded.padrao, nome = excluded.nome, foto = excluded.foto, url = excluded.url,"
            " variant_id = excluded.variant_id, preco = excluded.preco, ordem = excluded.ordem, unidades = excluded.unidades, dose_dia = excluded.dose_dia,"
            " dias_fixos = excluded.dias_fixos, complemento = excluded.complemento, recompra = excluded.recompra, guia_html = excluded.guia_html,"
-           " card_html = excluded.card_html, atualizado_em = now();\n"
+           " card_html = excluded.card_html, pitch = excluded.pitch, nav_html = excluded.nav_html, atualizado_em = now();\n"
            f"insert into email_config (chave, valor) values ('molde_item', {sql_texto(MOLDE_ITEM)}), ('molde_aviso', {sql_texto(MOLDE_AVISO)})\n"
            "on conflict (chave) do update set valor = excluded.valor;\n")
     with open(os.path.join(out_dir, "produtos.sql"), "w") as f:

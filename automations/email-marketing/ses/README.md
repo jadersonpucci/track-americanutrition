@@ -197,6 +197,26 @@ Modelos aposentados (ficam em `email_templates`, sem uso): 1.2, 2.1-pos-compra �
 Klaviyo: carrinho adicionado (`Ukh7KK`) e checkout abandonado (`S66Gjr`) pausados em 10/11 à noite. Continuam
 ligados só navegação abandonada, assinatura ativada e cobrança falhou.
 
+## Navegação abandonada própria (10/11/2026, noite)
+
+Pedido do Jaderson. Antes só existia no Klaviyo (o rastreio do site era dele).
+- **Site:** snippet `site/an-nav.liquid` instalado no tema publicado (`snippets/an-nav.liquid`, chamado no fim do
+  `layout/theme.liquid`; backup do layout no scratchpad). Só registra **visitante identificado**:
+  `e:` clicou num email nosso (o despachante põe `?an_e=<fila>-<assinatura>` em todo link do site),
+  `c:` cliente logado (id assinado no Liquid com `hmac_sha256` e o `nav_segredo`), `f:` preencheu formulário com email.
+  Visitante anônimo não manda nada. No repositório o segredo é o marcador `NAV_SEGREDO`; o valor fica só no tema e em
+  `email_config.nav_segredo`.
+- **n8n:** `[Email] Navegacao (site)` (`sWxSxmEAzH8f3tc7`, `navegacao.workflow.js`), POST `/webhook/an-nav`
+  (form-urlencoded `d=<json>`, via sendBeacon) → `email_nav_registrar` → `email_nav_eventos` (no máximo 60 eventos
+  por pessoa por hora; apaga com 45 dias).
+- **Banco:** `navegacao.sql` + passo 5b do `email_agendar`: viu produto há mais de 2h (e menos de 2 dias), não comprou
+  nem abriu carrinho depois, não recebeu o 4.1 em 7 dias → 4.1 com o produto mais visto (foto, preço, por que,
+  "Quero o meu" direto no checkout e "Ver detalhes") e até 2 outros que olhou. É marketing: só para inscrito.
+- Testado: página de produto real sem identificação não envia nada; identificada envia o produto; o segredo não aparece
+  no HTML; sem erro de JS.
+- O fluxo de navegação do Klaviyo (`VdxU27`) continua ligado por enquanto. Pausar quando o nosso já estiver
+  identificando gente suficiente (ver no painel).
+
 ## Próximos passos
 2. Primeiro envio de campanha: Esquenta Black Friday só para os engajados (compraram nos últimos 90 dias), como
    aquecimento da conta.
