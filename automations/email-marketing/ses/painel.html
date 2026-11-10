@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Email · America Nutrition</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#f3f5f9; --surface:#ffffff; --surface-2:#f7f8fb; --line:#e3e7ef; --grid:#eceff5;
+  --text:#0d1630; --text-2:#4b5672; --muted:#7c869d;
+  --brand:#07388E; --brand-ink:#0b1a3f; --accent:#D9121B;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a;
+  --good:#1a8a4a; --warn:#b7791f; --bad:#c62828;
+  --chip:#eef2fb;
+}
+@media (prefers-color-scheme: dark){
+  :root:where(:not([data-theme="light"])){
+    color-scheme:dark;
+    --bg:#0c1120; --surface:#141b2e; --surface-2:#18213a; --line:#26304a; --grid:#222b43;
+    --text:#eef1f8; --text-2:#b9c1d6; --muted:#8a93ab;
+    --brand:#5b8def; --brand-ink:#0b1a3f; --accent:#ef4b52;
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70;
+    --good:#43b56f; --warn:#d8a13a; --bad:#ef5350; --chip:#1d2742;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0c1120; --surface:#141b2e; --surface-2:#18213a; --line:#26304a; --grid:#222b43;
+  --text:#eef1f8; --text-2:#b9c1d6; --muted:#8a93ab;
+  --brand:#5b8def; --brand-ink:#0b1a3f; --accent:#ef4b52;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70;
+  --good:#43b56f; --warn:#d8a13a; --bad:#ef5350; --chip:#1d2742;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+header{background:#0b1a3f;color:#fff;padding:18px 16px 16px}
+.wrap{max-width:1240px;margin:0 auto;padding:0 16px}
+header .wrap{padding:0}
+.top{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:12px}
+.brand b{font-size:20px;font-weight:800;letter-spacing:.2px}
+.brand .stripes{display:flex;flex-direction:column;gap:3px}
+.brand .stripes i{display:block;width:22px;height:4px;background:#D9121B;border-radius:1px}
+.brand .stripes i:last-child{width:28px;margin-left:-6px}
+.sub{color:#b8c3e0;font-size:12px;margin-top:2px}
+.ctrl{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.seg{display:inline-flex;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:10px;padding:3px}
+.seg button{background:none;border:0;color:#d7def0;font:600 13px Inter,sans-serif;padding:7px 12px;border-radius:7px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:#fff;color:#0b1a3f}
+.badge{display:inline-flex;align-items:center;gap:6px;font:600 12px Inter,sans-serif;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.18)}
+.dot{width:8px;height:8px;border-radius:50%;background:#43b56f}
+.dot.teste{background:#d8a13a}.dot.off{background:#ef5350}
+.btn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:8px;padding:7px 10px;font:600 12px Inter,sans-serif;cursor:pointer}
+main{padding:18px 0 40px}
+h2{font-size:15px;margin:26px 0 10px;font-weight:700;color:var(--text)}
+h2 small{font-weight:500;color:var(--muted);font-size:12px;margin-left:6px}
+.grid{display:grid;gap:12px}
+.kpis{grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.kpi .l{color:var(--text-2);font-size:12px;font-weight:600}
+.kpi .v{font-size:26px;font-weight:800;letter-spacing:-.4px;margin-top:4px;font-variant-numeric:tabular-nums}
+.kpi .d{color:var(--muted);font-size:12px;margin-top:2px}
+.kpi.hero{grid-column:span 2;background:linear-gradient(135deg,#07388E,#0b1a3f);color:#fff;border:0}
+.kpi.hero .l,.kpi.hero .d{color:#c9d4f2}.kpi.hero .v{font-size:34px}
+.st{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600}
+.st.good{color:var(--good)}.st.warn{color:var(--warn)}.st.bad{color:var(--bad)}
+.charts{grid-template-columns:repeat(auto-fit,minmax(340px,1fr))}
+.chart h3{font-size:13px;margin:0 0 2px;font-weight:700}
+.chart .cap{color:var(--muted);font-size:12px;margin-bottom:8px}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--text-2);margin:2px 0 6px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:12px;height:3px;border-radius:2px;display:inline-block}
+svg{display:block;width:100%;height:auto;overflow:visible}
+.tip{position:fixed;pointer-events:none;background:var(--surface);color:var(--text);border:1px solid var(--line);box-shadow:0 8px 24px rgba(0,0,0,.18);border-radius:10px;padding:8px 10px;font-size:12px;z-index:9;display:none;min-width:130px}
+.tip b{display:block;margin-bottom:3px}
+.tip .r{display:flex;justify-content:space-between;gap:14px}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700;background:var(--surface-2);position:sticky;top:0}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:0}
+.tag{display:inline-block;padding:2px 8px;border-radius:999px;background:var(--chip);color:var(--text-2);font-size:11px;font-weight:600}
+.subj{color:var(--muted);font-size:12px;max-width:340px;overflow:hidden;text-overflow:ellipsis;display:block}
+.two{grid-template-columns:repeat(auto-fit,minmax(340px,1fr))}
+.list{margin:0;padding:0;list-style:none}
+.list li{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px dashed var(--line);font-size:13px}
+.list li:last-child{border-bottom:0}
+.list .k{color:var(--text-2)}
+.empty{color:var(--muted);font-size:13px;padding:14px 0}
+.bar{height:8px;border-radius:4px;background:var(--grid);overflow:hidden;margin-top:6px}
+.bar span{display:block;height:100%;background:var(--brand);border-radius:4px}
+.note{color:var(--muted);font-size:12px;margin-top:22px}
+.err{background:#fde8e8;color:#8a1c1c;border:1px solid #f5c2c2;border-radius:12px;padding:14px;margin-top:16px}
+.load{color:var(--muted);padding:40px 0;text-align:center}
+@media (max-width:640px){.kpi.hero{grid-column:1/-1}.kpi .v{font-size:22px}.kpi.hero .v{font-size:28px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="top">
+      <div class="brand">
+        <div class="stripes"><i></i><i></i><i></i></div>
+        <div><b>Email marketing</b><div class="sub" id="sub">America Nutrition · Amazon SES</div></div>
+      </div>
+      <div class="ctrl">
+        <div class="seg" role="group" aria-label="Período">
+          <button data-d="1">Hoje</button><button data-d="7">7 dias</button><button data-d="30">30 dias</button><button data-d="90">90 dias</button>
+        </div>
+        <span class="badge" id="modo"><span class="dot"></span>…</span>
+        <button class="btn" id="tema" title="Tema claro/escuro">Tema</button>
+      </div>
+    </div>
+  </div>
+</header>
+<main class="wrap" id="app"><div class="load">Carregando…</div></main>
+<div class="tip" id="tip"></div>
+<script>
+(function(){
+  var qs = new URLSearchParams(location.search);
+  var TOKEN = qs.get('t') || '';
+  var API = 'https://n8n.americanutrition.com/webhook/email-painel-api';
+  var dias = Number(qs.get('dias') || localGet('ep_dias') || 30);
+  var app = document.getElementById('app');
+  var tip = document.getElementById('tip');
+
+  function localGet(k){ try { return localStorage.getItem(k); } catch(e){ return null; } }
+  function localSet(k,v){ try { localStorage.setItem(k,v); } catch(e){} }
+  var t0 = localGet('ep_tema'); if (t0) document.documentElement.setAttribute('data-theme', t0);
+  document.getElementById('tema').onclick = function(){
+    var cur = document.documentElement.getAttribute('data-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    var nx = cur === 'dark' ? 'light' : 'dark'; document.documentElement.setAttribute('data-theme', nx); localSet('ep_tema', nx); if (window.__d) render(window.__d);
+  };
+
+  var fmt = new Intl.NumberFormat('pt-BR');
+  var brl = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' });
+  var brl0 = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL', maximumFractionDigits:0 });
+  function pct(a,b){ return b ? (a/b*100) : 0; }
+  function p1(x){ return (Math.round(x*10)/10).toLocaleString('pt-BR') + '%'; }
+  function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function dt(s){ if(!s) return '—'; var d = new Date(s); return d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}) + ' ' + d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); }
+  function dia(s){ var p = String(s).split('-'); return p[2] + '/' + p[1]; }
+  function css(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+  var NOMES = { boas_vindas:'Boas-vindas', pos_compra:'Pós-compra', recompra:'Recompra', vip:'VIP', campanha:'Campanha' };
+  function fluxo(f){ return NOMES[f] || f; }
+
+  var segs = document.querySelectorAll('.seg button');
+  function marca(){ segs.forEach(function(b){ b.setAttribute('aria-pressed', String(Number(b.dataset.d) === dias)); }); }
+  segs.forEach(function(b){ b.onclick = function(){ dias = Number(b.dataset.d); localSet('ep_dias', dias); marca(); carrega(); }; });
+  marca();
+
+  function carrega(){
+    if (!TOKEN) { app.innerHTML = '<div class="err">Link sem token. Abra o painel pelo link completo.</div>'; return; }
+    fetch(API + '?t=' + encodeURIComponent(TOKEN) + '&dias=' + dias, { cache:'no-store' })
+      .then(function(r){ return r.json(); })
+      .then(function(d){ if (!d || d.ok === false) throw new Error('acesso negado'); window.__d = d; render(d); })
+      .catch(function(e){ app.innerHTML = '<div class="err">Não consegui carregar os dados (' + esc(e.message) + ').</div>'; });
+  }
+
+  function saude(v, ok, alerta){ return v <= ok ? 'good' : (v <= alerta ? 'warn' : 'bad'); }
+  function selo(cls, txt){ var ic = cls === 'good' ? '✓' : (cls === 'warn' ? '!' : '✕'); return '<span class="st ' + cls + '">' + ic + ' ' + txt + '</span>'; }
+
+  function render(d){
+    var r = d.resumo || {}; var c = d.config || {}; var f = d.fila || {}; var ct = d.contatos || {};
+    var modo = c.fluxos_modo || '—';
+    document.getElementById('modo').innerHTML = '<span class="dot ' + (modo === 'ativo' ? '' : modo) + '"></span>' + (modo === 'ativo' ? 'Ativo' : (modo === 'teste' ? 'Modo teste' : 'Desligado')) + ' · ' + fmt.format(f.enviados_hoje || 0) + '/' + fmt.format(Number(c.envio_limite_dia || 0)) + ' hoje';
+    document.getElementById('sub').textContent = 'Atualizado ' + dt(d.gerado_em) + ' · desde ' + dia(String(d.desde).slice(0,10));
+
+    var ent = r.entregues || 0, env = r.enviados || 0;
+    var bRate = pct(r.bounces || 0, env), cRate = pct(r.reclamacoes || 0, ent || env);
+    var h = '';
+    h += '<div class="grid kpis">';
+    h += '<div class="card kpi hero"><div class="l">Receita atribuída ao email</div><div class="v">' + brl.format(r.receita || 0) + '</div><div class="d">' + fmt.format(r.vendas || 0) + ' vendas · ' + brl0.format(r.receita_clique || 0) + ' por clique, o resto por abertura</div></div>';
+    h += kpi('Enviados', fmt.format(env), (f.proximas_24h ? fmt.format(f.proximas_24h) + ' nas próximas 24h' : 'fila em dia'));
+    h += kpi('Entregues', p1(pct(ent, env)), fmt.format(ent) + ' emails');
+    h += kpi('Abertura', p1(pct(r.aberturas || 0, ent)), fmt.format(r.aberturas || 0) + ' abriram');
+    h += kpi('Clique', p1(pct(r.cliques || 0, ent)), fmt.format(r.cliques || 0) + ' clicaram');
+    h += kpi('Conversão', p1(pct(r.vendas || 0, ent)), 'vendas ÷ entregues');
+    h += kpi('Bounce', p1(bRate), selo(saude(bRate, 2, 5), bRate <= 2 ? 'saudável' : (bRate <= 5 ? 'atenção' : 'risco de pausa')));
+    h += kpi('Reclamação', (Math.round(cRate*100)/100).toLocaleString('pt-BR') + '%', selo(saude(cRate, 0.08, 0.1), cRate <= 0.08 ? 'saudável' : 'acima do limite'));
+    h += kpi('Descadastros', fmt.format(r.descadastros || 0), p1(pct(r.descadastros || 0, ent)) + ' dos entregues');
+    h += '</div>';
+
+    h += '<div class="grid charts" style="margin-top:12px">';
+    h += '<div class="card chart"><h3>Emails enviados por dia</h3><div class="cap">Total enviado no período: ' + fmt.format(env) + '</div><div id="c1"></div></div>';
+    h += '<div class="card chart"><h3>Aberturas e cliques por dia</h3><div class="cap">Pelo dia do envio</div><div class="legend"><span><i style="background:var(--s1)"></i>Aberturas</span><span><i style="background:var(--s2)"></i>Cliques</span></div><div id="c2"></div></div>';
+    h += '<div class="card chart"><h3>Receita atribuída por dia</h3><div class="cap">Pelo dia do pedido</div><div id="c3"></div></div>';
+    h += '</div>';
+
+    h += '<h2>Desempenho por email <small>cada modelo, do começo ao fim de cada fluxo</small></h2>';
+    var pm = d.por_modelo || [];
+    if (!pm.length) h += '<div class="card empty">Nenhum email na fila ainda. Os fluxos começam com as próximas inscrições e pedidos pagos.</div>';
+    else {
+      h += '<div class="tablewrap"><table><thead><tr><th>Fluxo</th><th>Email</th><th class="n">Enviados</th><th class="n">Entrega</th><th class="n">Abertura</th><th class="n">Clique</th><th class="n">Vendas</th><th class="n">Receita</th><th class="n">Bounce</th><th class="n">Na fila</th></tr></thead><tbody>';
+      pm.forEach(function(m){
+        var e = m.entregues || 0;
+        h += '<tr><td><span class="tag">' + esc(fluxo(m.fluxo)) + '</span></td><td><b>' + esc(m.slug) + '</b><span class="subj">' + esc(m.assunto || '') + '</span></td>' +
+          '<td class="n">' + fmt.format(m.enviados) + '</td><td class="n">' + p1(pct(e, m.enviados)) + '</td><td class="n">' + p1(pct(m.aberturas, e)) + '</td><td class="n">' + p1(pct(m.cliques, e)) + '</td>' +
+          '<td class="n">' + fmt.format(m.vendas) + '</td><td class="n">' + brl.format(m.receita) + '</td><td class="n">' + fmt.format(m.bounces) + '</td><td class="n">' + fmt.format(m.pendentes) + '</td></tr>';
+      });
+      h += '</tbody></table></div>';
+    }
+
+    h += '<h2>Vendas atribuídas <small>pedido pago até 5 dias depois de um clique, ou 2 dias depois de uma abertura</small></h2>';
+    var vs = d.vendas || [];
+    if (!vs.length) h += '<div class="card empty">Nenhuma venda atribuída no período ainda.</div>';
+    else {
+      h += '<div class="tablewrap"><table><thead><tr><th>Pedido</th><th>Quando</th><th>Cliente</th><th class="n">Valor</th><th>Email que levou</th><th>Por</th></tr></thead><tbody>';
+      vs.forEach(function(v){ h += '<tr><td><b>' + esc(v.numero) + '</b></td><td>' + dt(v.quando) + '</td><td>' + esc(v.email) + '</td><td class="n">' + brl.format(v.total) + '</td><td>' + esc(v.slug) + '</td><td><span class="tag">' + (v.tipo === 'clique' ? 'Clique' : 'Abertura') + '</span></td></tr>'; });
+      h += '</tbody></table></div>';
+    }
+
+    h += '<div class="grid two" style="margin-top:12px">';
+    var links = d.links || [];
+    h += '<div class="card"><h3 style="margin:0 0 6px;font-size:13px">Links mais clicados</h3>';
+    if (!links.length) h += '<div class="empty">Sem cliques no período.</div>';
+    else { var mx = links[0].cliques || 1; h += '<ul class="list">'; links.forEach(function(l){ var u = String(l.link).replace(/^https?:\/\/(www\.)?/, '').replace(/[?&]utm_[^&]+/g, ''); h += '<li style="display:block"><div style="display:flex;justify-content:space-between;gap:10px"><span class="k" style="overflow:hidden;text-overflow:ellipsis">' + esc(u) + '</span><b>' + fmt.format(l.cliques) + '</b></div><div class="bar"><span style="width:' + Math.max(3, l.cliques / mx * 100) + '%"></span></div></li>'; }); h += '</ul>'; }
+    h += '</div>';
+
+    var ps = ct.por_status || {};
+    var tot = Object.keys(ps).reduce(function(a,k){ return a + Number(ps[k] || 0); }, 0);
+    h += '<div class="card"><h3 style="margin:0 0 6px;font-size:13px">Lista de contatos</h3><ul class="list">';
+    [['inscrito','Inscritos (recebem)'],['nao_inscrito','Sem aceite de marketing'],['descadastrado','Descadastrados'],['bounce','Email inválido (bounce)'],['reclamacao','Marcaram como spam']].forEach(function(p){ h += '<li><span class="k">' + p[1] + '</span><b>' + fmt.format(ps[p[0]] || 0) + '</b></li>'; });
+    h += '<li><span class="k">Novos inscritos no período</span><b>' + fmt.format(ct.novos_inscritos || 0) + '</b></li>';
+    h += '<li><span class="k">Inscritos que compraram em 90 dias</span><b>' + fmt.format(ct.engajados_90d || 0) + '</b></li>';
+    var sy = ct.sincronizacao || {};
+    h += '<li><span class="k">Sincronização com a Shopify</span><b>' + (sy.sync_clientes_after ? 'carregando base…' : 'em dia') + '</b></li>';
+    h += '</ul><div class="note" style="margin-top:6px">Total na base: ' + fmt.format(tot) + '</div></div>';
+    h += '</div>';
+
+    h += '<div class="grid two" style="margin-top:12px">';
+    var pend = f.pendentes || {}, pk = Object.keys(pend);
+    h += '<div class="card"><h3 style="margin:0 0 6px;font-size:13px">Fila de envio</h3><ul class="list">';
+    if (!pk.length) h += '<li><span class="k">Nada agendado agora</span><b>0</b></li>';
+    pk.forEach(function(k){ h += '<li><span class="k">' + esc(fluxo(k)) + ' (agendados)</span><b>' + fmt.format(pend[k]) + '</b></li>'; });
+    var sp = f.status_periodo || {};
+    ['enviado','pulado','expirado','erro','teste'].forEach(function(s){ if (sp[s]) h += '<li><span class="k">' + ({enviado:'Enviados',pulado:'Pulados (regra)',expirado:'Expirados (atraso)',erro:'Erros de envio',teste:'Testes no simulador'})[s] + ' no período</span><b>' + fmt.format(sp[s]) + '</b></li>'; });
+    var pm2 = f.pulados_motivo || {};
+    Object.keys(pm2).forEach(function(k){ h += '<li><span class="k" style="padding-left:12px">↳ ' + esc(k) + '</span><span>' + fmt.format(pm2[k]) + '</span></li>'; });
+    h += '</ul></div>';
+
+    var pb = d.problemas || [], ds = ct.descadastros || [], er = f.erros || [];
+    h += '<div class="card"><h3 style="margin:0 0 6px;font-size:13px">Problemas e descadastros</h3>';
+    if (!pb.length && !ds.length && !er.length) h += '<div class="empty">Nenhum bounce, reclamação, erro ou descadastro no período.</div>';
+    else {
+      h += '<ul class="list">';
+      pb.forEach(function(p){ h += '<li><span class="k">' + (p.tipo === 'complaint' ? '⚠ Spam' : (p.tipo === 'reject' ? 'Rejeitado' : 'Bounce')) + ' · ' + esc(p.email) + ' <span class="subj" style="display:inline">' + esc(p.detalhe) + '</span></span><span>' + dt(p.quando) + '</span></li>'; });
+      er.forEach(function(p){ h += '<li><span class="k">Erro · ' + esc(p.email) + ' · ' + esc(p.slug) + '</span><span>' + dt(p.quando) + '</span></li>'; });
+      ds.forEach(function(p){ h += '<li><span class="k">Descadastro · ' + esc(p.email) + (p.motivo ? ' · ' + esc(p.motivo) : '') + '</span><span>' + dt(p.quando) + '</span></li>'; });
+      h += '</ul>';
+    }
+    h += '</div></div>';
+
+    h += '<p class="note">Abertura é uma estimativa: o Mail da Apple abre as imagens sozinho, então parte das aberturas não é leitura real. Cliques e vendas são confiáveis. Limites da AWS: bounce abaixo de 5% e reclamação abaixo de 0,1%, senão a conta é pausada.</p>';
+    app.innerHTML = h;
+
+    var pd = d.por_dia || [];
+    barras('c1', pd, 'enviados', css('--brand'), function(v){ return fmt.format(v) + ' emails'; });
+    linhas('c2', pd, [['aberturas','Aberturas',css('--s1')],['cliques','Cliques',css('--s2')]]);
+    barras('c3', pd, 'receita', css('--s3'), function(v){ return brl.format(v); }, 'vendas');
+  }
+
+  function kpi(l, v, dd){ return '<div class="card kpi"><div class="l">' + l + '</div><div class="v">' + v + '</div><div class="d">' + (dd || '') + '</div></div>'; }
+
+  var W = 420, H = 200, M = { l:38, r:8, t:10, b:24 };
+  function escala(max){ if (max <= 0) return { max:1, ticks:[0,1] }; var p = Math.pow(10, Math.floor(Math.log10(max))); var n = Math.ceil(max / p); var step = n <= 2 ? p/2 : (n <= 5 ? p : 2*p); var top = Math.ceil(max/step)*step; var t = []; for (var v = 0; v <= top + 1e-9; v += step) t.push(v); return { max:top, ticks:t }; }
+  function eixo(sc, pd, fmtY){
+    var g = '', ih = H - M.t - M.b;
+    sc.ticks.forEach(function(v){ var y = M.t + ih - v/sc.max*ih; g += '<line x1="' + M.l + '" x2="' + (W - M.r) + '" y1="' + y + '" y2="' + y + '" stroke="' + css('--grid') + '" stroke-width="1"/><text x="' + (M.l - 6) + '" y="' + (y + 4) + '" text-anchor="end" font-size="11" fill="' + css('--muted') + '">' + fmtY(v) + '</text>'; });
+    var n = pd.length, iw = W - M.l - M.r, cada = Math.max(1, Math.ceil(n / 7));
+    pd.forEach(function(p, i){ if (i % cada === 0 || i === n - 1) { var x = M.l + (i + .5) * iw / n; g += '<text x="' + x + '" y="' + (H - 6) + '" text-anchor="middle" font-size="11" fill="' + css('--muted') + '">' + dia(p.dia) + '</text>'; } });
+    return g;
+  }
+  function curto(v){ return v >= 1000 ? (Math.round(v/100)/10).toLocaleString('pt-BR') + ' mil' : fmt.format(v); }
+  function barras(id, pd, campo, cor, fmtV, extra){
+    var el = document.getElementById(id); if (!el) return;
+    var max = Math.max.apply(null, pd.map(function(p){ return Number(p[campo] || 0); }).concat([0]));
+    var sc = escala(max), n = pd.length, iw = W - M.l - M.r, ih = H - M.t - M.b, bw = Math.max(2, Math.min(28, iw / n - 2));
+    var g = eixo(sc, pd, curto);
+    pd.forEach(function(p, i){ var v = Number(p[campo] || 0); var h = v / sc.max * ih; var x = M.l + (i + .5) * iw / n - bw/2; var y = M.t + ih - h;
+      if (v > 0) g += '<path d="' + topoArredondado(x, y, bw, h) + '" fill="' + cor + '"/>';
+      g += '<rect x="' + (M.l + i * iw / n) + '" y="' + M.t + '" width="' + (iw / n) + '" height="' + ih + '" fill="transparent" data-i="' + i + '"/>'; });
+    el.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + campo + ' por dia">' + g + '</svg>';
+    hover(el, function(i){ var p = pd[i]; return '<b>' + dia(p.dia) + '</b><div class="r"><span>' + (campo === 'receita' ? 'Receita' : 'Enviados') + '</span><span>' + fmtV(Number(p[campo] || 0)) + '</span></div>' + (extra ? '<div class="r"><span>Vendas</span><span>' + fmt.format(p[extra] || 0) + '</span></div>' : ''); });
+  }
+  function topoArredondado(x, y, w, h){ var r = Math.min(4, w/2, h); return 'M' + x + ',' + (y + h) + 'V' + (y + r) + 'Q' + x + ',' + y + ' ' + (x + r) + ',' + y + 'H' + (x + w - r) + 'Q' + (x + w) + ',' + y + ' ' + (x + w) + ',' + (y + r) + 'V' + (y + h) + 'Z'; }
+  function linhas(id, pd, series){
+    var el = document.getElementById(id); if (!el) return;
+    var max = 0; series.forEach(function(s){ pd.forEach(function(p){ max = Math.max(max, Number(p[s[0]] || 0)); }); });
+    var sc = escala(max), n = pd.length, iw = W - M.l - M.r, ih = H - M.t - M.b;
+    var g = eixo(sc, pd, curto);
+    series.forEach(function(s){ var pts = pd.map(function(p, i){ return [M.l + (i + .5) * iw / n, M.t + ih - Number(p[s[0]] || 0) / sc.max * ih]; });
+      g += '<polyline fill="none" stroke="' + s[2] + '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="' + pts.map(function(q){ return q.join(','); }).join(' ') + '"/>';
+      if (n <= 31) pts.forEach(function(q){ g += '<circle cx="' + q[0] + '" cy="' + q[1] + '" r="3" fill="' + s[2] + '" stroke="' + css('--surface') + '" stroke-width="2"/>'; }); });
+    g += '<line id="' + id + 'x" x1="0" x2="0" y1="' + M.t + '" y2="' + (M.t + ih) + '" stroke="' + css('--muted') + '" stroke-dasharray="3 3" visibility="hidden"/>';
+    pd.forEach(function(p, i){ g += '<rect x="' + (M.l + i * iw / n) + '" y="' + M.t + '" width="' + (iw / n) + '" height="' + ih + '" fill="transparent" data-i="' + i + '"/>'; });
+    el.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Aberturas e cliques por dia">' + g + '</svg>';
+    var cross = el.querySelector('#' + id + 'x');
+    hover(el, function(i){ var x = M.l + (i + .5) * iw / n; cross.setAttribute('x1', x); cross.setAttribute('x2', x); cross.setAttribute('visibility', 'visible'); var p = pd[i]; return '<b>' + dia(p.dia) + '</b>' + series.map(function(s){ return '<div class="r"><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + s[2] + ';margin-right:6px"></span>' + s[1] + '</span><span>' + fmt.format(p[s[0]] || 0) + '</span></div>'; }).join(''); }, function(){ cross.setAttribute('visibility', 'hidden'); });
+  }
+  function hover(el, html, sai){
+    el.querySelectorAll('rect[data-i]').forEach(function(r){
+      r.addEventListener('mousemove', function(e){ tip.innerHTML = html(Number(r.dataset.i)); tip.style.display = 'block'; var x = e.clientX + 14, y = e.clientY + 14; if (x + tip.offsetWidth > innerWidth - 8) x = e.clientX - tip.offsetWidth - 14; tip.style.left = x + 'px'; tip.style.top = y + 'px'; });
+      r.addEventListener('mouseleave', function(){ tip.style.display = 'none'; if (sai) sai(); });
+      r.addEventListener('touchstart', function(e){ var t = e.touches[0]; tip.innerHTML = html(Number(r.dataset.i)); tip.style.display = 'block'; tip.style.left = Math.min(t.clientX, innerWidth - 160) + 'px'; tip.style.top = (t.clientY + 16) + 'px'; }, { passive:true });
+    });
+  }
+
+  carrega();
+  setInterval(carrega, 5 * 60 * 1000);
+})();
+</script>
+</body>
+</html>

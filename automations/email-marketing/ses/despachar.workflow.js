@@ -13,6 +13,15 @@ const montar = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: '
 const r = ($input.first().json.r) || {};
 const itens = r.itens || [];
 const teste = r.modo !== 'ativo';
+// UTM (10/11/2026): links do site ganham utm_source=email, utm_medium=fluxo, utm_campaign=<fluxo>, utm_content=<modelo>.
+const comUtm = (html, fluxo, slug) => String(html || '').replace(/href="(https:\\/\\/(?:www\\.)?americanutrition\\.com[^"]*)"/g, function (m, u) {
+  if (/utm_source=/.test(u)) return m;
+  const amp = u.replace(/&amp;/g, '&');
+  const [base, hash] = amp.split('#');
+  const q = 'utm_source=email&utm_medium=fluxo&utm_campaign=' + encodeURIComponent(fluxo) + '&utm_content=' + encodeURIComponent(slug);
+  const novo = base + (base.indexOf('?') >= 0 ? '&' : '?') + q + (hash ? '#' + hash : '');
+  return 'href="' + novo.replace(/&/g, '&amp;') + '"';
+});
 return itens.map(function (it) {
   const tag = (s) => String(s || '').replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 200);
   return { json: { id: it.id, teste: teste, body: JSON.stringify({
@@ -23,7 +32,7 @@ return itens.map(function (it) {
     EmailTags: [{ Name: 'modelo', Value: tag(it.slug) }, { Name: 'fluxo', Value: tag(it.fluxo) }, { Name: 'fila', Value: String(it.id) }],
     Content: { Simple: {
       Subject: { Data: (teste ? '[TESTE] ' : '') + it.assunto, Charset: 'UTF-8' },
-      Body: { Html: { Data: it.html, Charset: 'UTF-8' } },
+      Body: { Html: { Data: comUtm(it.html, it.fluxo, it.slug), Charset: 'UTF-8' } },
       Headers: [
         { Name: 'List-Unsubscribe', Value: '<' + it.link + '>' },
         { Name: 'List-Unsubscribe-Post', Value: 'List-Unsubscribe=One-Click' }

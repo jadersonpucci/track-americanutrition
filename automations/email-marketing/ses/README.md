@@ -117,6 +117,33 @@ abandonado e assinatura (eventos do nosso checkout; o WhatsApp já cobre).
 - Sincronização corrigida no mesmo dia: paginação pelo `endCursor` da Shopify (`email_sync_cursor`), porque milhares de
   clientes têm o mesmo `updated_at` (importação de abril) e o cursor por data andava segundos por rodada.
 
+## Painel (10/11/2026)
+
+`https://n8n.americanutrition.com/webhook/email-painel?t=<token>` (o token fica em `email_config.painel_token`,
+gerado no banco; o link completo foi passado ao Jaderson e não vai para o repositório).
+
+- **Workflow** `[Email] Painel (pagina + API)` (`TWcB4R1rLQQt9tes`): `GET /webhook/email-painel` devolve a página
+  (`painel-shell.html`); `GET /webhook/email-painel-api?t=&dias=` devolve `email_painel(token, dias)` (`painel.sql`).
+  Token errado: `{ok:false}`.
+- **Página**: CSS e JS como assets do tema da Shopify (`assets/email-painel.css` e `assets/email-painel.js`, fontes
+  aqui; `painel.html` é a versão inteira para abrir local). Para mudar: editar, subir com `themeFilesUpsert` e
+  trocar o `?v=` no `Responder HTML` do workflow.
+- **O que mostra** (Hoje / 7 / 30 / 90 dias, atualiza a cada 5 min, claro/escuro):
+  receita e vendas atribuídas, enviados, entrega, abertura, clique, conversão, bounce e reclamação com selo de
+  saúde (limites da AWS), descadastros; gráficos de envios, aberturas/cliques e receita por dia; tabela por email
+  (fluxo, modelo, assunto, entrega, abertura, clique, vendas, receita, bounce, na fila); lista das vendas
+  atribuídas; links mais clicados; contatos por status (inscritos, sem aceite, descadastrados, bounce, spam,
+  novos, compraram em 90 dias, sincronização); fila (agendados por fluxo, pulados e motivo, expirados, erros);
+  problemas (bounces, spam, erros) e descadastros com motivo.
+- **Atribuição de venda**: pedido pago até 5 dias depois de um clique num email nosso (o último clique leva) ou,
+  sem clique, até 2 dias depois de uma abertura. Só emails reais (fila `enviado`), nunca testes.
+- **UTM**: o despachante acrescenta `utm_source=email&utm_medium=fluxo&utm_campaign=<fluxo>&utm_content=<modelo>`
+  nos links do site, para as vendas aparecerem também nos relatórios da Shopify.
+- `email_pedidos` ganhou `total` (valor do pedido), preenchido pela sincronização.
+- Utilitário `AN - Email SQL Admin (Supabase)` (`LDFQ1DbzM3MxXnmv`): roda SQL como dono das tabelas (pinData no nó SQL).
+- Testado com dados de exemplo (interceptando a API) no computador e no celular, sem erro no console; com o token
+  errado a API devolve `{ok:false}`.
+
 ## Próximos passos
 2. Primeiro envio de campanha: Esquenta Black Friday só para os engajados (compraram nos últimos 90 dias), como
    aquecimento da conta.
