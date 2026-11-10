@@ -267,7 +267,17 @@ Todos os caminhos já aplicam essas tags:
 - **Checkout:** o checkout manda `shipping.tag_extra`, que a Confirmação de Pagamento aplica no pedido.
 - **PIX e boleto da Serena:** continuam com `ref=serena`, e o `Montar Pedido Shopify` transforma em WPP.
 
-Para a análise mensal, filtre os pedidos por tag WPP (+ SERENA-IG/SERENA-MSG) e pela data. Base: setembro 167, outubro 194, novembro até 09/11 74 pedidos com WPP.
+Para a análise mensal, filtre os pedidos pela tag **SERENA** e pela data (ver a seção seguinte). As tags WPP / SERENA-IG / SERENA-MSG continuam e mostram o canal.
+
+### Tag SERENA em todas as vendas da Serena (10/11/2026)
+
+Pedido do Jaderson: "as vendas da serena, pode cair com a TAG SERENA, todas elas".
+
+- **Retroativo:** 830 pedidos receberam `SERENA` (os 228 de mar–jun já tinham, do tempo da Bixgrow). Critério: qualquer uma das tags `AF: Serena`, `WPP`, `SERENA-IG`, `SERENA-MSG` ou `origem:serena`. Os 20 pedidos cancelados ficaram sem a tag.
+- **Daqui para frente:** o workflow `AN - Tag SERENA nas vendas da Serena (15 min)` (`8XpF8Myvud8mps6p`, `automations/serena-whatsapp/nodes/tag-serena-cron.js`) procura a cada 15 min os pedidos dos últimos 3 dias com esses sinais e sem `SERENA`, e aplica a tag. Usa a credencial "Shopify API Token" do n8n, sem chave no código. Assim vale para todos os caminhos (checkout, PIX e boleto da Serena, draft), sem mexer nos nós que guardam chave.
+- **Teste:** tirei a tag do AN-16515, rodei o workflow e a tag voltou.
+
+Vendas com a tag SERENA (sem canceladas): mar 30, abr 105, mai 63, jun 110, jul 150, ago 114, set 163, out 194, nov (até 10/11) 79.
 
 **O que mudou:**
 
