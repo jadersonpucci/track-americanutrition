@@ -19,7 +19,7 @@
   function dt(s){ if(!s) return '—'; var d = new Date(s); return d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}) + ' ' + d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); }
   function dia(s){ var p = String(s).split('-'); return p[2] + '/' + p[1]; }
   function css(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
-  var FLUXOS = { boas_vindas:['Boas-vindas','Quem se inscreve na lista e ainda não comprou'], pos_compra:['Pós-compra','Jornada depois de cada pedido pago'], recompra:['Recompra','Lembrete antes do ImunoFosfo acabar'], vip:['VIP','Quem chega ao 3º pedido'], navegacao:['Navegação abandonada','Ainda no Klaviyo (precisa do rastreio do site)'] };
+  var FLUXOS = { boas_vindas:['Boas-vindas','Quem se inscreve na lista e ainda não comprou'], carrinho:['Carrinho abandonado','Quem começou o checkout e não pagou: itens, link do carrinho e aviso de cartão recusado'], pos_compra:['Entrega','Começa quando o pedido é entregue: guia de uso de cada produto, complemento certo e avaliação'], recompra:['Recompra','Data calculada pela dose de cada produto, contando do dia seguinte à entrega'], vip:['VIP','Quem chega ao 3º pedido'], navegacao:['Navegação abandonada','Ainda no Klaviyo (precisa do rastreio do site)'] };
   function nomeFluxo(f){ return (FLUXOS[f] || [f])[0]; }
 
   document.getElementById('tema').onclick = function(){
@@ -107,7 +107,7 @@
     if (!mods.length) return vazio('Nenhum modelo encontrado');
     var grupos = {}; mods.forEach(function(m){ (grupos[m.fluxo] = grupos[m.fluxo] || []).push(m); });
     var h = '<div class="sec-h"><h2>Os emails de cada fluxo</h2><p>clique num email para ver como ele chega na caixa da cliente</p></div>';
-    ['boas_vindas','pos_compra','recompra','vip','navegacao'].forEach(function(k){
+    ['boas_vindas','carrinho','pos_compra','recompra','vip','navegacao'].forEach(function(k){
       if (!grupos[k]) return;
       var fi = FLUXOS[k] || [k, ''];
       var ativo = k !== 'navegacao';

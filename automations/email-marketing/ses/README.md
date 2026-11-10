@@ -23,7 +23,7 @@ Início em 05/11/2026. O Klaviyo continua ativo até este sistema assumir.
 - `AN - Email Teste (SES)` (`NdD3GnUy7QPMdWSg`): envia um modelo de `email_templates` para o destinatário de teste.
 
 ## Supabase
-- `email_templates` (`email_templates.sql`): 13 modelos, com `{{ nome }}` (primeiro nome) e `{{ link_descadastro }}`.
+- `email_templates` (`email_templates.sql`): modelos (v2 desde 10/11, ver abaixo), com `{{ nome }}` (primeiro nome) e `{{ link_descadastro }}`.
 
 ## Padrão visual (Modelo 2 · Marca forte, aprovado em 05/11/2026)
 - `padrao.py` gera os 13 modelos em `templates/<slug>.html` a partir de blocos prontos: topo azul com logo branco,
@@ -151,7 +151,53 @@ gerado no banco; o link completo foi passado ao Jaderson e não vai para o repos
 - Testado com dados de exemplo (interceptando a API) no computador e no celular, sem erro no console; com o token
   errado a API devolve `{ok:false}`.
 
+## Reestruturação v2 (10/11/2026, fim da tarde)
+
+Pedido do Jaderson: menos emails parecidos no pós-compra, carrinho abandonado, guia "leia antes de abrir" por
+produto na entrega, complemento, recompra calculada pela dose a partir do dia seguinte à entrega.
+Banco em `reestruturacao.sql` (+ `produtos.sql` e `templates.sql`, gerados por `python3 padrao.py`) e
+`painel-modelos.sql`. Testado antes num Postgres local com pedidos, entregas e carrinho de exemplo.
+
+| Fluxo | Gatilho | Emails |
+|---|---|---|
+| Boas-vindas (3, era 4) | inscreveu e não comprou | 1.1 na hora · 1.3 +1d · 1.4 +3d (depoimentos + lembrete do cupom + comunidade). Para todos se a pessoa comprar |
+| Carrinho abandonado (novo) | `carrinhos_abandonados` status `abandonado` (o checkout próprio) | 6.1 ~1h (itens com foto e preço, link do carrinho, aviso se o cartão foi recusado ou o boleto está gerado) · 6.2 +1d (depoimentos + Serena) · 6.3 +3d. Para se o carrinho virar `convertido` ou sair pedido do mesmo email |
+| Entrega (3, eram 6) | aviso `pedido_entregue` do rastreio (`scheduled_messages`, pelo número AN-xxxxx) | 2.1 na entrega: "Leia antes de abrir", um bloco de modo de uso por produto do pedido, com quanto o estoque dura · 2.2 +10d: o complemento certo para o produto (só se a pessoa ainda não tem) · 2.3 +15d: avaliação |
+| Recompra (calculada) | mesma entrega | 3.1 alguns dias antes de acabar (5, ou 3 para quem dura até 12 dias) · 3.2 3 dias depois de acabar. Link do checkout já com os mesmos itens. Cancela se comprou de novo |
+| VIP | 3º pedido | 5.1, 3 dias depois do pedido |
+
+**Cálculo da duração** (`email_produtos`, base da Serena): unidades × cápsulas do frasco (lidas da variante,
+"90 Caps") ÷ dose diária, contando do dia seguinte à entrega. ImunoFosfo 3/dia (90 = 30 dias), Diabetes 2/dia
+(60 = 30), Liquid 10 dias por frasco, Kids 30, Ômega 2/dia, D3 2/dia, D3 50.000 1 por semana (84 dias),
+Própolis 2/dia, Creatina 100 doses, Life Gummy 2/dia, Vitamins 3/dia, Life Hair 2/dia. ImunoPet (dose pelo peso),
+Healing e Life Protein não têm recompra calculada. Pedido sem aviso de entrega em 14 dias: entrega estimada em
+pedido + 7 dias (só recompra/complemento/avaliação; o guia não sai). Pedidos dos últimos 45 dias antes do início
+entram só na recompra (quem comprou antes de desligar o Klaviyo também recebe o aviso de reposição).
+
+**Frequência** (`email_proximos`): no máximo 1 email por pessoa por rodada; intervalo mínimo desde o último email
+(serviço 18h, marketing 44h). O que não pode sair é adiado, não perdido (5 adiamentos = pula). Marketing só das 8h
+às 21h, serviço das 7h às 22h. Quem recebeu 5+ emails em 60 dias sem abrir nem clicar nenhum para de receber
+marketing (`sem engajamento`).
+
+**Quem recebe:** serviço (carrinho, guia na entrega, recompra) vai para quem não se descadastrou, não deu bounce nem
+reclamou, mesmo sem inscrição de marketing; o resto continua exigindo inscrito + `SUBSCRIBED`.
+
+**Variáveis:** `email_fila.dados` guarda as variáveis de cada envio (`{{ guia_produtos }}`, `{{ carrinho_itens }}`,
+`{{ recompra_url }}` etc.), trocadas por `email_preencher`. A prévia do painel usa os dados do último envio do
+modelo ou `email_templates.exemplo`.
+
+**Sincronização:** pedidos agora trazem itens (`quantity`, `variant{id title}`); `sync_pedidos_desde` voltou para
+01/11/2025 para carregar o histórico de 12 meses (quem já tem o complemento, recompra dos recentes). Nenhum email
+sai para pedido antigo além da recompra descrita acima.
+
+**Utilitário SQL:** `AN - Email SQL Admin` ganhou o nó "Baixar SQL": pinData `{url}` baixa um JSON `{q}` (usado
+para subir SQL grande via asset temporário do tema, apagado logo depois).
+
+Modelos aposentados (ficam em `email_templates`, sem uso): 1.2, 2.1-pos-compra … 2.6, 3.1-recompra-imunofosfo.
+Klaviyo: continuam ligados só navegação, carrinho adicionado (site), checkout abandonado (Shopify), assinatura e
+cobrança falhou.
+
 ## Próximos passos
 2. Primeiro envio de campanha: Esquenta Black Friday só para os engajados (compraram nos últimos 90 dias), como
    aquecimento da conta.
-3. Carrinho abandonado e assinatura no sistema próprio; depois, cancelar o Klaviyo.
+3. Assinatura no sistema próprio; conferir sobreposição do carrinho com os fluxos de carrinho do Klaviyo e pausá-los; depois, cancelar o Klaviyo.

@@ -1,5 +1,5 @@
 # Padrao visual dos emails da America Nutrition ("Modelo 2 · Marca forte", aprovado em 05/11/2026).
-# Gera os 13 modelos em ses/templates/<slug>.html. Rodar: python3 padrao.py
+# Gera os modelos em ses/templates/<slug>.html e o catalogo ses/produtos.sql. Rodar: python3 padrao.py
 # Variaveis trocadas no envio: {{ nome }} (primeiro nome) e {{ link_descadastro }}.
 # Layout fluid-hybrid (colunas em inline-block com max-width): empilha no celular mesmo sem media query.
 import os
@@ -266,24 +266,6 @@ EMAILS["1.1-boas-vindas-cupom"] = [
     acao([("Garantir meu desconto agora", CUPOM10, "red")], "Dúvida sobre qual produto escolher? A Serena te orienta no WhatsApp."),
 ]
 
-EMAILS["1.2-boas-vindas-comunidade"] = [
-    hero("Comunidade", "Convite especial", f"{NOME}, entre para a nossa comunidade",
-         "Fazer parte da America Nutrition vai além de receber um produto: é entrar numa comunidade de pessoas que levam a saúde celular a sério e se apoiam todos os dias."),
-    texto("Nos nossos grupos você encontra relatos reais de quem está no protocolo, dicas de uso, atualizações da linha e acesso direto à nossa equipe. Escolha o canal que preferir e entre agora."),
-    destaque("Quem compartilha a jornada chega mais longe. Nossos grupos são o lugar onde isso acontece."),
-    checklist("Por que entrar na comunidade", [
-        "Relatos reais de clientes que estão no protocolo, dia a dia, resultado a resultado",
-        "Dicas de uso, protocolos e esclarecimento de dúvidas com a equipe",
-        "Novidades da linha, lançamentos e ofertas exclusivas para membros",
-        f"Acesso direto à equipe pelo {b('WhatsApp')}: suporte real, sem robô"]),
-    titulo("Escolha seu canal", "Onde você prefere participar?", pad="10px 32px 16px"),
-    canais([("💬", GREEN, "WhatsApp", "Grupo oficial · suporte direto com a equipe", "Entrar", GRUPO_WA),
-            ("f", "#1877F2", "Facebook", "Grupo fechado · depoimentos e novidades", "Entrar", FB),
-            ("✈", "#229ED9", "Telegram", "Canal oficial · atualizações em tempo real", "Entrar", TG)]),
-    depoimento("Entrei no grupo do WhatsApp e foi um divisor de águas. Ver outras pessoas no protocolo, compartilhar dúvidas e receber resposta rápida da equipe me deu confiança para continuar.", "Roberta L.", "Cliente America Nutrition"),
-    acao([("Entrar na comunidade", GRUPO_WA, "red")], "Gratuito · escolha o canal de sua preferência · saia quando quiser"),
-]
-
 EMAILS["1.3-boas-vindas-como-age"] = [
     hero("Sobre o ImunoFosfo", "Como funciona", "Ele não trata sintomas. Age na origem.",
          f"Olá, {NOME}! O ImunoFosfo é baseado em fosfoetanolamina sintética bioidêntica, uma molécula que age diretamente no metabolismo celular.", IMG["imuno"]),
@@ -312,107 +294,22 @@ EMAILS["1.4-boas-vindas-depoimentos"] = [
                       ("Meus exames melhoraram muito após 45 dias de protocolo. O médico ficou surpreso com os resultados.", "Fernanda L."),
                       ("Uso há 4 meses e não pretendo parar. Me sinto muito mais equilibrada. É difícil explicar, mas o organismo responde.", "Cláudia M."),
                       ("Estava com desconfiança total. Resolvi tentar. Após 21 dias no protocolo de choque, os resultados apareceram. Hoje indico para a família inteira.", "Juliana C.")]),
-    ficha([("Plataforma", "Judge.me · avaliações verificadas e públicas"), ("Bônus", "5% de desconto na próxima compra"),
-           ("Validade", "30 dias"), ("Válido em", "Toda a linha America Nutrition")], "Avalie e ganhe desconto"),
-    acao([("Deixar minha avaliação", "https://judge.me/product_reviews/99ec2770-e54f-430d-ad3f-6f458cf0cf18/new?id=7783594754220&amp;source=shareable-link", "red"),
-          ("Garantir meu ImunoFosfo", PROD, "navy")], "2 minutos · avaliação verificada · 5% de desconto garantido"),
+    aviso(f"⏳ <b>Seu cupom IMUNOFOSFO (10% OFF) ainda vale por poucos dias.</b> Ele entra sozinho quando você clica no botão abaixo."),
+    acao([("Usar meu cupom de 10%", CUPOM10, "red")], "Pagamento seguro · entrega rastreada para todo o Brasil"),
+    titulo("Comunidade", "Converse com quem já usa", pad="6px 32px 16px"),
+    canais([("💬", GREEN, "WhatsApp", "Grupo oficial · relatos reais e suporte da equipe", "Entrar", GRUPO_WA),
+            ("f", "#1877F2", "Facebook", "Grupo fechado · depoimentos e novidades", "Entrar", FB),
+            ("✈", "#229ED9", "Telegram", "Canal oficial · avisos e ofertas", "Entrar", TG)]),
 ]
 
-EMAILS["2.1-pos-compra-guia-de-uso"] = [
-    hero("Guia de uso", "Leia antes de abrir", f"Seu pedido está chegando, {NOME}!",
-         "O modo certo de usar faz toda a diferença nos resultados. Separamos aqui o protocolo para você começar bem.", IMG["imuno"]),
-    titulo("As 3 fases do protocolo", "Do choque à prevenção"),
-    cartoes(FASES),
-    aviso(f"⚡ <b>As doses variam conforme o produto.</b> Peça à Serena o protocolo exato do seu."),
-    serena([f"Oi, {NOME}! 👋 Aqui é a Serena.", "Me conta qual produto você pegou e o seu objetivo, que eu monto a <b>dose certa pra você</b>. É grátis 💚"],
-           "Quero meu protocolo grátis &rarr;", SERENA_PROTO),
-]
-
-EMAILS["2.2-pos-compra-comunidade"] = [
-    hero("Comunidade", "Convite especial", "Faça parte da nossa comunidade oficial 🧬",
-         f"Olá, {NOME}! Você agora é parte da família America Nutrition, e todo membro merece acesso à nossa comunidade exclusiva."),
-    titulo("O que você vai encontrar", "Muito além do produto"),
-    cartoes([("🔬", "Conteúdo educativo", "Exclusivo", "Metabolismo celular, protocolos e novidades da ciência.", NAVY),
-             ("💬", "Suporte e troca", "Com membros", "Tire dúvidas e aprenda com quem já está na jornada há mais tempo.", GREEN),
-             ("🎁", "Ofertas antecipadas", "Lançamentos", "Membros recebem primeiro as novidades e promoções exclusivas.", RED),
-             ("🏆", "Benefícios VIP", "Exclusivos", "Quanto mais ativo na comunidade, mais benefícios você desbloqueia.", "#F5A524")], cols=2),
-    titulo("Escolha onde quer participar", "Estamos em 3 plataformas", pad="10px 32px 16px"),
-    canais([("💬", GREEN, "WhatsApp", "Grupo oficial com suporte e novidades em tempo real", "Entrar", GRUPO_WA),
-            ("f", "#1877F2", "Facebook", "Comunidade para compartilhar resultados e interagir", "Entrar", FB),
-            ("✈", "#229ED9", "Telegram", "Conteúdo educativo e alertas de promoção", "Entrar", TG)]),
-    destaque("Você não está sozinho(a) nessa jornada. Milhares de pessoas como você já fazem parte. Chegou a sua vez."),
-    depoimento("Entrar no grupo do WhatsApp foi um divisor de águas. Ali aprendi a usar o protocolo correto e me senti parte de algo muito maior do que só comprar um suplemento.", "Cliente America Nutrition"),
-    acao([("🧬 Entrar na comunidade agora", GRUPO_WA, "red")], "Gratuito e exclusivo para clientes America Nutrition"),
-]
-
-EMAILS["2.3-pos-compra-historia-carla"] = [
-    hero("Uma história real", "Enquanto você aguarda", "Ela quase desistiu no décimo dia. Não desistiu.",
-         f"{NOME}, queremos te contar uma história que pode mudar a forma como você encara os primeiros dias de uso."),
-    texto("Carla tinha 54 anos quando comprou seu primeiro frasco. Nos primeiros dias, nada. Na segunda semana, ficou em dúvida.",
-          f"{b('No décimo dia, ela quase parou.')}",
-          "Foi quando entrou em contato com a Serena. Recebeu orientação sobre o protocolo, entendeu que a fase de adaptação é normal, e decidiu continuar.",
-          "Hoje, no quarto frasco, ela mesma conta a história para quem está começando."),
-    depoimento("Quase parei no décimo dia porque achei que não estava funcionando. A Serena me explicou que isso era completamente normal, que o corpo precisa de tempo para se adaptar. Continuei. No final do segundo mês, as pessoas ao meu redor perceberam antes de mim. Não consigo imaginar ter parado.",
-               "Carla M.", "São Paulo · cliente há 4 meses"),
-    aviso(f"💡 <b>O que a história da Carla ensina:</b> a fase de adaptação é real e normal. Se surgir dúvida nos primeiros dias, não tome decisões sozinho(a). A Serena está aqui para isso.", "#FFF4D6", "#7A4A00"),
-    numeros([("4.98", "nota média ★★★★★"), ("+40.000", "avaliações"), ("99.8%", "recomendam")]),
-    serena([f"{NOME}, se surgir qualquer dúvida, não espere.", "Me chame <b>antes</b> de tomar qualquer decisão. Estou aqui 24h, antes, durante e depois do uso 🧬"],
-           "Falar com a Serena agora &rarr;"),
-]
-
-EMAILS["2.4-pos-compra-omega3"] = [
-    hero("Ômega 3", "Potencialize seus resultados", "O combo que nossos clientes mais recomendam.",
-         "ImunoFosfo + Ômega 3 MEG-3, a combinação que potencializa a ação celular.", IMG["omega"], btn("Adicionar Ômega 3", OMEGA_CK, "red")),
-    texto(f"Olá, {NOME}! Agora que seu protocolo começou, queremos te apresentar algo que nossos clientes mais experientes já descobriram: o {b('Ômega 3 MEG-3')} é o complemento natural do ImunoFosfo.",
-          "O Ômega 3 não é apenas para o coração. Com EPA e DHA de alta pureza, ele cria o ambiente celular ideal para que o ImunoFosfo atue com ainda mais eficiência, e dá para usar os dois juntos."),
-    checklist("Por que adicionar o Ômega 3", [
-        f"{b('EPA e DHA')} criam o ambiente celular ideal para a fosfoetanolamina agir com mais eficiência",
-        f"Ação {b('anti-inflamatória sistêmica')} que complementa o ImunoFosfo",
-        "Saúde cardiovascular, cerebral e articular, benefícios adicionais ao cuidado diário",
-        "MEG-3 certificado, padrão de pureza mais alto disponível no mercado",
-        "Frete grátis acima de R$ 250: aproveite no mesmo pedido"]),
-    ficha([("ImunoFosfo", "Metabolismo celular e equilíbrio da imunidade"), ("Ômega 3", "EPA/DHA, potencializa o ambiente celular"),
-           ("Como usar", "2 cápsulas/dia com as principais refeições"), ("Frete", "Grátis em pedidos acima de R$ 250")], "Combo ImunoFosfo + Ômega 3"),
-    depoimento("Comecei só com o ImunoFosfo. Depois adicionei o Ômega 3 e a diferença foi notável. Recomendo o combo para quem quer potencializar os resultados.", "Beatriz M.", "Cliente America Nutrition"),
-    acao([("Adicionar Ômega 3 ao pedido", OMEGA_CK, "red"), ("Saber mais sobre o Ômega 3", OMEGA_PG, "navy")], "🚚 Frete grátis acima de R$ 250 · 🔒 Pagamento seguro · 📦 Entrega rastreada"),
-]
-
-EMAILS["2.5-pos-compra-avaliacao"] = [
+EMAILS["2.3-pos-entrega-avaliacao"] = [
     hero("Avaliação", "★★★★★", "Sua opinião transforma a jornada de alguém 🎁",
-         f"{NOME}, você já tem cerca de 2 semanas de uso real. Como está sendo sua experiência?", tag_color="#F5A524"),
+         f"{NOME}, já são cerca de 2 semanas com {{{{ produto_principal }}}}. Como está sendo a sua experiência?", tag_color="#F5A524"),
     texto(f"Sua avaliação é muito mais do que uma nota: ela {b('ajuda outras pessoas')} que estão procurando exatamente o que você encontrou. Cada palavra sua tem o poder de mudar a jornada de saúde de alguém."),
     cupom("🎁 Seu presente por avaliar", "5% OFF", "na sua próxima compra", "Válido por 30 dias depois da avaliação", "⭐ Deixar minha avaliação agora", AVALIAR,
           "Leva menos de 2 minutos e faz uma diferença enorme 🧬"),
     passos(["Clique no botão e acesse o link de avaliação", "Dê sua nota e escreva sobre sua experiência", "Receba seu cupom de 5% de desconto na próxima compra 🎁"], "Como funciona"),
     aviso(f"💬 Ainda com dúvidas sobre seu produto? <a href=\"{SERENA}\" style=\"color:#ffffff;text-decoration:underline;font-weight:700;\">A Serena responde 24h</a>.", NAVY),
-]
-
-EMAILS["2.6-pos-compra-4-semanas"] = [
-    hero("Conquista", "4 semanas de uso real", "Olha até onde você chegou 🏆",
-         f"{NOME}, 4 semanas de protocolo contínuo. Isso não é pouca coisa: a maioria das pessoas desiste antes disso. Você não.", tag_color="#16A34A"),
-    texto("Nessas 4 semanas, seu organismo passou por mudanças reais no nível celular. A fase de adaptação ficou para trás. O metabolismo celular está operando com o suporte que você escolheu dar a ele.",
-          f"E o melhor ainda está por vir. Os resultados mais consistentes e duradouros aparecem {b('a partir do segundo mês de uso contínuo')}."),
-    titulo("O que aconteceu nas últimas 4 semanas", "Sua jornada até aqui", pad="6px 32px 16px"),
-    cartoes([("🔬", "Semana 1", "Fase de choque", "Ativação dos processos celulares com dose intensiva.", RED),
-             ("⚡", "Semanas 2 e 3", "Adaptação", "O organismo aprendeu a trabalhar com o composto.", NAVY),
-             ("🌱", "Semana 4", "Equilíbrio", "Manutenção diária, base sólida construída.", "#16A34A")]),
-    destaque("O mês 2 é onde a mágica acontece. 🧬", "Clientes que completam o segundo ciclo relatam resultados mais consistentes. Continue: você está no caminho certo."),
-    depoimento("No segundo mês foi onde realmente senti a diferença. Quem me acompanhou percebeu antes de mim. Vale muito a pena não desistir no começo.", "Cliente America Nutrition", "4 meses de uso"),
-    acao([("💬 Falar com a Serena", SERENA, "green")]),
-]
-
-EMAILS["3.1-recompra-imunofosfo"] = [
-    hero("Estoque", "⚠️ Seu estoque pode estar acabando", "Não perca o ritmo que você construiu.",
-         f"{NOME}, faz algumas semanas que você está investindo na sua saúde, e isso merece parabéns! Mas há algo importante que precisamos te dizer.",
-         IMG["imuno"], btn("🛒 Renovar meu estoque", PROD, "red")),
-    texto(f"A {b('consistência é o segredo dos melhores resultados')}. Interromper o protocolo agora significa dar um passo atrás em tudo que você já conquistou, e ter que recomeçar do início."),
-    aviso(f"📦 <b>Hora de renovar.</b> Se você está na manutenção com o frasco de 90 cápsulas (3 por dia), seu estoque está chegando ao fim. Não espere acabar para pedir o próximo.", "#FFF4D6", "#7A4A00"),
-    checklist("Por que continuar agora?", [
-        f"{b('Uso contínuo traz resultados consistentes')}: essa é a chave",
-        f"{b('Interromper e reiniciar')} pode exigir uma nova fase de choque, atrasando os resultados que você trabalhou para alcançar",
-        f"{b('Uso contínuo = resultados contínuos.')} Simples assim."]),
-    acao([("🛒 Renovar meu estoque agora", PROD, "red")]),
-    serena(["Precisa de ajuda para escolher o próximo ciclo?", "Eu te oriento no WhatsApp, 24h 💚"], "Falar com a Serena &rarr;"),
 ]
 
 EMAILS["4.1-navegacao-abandonada"] = [
@@ -450,36 +347,263 @@ EMAILS["5.1-cliente-vip"] = [
     acao([("🛒 Usar cupom VIP_AN", VIP, "red"), ("💬 Falar com a Serena", SERENA, "green")], "Cupom VIP_AN · 15% de desconto · válido por 20 dias 🧬"),
 ]
 
+# ================================================================== v2 (10/11/2026): blocos por produto, carrinho, recompra
+# Os modelos abaixo tem variaveis preenchidas no envio a partir de email_fila.dados (email_preencher no banco):
+#   {{ guia_produtos }} {{ produto_principal }} {{ produto_foto }} {{ complemento_bloco }} {{ complemento_nome }}
+#   {{ carrinho_itens }} {{ carrinho_aviso }} {{ checkout_url }} {{ recompra_itens }} {{ recompra_url }} {{ data_fim }}
+CHECKOUT = "https://checkout.americanutrition.com/?items="
+V = "{{ %s }}"
+
+def lista_var(var, pad="0 32px 18px"):
+    """linha que recebe um bloco HTML pronto (gerado no banco a partir dos moldes abaixo)"""
+    return f'<tr><td class="px" style="padding:{pad};">{V % var}</td></tr>'
+
+# molde de uma linha de item (carrinho e recompra). O banco troca __FOTO__ __NOME__ __DETALHE__ __VALOR__.
+MOLDE_ITEM = (f'<table {TB} style="border-collapse:separate;background:#fff;border:1px solid #E3E8F2;border-radius:14px;margin-bottom:10px;"><tr>'
+              f'<td width="84" valign="middle" style="padding:12px 0 12px 12px;"><img src="__FOTO__" width="72" alt="" style="display:block;width:72px;height:auto;border:0;border-radius:10px;"></td>'
+              f'<td valign="middle" style="padding:12px 14px;"><div style="{T}font-size:20px;font-weight:700;color:{INK};line-height:1.15;">__NOME__</div>'
+              f'<div style="{S}font-size:13px;line-height:1.5;color:{MUTED};margin-top:2px;">__DETALHE__</div></td>'
+              f'<td valign="middle" align="right" style="padding:12px 16px 12px 0;{S}font-size:15px;font-weight:700;color:{NAVY};white-space:nowrap;">__VALOR__</td></tr></table>')
+
+# molde do aviso do carrinho (cartao recusado / boleto). O banco troca __TEXTO__.
+MOLDE_AVISO = (f'<table {TB} bgcolor="#FFF4D6" style="border-collapse:separate;background:#FFF4D6;border-radius:12px;margin-bottom:14px;"><tr>'
+               f'<td style="padding:14px 18px;{S}font-size:14px;line-height:1.55;color:#7A4A00;">__TEXTO__</td></tr></table>')
+
+PRODUTOS = [
+  # chave, padrao (regex no titulo do item), nome curto, foto, url, variant_id, preco, unidades por frasco, dose/dia, dias fixos, complemento, recompra,
+  # como usar (lista), dicas (lista), argumento de venda quando ele e o complemento sugerido
+  dict(chave="imunofosfo_diabetes", padrao="diabetes", nome="ImunoFosfo Diabetes", foto=CDN+"diabetes_mocup.jpg?v=1769434468&width=400",
+       url=SITE+"/products/imunofosfo-diabetes", vid="45117829218476", preco=267, un=60, dose=2, fixo=None, comp="omega", rec=True,
+       usar=["2 cápsulas por dia: uma de manhã e uma à noite", "Intervalo mínimo de 3 horas entre as doses", "Tome após as refeições principais"],
+       dicas=["Beba bastante água ao longo do dia", "Use todos os dias, no mesmo horário: a constância é o que traz resultado", "Pode usar junto com o acompanhamento que você já faz"],
+       pitch="Fosfoetanolamina com protocolo próprio para quem cuida da glicemia."),
+  dict(chave="imunofosfo_liquid", padrao="imunofosfo liquid", nome="ImunoFosfo Liquid", foto=CDN+"Mockup_Liquid_201fcff5-5e85-48ff-a71f-3eb38443d47c.jpg?v=1771378027&width=400",
+       url=SITE+"/products/imunofosfo-liquid", vid="45522481643692", preco=137, un=None, dose=None, fixo=10, comp="omega", rec=True,
+       usar=["20 gotas (1 ml), 3 vezes ao dia", "Sempre após as refeições principais", "Cada frasco rende cerca de 10 dias nessa dose"],
+       dicas=["Pingue em um pouco de água ou suco, se preferir", "Para não ficar sem, os kits de 3, 6 e 9 frascos saem com até 30% de desconto", "Na dúvida sobre a dose, a Serena ajusta para o seu caso"],
+       pitch="A fosfoetanolamina em gotas, com B3, B12 e zinco."),
+  dict(chave="imunofosfo_kids", padrao="kids", nome="ImunoFosfo Kids", foto=CDN+"ImunoFosfo_Kids_fosfoetanolamina.jpg?v=1771511298&width=400",
+       url=SITE+"/products/imunofosfo-kids-fosfoetanolamina", vid="43736522653868", preco=167, un=None, dose=None, fixo=30, comp=None, rec=True,
+       usar=["A partir de 3 anos", "10 gotas pela manhã e 10 gotas à noite", "Para crianças não existe fase de reforço"],
+       dicas=["Sabor tangerina: pode pingar direto ou em um pouco de suco", "Mantenha o horário fixo para virar rotina", "Qualquer dúvida sobre a dose da criança, fale com a Serena"],
+       pitch="Fosfoetanolamina em gotas, sabor tangerina, para crianças a partir de 3 anos."),
+  dict(chave="imunofosfo_healing", padrao="healing", nome="ImunoFosfo Healing", foto=CDN+"IMUNOHEALING.jpg?v=1736989270&width=400",
+       url=SITE+"/products/imunofosfo-healing", vid="43671038656684", preco=87, un=None, dose=None, fixo=None, comp="imunofosfo", rec=False,
+       usar=["Siga o modo de uso indicado na embalagem", "Use de forma contínua para melhores resultados"],
+       dicas=["Se tiver qualquer dúvida sobre como aplicar, a Serena te orienta", "Combine com o ImunoFosfo em cápsulas para o cuidado por dentro"],
+       pitch="Cuidado complementar da linha ImunoFosfo."),
+  dict(chave="imunopet", padrao="imunopet", nome="ImunoPet", foto=IMG["pet"], url=SITE+"/products/imunopet", vid="45211644625068", preco=157,
+       un=None, dose=None, fixo=None, comp=None, rec=False,
+       usar=["1 gota por kg do animal, no máximo 15 gotas por dose", "Primeiros 7 dias: 3 vezes ao dia", "Depois: 1 vez ao dia (manutenção)"],
+       dicas=["Pode pingar direto na boca ou em um petisco", "Mantenha a manutenção todos os dias", "A Serena calcula a dose pelo peso do seu pet"],
+       pitch="Fosfoetanolamina para cães e gatos."),
+  dict(chave="imunofosfo", padrao="imunofosfo", nome="ImunoFosfo", foto=IMG["imuno"], url=PROD, vid="44436756234412", preco=327, un=90, dose=3, fixo=None, comp="omega", rec=True,
+       usar=["Manutenção: 3 cápsulas por dia", "Intervalo mínimo de 3 horas entre uma cápsula e outra", "Fase de Reforço (quando indicada): 6 cápsulas por dia durante 7 dias"],
+       dicas=["Capriche na água ao longo do dia", "Se preferir, a cápsula pode ser aberta e dissolvida em líquido", "Com o Ômega 3: tome 1 ImunoFosfo junto do Ômega de manhã e à noite, e a do meio do dia sozinha"],
+       pitch="O carro-chefe da America Nutrition: fosfoetanolamina sintética bioidêntica, 650 mg por cápsula, para o equilíbrio da imunidade e o metabolismo celular."),
+  dict(chave="omega", padrao="omega", nome="Ômega 3 Ultra Pure", foto=IMG["omega"], url=OMEGA_PG, vid="43843399712940", preco=77, un=60, dose=2, fixo=None, comp="imunofosfo", rec=True,
+       usar=["2 cápsulas por dia (2.000 mg de óleo de peixe)", "Uma no café da manhã e uma no jantar", "Sempre junto com uma refeição: absorve melhor com alimento"],
+       dicas=["Guarde em local fresco, longe do sol", "Use todos os dias: o efeito vem da constância", "Combina muito bem com o ImunoFosfo nas mesmas refeições"],
+       pitch="EPA e DHA de alta pureza, com vitamina E. Ação anti-inflamatória e cuidado com coração e cérebro. São 2 cápsulas por dia, junto das refeições."),
+  dict(chave="d3_50000", padrao="50[. ]?000", nome="D3 K2 A E 50.000 UI", foto=CDN+"Mockup---Vitamin-D3_e68dfc5f-4442-4f03-ba0b-cfe981eb6522.jpg?v=1770058482&width=400",
+       url=SITE+"/products/vitamina-d3-50000-ui-k2-a-e", vid="45300915863724", preco=77, un=None, dose=None, fixo=84, comp="omega", rec=True,
+       usar=["1 cápsula por semana, sempre no mesmo dia", "Tome junto de uma refeição com gordura (almoço ou jantar)", "O frasco de 12 cápsulas dura 12 semanas"],
+       dicas=["Escolha um dia fixo e coloque um lembrete no celular", "Não tome mais de uma por semana", "Combina com o Ômega 3, que também absorve melhor com gordura"],
+       pitch="Dose semanal de D3 com K2, A e E: uma cápsula por semana."),
+  dict(chave="d3", padrao="d3", nome="Vitamina D3 K2 A", foto=IMG["d3"], url=SITE+"/products/d3-vitamin-with-k2-and-a", vid="44240381411500", preco=67, un=60, dose=2, fixo=None, comp="omega", rec=True,
+       usar=["2 cápsulas por dia", "Junto de uma refeição com gordura, como o almoço ou o jantar"],
+       dicas=["A K2 ajuda o cálcio a ir para os ossos, e não para as artérias", "Mantenha o uso diário", "Combina com o Ômega 3 na mesma refeição"],
+       pitch="D3 com K2 e A em sinergia, para ossos, coração e imunidade. São 2 cápsulas por dia."),
+  dict(chave="propolis_verde", padrao="green propolis|pr[oó]polis verde", nome="Própolis Verde Premium", foto=IMG["propolis"],
+       url=SITE+"/products/green-propolis-premium-propolis-verde", vid="43959807508652", preco=77, un=60, dose=2, fixo=None, comp="imunofosfo", rec=True,
+       usar=["2 cápsulas por dia", "Uma de manhã e uma à noite, junto das refeições"],
+       dicas=["Absorve melhor com alimento", "Use todos os dias para manter a defesa em dia", "Combina com o ImunoFosfo e o Ômega 3 na mesma rotina"],
+       pitch="Própolis verde brasileira com vitaminas C e E, selênio e zinco. Antioxidante e defesa natural, 2 cápsulas por dia."),
+  dict(chave="propolis_extract", padrao="propolis extract", nome="Propolis Extract", foto=CDN+"PROPOLIS-MICK.jpg?v=1736989296&width=400",
+       url=SITE+"/products/propolis-extract", vid="43843418259628", preco=67, un=60, dose=2, fixo=None, comp="imunofosfo", rec=True,
+       usar=["1 a 2 cápsulas por dia", "Preferencialmente junto das refeições"],
+       dicas=["Use todos os dias", "Combina com o ImunoFosfo na mesma rotina"],
+       pitch="Extrato de própolis concentrado, antioxidante, 2 cápsulas por dia."),
+  dict(chave="creatina", padrao="creatin", nome="Creatina Ultra Micronizada", foto=CDN+"Mockup---Creatina-em-Po-frente.jpg?width=400",
+       url=SITE+"/products/creatine-ultra-micronized", vid="44268289982636", preco=99.90, un=None, dose=None, fixo=100, comp="vitamins", rec=True,
+       usar=["3 g por dia (1 medida)", "Todos os dias, inclusive nos dias sem treino", "Misture em água, suco ou no shake"],
+       dicas=["O efeito vem da saturação do músculo ao longo das semanas, não do horário", "Beba bastante água", "A embalagem rende 100 doses"],
+       pitch="Creatina monohidratada pura e micronizada, 3 g por dia."),
+  dict(chave="life_gummy", padrao="gummy|gomas", nome="Life Gummy", foto=CDN+"Mockup---Life-Gummy.jpg?width=400",
+       url=SITE+"/products/life-gummy-creatina-em-gomas", vid="44291546448044", preco=99.90, un=60, dose=2, fixo=None, comp="vitamins", rec=True,
+       usar=["2 gomas por dia (3 g de creatina)", "Todos os dias, no horário que for mais fácil"],
+       dicas=["O efeito vem da constância, não do horário", "Beba bastante água ao longo do dia"],
+       pitch="Creatina em gomas: 3 g por dia em 2 gomas."),
+  dict(chave="vitamins", padrao="vitamins", nome="Vitamins & Minerals Premium", foto=CDN+"Mockup---Multivitamin.jpg?width=400",
+       url=SITE+"/products/vitamins-minerals-premium", vid="44714532208812", preco=147, un=90, dose=3, fixo=None, comp="omega", rec=True,
+       usar=["3 cápsulas por dia", "Junto das refeições"],
+       dicas=["12 vitaminas e 10 minerais na dose diária", "Use todos os dias para manter os níveis"],
+       pitch="12 vitaminas e 10 minerais em 3 cápsulas por dia: a base que falta na alimentação do dia a dia."),
+  dict(chave="life_hair", padrao="life hair|biotina", nome="Life Hair", foto=CDN+"lifehair.jpg?v=1760037313&width=400",
+       url=SITE+"/products/life-hair", vid="44852610826412", preco=77, un=60, dose=2, fixo=None, comp="vitamins", rec=True,
+       usar=["2 cápsulas por dia", "Junto das refeições"],
+       dicas=["Cabelo e unhas respondem em semanas: mantenha o uso por pelo menos 3 meses", "Beba bastante água"],
+       pitch="Biotina e vitaminas para cabelo, pele e unhas."),
+  dict(chave="life_protein", padrao="protein", nome="Life Protein", foto=CDN+"Mockup---Life-Protein.jpg?width=400",
+       url=SITE+"/products/life-protein-proteina-vegetal", vid="45035695866028", preco=107, un=None, dose=None, fixo=None, comp="creatina", rec=False,
+       usar=["1 dose (medida inclusa) em 200 a 300 ml de água ou bebida", "Pode ser no café da manhã ou depois do treino"],
+       dicas=["Ajuda a manter a massa muscular", "Combina com a Creatina para quem treina"],
+       pitch="Proteína vegetal para manter a massa muscular."),
+]
+
+def guia_bloco(pr):
+    """bloco 'como usar' de um produto, usado no email de entrega. __DURACAO__ e __QTD__ sao trocados no banco."""
+    li = lambda xs, cor: "".join(f'<tr><td width="26" valign="top" style="padding:0 0 8px;{S}font-size:14px;font-weight:700;color:{cor};">&#9679;</td>'
+                                 f'<td valign="top" style="padding:0 0 8px;{S}font-size:14px;line-height:1.5;color:{MUTED};">{x}</td></tr>' for x in xs)
+    return (f'<table {TB} style="border-collapse:separate;background:#fff;border:1px solid #E3E8F2;border-radius:16px;margin-bottom:14px;">'
+            f'<tr><td style="padding:18px 20px 6px;"><table {TB}><tr>'
+            f'<td width="92" valign="top"><img src="{pr["foto"]}" width="80" alt="" style="display:block;width:80px;height:auto;border:0;border-radius:12px;"></td>'
+            f'<td valign="middle"><div style="{S}font-size:11px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:{RED};">Seu produto · __QTD__</div>'
+            f'<div style="{T}font-size:26px;line-height:1.1;font-weight:700;color:{NAVY};margin-top:2px;">{pr["nome"]}</div></td></tr></table></td></tr>'
+            f'<tr><td style="padding:10px 20px 4px;"><div style="{T}font-size:19px;font-weight:700;color:{INK};margin-bottom:8px;">Como usar</div><table {TB}>{li(pr["usar"], RED)}</table></td></tr>'
+            f'<tr><td style="padding:4px 20px 6px;"><div style="{T}font-size:19px;font-weight:700;color:{INK};margin-bottom:8px;">Dicas para ter resultado</div><table {TB}>{li(pr["dicas"], "#16A34A")}</table></td></tr>'
+            f'<tr><td style="padding:4px 20px 18px;">__DURACAO__</td></tr></table>')
+
+def complemento_bloco(pr):
+    """cartao do produto sugerido (email de complemento)"""
+    ck = f'{CHECKOUT}{pr["vid"]}%3A1'
+    preco = f'R$ {pr["preco"]:.2f}'.replace(".", ",")
+    return (f'<table {TB} style="border-collapse:separate;background:#fff;border:1px solid #E3E8F2;border-radius:16px;">'
+            f'<tr><td align="center" style="padding:22px 22px 6px;"><a href="{pr["url"]}"><img src="{pr["foto"]}" width="190" alt="{pr["nome"]}" style="display:block;width:190px;height:auto;border:0;"></a></td></tr>'
+            f'<tr><td style="padding:6px 24px 22px;text-align:center;"><div style="{T}font-size:28px;font-weight:700;color:{NAVY};line-height:1.1;">{pr["nome"]}</div>'
+            f'<div style="{S}font-size:15px;line-height:1.6;color:{MUTED};margin:8px 0 6px;">{pr["pitch"]}</div>'
+            f'<div style="{T}font-size:26px;font-weight:700;color:{RED};margin:6px 0 16px;">{preco}</div>'
+            f'{btn("Adicionar à minha rotina", ck, "red")}'
+            f'<div style="height:10px;line-height:10px;font-size:0;">&nbsp;</div>{btn("Conhecer o produto", pr["url"], "navy")}</td></tr></table>')
+
+EMAILS["2.1-pos-entrega-leia-antes"] = [
+    hero("Pedido entregue", "Leia antes de abrir", f"Chegou, {NOME}! Comece do jeito certo.",
+         "O jeito de usar faz toda a diferença no resultado. Separamos aqui o modo de uso de cada produto do seu pedido.", V % "produto_foto"),
+    titulo("Seu guia de uso", "Do primeiro dia em diante", pad="28px 32px 14px"),
+    lista_var("guia_produtos", "0 32px 8px"),
+    aviso("📌 <b>Este produto não é um medicamento.</b> Não interrompa nenhum tratamento sem falar com o seu médico. Pode usar junto com o acompanhamento que você já faz.", "#FFF4D6", "#7A4A00"),
+    serena([f"Oi, {NOME}! 👋 Aqui é a Serena.", "Me conta o seu objetivo que eu monto a <b>rotina certa pra você</b>, com horários e combinações. É grátis 💚"],
+           "Quero minha rotina personalizada &rarr;", SERENA_PROTO),
+    titulo("Comunidade", "Converse com quem já usa", pad="4px 32px 16px"),
+    canais([("💬", GREEN, "WhatsApp", "Grupo oficial · relatos reais e suporte da equipe", "Entrar", GRUPO_WA),
+            ("f", "#1877F2", "Facebook", "Grupo fechado · depoimentos e novidades", "Entrar", FB)]),
+]
+
+EMAILS["2.2-pos-entrega-complemento"] = [
+    hero("Para a sua rotina", "Combinação recomendada", f"{NOME}, quem usa {V % 'produto_principal'} costuma somar isto.",
+         f"Depois dos primeiros dias com {V % 'produto_principal'}, muitos clientes completam a rotina com {V % 'complemento_nome'}. Veja por quê."),
+    lista_var("complemento_bloco", "28px 32px 18px"),
+    depoimento("Comecei só com o ImunoFosfo. Depois somei o Ômega 3 e senti a diferença. Hoje não deixo faltar nenhum dos dois.", "Beatriz M.", "Cliente America Nutrition"),
+    serena(["Quer saber se essa combinação faz sentido pra você?", "Me chama que eu explico como encaixar na sua rotina 💚"], "Perguntar para a Serena &rarr;"),
+]
+
+EMAILS["3.1-recompra-acabando"] = [
+    hero("Reposição", "Seu estoque está acabando", f"{NOME}, seu {V % 'produto_principal'} termina por volta de {V % 'data_fim'}.",
+         "Fizemos a conta pela dose recomendada, a partir do dia seguinte à entrega. Peça agora para o próximo chegar antes de acabar e você não interromper o uso.",
+         V % "produto_foto", btn("Repetir meu pedido", V % "recompra_url", "white")),
+    titulo("Pela dose recomendada", "Quanto falta de cada produto", pad="28px 32px 14px"),
+    lista_var("recompra_itens", "0 32px 8px"),
+    aviso("🔁 <b>A constância é o que traz resultado.</b> Parar e recomeçar pode exigir uma nova fase de adaptação.", "#FFF4D6", "#7A4A00"),
+    acao([("Repetir meu pedido", V % "recompra_url", "red"), ("Ver toda a linha", SITE, "navy")], "O carrinho já abre com os mesmos produtos · pagamento seguro · entrega rastreada"),
+    serena(["Quer ajustar a quantidade ou levar um kit para mais meses?", "Eu te ajudo a escolher e mando o link 💚"], "Falar com a Serena &rarr;"),
+]
+
+EMAILS["3.2-recompra-acabou"] = [
+    hero("Reposição", "Não deixe a rotina parar", f"{NOME}, seu {V % 'produto_principal'} já deve ter acabado.",
+         f"Pela dose recomendada, ele terminou por volta de {V % 'data_fim'}. Se ainda não pediu o próximo, dá tempo de retomar sem perder o ritmo.",
+         V % "produto_foto", btn("Repetir meu pedido", V % "recompra_url", "white")),
+    lista_var("recompra_itens", "28px 32px 8px"),
+    acao([("Repetir meu pedido", V % "recompra_url", "red")], "Se você já tem estoque em casa, pode ignorar este email 🙂"),
+    serena(["Se ficou alguma dúvida sobre continuar, me chama.", "Eu te ajudo a decidir o melhor caminho 💚"], "Falar com a Serena &rarr;"),
+]
+
+EMAILS["6.1-carrinho-itens"] = [
+    hero("Seu carrinho", "Ficou guardado para você", f"{NOME}, seu pedido está quase pronto.",
+         "Você escolheu seus produtos e não finalizou. Tudo continua separado: é só tocar no botão para concluir.",
+         cta=btn("Finalizar meu pedido", V % "checkout_url", "white")),
+    lista_var("carrinho_aviso", "26px 32px 0"),
+    titulo("No seu carrinho", "O que você escolheu", pad="8px 32px 14px"),
+    lista_var("carrinho_itens", "0 32px 8px"),
+    acao([("Finalizar meu pedido", V % "checkout_url", "red")], "🔒 Pagamento seguro · 📦 Entrega rastreada para todo o Brasil"),
+    serena(["Ficou alguma dúvida antes de fechar?", "Me chama aqui que eu respondo em minutos 💚"], "Tirar uma dúvida &rarr;"),
+]
+
+EMAILS["6.2-carrinho-duvidas"] = [
+    hero("Seu carrinho", "Antes de decidir", f"{NOME}, veja o que diz quem já usa.",
+         "Decisão de saúde não se toma no impulso, e está certo. Separamos relatos de clientes para ajudar.",
+         cta=btn("Voltar ao meu carrinho", V % "checkout_url", "white")),
+    titulo("Relatos reais", "Quem já usa conta", pad="28px 32px 14px"),
+    depoimentos_grid([("Em 3 semanas já senti diferença na disposição diária. Hoje indico para a família inteira.", "Roberto F."),
+                      ("Meus exames melhoraram muito após 45 dias de uso. O médico ficou surpreso.", "Fernanda L.")]),
+    numeros([("4.98", "nota média ★★★★★"), ("+10.000", "clientes"), ("24h", "suporte da Serena")]),
+    titulo("Seu carrinho", "Continua separado", pad="8px 32px 14px"),
+    lista_var("carrinho_itens", "0 32px 8px"),
+    acao([("Finalizar meu pedido", V % "checkout_url", "red"), ("Ver mais depoimentos", DEP, "navy")]),
+    serena(["Quer que eu te explique como usar antes de comprar?", "Me conta o seu objetivo 💚"], "Falar com a Serena &rarr;"),
+]
+
+EMAILS["6.3-carrinho-ultima-chamada"] = [
+    hero("Último aviso", "Seu carrinho vai expirar", f"{NOME}, vamos liberar os itens do seu carrinho.",
+         "Os produtos ficaram reservados por alguns dias. Se ainda quiser, este é o melhor momento para finalizar.",
+         cta=btn("Finalizar agora", V % "checkout_url", "white"), tag_color="#F5A524"),
+    lista_var("carrinho_itens", "28px 32px 8px"),
+    acao([("Finalizar agora", V % "checkout_url", "red")], "🔒 Pagamento seguro · 📦 Entrega rastreada · 💬 Serena 24h"),
+]
+
 ASSUNTOS = {
     "1.1-boas-vindas-cupom": "{{ nome }}, seu cupom de 10% OFF chegou 🎁",
-    "1.2-boas-vindas-comunidade": "{{ nome }}, você foi convidado(a) para a nossa comunidade",
     "1.3-boas-vindas-como-age": "{{ nome }}, sabe como o ImunoFosfo age no seu organismo?",
-    "1.4-boas-vindas-depoimentos": "{{ nome }}, os resultados falam por si mesmos",
-    "2.1-pos-compra-guia-de-uso": "Leia antes de abrir seu produto 📋",
-    "2.2-pos-compra-comunidade": "🧬 {{ nome }}, você foi convidado(a) para a nossa comunidade",
-    "2.3-pos-compra-historia-carla": "Ela quase desistiu no décimo dia, {{ nome }}",
-    "2.4-pos-compra-omega3": "O complemento que nossos clientes mais usam com o ImunoFosfo",
-    "2.5-pos-compra-avaliacao": "⭐ {{ nome }}, como está sendo sua experiência?",
-    "2.6-pos-compra-4-semanas": "🏆 Olha até onde você chegou, {{ nome }}",
-    "3.1-recompra-imunofosfo": "⚠️ {{ nome }}, seu ImunoFosfo pode estar acabando",
+    "1.4-boas-vindas-depoimentos": "{{ nome }}, os resultados falam por si (e seu cupom ainda vale)",
+    "2.1-pos-entrega-leia-antes": "📦 Chegou! Leia antes de abrir seu {{ produto_principal }}",
+    "2.2-pos-entrega-complemento": "{{ nome }}, a combinação que quem usa {{ produto_principal }} mais pede",
+    "2.3-pos-entrega-avaliacao": "⭐ {{ nome }}, como está sendo com o {{ produto_principal }}?",
+    "3.1-recompra-acabando": "{{ nome }}, seu {{ produto_principal }} acaba por volta de {{ data_fim }}",
+    "3.2-recompra-acabou": "Seu {{ produto_principal }} acabou, {{ nome }}?",
     "4.1-navegacao-abandonada": "O que faz você se sentir equilibrado?",
     "5.1-cliente-vip": "👑 Você é VIP, {{ nome }}: sua recompensa exclusiva chegou",
+    "6.1-carrinho-itens": "{{ nome }}, seu carrinho ficou guardado 🛒",
+    "6.2-carrinho-duvidas": "Ficou alguma dúvida, {{ nome }}?",
+    "6.3-carrinho-ultima-chamada": "⏳ Último aviso: vamos liberar o seu carrinho",
 }
 PREVIAS = {
     "1.1-boas-vindas-cupom": "Código exclusivo dentro. O desconto aplica sozinho no clique.",
-    "1.2-boas-vindas-comunidade": "WhatsApp, Facebook ou Telegram: escolha seu canal. Suporte real, relatos reais, todo dia.",
     "1.3-boas-vindas-como-age": "Modulação imunológica, comunicação celular, ação anti-inflamatória e suporte metabólico.",
-    "1.4-boas-vindas-depoimentos": "Depoimentos verificados de quem seguiu o protocolo.",
-    "2.1-pos-compra-guia-de-uso": "O jeito certo de usar faz toda a diferença. Preparamos tudo para você começar bem.",
-    "2.2-pos-compra-comunidade": "WhatsApp, Facebook ou Telegram: conteúdo, suporte e novidades em primeira mão.",
-    "2.3-pos-compra-historia-carla": "Uma história real que pode mudar como você encara os primeiros dias de uso.",
-    "2.4-pos-compra-omega3": "Ômega 3 MEG-3 de alta pureza, com EPA e DHA para o cuidado diário 🧬",
-    "2.5-pos-compra-avaliacao": "Sua avaliação ajuda outras pessoas e ainda garante um mimo exclusivo para você.",
-    "2.6-pos-compra-4-semanas": "4 semanas de protocolo contínuo. E o melhor ainda está por vir.",
-    "3.1-recompra-imunofosfo": "Interromper o protocolo agora pode atrasar o que você já conquistou. Renove em 1 minuto.",
+    "1.4-boas-vindas-depoimentos": "Depoimentos verificados de quem seguiu o protocolo, e o convite para a comunidade.",
+    "2.1-pos-entrega-leia-antes": "Modo de uso, horários e dicas de cada produto do seu pedido.",
+    "2.2-pos-entrega-complemento": "Uma combinação simples que completa a sua rotina.",
+    "2.3-pos-entrega-avaliacao": "Sua avaliação ajuda outras pessoas e ainda garante 5% OFF na próxima compra.",
+    "3.1-recompra-acabando": "Fizemos a conta pela dose recomendada. Peça agora e não interrompa o uso.",
+    "3.2-recompra-acabou": "Dá tempo de retomar sem perder o ritmo. O carrinho já abre com os mesmos produtos.",
     "4.1-navegacao-abandonada": "Você visitou e foi embora. Mas algumas decisões valem a pena ser retomadas.",
     "5.1-cliente-vip": "Você faz parte de um grupo seleto. Preparamos um cupom exclusivo de 15% para você.",
+    "6.1-carrinho-itens": "Tudo continua separado: é só tocar no botão para concluir.",
+    "6.2-carrinho-duvidas": "Relatos de quem já usa, e a Serena para responder qualquer pergunta.",
+    "6.3-carrinho-ultima-chamada": "Os produtos ficaram reservados por alguns dias. Este é o melhor momento.",
 }
+
+def sql_texto(x):
+    return "null" if x is None else "'" + str(x).replace("'", "''") + "'"
+
+def gerar_sql(out_dir):
+    """produtos.sql: catalogo usado pelo agendador (dose, duracao, complemento, blocos HTML) e os moldes"""
+    linhas = []
+    for i, pr in enumerate(PRODUTOS):
+        comp = next((x for x in PRODUTOS if x["chave"] == pr["comp"]), None)
+        vals = [pr["chave"], pr["padrao"], pr["nome"], pr["foto"], pr["url"], pr["vid"]]
+        linhas.append("(" + ", ".join(sql_texto(v) for v in vals) + f", {pr['preco']}, {i + 1}, {pr['un'] or 'null'}, {pr['dose'] or 'null'}, "
+                      f"{pr['fixo'] or 'null'}, {sql_texto(pr['comp'])}, {'true' if pr['rec'] else 'false'}, "
+                      f"{sql_texto(guia_bloco(pr))}, {sql_texto(complemento_bloco(pr))})")
+    sql = ("-- Gerado por padrao.py (nao editar a mao). Catalogo dos emails por produto, 10/11/2026.\n"
+           "insert into email_produtos (chave, padrao, nome, foto, url, variant_id, preco, ordem, unidades, dose_dia, dias_fixos, complemento, recompra, guia_html, card_html) values\n"
+           + ",\n".join(linhas) +
+           "\non conflict (chave) do update set padrao = excluded.padrao, nome = excluded.nome, foto = excluded.foto, url = excluded.url,"
+           " variant_id = excluded.variant_id, preco = excluded.preco, ordem = excluded.ordem, unidades = excluded.unidades, dose_dia = excluded.dose_dia,"
+           " dias_fixos = excluded.dias_fixos, complemento = excluded.complemento, recompra = excluded.recompra, guia_html = excluded.guia_html,"
+           " card_html = excluded.card_html, atualizado_em = now();\n"
+           f"insert into email_config (chave, valor) values ('molde_item', {sql_texto(MOLDE_ITEM)}), ('molde_aviso', {sql_texto(MOLDE_AVISO)})\n"
+           "on conflict (chave) do update set valor = excluded.valor;\n")
+    with open(os.path.join(out_dir, "produtos.sql"), "w") as f:
+        f.write(sql)
 
 if __name__ == "__main__":
     out = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
@@ -488,3 +612,5 @@ if __name__ == "__main__":
         with open(os.path.join(out, slug + ".html"), "w") as f:
             f.write(documento(ASSUNTOS[slug].replace("{{ nome }}", "").strip(" ,"), PREVIAS[slug], linhas))
     print(len(EMAILS), "modelos em", out)
+    gerar_sql(os.path.dirname(out))
+    print(len(PRODUTOS), "produtos em produtos.sql")
