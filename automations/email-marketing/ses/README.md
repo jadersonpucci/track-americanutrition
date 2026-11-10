@@ -226,7 +226,11 @@ Caso: `vitalinarocha67@gamil.vom` (carrinho) deu bounce no 6.1. ~2% dos emails d
 - `email_proximos` manda para `email_corrigir(f.email)`; email que nem corrigido é válido (ou domínio de teste como
   example.com) vira `pulado / email invalido`. Os 6.2 e 6.3 da Vitalina saem para @gmail.com.
 - Checkout: `automations/checkout/patches/email-sugestao.html` mostra "Você quis dizer ...?" com botão Corrigir
-  embaixo do campo (testado no Chromium com o HTML atual). **Publicação pendente** de autorização.
+  embaixo do campo. Publicado em 10/11 às 16h34 (BRT) com autorização do Jaderson; o deploy guardou a versão de
+  09/11 23:57 (rollback: `{"action":"rollback"}` no `/webhook/checkout-deploy`). Conferido no checkout real.
+- Cuidado ao testar o checkout real: ele grava o carrinho assim que o email é válido. O teste de 10/11 criou 3
+  carrinhos falsos (apagados) e reativou o carrinho real da Vitalina (restaurado para `abandonado`) antes de qualquer
+  mensagem sair. Testar com o HTML servido localmente (rotas interceptadas) ou apagar os carrinhos logo depois.
 
 ## Próximos passos
 2. Primeiro envio de campanha: Esquenta Black Friday só para os engajados (compraram nos últimos 90 dias), como

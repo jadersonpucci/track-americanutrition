@@ -302,3 +302,12 @@ Vendas com a tag SERENA (sem canceladas): mar 30, abr 105, mai 63, jun 110, jul 
 **Backups:** a versão anterior do checkout fica no deploy. Os arquivos do tema estão em `scratchpad/theme_novo_aff.liquid` e em `scratchpad/lps/bak/`.
 
 **Fica igual:** o histórico de conversões da Serena em `afiliado_conversoes` e as tags "AF: Serena" dos pedidos antigos.
+
+## Sugestão de e-mail com domínio errado (10/11/2026)
+
+`patches/email-sugestao.html` (script `anEmailSugJs`, antes do `</body>`): ao sair do campo de e-mail, se o domínio
+for um erro óbvio de um provedor conhecido (gamil.vom, hormail.com, gmail.comm, yahoo.com.bt...), aparece
+"Você quis dizer ...?" com o botão Corrigir. Mesma regra de `email-marketing/ses/corrigir-email.sql`. Caso que
+motivou: `vitalinarocha67@gamil.vom` (bounce no email de carrinho); ~2% dos e-mails do checkout têm esse erro.
+Publicado em 10/11 (backup automático: versão de 09/11 23:57). Conferido no checkout real: sugere nos casos
+errados, não sugere em `@gmail.com`, o botão corrige o campo, sem erro de JS.
