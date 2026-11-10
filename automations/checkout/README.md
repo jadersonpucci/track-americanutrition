@@ -253,3 +253,42 @@ Testado no navegador:
 - cookie PROMO5 + outro afiliado → o outro.
 
 Para manter a regra depois da Black, basta mudar a data de `SERENA_PROTEGE_ATE` nos três lugares.
+
+## A Serena deixou de ser afiliada: vira só origem do pedido (09/11/2026, noite)
+
+Pedido do Jaderson: tirar a Serena da atribuição de afiliados e deixar só a tag na Shopify, para medir as vendas dela por mês. Isto substitui a regra "Black 2026" acima.
+
+**Tag da Serena na Shopify.**
+- **WPP:** WhatsApp, inclui link manual `ref=whatsapp`.
+- **SERENA-IG:** Instagram.
+- **SERENA-MSG:** Messenger.
+
+Todos os caminhos já aplicam essas tags:
+- **Checkout:** o checkout manda `shipping.tag_extra`, que a Confirmação de Pagamento aplica no pedido.
+- **PIX e boleto da Serena:** continuam com `ref=serena`, e o `Montar Pedido Shopify` transforma em WPP.
+
+Para a análise mensal, filtre os pedidos por tag WPP (+ SERENA-IG/SERENA-MSG) e pela data. Base: setembro 167, outubro 194, novembro até 09/11 74 pedidos com WPP.
+
+**O que mudou:**
+
+| Onde | Antes | Agora |
+|---|---|---|
+| Afiliado "Serena" (`afiliados`, SERENA) | ativo | `inactive`: o `resolver_afiliado` ignora; sem conversão e sem tag "AF: Serena" em nenhum caminho |
+| Checkout (`ref=serena*`) | virava afiliada SERENA e passava por cima do cookie | só origem: `ref` do pagamento = afiliado do cookie (ou vazio) + `tag_extra` WPP/SERENA-IG/SERENA-MSG; aceita `&origem=` vindo da loja |
+| Tema `layout/theme.liquid` | gravava `an_aff=serena` e contava clique | grava só `an_origem` (3 dias) e repassa `&origem=` ao checkout; não conta clique |
+| 25 landings `snippets/*-lp.liquid` + `templates/page.lp-br.liquid` | contavam clique da Serena | não contam (`if(rf&&!/^serena/i.test(rf))`) |
+| Landing do Esquenta | idem | idem, grava `an_origem` |
+
+**Testes:**
+- No checkout, interceptando o pagamento:
+  - link Serena → ref "" + WPP;
+  - link Serena + cookie PROMO5 → PROMO5 + WPP;
+  - Serena IG → SERENA-IG;
+  - loja com afiliado + origem → PROMO5 + WPP;
+  - afiliado normal → sem mudança.
+- Na loja e na landing ao vivo: nenhum clique da Serena registrado.
+- No banco: `resolver_afiliado` não devolve nada para SERENA, SERENA01 nem para o cupom SERENA; PROMO5 segue normal.
+
+**Backups:** a versão anterior do checkout fica no deploy. Os arquivos do tema estão em `scratchpad/theme_novo_aff.liquid` e em `scratchpad/lps/bak/`.
+
+**Fica igual:** o histórico de conversões da Serena em `afiliado_conversoes` e as tags "AF: Serena" dos pedidos antigos.
