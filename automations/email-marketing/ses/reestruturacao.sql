@@ -93,6 +93,7 @@ declare
   dia0 date := (p_entregue at time zone 'America/Sao_Paulo')::date + 1;  -- comeca a contar no dia seguinte a entrega
   antes text[]; agora text[]; guia text; prin record; comp record; rprin record;
   rec_itens text; rec_url text; pos jsonb; rec jsonb := null; novos boolean;
+  recs jsonb := '[]'::jsonb; lim int; gchaves jsonb;
 begin
   set local client_min_messages = warning;
   create temp table if not exists _it (chave text, nome text, foto text, url text, qtd int, dias int, recompra boolean,
@@ -137,26 +138,29 @@ begin
   pos := jsonb_build_object('produto_principal', prin.nome, 'produto_foto', prin.foto, 'guia_produtos', coalesce(guia, ''),
            'complemento_chave', comp.chave, 'complemento_nome', comp.nome, 'complemento_bloco', comp.card_html);
 
-  -- recompra: o produto que acaba primeiro
-  select * into rprin from _it where recompra and dias is not null and dias > 0 order by dias, peso desc limit 1;
-  if rprin.chave is not null then
+  -- recompra: um aviso para cada data de termino. Produtos que acabam ate 10 dias depois do primeiro do grupo
+  -- vao juntos no mesmo aviso (e no mesmo link); o que acaba bem depois ganha o seu proprio aviso.
+  for rprin in select * from _it where recompra and dias is not null and dias > 0 order by dias, peso desc loop
+    if lim is not null and rprin.dias <= lim then continue; end if;   -- ja entrou no grupo anterior
+    lim := rprin.dias + 10;
     select string_agg(replace(replace(replace(replace(molde, '__FOTO__', t.foto), '__NOME__', t.nome),
              '__DETALHE__', t.qtd || case when t.qtd > 1 then ' unidades' else ' unidade' end || ' · acaba por volta de <b>' || to_char(dia0 + t.dias, 'DD/MM') || '</b>'),
-             '__VALOR__', case when dia0 + t.dias - current_date <= 0 then 'acabou' else (dia0 + t.dias - current_date) || ' dias' end), '' order by t.dias)
-      into rec_itens from _it t where t.recompra and t.dias is not null;
+             '__VALOR__', case when dia0 + t.dias - current_date <= 0 then 'acabou' else (dia0 + t.dias - current_date) || ' dias' end), '' order by t.dias),
+           jsonb_agg(t.chave)
+      into rec_itens, gchaves from _it t where t.recompra and t.dias is not null and t.dias between rprin.dias and lim;
     select string_agg(v || '%3A' || q, '%2C') into rec_url
       from (select regexp_replace(coalesce(i->>'variant_id', ''), '\D', '', 'g') v, sum(coalesce(nullif(i->>'qtd', '')::int, 1)) q,
                    min(email_produto(i->>'titulo')) ch
               from jsonb_array_elements(coalesce(p_itens, '[]'::jsonb)) i group by 1) z
-     where v <> ''  -- o link de recompra leva so o que acaba junto (ate 10 dias depois do primeiro)
-       and exists (select 1 from _it t where t.chave = z.ch and t.recompra and t.dias is not null and t.dias <= rprin.dias + 10);
+     where v <> '' and gchaves ? z.ch;
     rec := jsonb_build_object('produto_principal', rprin.nome, 'produto_foto', rprin.foto,
              'data_fim', to_char(dia0 + rprin.dias, 'DD/MM'), 'fim', (dia0 + rprin.dias)::text, 'dias', rprin.dias,
-             'recompra_itens', coalesce(rec_itens, ''),
+             'recompra_itens', coalesce(rec_itens, ''), 'chaves', gchaves, 'pedido_id', p_pedido,
              'recompra_url', case when rec_url is null then rprin.url else 'https://checkout.americanutrition.com/?items=' || rec_url end);
-  end if;
+    recs := recs || jsonb_build_array(rec);
+  end loop;
 
-  return jsonb_build_object('pos', pos, 'rec', rec, 'chaves', to_jsonb(agora), 'novos', novos);
+  return jsonb_build_object('pos', pos, 'rec', recs->0, 'recs', recs, 'chaves', to_jsonb(agora), 'novos', novos);
 end $$;
 
 -- ------------------------------------------------------------------ dados de um carrinho
@@ -218,7 +222,7 @@ create or replace function email_agendar() returns jsonb
 language plpgsql security definer set search_path = public, extensions as $$
 declare ini timestamptz := (select valor from email_config where chave = 'fluxos_inicio')::timestamptz;
   a int := 0; c int := 0; e int := 0; g int := 0; k int := 0; r int := 0; v int := 0;
-  pd record; d jsonb; car carrinhos_abandonados; fim date;
+  pd record; d jsonb; car carrinhos_abandonados; fim date; rg jsonb; n bigint; rref text;
 begin
   -- 1) Boas-vindas: inscreveu depois do inicio e ainda nao comprou (3 emails)
   with novos as (
@@ -305,22 +309,23 @@ begin
           e := e + 1;
         end if;
       end if;
-      -- recompra calculada
-      if d->'rec' is not null and d->'rec' <> 'null'::jsonb then
-        fim := (d->'rec'->>'fim')::date;
-        if email_dia(fim - case when (d->'rec'->>'dias')::int <= 12 then 3 else 5 end, 10) > now() then
+      -- recompra calculada: um par 3.1/3.2 por data de termino (ref pedido:<id>, pedido:<id>#2, ...)
+      for rg, n in select x, o from jsonb_array_elements(coalesce(d->'recs', '[]'::jsonb)) with ordinality t(x, o) loop
+        fim := (rg->>'fim')::date;
+        rref := 'pedido:' || pd.pedido_id || case when n > 1 then '#' || n else '' end;
+        if email_dia(fim - case when (rg->>'dias')::int <= 12 then 3 else 5 end, 10) > now() then
           insert into email_fila (email, slug, fluxo, ref, enviar_em, prioridade, dados)
-          values (pd.email, '3.1-recompra-acabando', 'recompra', 'pedido:' || pd.pedido_id,
-                  email_dia(fim - case when (d->'rec'->>'dias')::int <= 12 then 3 else 5 end, 10), 1, d->'rec')
+          values (pd.email, '3.1-recompra-acabando', 'recompra', rref,
+                  email_dia(fim - case when (rg->>'dias')::int <= 12 then 3 else 5 end, 10), 1, rg)
           on conflict do nothing;
           r := r + 1;
         end if;
         if email_dia(fim + 3, 10) > now() then
           insert into email_fila (email, slug, fluxo, ref, enviar_em, prioridade, dados)
-          values (pd.email, '3.2-recompra-acabou', 'recompra', 'pedido:' || pd.pedido_id, email_dia(fim + 3, 10), 1, d->'rec')
+          values (pd.email, '3.2-recompra-acabou', 'recompra', rref, email_dia(fim + 3, 10), 1, rg)
           on conflict do nothing;
         end if;
-      end if;
+      end loop;
     end if;
     update email_pedidos set agendado_em = now() where pedido_id = pd.pedido_id;
   end loop;
@@ -362,10 +367,15 @@ begin
    where f.id = z.id and z.bloqueia;
 
   -- regras de cada fluxo
+  -- recompra: cancela se, depois do pedido de referencia, a pessoa comprou algum dos produtos do aviso
   update email_fila f set status = 'pulado', motivo = 'comprou de novo'
    where f.status = 'pendente' and f.fluxo = 'recompra' and f.enviar_em <= now()
      and exists (select 1 from email_pedidos p where p.email = f.email and not p.cancelado
-                  and p.criado_em > (select p0.criado_em from email_pedidos p0 where 'pedido:' || p0.pedido_id = f.ref));
+                  and p.criado_em > (select p0.criado_em from email_pedidos p0
+                                      where p0.pedido_id = coalesce(f.dados->>'pedido_id', substr(f.ref, 8)))
+                  and (f.dados->'chaves' is null
+                       or exists (select 1 from jsonb_array_elements(coalesce(p.itens, '[]'::jsonb)) i
+                                   where f.dados->'chaves' ? email_produto(i->>'titulo'))));
   update email_fila f set status = 'pulado', motivo = 'ja comprou'
    where f.status = 'pendente' and f.fluxo = 'boas_vindas' and f.enviar_em <= now()
      and (exists (select 1 from email_contatos e where e.email = f.email and coalesce(e.pedidos, 0) > 0)
@@ -414,7 +424,7 @@ begin
       email_preencher(regexp_replace(t.assunto, '\{\{\s*nome\s*\}\}', n.nome, 'g'), f.dados) as assunto,
       email_preencher(regexp_replace(regexp_replace(t.html, '\{\{\s*nome\s*\}\}', n.nome, 'g'),
         '\{\{\s*link_descadastro\s*\}\}', email_link_descadastro(f.email), 'g'), f.dados) as html,
-      email_link_descadastro(f.email) as link
+      email_link_descadastro(f.email) as link, f.dados->>'checkout_url' as checkout_url
       from email_fila f join email_templates t on t.slug = f.slug left join email_contatos e on e.email = f.email
       cross join lateral (select coalesce(nullif(initcap(split_part(trim(coalesce(e.nome, '')), ' ', 1)), ''),
                                           nullif(f.dados->>'nome', ''), 'você') as nome) n

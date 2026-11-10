@@ -71,7 +71,7 @@ Banco em `fluxos.sql` (aplicado pelo `/pg/query` do Supabase, porque o usuário 
 | Workflow | Id | O que faz |
 |---|---|---|
 | `[Email] Sincronizar Shopify e agendar fluxos` (`sincronizar.workflow.js`) | `M3em7RCOHKjzJffe` | A cada 2 min: 250 clientes e 100 pedidos pagos da Shopify (por `updated_at`, cursor em `email_config`) → `email_sync_contatos` / `email_sync_pedidos` → `email_agendar()` |
-| `[Email] Despachar fila (SES)` (`despachar.workflow.js`) | `rkAbBsGIbcznBPjk` | A cada 5 min: `email_proximos(150)` → SES (10/s) → `email_marcar` |
+| `[Email] Despachar fila (SES)` (`despachar.workflow.js`) | `y6lJyKkXGLnLOuqX` (desde 10/11 noite; o antigo `rkAbBsGIbcznBPjk` foi arquivado) | A cada 5 min: `email_proximos(150)` → cupom do 6.3 na Shopify → SES (10/s) → `email_marcar` |
 
 **Fluxos** (os mesmos emails do Klaviyo, modelos em `email_templates`):
 
@@ -161,9 +161,9 @@ Banco em `reestruturacao.sql` (+ `produtos.sql` e `templates.sql`, gerados por `
 | Fluxo | Gatilho | Emails |
 |---|---|---|
 | Boas-vindas (3, era 4) | inscreveu e não comprou | 1.1 na hora · 1.3 +1d · 1.4 +3d (depoimentos + lembrete do cupom + comunidade). Para todos se a pessoa comprar |
-| Carrinho abandonado (novo) | `carrinhos_abandonados` status `abandonado` (o checkout próprio) | 6.1 ~1h (itens com foto e preço, link do carrinho, aviso se o cartão foi recusado ou o boleto está gerado) · 6.2 +1d (depoimentos + Serena) · 6.3 +3d. Para se o carrinho virar `convertido` ou sair pedido do mesmo email |
+| Carrinho abandonado (novo) | `carrinhos_abandonados` status `abandonado` (o checkout próprio) | 6.1 ~1h (itens com foto e preço, link do carrinho, aviso se o cartão foi recusado ou o boleto está gerado) · 6.2 +1d (depoimentos + Serena) · 6.3 +3d com **cupom de 10% único, uso único, válido 24h a partir do envio** (`VOLTA10-XXXXXX`, criado na Shopify pelo despachante; o link leva `&discount=` e o checkout aplica sozinho). Para se o carrinho virar `convertido` ou sair pedido do mesmo email |
 | Entrega (3, eram 6) | aviso `pedido_entregue` do rastreio (`scheduled_messages`, pelo número AN-xxxxx) | 2.1 na entrega: "Leia antes de abrir", um bloco de modo de uso por produto do pedido, com quanto o estoque dura · 2.2 +10d: o complemento certo para o produto (só se a pessoa ainda não tem) · 2.3 +15d: avaliação |
-| Recompra (calculada) | mesma entrega | 3.1 alguns dias antes de acabar (5, ou 3 para quem dura até 12 dias) · 3.2 3 dias depois de acabar. Link do checkout já com os mesmos itens. Cancela se comprou de novo |
+| Recompra (calculada, por produto) | mesma entrega | Um par de avisos para cada data de término: 3.1 alguns dias antes de acabar (5, ou 3 para quem dura até 12 dias) · 3.2 3 dias depois. Produtos que acabam até 10 dias depois do primeiro vão juntos; o que acaba bem depois ganha o próprio aviso (ex.: 1 Ômega + 2 ImunoFosfo = aviso do Ômega no dia 26 e do ImunoFosfo no dia 56). Link do checkout já com os itens do aviso. Cancela só se a pessoa comprou de novo algum produto daquele aviso |
 | VIP | 3º pedido | 5.1, 3 dias depois do pedido |
 
 **Cálculo da duração** (`email_produtos`, base da Serena): unidades × cápsulas do frasco (lidas da variante,
@@ -194,8 +194,8 @@ sai para pedido antigo além da recompra descrita acima.
 para subir SQL grande via asset temporário do tema, apagado logo depois).
 
 Modelos aposentados (ficam em `email_templates`, sem uso): 1.2, 2.1-pos-compra … 2.6, 3.1-recompra-imunofosfo.
-Klaviyo: continuam ligados só navegação, carrinho adicionado (site), checkout abandonado (Shopify), assinatura e
-cobrança falhou.
+Klaviyo: carrinho adicionado (`Ukh7KK`) e checkout abandonado (`S66Gjr`) pausados em 10/11 à noite. Continuam
+ligados só navegação abandonada, assinatura ativada e cobrança falhou.
 
 ## Próximos passos
 2. Primeiro envio de campanha: Esquenta Black Friday só para os engajados (compraram nos últimos 90 dias), como

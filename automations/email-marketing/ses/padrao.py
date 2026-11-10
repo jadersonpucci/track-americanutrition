@@ -543,11 +543,14 @@ EMAILS["6.2-carrinho-duvidas"] = [
 ]
 
 EMAILS["6.3-carrinho-ultima-chamada"] = [
-    hero("Último aviso", "Seu carrinho vai expirar", f"{NOME}, vamos liberar os itens do seu carrinho.",
-         "Os produtos ficaram reservados por alguns dias. Se ainda quiser, este é o melhor momento para finalizar.",
-         cta=btn("Finalizar agora", V % "checkout_url", "white"), tag_color="#F5A524"),
-    lista_var("carrinho_itens", "28px 32px 8px"),
-    acao([("Finalizar agora", V % "checkout_url", "red")], "🔒 Pagamento seguro · 📦 Entrega rastreada · 💬 Serena 24h"),
+    hero("Último aviso", "10% OFF por 24 horas", f"{NOME}, um presente para você finalizar hoje.",
+         "Seu carrinho continua separado. Para ajudar na decisão, liberamos um cupom de 10% só para você, válido pelas próximas 24 horas.",
+         cta=btn("Usar meus 10% OFF", V % "checkout_cupom_url", "white"), tag_color="#F5A524"),
+    cupom("Seu cupom exclusivo", V % "cupom_codigo", "10% OFF em todo o carrinho", "Válido por 24 horas · uso único · já entra aplicado pelo botão",
+          "Finalizar com 10% OFF", V % "checkout_cupom_url", "Depois de 24 horas o cupom expira e o carrinho é liberado"),
+    titulo("No seu carrinho", "O que você escolheu", pad="8px 32px 14px"),
+    lista_var("carrinho_itens", "0 32px 8px"),
+    acao([("Finalizar com 10% OFF", V % "checkout_cupom_url", "red")], "🔒 Pagamento seguro · 📦 Entrega rastreada · 💬 Serena 24h"),
 ]
 
 ASSUNTOS = {
@@ -563,7 +566,7 @@ ASSUNTOS = {
     "5.1-cliente-vip": "👑 Você é VIP, {{ nome }}: sua recompensa exclusiva chegou",
     "6.1-carrinho-itens": "{{ nome }}, seu carrinho ficou guardado 🛒",
     "6.2-carrinho-duvidas": "Ficou alguma dúvida, {{ nome }}?",
-    "6.3-carrinho-ultima-chamada": "⏳ Último aviso: vamos liberar o seu carrinho",
+    "6.3-carrinho-ultima-chamada": "⏳ {{ nome }}, 10% OFF por 24h para finalizar seu carrinho",
 }
 PREVIAS = {
     "1.1-boas-vindas-cupom": "Código exclusivo dentro. O desconto aplica sozinho no clique.",
@@ -578,7 +581,7 @@ PREVIAS = {
     "5.1-cliente-vip": "Você faz parte de um grupo seleto. Preparamos um cupom exclusivo de 15% para você.",
     "6.1-carrinho-itens": "Tudo continua separado: é só tocar no botão para concluir.",
     "6.2-carrinho-duvidas": "Relatos de quem já usa, e a Serena para responder qualquer pergunta.",
-    "6.3-carrinho-ultima-chamada": "Os produtos ficaram reservados por alguns dias. Este é o melhor momento.",
+    "6.3-carrinho-ultima-chamada": "Um cupom só seu, válido pelas próximas 24 horas, já aplicado no botão.",
 }
 
 def sql_texto(x):

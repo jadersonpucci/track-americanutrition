@@ -30,7 +30,7 @@ language sql stable security definer set search_path = public, extensions as $$
   select case when p_token is distinct from (select valor from email_config where chave = 'painel_token') then '<p>acesso negado</p>'
   else coalesce((select email_preencher(regexp_replace(regexp_replace(t.html, '\{\{\s*nome\s*\}\}', 'Maria', 'g'),
       '\{\{\s*link_descadastro\s*\}\}', '#', 'g'),
-      coalesce((select f.dados from email_fila f where f.slug = t.slug and f.dados <> '{}'::jsonb order by f.id desc limit 1), t.exemplo))
+      coalesce(t.exemplo, '{}'::jsonb) || coalesce((select f.dados from email_fila f where f.slug = t.slug and f.dados <> '{}'::jsonb order by f.id desc limit 1), '{}'::jsonb))
       from email_templates t where t.slug = p_slug), '<p>modelo não encontrado</p>') end
 $$;
 
@@ -42,10 +42,13 @@ update email_templates set exemplo = (select d->'pos' from (select email_dados_p
  where slug = '2.1-pos-entrega-leia-antes';
 update email_templates set exemplo = (select d->'pos' from (select email_dados_pedido('[{"titulo":"ImunoFosfo","variante":"Tradicionais / 90 Caps","variant_id":"44436756234412","qtd":2}]'::jsonb, now(), '', '') d) z)
  where slug in ('2.2-pos-entrega-complemento', '2.3-pos-entrega-avaliacao');
-update email_templates set exemplo = (select d->'rec' from (select email_dados_pedido('[{"titulo":"ImunoFosfo","variante":"Tradicionais / 90 Caps","variant_id":"44436756234412","qtd":2},{"titulo":"Omega 3 - Ultra Pure Fish Oil - Com Vitamina E","variante":"Default Title","variant_id":"43843399712940","qtd":1}]'::jsonb, now() - interval '24 days', '', '') d) z)
+update email_templates set exemplo = (select d->'rec' from (select email_dados_pedido('[{"titulo":"ImunoFosfo","variante":"Tradicionais / 90 Caps","variant_id":"44436756234412","qtd":1}]'::jsonb, now() - interval '24 days', '', '') d) z)
  where slug in ('3.1-recompra-acabando', '3.2-recompra-acabou');
 update email_templates set exemplo = email_dados_carrinho(row(0, 'maria@exemplo.com', null, 'Maria', null, false, null, null,
    '[{"variant_id":"44436756234412","name":"ImunoFosfo","qty":2,"unit":327},{"variant_id":"43843399712940","name":"Omega 3 - Ultra Pure Fish Oil - Com Vitamina E","qty":1,"unit":77}]',
    731, 0, 731, 'https://checkout.americanutrition.com/?items=44436756234412%3A2%2C43843399712940%3A1', 'abandonado', now(), now(), null, now(), now(),
    true, false, null, null, null, null)::carrinhos_abandonados)
  where slug like '6.%';
+update email_templates set exemplo = exemplo || jsonb_build_object('cupom_codigo', 'VOLTA10-K7XQ2M',
+   'checkout_cupom_url', 'https://checkout.americanutrition.com/?items=44436756234412%3A2%2C43843399712940%3A1&amp;discount=VOLTA10-K7XQ2M')
+ where slug = '6.3-carrinho-ultima-chamada';
