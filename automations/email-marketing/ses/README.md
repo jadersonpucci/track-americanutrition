@@ -232,7 +232,21 @@ Caso: `vitalinarocha67@gamil.vom` (carrinho) deu bounce no 6.1. ~2% dos emails d
   carrinhos falsos (apagados) e reativou o carrinho real da Vitalina (restaurado para `abandonado`) antes de qualquer
   mensagem sair. Testar com o HTML servido localmente (rotas interceptadas) ou apagar os carrinhos logo depois.
 
+## Campanha Esquenta Black Friday (agendada em 10/11/2026)
+
+- Modelo `7.1-campanha-esquenta` (`padrao.py`): arte 06 (caixa da America Nutrition) no topo, convite "sua Black Friday
+  começa antes", 3 passos, prazo 26/11, vitrine com 4 produtos, Serena. Não mostra o percentual (igual ao site): o botão
+  abre o WhatsApp da Serena (`wa.me/13472225493`) com "Quero participar do Esquenta Black Friday 🔥", que é o que
+  faz o cadastro. Link secundário para `/pages/esquenta`. Cópia de teste mandada para contato@americanutrition.com.
+- Público (`campanha-esquenta.sql`, `email_campanha_esquenta()`): 8.592 inscritos com consentimento, sem quem já está
+  na landing do Esquenta, sem domínios de teste/da casa. Ordem: compra mais recente primeiro; quem nunca comprou por
+  último. Ondas às 10h: 11/11 250 · 12/11 450 · 13/11 750 · 14/11 1.150 · 15/11 1.900 · 16/11 1.900 · 17/11 2.192.
+- Aquecimento: `envio_rampa` (limite por dia, vale sobre `envio_limite_dia`): 300, 500, 800, 1.200, 2.000, 2.000,
+  2.500 e 1.000 em 18/11 para sobras.
+- Freio: com 50+ envios nas últimas 24h, bounce permanente acima de 5% ou reclamação acima de 0,3% segura todo o
+  marketing (o serviço continua). Quem se cadastra na landing antes de receber é pulado.
+- Cancelar as ondas que faltam: `update email_fila set status = 'pulado', motivo = 'campanha cancelada'
+  where slug = '7.1-campanha-esquenta' and status = 'pendente'`.
+
 ## Próximos passos
-2. Primeiro envio de campanha: Esquenta Black Friday só para os engajados (compraram nos últimos 90 dias), como
-   aquecimento da conta.
 3. Assinatura no sistema próprio; conferir sobreposição do carrinho com os fluxos de carrinho do Klaviyo e pausá-los; depois, cancelar o Klaviyo.

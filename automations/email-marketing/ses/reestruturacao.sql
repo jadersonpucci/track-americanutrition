@@ -367,9 +367,12 @@ end $$;
 create or replace function email_proximos(p_limite int) returns jsonb
 language plpgsql security definer set search_path = public, extensions as $$
 declare modo text := coalesce((select valor from email_config where chave = 'fluxos_modo'), 'teste');
-  lim_dia int := coalesce((select valor from email_config where chave = 'envio_limite_dia'), '300')::int;
+  -- limite do dia: a rampa de aquecimento (envio_rampa, por data) vale sobre o envio_limite_dia
+  lim_dia int := coalesce((select (valor::jsonb ->> to_char(now() at time zone 'America/Sao_Paulo', 'YYYY-MM-DD'))::int
+                             from email_config where chave = 'envio_rampa'),
+                          (select valor from email_config where chave = 'envio_limite_dia')::int, 300);
   hora int := extract(hour from now() at time zone 'America/Sao_Paulo');
-  hoje int; cota int; res jsonb;
+  hoje int; cota int; res jsonb; b_hoje int; r_hoje int; freio boolean := false;
 begin
   if modo = 'off' then return jsonb_build_object('modo', modo, 'itens', '[]'::jsonb); end if;
 
@@ -394,6 +397,11 @@ begin
      and (email_corrigir(f.email) !~ '^[a-z0-9._%+\-]+@[a-z0-9\-]+(\.[a-z0-9\-]+)*\.[a-z]{2,}$'
           or split_part(email_corrigir(f.email), '@', 2) in ('example.com', 'example.org', 'example.net', 'teste.com', 'test.com',
                                                                'teste-an.com', 'dasda.com', 'asdas.com'));
+
+  -- campanha do Esquenta: quem ja se cadastrou na landing nao precisa do convite
+  update email_fila f set status = 'pulado', motivo = 'ja esta no Esquenta'
+   where f.status = 'pendente' and f.slug = '7.1-campanha-esquenta' and f.enviar_em <= now()
+     and exists (select 1 from esquenta_leads l where lower(trim(l.email)) = f.email);
 
   -- regras de cada fluxo
   -- recompra: cancela se, depois do pedido de referencia, a pessoa comprou algum dos produtos do aviso
@@ -449,6 +457,14 @@ begin
 
   select count(*) into hoje from email_fila
    where status = 'enviado' and enviado_em >= date_trunc('day', now() at time zone 'America/Sao_Paulo') at time zone 'America/Sao_Paulo';
+  -- freio: com 50+ envios nas ultimas 24h, bounce acima de 5% ou reclamacao acima de 0,3% segura o marketing
+  select count(*) filter (where ev.tipo = 'bounce' and coalesce(ev.detalhe->>'bounceType', '') = 'Permanent'),
+         count(*) filter (where ev.tipo = 'complaint')
+    into b_hoje, r_hoje
+    from email_fila x join email_eventos ev on ev.detalhe->>'messageId' = x.ses_message_id
+   where x.status = 'enviado' and x.enviado_em > now() - interval '24 hours';
+  select count(*) >= 50 and (b_hoje::numeric / count(*) > 0.05 or r_hoje::numeric / count(*) > 0.003) into freio
+    from email_fila where status = 'enviado' and enviado_em > now() - interval '24 hours';
   cota := case when modo = 'ativo' then greatest(0, least(p_limite, lim_dia - hoje)) else p_limite end;
 
   select coalesce(jsonb_agg(x), '[]'::jsonb) into res from (
@@ -464,8 +480,9 @@ begin
      where f.status = 'pendente' and f.enviar_em <= now()
        -- marketing so em horario comercial; servico 7h-22h
        and (case when f.prioridade = 1 then hora between 7 and 21 else hora between 8 and 20 end)
+       and (f.prioridade = 1 or not freio)
      order by f.prioridade, f.enviar_em limit cota) x;
-  return jsonb_build_object('modo', modo, 'enviados_hoje', hoje, 'cota', cota, 'itens', res);
+  return jsonb_build_object('modo', modo, 'enviados_hoje', hoje, 'cota', cota, 'limite_dia', lim_dia, 'freio', freio, 'itens', res);
 end $$;
 
 revoke all on function email_agendar(), email_proximos(int), email_sync_pedidos(jsonb),

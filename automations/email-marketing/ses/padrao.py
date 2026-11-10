@@ -562,6 +562,40 @@ EMAILS["4.1-navegacao-abandonada"] = [
     serena(["Ficou com alguma dúvida sobre esse produto?", "Me chama aqui: respondo em minutos, 24h 💚"], "Tirar uma dúvida &rarr;"),
 ]
 
+# ================================================================== campanhas
+ESQ_ARTE = "https://www.americanutrition.com/cdn/shop/t/27/assets/an-esquenta-post.jpg?width=1200"
+ESQ_WA = "https://wa.me/13472225493?text=Quero%20participar%20do%20Esquenta%20Black%20Friday%20%F0%9F%94%A5"
+ESQ_PAGINA = SITE + "/pages/esquenta"
+
+def topo_imagem(img, url, alt):
+    """cabecalho da campanha: logo + arte inteira clicavel"""
+    return (f'<tr><td class="px" bgcolor="{NAVY}" style="background:{NAVY};padding:22px 32px 18px;">'
+            f'<table {TB}><tr><td><img src="{LOGO_W}" width="132" alt="America Nutrition" style="display:block;width:132px;height:auto;border:0;"></td>'
+            f'<td align="right" style="{S}font-size:12px;font-weight:700;color:#9DB4E4;letter-spacing:1.2px;text-transform:uppercase;">Só para clientes</td></tr></table></td></tr>'
+            f'<tr><td style="padding:0;"><a href="{url}"><img src="{img}" width="600" alt="{alt}" style="display:block;width:100%;max-width:600px;height:auto;border:0;"></a></td></tr>')
+
+EMAILS["7.1-campanha-esquenta"] = [
+    topo_imagem(ESQ_ARTE, ESQ_WA, "Esquenta Black Friday America Nutrition"),
+    titulo("Esquenta Black Friday · até 26/11", f"{NOME}, a sua Black Friday começa antes.", pad="30px 32px 10px"),
+    texto("Quem já é cliente America Nutrition entra primeiro. No <b style=\"color:#0F1B33;\">Esquenta</b>, você garante condição de Black Friday "
+          "em <b style=\"color:#0F1B33;\">toda a linha</b>: ImunoFosfo, Ômega 3, Própolis Verde, Vitamina D3 e todos os outros.",
+          "É a melhor hora para garantir o estoque dos próximos meses sem pagar preço cheio. E quanto mais unidades no pedido, maior a condição.",
+          pad="8px 32px 18px"),
+    acao([("🔥 Quero participar do Esquenta", ESQ_WA, "red")], "Abre o WhatsApp com a mensagem pronta para a Serena", pad="0 32px 24px"),
+    passos(["Toque no botão e envie a mensagem pronta para a Serena no WhatsApp.",
+            "Ela confirma a sua entrada no Esquenta na hora.",
+            "Quando quiser comprar, ela monta o pedido já com a sua condição de Black Friday."], "Como funciona"),
+    aviso("⏳ <b>Só até 26/11 às 23h59</b>, uma vez por cliente. Depois disso, só na Black Friday oficial, junto com todo mundo.", "#FFF4D6", "#7A4A00"),
+    titulo("Vale para toda a linha", "Escolha o que vai no seu pedido", pad="14px 32px 16px"),
+    produtos([(IMG["imuno"], "ImunoFosfo", "Fosfoetanolamina 650 mg · cápsulas, vegano e liquid", PROD, "Ver produto"),
+              (IMG["omega"], "Ômega 3 Ultra Pure", "EPA e DHA de alta pureza, com vitamina E", OMEGA_PG, "Ver produto"),
+              (IMG["propolis"], "Própolis Verde Premium", "Antioxidante e defesa natural", SITE + "/products/green-propolis-premium-propolis-verde", "Ver produto"),
+              (IMG["d3"], "Vitamina D3 K2 A", "Ossos, coração e imunidade", SITE + "/products/d3-vitamin-with-k2-and-a", "Ver produto")]),
+    serena(["Oi, {{ nome }}! 👋 Já separei sua vaga no Esquenta.", "É só me mandar a mensagem que eu confirmo e te mostro as condições 🔥"],
+           "Entrar no Esquenta pelo WhatsApp &rarr;", ESQ_WA),
+    acao([("Ver a página do Esquenta", ESQ_PAGINA, "navy")], "Condição exclusiva para quem entra no Esquenta · não soma com outros cupons", pad="0 32px 26px"),
+]
+
 ASSUNTOS = {
     "1.1-boas-vindas-cupom": "{{ nome }}, seu cupom de 10% OFF chegou 🎁",
     "1.3-boas-vindas-como-age": "{{ nome }}, sabe como o ImunoFosfo age no seu organismo?",
@@ -576,6 +610,7 @@ ASSUNTOS = {
     "6.1-carrinho-itens": "{{ nome }}, seu carrinho ficou guardado 🛒",
     "6.2-carrinho-duvidas": "Ficou alguma dúvida, {{ nome }}?",
     "6.3-carrinho-ultima-chamada": "⏳ {{ nome }}, 10% OFF por 24h para finalizar seu carrinho",
+    "7.1-campanha-esquenta": "🔥 {{ nome }}, sua Black Friday começa antes (só para clientes)",
 }
 PREVIAS = {
     "1.1-boas-vindas-cupom": "Código exclusivo dentro. O desconto aplica sozinho no clique.",
@@ -591,6 +626,7 @@ PREVIAS = {
     "6.1-carrinho-itens": "Tudo continua separado: é só tocar no botão para concluir.",
     "6.2-carrinho-duvidas": "Relatos de quem já usa, e a Serena para responder qualquer pergunta.",
     "6.3-carrinho-ultima-chamada": "Um cupom só seu, válido pelas próximas 24 horas, já aplicado no botão.",
+    "7.1-campanha-esquenta": "Esquenta Black Friday: condição de Black Friday em toda a linha, antes de todo mundo. Só até 26/11.",
 }
 
 def sql_texto(x):

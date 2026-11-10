@@ -22,7 +22,8 @@ language sql stable security definer set search_path = public, extensions as $$
       ('3.1-recompra-acabando', 'recompra', 41, 'Alguns dias antes de acabar (calculado)'),
       ('3.2-recompra-acabou', 'recompra', 42, '3 dias depois de acabar'),
       ('5.1-cliente-vip', 'vip', 51, '3 dias após o 3º pedido'),
-      ('4.1-navegacao-abandonada', 'navegacao', 61, '~2h depois de ver um produto no site')) m(slug, fluxo, ordem, quando) on m.slug = t.slug), '[]'::jsonb) end
+      ('4.1-navegacao-abandonada', 'navegacao', 61, '~2h depois de ver um produto no site'),
+      ('7.1-campanha-esquenta', 'campanha', 71, 'Campanha: ondas de 11 a 17/11, 10h')) m(slug, fluxo, ordem, quando) on m.slug = t.slug), '[]'::jsonb) end
 $$;
 
 create or replace function email_modelo_html(p_token text, p_slug text) returns text
