@@ -3035,3 +3035,35 @@ A Evolution 2.3.7 aceita enviar para `<LID>@lid`; testado com um número da equi
 Se o mesmo LID aparecer depois com o número real, o `wa_identidades` aprende e as próximas mensagens vão pelo telefone. O histórico anterior fica no contato `+000<LID>`.
 
 **Teste de 09/11.** Dois LIDs fictícios entraram pelo `/webhook/serena-wpp-in`: buffer `000…`, Serena respondeu, envio para `…@lid`, mensagem marcada como entregue e contato gravado `+000…`. Os registros de teste foram apagados depois.
+
+## Telegram: cliente de revenda ficou 3 dias sem resposta (10/11/2026)
+
+Print do Jaderson: o José B. (Telegram, pela conta da America Nutrition, `tg-1509991482`) perguntou em 07/11 às
+22:26 como revender para os clientes dele. A Serena passou a tabela de atacado e encaminhou para a Cris
+(`escalar_humano`, regra do adendo de 02/11). A conversa ficou pausada e ninguém assumiu. Ele escreveu mais 9
+vezes até 09/11 13:44, perguntando se podia vender na página dele, pedindo orçamento com desconto e falando de
+rosácea e de um paciente. Nenhuma dessas mensagens apareceu em lugar nenhum.
+
+**Por que sumiam.** Com a conversa pausada, o Core devolve `{pausada: true}` sem gravar nada, e o node
+`Tratar Mensagem` só retornava `acao: 'pausada'`. No WhatsApp a Entrada grava a fala antes; no Telegram não
+havia isso. Sem a fala no histórico, nem o Inbox nem o `[Serena] Fila Humana Parada` viam que ele estava
+esperando.
+
+**O que mudou:**
+- Node novo `Gravar fala durante pausa` (Postgres, sem chave no código; `nodes/telegram-gravar-fala-pausa.js`)
+  na saída do `Tratar Mensagem`: quando a saída é `pausada`, grava a fala do cliente em `serena_mensagens`.
+  Testado com um contato temporário (texto com aspas e vírgula gravou certo); contato e mensagem de teste apagados.
+- Adendo em `serena_config.system_prompt` (texto em `nodes/serena-config-adendos-prompt.md`): revenda e
+  parceria a Serena atende ela mesma. Ela apresenta os dois caminhos, **parceiro de indicação com 20% de
+  comissão** (link e cupom próprios, sem estoque) e **revendedor** (atacado da linha ImunoFosfo: 10 un 20%,
+  15 un 25%, 20+ 30%). Para o afiliado, coleta os dados (nome, e-mail, telefone, PIX, página) e só então
+  passa para a equipe. Para o revendedor, monta o pedido. Só escala o que precisa de pessoa: cadastro do
+  link, fechamento do pagamento e pedido fora da tabela.
+- José: as 9 mensagens do print foram gravadas no histórico, a conversa despausada, a atribuição fechada,
+  a nota `atendimento devolvido` registrada (24h sem nova pausa se ela encaminhar de novo), e a Serena
+  mandou em 10/11 10:17 o pedido de desculpa com os dois caminhos de parceria (entregue pela conta da
+  America Nutrition).
+
+**Fica de fora:** a devolução automática do `[Serena] Fila Humana Parada` só cobre WhatsApp (envia pelo
+`serena-samuel-enviar`). No Telegram, o encaminhamento parado agora aparece no alerta do tópico 289, mas
+não volta sozinho para a Serena.
