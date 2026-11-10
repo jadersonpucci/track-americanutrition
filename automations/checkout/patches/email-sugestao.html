@@ -1,0 +1,46 @@
+<script id="anEmailSugJs">/* EMAIL-SUGESTAO (10/11/2026): "Voce quis dizer ...@gmail.com?" embaixo do campo de e-mail.
+Mesma regra do banco (email-marketing/ses/corrigir-email.sql): so provedor conhecido e final de dominio claramente errado.
+Caso: vitalinarocha67@gamil.vom (carrinho de 10/11) e ~2% dos e-mails do checkout com gamil, gmsil, hormail, gmail.comm... */
+(function(){
+  var P={gmail:['gamil','gmial','gmai','gmal','gmil','gnail','gmsil','gmqil','gmaill','gamail','gemail','gemil','gmaol','gmaim','gxmail','fmail','gmeil','gnsil','gmali','gmaik','gimail','gmaio','gmaul','gmaij','gmaii'],
+    hotmail:['hotmial','hotmal','hotmai','hormail','hotmsil','hitmail','htmail','hotmil','hptmail','rotmail','homail','hotamil','hotmaill','hotnail','hotmeil','hoymail','jotmail','hotmaii'],
+    outlook:['outlok','otlook','putlook','outllok','oulook','outloo','outlock','outloook'],
+    yahoo:['yaoo','yahho','yhoo','yaho','yahooo','tahoo','yahou'],
+    icloud:['iclod','icoud','iclould','icluod','icloude']};
+  function corr(e){
+    var s=String(e||'').trim().toLowerCase().replace(/,/g,'.').replace(/\s+/g,'').replace(/\.{2,}/g,'.');
+    var i=s.lastIndexOf('@'); if(i<1) return s;
+    var u=s.slice(0,i), d=s.slice(i+1).replace(/^\.+|\.+$/g,'');
+    d=d.replace(/\.(cim|vom|xom|cpm|con|coom|comm|cm|clm)(\.br)?$/,'.com$2');
+    var base=d.split('.')[0], resto=d.slice(base.length), prov=null;
+    for(var k in P){ if(base===k||P[k].indexOf(base)>=0){prov=k;break;} }
+    if(!prov) return u+'@'+d;
+    if(base===prov&&/^\.(fr|de|it|es|pt|co\.uk|com\.ar|com\.mx|ca)$/.test(resto)) return u+'@'+d;
+    var br=/\.b[rt]/.test(resto)||/br$/.test(resto);
+    return u+'@'+((prov==='gmail'||prov==='icloud')?prov+'.com':(br?prov+'.com.br':prov+'.com'));
+  }
+  window.anCorrigirEmail=corr;
+  function init(){
+    var inp=document.getElementById('f_email'); if(!inp||inp.__anSug) return; inp.__anSug=1;
+    var box=document.createElement('div'); box.id='anEmailSug';
+    box.style.cssText='display:none;margin-top:6px;padding:9px 11px;border-radius:10px;background:#fff8e8;border:1.5px solid #f0d49a;color:#7a5b16;font-size:13px;line-height:1.45';
+    var fld=inp.closest?inp.closest('.field'):null; (fld||inp.parentNode).appendChild(box);
+    function chk(){
+      var v=String(inp.value||'').trim(), c=corr(v);
+      if(v.indexOf('@')>0&&c&&c!==v.toLowerCase()){
+        box.innerHTML='Você quis dizer <b style="color:#1a2433"></b>? <button type="button" style="margin-left:6px;background:#07388E;color:#fff;border:0;border-radius:8px;padding:5px 11px;font-weight:700;font-size:12px;cursor:pointer">Corrigir</button>';
+        box.querySelector('b').textContent=c; box.style.display='block';
+        box.querySelector('button').onclick=function(){
+          inp.value=c; box.style.display='none';
+          ['input','change','blur'].forEach(function(t){ try{inp.dispatchEvent(new Event(t,{bubbles:true}));}catch(e){} });
+          try{ if(typeof checarEmail==='function') checarEmail(); }catch(e){}
+        };
+      } else { box.style.display='none'; }
+    }
+    inp.addEventListener('blur',chk);
+    inp.addEventListener('input',function(){ if(box.style.display==='block') chk(); });
+  }
+  if(document.readyState!=='loading') init(); else document.addEventListener('DOMContentLoaded',init);
+  document.addEventListener('focusin',init);
+})();
+</script>

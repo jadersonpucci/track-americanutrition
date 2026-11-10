@@ -388,6 +388,13 @@ begin
            where f2.status = 'pendente' and f2.enviar_em <= now()) z
    where f.id = z.id and z.bloqueia;
 
+  -- email que nem corrigido e valido (ou dominio de teste): nao manda
+  update email_fila f set status = 'pulado', motivo = 'email invalido'
+   where f.status = 'pendente' and f.enviar_em <= now()
+     and (email_corrigir(f.email) !~ '^[a-z0-9._%+\-]+@[a-z0-9\-]+(\.[a-z0-9\-]+)*\.[a-z]{2,}$'
+          or split_part(email_corrigir(f.email), '@', 2) in ('example.com', 'example.org', 'example.net', 'teste.com', 'test.com',
+                                                               'teste-an.com', 'dasda.com', 'asdas.com'));
+
   -- regras de cada fluxo
   -- recompra: cancela se, depois do pedido de referencia, a pessoa comprou algum dos produtos do aviso
   update email_fila f set status = 'pulado', motivo = 'comprou de novo'
@@ -446,7 +453,7 @@ begin
 
   select coalesce(jsonb_agg(x), '[]'::jsonb) into res from (
     select f.id, f.email, f.slug, f.fluxo,
-      case when modo = 'ativo' then f.email else 'success@simulator.amazonses.com' end as para,
+      case when modo = 'ativo' then email_corrigir(f.email) else 'success@simulator.amazonses.com' end as para,  -- corrige gamil.vom etc.
       email_preencher(regexp_replace(t.assunto, '\{\{\s*nome\s*\}\}', n.nome, 'g'), f.dados) as assunto,
       email_preencher(regexp_replace(regexp_replace(t.html, '\{\{\s*nome\s*\}\}', n.nome, 'g'),
         '\{\{\s*link_descadastro\s*\}\}', email_link_descadastro(f.email), 'g'), f.dados) as html,
