@@ -101,9 +101,7 @@ begin
         then now() else e.descadastrado_em end;
     n := n + 1;
   end loop;
-  if maior is not null then
-    update email_config set valor = maior where chave = 'sync_clientes_desde' and valor < maior;
-  end if;
+  -- o cursor (sync_clientes_desde / _after) e movido por email_sync_cursor
   return jsonb_build_object('contatos', n, 'ate', maior);
 end $$;
 
@@ -124,11 +122,35 @@ begin
     on conflict (pedido_id) do update set cancelado = excluded.cancelado;
     n := n + 1;
   end loop;
-  if maior is not null then
-    update email_config set valor = maior where chave = 'sync_pedidos_desde' and valor < maior;
-  end if;
+  -- o cursor (sync_pedidos_desde / _after) e movido por email_sync_cursor
   return jsonb_build_object('pedidos', n, 'ate', maior);
 end $$;
+
+-- 2b) Cursor da sincronizacao (10/11/2026): a primeira versao avancava so pela data de atualizacao, mas milhares
+-- de clientes tem o mesmo updated_at (importacao de abril) e o cursor andava segundos por rodada, podendo travar.
+-- Agora pagina pelo endCursor da Shopify com o filtro fixo (sync_X_desde); so quando a pagina acaba o desde avanca.
+insert into email_config (chave, valor) values ('sync_clientes_after', ''), ('sync_pedidos_after', '')
+on conflict (chave) do nothing;
+
+create or replace function email_sync_cursor(p_tipo text, p_tem_mais boolean, p_cursor text, p_maior text) returns jsonb
+language plpgsql security definer set search_path = public, extensions as $$
+begin
+  if p_tem_mais then
+    update email_config set valor = coalesce(p_cursor, '') where chave = 'sync_' || p_tipo || '_after';
+  else
+    update email_config set valor = '' where chave = 'sync_' || p_tipo || '_after';
+    if p_maior is not null and p_maior <> '' then
+      update email_config set valor = p_maior where chave = 'sync_' || p_tipo || '_desde' and valor < p_maior;
+    end if;
+  end if;
+  return jsonb_build_object('tipo', p_tipo, 'tem_mais', p_tem_mais, 'desde', (select valor from email_config where chave = 'sync_' || p_tipo || '_desde'));
+end $$;
+
+create or replace function email_sync_maior(p jsonb) returns text language sql immutable as $$
+  select max(x->>'updatedAt') from jsonb_array_elements(coalesce(p, '[]'::jsonb)) x $$;
+
+revoke all on function email_sync_cursor(text, boolean, text, text) from public, anon, authenticated;
+grant execute on function email_sync_cursor(text, boolean, text, text), email_sync_maior(jsonb) to postgres, service_role;
 
 -- 3) Agendador: monta a fila a partir do que aconteceu depois de fluxos_inicio
 create or replace function email_agendar() returns jsonb

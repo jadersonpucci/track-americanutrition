@@ -89,9 +89,9 @@ Só entra na fila o que acontecer depois de `fluxos_inicio` (10/11/2026 16:20 UT
 para a base antiga.
 
 **Modo** (`email_config.fluxos_modo`):
-- `teste` (atual): tudo roda, mas o email vai para `success@simulator.amazonses.com` com "[TESTE]" no assunto e a
+- `teste`: tudo roda, mas o email vai para `success@simulator.amazonses.com` com "[TESTE]" no assunto e a
   fila marca `teste`. Necessário enquanto os 9 fluxos do Klaviyo estiverem ligados, senão a cliente recebe dois emails.
-- `ativo`: manda para a cliente, até `envio_limite_dia` (300 no começo) por dia.
+- `ativo` (atual, desde 10/11): manda para a cliente, até `envio_limite_dia` (300 no começo) por dia.
 - `off`: nada sai.
 
 **Para virar a chave:** pausar os fluxos do Klaviyo (workflow `7KnxBKb4iY2ch05q`, lista fixa de ids) e, no mesmo
@@ -104,8 +104,20 @@ evento `delivery` de volta em 2 s, com a tag `modelo` → fila marcada `teste`. 
 **Fica para depois:** navegação abandonada (precisa do rastreio de navegação, que hoje é do Klaviyo), carrinho
 abandonado e assinatura (eventos do nosso checkout; o WhatsApp já cobre).
 
+## Chave virada (10/11/2026, 13:55 BRT, pedido do Jaderson)
+- Klaviyo: `AN - Klaviyo Pausar/Reativar fluxos` (`7KnxBKb4iY2ch05q`, lista `ALVO`) passou para `draft` os 4 fluxos que o
+  SES assumiu: **1 - Boas Vindas** (`WvgX7N`), **Pós-Compra Onboarding** (`SjYtmB`), **Recompra ImunoFosfo** (`TqL3U5`)
+  e **Cliente VIP** (`YrH4Zm`). Todos responderam 200.
+- Continuam `live` no Klaviyo, porque ainda não existem aqui: carrinho adicionado (`Ukh7KK`), checkout abandonado
+  (`S66Gjr`), navegação abandonada (`VdxU27`), assinatura ativada (`XCjDrW`) e cobrança falhou (`RxpFWu`).
+- `fluxos_modo = ativo`, `envio_limite_dia = 300`.
+- Quem estava no meio de um fluxo do Klaviyo antes de hoje deixa de receber os emails restantes (o fluxo em rascunho
+  para de enviar); o SES só pega quem entrou depois de `fluxos_inicio`.
+- Para voltar atrás: `fluxos_modo = 'off'` e, no workflow do Klaviyo, `STATUS = 'live'`.
+- Sincronização corrigida no mesmo dia: paginação pelo `endCursor` da Shopify (`email_sync_cursor`), porque milhares de
+  clientes têm o mesmo `updated_at` (importação de abril) e o cursor por data andava segundos por rodada.
+
 ## Próximos passos
-1. Virar a chave (Klaviyo pausado + `fluxos_modo = ativo`), com a aprovação do Jaderson.
 2. Primeiro envio de campanha: Esquenta Black Friday só para os engajados (compraram nos últimos 90 dias), como
    aquecimento da conta.
 3. Carrinho abandonado e assinatura no sistema próprio; depois, cancelar o Klaviyo.
