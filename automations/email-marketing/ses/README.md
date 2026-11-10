@@ -140,6 +140,13 @@ gerado no banco; o link completo foi passado ao Jaderson e não vai para o repos
 - **UTM**: o despachante acrescenta `utm_source=email&utm_medium=fluxo&utm_campaign=<fluxo>&utm_content=<modelo>`
   nos links do site, para as vendas aparecerem também nos relatórios da Shopify.
 - `email_pedidos` ganhou `total` (valor do pedido), preenchido pela sincronização.
+- **Redesenho (10/11, noite)**: abas Visão geral, Emails, Vendas, Contatos e Operação. A aba Emails mostra a
+  prévia de cada modelo (miniatura e o email inteiro ao clicar, com assunto, prévia e números do modelo). Prévia por
+  `GET /webhook/email-painel-modelo?t=&slug=` (`email_modelo_html`, nome trocado por "Maria"); lista dos modelos com
+  fluxo e quando sai em `email_modelos(token)` (`painel-modelos.sql`), devolvida junto com os dados.
+- **Painel Central** (`assets/america_admin.html` do tema 153190498476, servido por `/webhook/admin`): card
+  "Email Marketing" no grupo Vendas, com ícone próprio, abrindo o painel dentro da central. Backup do arquivo
+  anterior no scratchpad da sessão.
 - Utilitário `AN - Email SQL Admin (Supabase)` (`LDFQ1DbzM3MxXnmv`): roda SQL como dono das tabelas (pinData no nó SQL).
 - Testado com dados de exemplo (interceptando a API) no computador e no celular, sem erro no console; com o token
   errado a API devolve `{ok:false}`.
