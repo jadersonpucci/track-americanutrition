@@ -9,14 +9,14 @@
   Sai do ar sozinho depois de 26/11/2026 23h59 (horario de Brasilia).
   Entra depois de 5 s. Fechar recolhe numa etiqueta "Esquenta" na lateral (so nesta visita);
   volta aberto no maximo 1 vez a cada 2 dias; quem clicou no botao nao ve de novo.
-  Imagem: assets/an-esquenta-bf.webp (Higgsfield, 07/11/2026, 16:9, frasco a direita).
+  Imagem: assets/an-esquenta-bf.webp (Higgsfield, 16:9). Trocada em 10/11/2026 pela versao larga da arte 06 (caixa da America Nutrition a direita).
 {%- endcomment -%}
 {%- assign esq_flag = shop.metafields.an_site.esquenta_popup.value | default: shop.metafields.an_site.esquenta_popup | default: 'off' -%}
 {%- unless template.name == 'cart' or template.name contains 'customers' -%}
 <aside id="anEsq" class="anesq{% if template.name == 'product' %} is-prod{% endif %}" aria-label="Esquenta Black Friday" hidden>
   <div class="anesq-card">
     <div class="anesq-hero">
-      <img src="{{ 'an-esquenta-bf.webp' | asset_url }}" alt="ImunoFosfo no Esquenta Black Friday" width="800" height="452" loading="lazy">
+      <img src="{{ 'an-esquenta-bf.webp' | asset_url }}" alt="Caixa da America Nutrition no Esquenta Black Friday" width="960" height="542" loading="lazy">
       <span class="anesq-brasas" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
       <button type="button" class="anesq-x" id="anEsqX" aria-label="Fechar">&times;</button>
       <div class="anesq-selo"><span class="anesq-fogo">🔥</span> ESQUENTA <b>BLACK FRIDAY</b></div>

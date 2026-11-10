@@ -84,3 +84,15 @@ Como foi feita:
 3. **Montagem:** em HTML (`arte-todos/arte.html`, com as posições em `layout.json`), fotografada com o Chromium (`node render.js 2 saida.png`). Texto em Montserrat, sem mostrar desconto.
 
 `arte.html` usa como fundo o `bg1.png` (cenário do Higgsfield) e os recortes em `trim/`, que ficaram só no scratchpad. Para refazer, gere o cenário e os recortes de novo.
+
+## Arte nova: caixa da America Nutrition (10/11/2026)
+
+A arte só com o ImunoFosfo e depois a com toda a linha foram trocadas pela **06** da rodada com a identidade da marca
+(escolha do Jaderson): cliente abrindo a caixa azul da America Nutrition (logo com as faixas vermelhas) com a linha
+dentro e o selo "ESQUENTA BLACK FRIDAY". Gerada no Higgsfield (`gpt_image_2_6`, qualidade alta) com o logo e os
+frascos reais como referência; ampliada para 2160 px.
+- Landing (`assets/an-esquenta-landing.webp`, 1200×1200) e post (`assets/an-esquenta-post.jpg`, 1080×1080): a quadrada.
+- Card do site (`assets/an-esquenta-bf.webp`, 960×542): versão larga da mesma cena, sem o texto do canto (o card
+  tem o texto dele).
+- Texto alternativo das duas imagens atualizado no tema (`templates/page.esquenta.liquid`, `snippets/an-esquenta-popup.liquid`).
+- O post do dia 09/11 (`broadcasts_grupos` 234) já tinha saído com a arte anterior; o arquivo novo vale para um próximo post.
