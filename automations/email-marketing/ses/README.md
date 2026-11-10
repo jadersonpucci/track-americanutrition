@@ -8,7 +8,14 @@ Início em 05/11/2026. O Klaviyo continua ativo até este sistema assumir.
 - Supressão da conta ligada para BOUNCE e COMPLAINT. Gerenciador Virtual de Entregabilidade, rastreamento de
   engajamento e entrega compartilhada otimizada ligados. Validação automática desligada (custo à parte).
 - Produção: pedido inicial negado pela análise automática; caso 179384563600849 respondido em 05/11 com os detalhes.
-  Até a liberação: sandbox (200/dia, só destinatários verificados). Destinatário de teste verificado: o e-mail do Jaderson.
+  **Liberado em 10/11/2026**: fora do sandbox, 50.000 emails/dia, 14 por segundo (sa-east-1). Conferido na API
+  (`GET /v2/email/account`): `ProductionAccessEnabled: true`, `ReviewDetails.Status: GRANTED`,
+  `EnforcementStatus: HEALTHY`, tipo `MARKETING`. Domínio com DKIM e MAIL FROM em `SUCCESS`.
+- Compromissos com a AWS: mandar só para quem pediu para receber (inscritos), tratar bounce e reclamação (já feito,
+  ver abaixo), testar com o simulador da AWS (não com endereços reais) e pedir aumento antes de precisar.
+- Aquecimento: IP compartilhado, sem IP dedicado. Começar pelos clientes mais engajados (compraram ou abriram
+  email nos últimos 90 dias) e subir o volume aos poucos, olhando bounce (manter < 2%) e reclamação
+  (manter < 0,1%). A AWS pausa a conta acima de 5% de bounce ou 0,1% de reclamação.
 - Credencial no n8n: `AWS SES` (tipo aws). A chave nunca entra no repositório.
 
 ## n8n
