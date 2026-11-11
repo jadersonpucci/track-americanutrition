@@ -5,7 +5,8 @@
 // Venda Manual ja preenchida (?pix=<token>). Ela escolhe os produtos e confirma: o pedido nasce pago na Shopify
 // (acao pix_criar da Venda Manual). Ninguem paga QR Code.
 // Config em checkout_config: pix_chave_ativo (on/off), pix_chave_manual (a chave de e-mail, minusculas),
-// pix_chave_aviso_fone (WhatsApp de quem recebe o aviso), pix_chave_desde (ignora Pix anteriores a ligacao).
+// pix_chave_aviso_fone (WhatsApp de quem recebe o aviso), pix_chave_aviso_token (token de agente que vai no link),
+// pix_chave_desde (ignora Pix anteriores a ligacao). n8n: 0QcbRYOFIVnAvfyC.
 // Teste manual: POST /webhook/pix-chave-varrer {k: pix_admin_token, teste: true, dias: 2} so lista (mascarado), nao grava nem avisa.
 import { workflow, node, trigger } from '@n8n/workflow-sdk';
 
@@ -111,6 +112,7 @@ const BASE = 'https://n8n.americanutrition.com';
 const self = this;
 const cfg = ($('Config').first().json || {}).cfg || {};
 const fone = String(cfg.pix_chave_aviso_fone || '').replace(/\\D/g, '');
+const ag = String(cfg.pix_chave_aviso_token || '').trim();   // token de agente (serena_agentes) da Cris: libera a lista de Pix na tela
 const rows = $input.all().map((i) => i.json).filter((r) => r && r.e2e);
 if (!rows.length) return [];
 const brl = (v) => 'R$ ' + Number(v).toFixed(2).replace('.', ',').replace(/\\B(?=(\\d{3})+(?!\\d))/g, '.');
@@ -119,7 +121,7 @@ const doc = (s) => { s = String(s || ''); if (s.length === 11) return 'CPF ***.'
 const lit = (s) => "'" + String(s == null ? '' : s).replace(/'/g, "''") + "'";
 const res = [];
 for (const r of rows) {
-  const link = BASE + '/webhook/venda-manual?pix=' + r.token;
+  const link = BASE + '/webhook/venda-manual?pix=' + r.token + (ag ? '&a=' + encodeURIComponent(ag) : '');
   const texto = '💰 *Pix recebido na chave*\\n\\n*' + brl(r.valor) + '* de ' + (r.pagador_nome || 'pagador não identificado') + (doc(r.pagador_doc) ? '\\n' + doc(r.pagador_doc) : '') + '\\n' + quando(r.horario) +
     '\\n\\nPara criar o pedido (já pago), toque aqui e escolha os produtos:\\n' + link + '\\n\\nSe não for venda, abra o link e toque em *Não é venda*.';
   let ok = false;
