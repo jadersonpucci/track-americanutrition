@@ -239,3 +239,20 @@ caracteres invisíveis e o repo guarda os escapes `\u2060...`; o comportamento �
 Testado: simulação local do emissor no AN-16477 (IE → indicador 1, ISENTO → 2, sem IE → 9, contribuinte em MG sem
 DIFAL); checkout no navegador antes e depois de publicar (CNPJ mostra o campo, sem IE bloqueia, Isento manda
 `ISENTO`, CPF esconde).
+
+## Pedido cancelado cancela a NF-e (11/11/2026)
+
+Pedido do Jaderson: pedido cancelado na Shopify cancela a nota na SEFAZ sozinho, se ainda estiver no prazo.
+
+- No **`Cancelar NF-e`** ([`nodes/cancelar-nfe.js`](nodes/cancelar-nfe.js)), dentro do mesmo workflow do robô, com as chaves
+  lidas do `Chaves NF-e (não apagar)`.
+- **Quando roda:** a cada 30 min (`Cancelamentos (30 min)`) olha as notas autorizadas nas últimas 30 h e confere na
+  Shopify se o pedido foi cancelado. Também aceita o aviso `orders/cancelled` em `POST /webhook/nfe-cancelar` (sem
+  token: o aviso só dispara a conferência, quem decide é a Shopify). A assinatura desse aviso precisa ser criada no
+  painel da Shopify (Configurações > Notificações > Webhooks > "Cancelamento do pedido", JSON); a API bloqueou a criação
+  pelo conector.
+- **Regras:** nota `autorizado` + pedido com `cancelledAt` + não enviado + até 23,5 h da emissão → `DELETE /v2/nfe/AN-xxxx`
+  na Focus com a justificativa "Pedido cancelado a pedido do cliente antes do envio da mercadoria.". Grava
+  `nfe_emissoes.status = cancelado`, `cancel_status`, `cancel_em` e a resposta em `resposta.cancelamento`, e avisa no
+  Telegram. Pedido já enviado ou fora do prazo: só avisa no Telegram (NF-e de devolução com o contador), uma vez.
+- **Modo:** `serena_config.nfe_cancelar_auto` (`off` / `simulacao` / `on`). Ligado em `on` em 11/11.
