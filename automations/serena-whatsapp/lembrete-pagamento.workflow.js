@@ -118,7 +118,7 @@ const MAIS_TARDE = /(amanh[aã]|[aà] noite|de noite|mais tarde|depois|segunda|t
 const SENSIVEL = /(internad|interna[cç][aã]o|\\buti\\b|faleceu|falecimento|[oó]bito|\\bluto\\b|piorou|estado grave|paliativ)/i;
 function primeiroNome(n) {
   const p = String(n || '').trim().split(/\\s+/)[0] || '';
-  if (!/^[A-Za-zÀ-ÿ]{3,14}$/.test(p)) return '';
+  if (!/^[A-Za-zÀ-ÿ]{3,14}$/.test(p) || /^(eng|dr|dra|sr|sra|prof|pastor|pra|irm[aã])$/i.test(p)) return '';
   return p.charAt(0).toUpperCase() + p.slice(1).toLowerCase();
 }
 const saud = dec.horaBR < 12 ? 'Bom dia' : (dec.horaBR < 18 ? 'Boa tarde' : 'Boa noite');
