@@ -131,9 +131,23 @@ if (freteValor <= 0) {
   }
 }
 
+// DESCONTO (11/11/2026): igual ao Gerar PIX. Antes o boleto ignorava desconto_pct e saia sempre no valor cheio
+// (07/11: sete boletos do Esquenta a R$ 654,00 em vez de R$ 555,90). desconto_valor (R$) vale no lugar do desconto_pct.
+const cupom = (body.cupom || '').toString().trim().toUpperCase().slice(0, 40);
+let descontoPct = Number(body.desconto_pct != null ? body.desconto_pct : (body.desconto != null ? body.desconto : body.desconto_percentual));
+if (!isFinite(descontoPct) || descontoPct <= 0) descontoPct = 0;
+descontoPct = Math.min(50, Math.round(descontoPct * 100) / 100);
+let descontoValor = Number(String(body.desconto_valor == null ? '' : body.desconto_valor).replace(',', '.'));
+if (!isFinite(descontoValor) || descontoValor <= 0) descontoValor = 0;
+descontoValor = Math.round(descontoValor * 100) / 100;
+if (descontoValor > 0) descontoPct = 0;
+
 return [{ json: {
   erro: false,
   itens: itens,
+  cupom: cupom,
+  desconto_pct: descontoPct,
+  desconto_valor: descontoValor,
   frete: { valor: freteValor, titulo: freteTitulo, origem: freteOrigem, prazo: fretePrazo, subtotal_cotado: subtotalCotado },
   cliente: {
     nome: nome,

@@ -71,6 +71,8 @@ msgTelegram += '💰 Valor: R$ ' + escapeHtml(total) + '\n';
 if (venc) msgTelegram += '📅 Vence em: ' + escapeHtml(venc) + '\n';
 if (tel) msgTelegram += '\n<a href="' + tel + '">💬 Conversa do cliente</a>\n';
 msgTelegram += '\n<i>Aguardando pagamento. O pedido sera confirmado automaticamente quando o boleto compensar.</i>';
+// 11/11/2026: o boleto da Serena deveria sair pelo Inter; se caiu aqui, avisa o motivo.
+try { const bi = $('Boleto Inter').first().json; if (bi && bi.inter_motivo && !/^boleto_provider=/.test(bi.inter_motivo)) msgTelegram += '\n\n⚠️ <b>Saiu pelo Pagar.me, o Inter falhou:</b> ' + escapeHtml(String(bi.inter_motivo).slice(0, 200)); } catch (e) {}
 
 return [{ json: {
   sucesso: true,

@@ -39,6 +39,18 @@ const draftInput = {
   }]
 };
 
+// DESCONTO (11/11/2026): appliedDiscount como no Gerar PIX; o totalPrice da Shopify (valor do boleto) ja sai com ele.
+const pct = Number(ctx.desconto_pct || 0);
+const dval = Number(ctx.desconto_valor || 0);
+if (pct > 0 || dval > 0) {
+  const rot = ctx.cupom ? ('Cupom ' + ctx.cupom) : (pct > 0 ? ('Desconto ' + pct + '%') : ('Desconto R$ ' + dval.toFixed(2).replace('.', ',')));
+  draftInput.appliedDiscount = pct > 0
+    ? { valueType: 'PERCENTAGE', value: pct, title: rot.slice(0, 80), description: (rot + ' aplicado pela Serena').slice(0, 200) }
+    : { valueType: 'FIXED_AMOUNT', value: dval, title: rot.slice(0, 80), description: ('Preco especial: ' + rot).slice(0, 200) };
+  draftInput.note = draftInput.note + ' - ' + rot;
+  if (ctx.cupom) draftInput.tags.push('cupom:' + ctx.cupom);
+}
+
 // FRETE (13/09/2026): o Validar dados ja garante frete informado, cotado ou gratis (acima de R$ 250).
 if (ctx.frete && Number(ctx.frete.valor) > 0) {
   draftInput.shippingLine = {
