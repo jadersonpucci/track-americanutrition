@@ -413,7 +413,14 @@ Tudo ligado em produção, exceto Instagram/Messenger (`meta_ativo=off` até con
 - Pula quem comprou de novo depois da entrega (`scheduled_messages` pedido_pago_confirmado), opt-out, bloqueados, quem já recebeu reposição em 30 dias; pausados tentam na próxima hora. Um agendamento por telefone por vez.
 - Primeira execução agendou 15 pedidos entregues nos últimos 3 dias. Ver no Inbox: Mais > Reposições agendadas. Kill switch: `reposicao_ativa=off`.
 
-## 6. Instagram Direct + Messenger (`[Serena Meta] Instagram + Messenger`, id ntmDA1FhQFZkvQNM)
+## 6. Instagram Direct + Messenger (`[Serena Meta] Instagram + Messenger`, id N3Ek4yZuJUvgiOCh; era ntmDA1FhQFZkvQNM)
+
+**12/11/2026:** reescrito para a credencial do n8n **"Meta DM Instagram"** (token de página do app *America Nutrition -
+Serena*, id 1256093486686607, só com permissões de mensagem; `instagram_manage_messages` e `pages_messaging` em acesso
+padrão, suficiente para a página da própria empresa). O token dos comentários continua na "Meta Graph API" e não é usado
+aqui. Nenhum token no banco nem no código (`meta_page_token` ficou vazio). `meta_ativo`: `off` | `teste` | `on`; em
+`teste` a Serena só responde aos @ de `meta_teste_usernames`. Resposta sem os marcadores do WhatsApp (Instagram não
+formata). Fonte: `meta-instagram-messenger.workflow.js`. O texto abaixo é o desenho original de 03/09.
 - `GET /webhook/serena-meta` responde ao desafio de verificação da Meta (`hub.verify_token` = `serena_config.meta_verify_token`, hoje `an-meta-5251646623f1`).
 - `POST /webhook/serena-meta` recebe `entry[].messaging[]` (mesmo formato para Instagram e Messenger), manda ao Core com `canal=instagram|messenger` e identidade `session_site = ig:<id>` ou `fb:<id>` (não existe telefone; a Serena pede e-mail ou número do pedido quando precisa), responde pela Graph API (`/v21.0/me/messages`) e marca `entregue`. Cron de 1 min entrega o que o atendente escreve no Inbox nesses canais.
 - Para ligar: criar app em developers.facebook.com, assinar os webhooks `messages` da Página e do Instagram apontando para a URL acima, gerar token de página de longa duração e gravar: `meta_page_token`, opcionalmente `meta_ig_token` (Instagram Login) e `meta_app_secret` (valida `X-Hub-Signature-256`), depois `meta_ativo=on`. Tudo via `/webhook/serena-wpp-config?t=an-wpp-7Qm3Vz9K&chave=...&valor=...`.
