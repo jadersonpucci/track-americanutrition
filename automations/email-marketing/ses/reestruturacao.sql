@@ -381,20 +381,27 @@ begin
    where status = 'pendente' and (enviar_em < now() - interval '2 days'
          or (slug = '6.1-carrinho-itens' and enviar_em < now() - interval '12 hours'));
 
-  -- quem nao pode receber: marketing exige inscricao; servico so respeita descadastro/bounce/reclamacao
+  -- quem nao pode receber: marketing exige inscricao; servico so respeita descadastro/bounce/reclamacao.
+  -- O envio sai para email_corrigir(email), e o bounce/reclamacao fica gravado nesse endereco corrigido (ec):
+  -- por isso o bloqueio olha os dois (12/11/2026).
   update email_fila f set status = 'pulado', motivo = z.motivo
-    from (select f2.id, coalesce(e.status, 'sem contato') || '/' || coalesce(e.shopify_consentimento, '-') as motivo,
+    from (select f2.id,
+                 case when coalesce(ec.status, '') in ('descadastrado', 'bounce', 'reclamacao') then ec.status || '/corrigido'
+                      else coalesce(e.status, 'sem contato') || '/' || coalesce(e.shopify_consentimento, '-') end as motivo,
+                 coalesce(ec.status, '') in ('descadastrado', 'bounce', 'reclamacao') or
                  case when f2.fluxo in ('carrinho', 'recompra') or f2.slug = '2.1-pos-entrega-leia-antes'
                       then coalesce(e.status, '') in ('descadastrado', 'bounce', 'reclamacao')
                       else (e.email is null or e.status <> 'inscrito' or coalesce(e.shopify_consentimento, '') <> 'SUBSCRIBED') end as bloqueia
             from email_fila f2 left join email_contatos e on e.email = f2.email
+                 left join email_contatos ec on ec.email = email_corrigir(f2.email) and ec.email <> f2.email
            where f2.status = 'pendente' and f2.enviar_em <= now()) z
    where f.id = z.id and z.bloqueia;
 
-  -- email que nem corrigido e valido (ou dominio de teste): nao manda
+  -- email que nem corrigido e valido (ou dominio de teste, ou o ficticio cliente<numero>@ criado sem email real): nao manda
   update email_fila f set status = 'pulado', motivo = 'email invalido'
    where f.status = 'pendente' and f.enviar_em <= now()
      and (email_corrigir(f.email) !~ '^[a-z0-9._%+\-]+@[a-z0-9\-]+(\.[a-z0-9\-]+)*\.[a-z]{2,}$'
+          or f.email ~ '^cliente[0-9]{8,}@'
           or split_part(email_corrigir(f.email), '@', 2) in ('example.com', 'example.org', 'example.net', 'teste.com', 'test.com',
                                                                'teste-an.com', 'dasda.com', 'asdas.com'));
 

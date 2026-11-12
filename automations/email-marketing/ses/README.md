@@ -237,6 +237,19 @@ Caso: `vitalinarocha67@gamil.vom` (carrinho) deu bounce no 6.1. ~2% dos emails d
   carrinhos falsos (apagados) e reativou o carrinho real da Vitalina (restaurado para `abandonado`) antes de qualquer
   mensagem sair. Testar com o HTML servido localmente (rotas interceptadas) ou apagar os carrinhos logo depois.
 
+## Bounce: o que acontece com cada tipo (12/11/2026)
+
+- **Permanente** (endereço não existe, domínio inválido): o contato vira `bounce` na hora e nunca mais recebe nada,
+  nem email de serviço. A supressão da conta no SES bloqueia de novo, como segunda barreira.
+- **Temporário** (caixa cheia, servidor fora): continua inscrito; 3 temporários em 30 dias viram `bounce`.
+- **Digitação no domínio**: o envio já sai para `email_corrigir(email)` (gamil.vom → gmail.com). Como o bounce fica
+  gravado no endereço corrigido, `email_proximos` agora bloqueia também quando o endereço corrigido está em
+  `bounce`/`reclamacao`/`descadastrado` (motivo `bounce/corrigido`).
+- **Emails fictícios** `cliente<número>@gmail.com` (40 contatos criados na Shopify entre 22 e 25/09, sem pedido; 3 deram
+  bounce): pulados como `email invalido` e os 37 restantes marcados `bounce` (motivo `email ficticio cliente<numero>`).
+- Situação em 12/11: 17 endereços com bounce desde o início: 7 permanentes (bloqueados), 9 de caixa cheia
+  (seguem inscritos) e 1 corrigido (Vitalina).
+
 ## Campanha Esquenta Black Friday (agendada em 10/11/2026)
 
 - Modelo `7.1-campanha-esquenta` (`padrao.py`): arte 06 (caixa da America Nutrition) no topo, convite "sua Black Friday
