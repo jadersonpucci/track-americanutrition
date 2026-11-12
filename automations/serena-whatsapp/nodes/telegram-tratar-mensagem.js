@@ -10,16 +10,27 @@
 //     conversa e a mensagem sai como se o Samuel tivesse escrito. A equipe ve e responde tudo
 //     pelo proprio app do Telegram. Aqui os updates chegam como business_message e as respostas
 //     precisam levar o business_connection_id.
-//     No modo business NAO da para usar teclado (inline nem de resposta): mensagem enviada em
-//     nome de uma conta de pessoa nao carrega botao de bot. As opcoes ficam numeradas no texto,
-//     que e exatamente o que o Core ja monta quando o canal nao e WhatsApp.
-const SK = 'SUPABASE_SERVICE_KEY';
+//     12/11/2026: a Bot API hoje aceita teclado INLINE em mensagem enviada em nome da conta
+//     business (so o teclado de resposta e o remove_keyboard continuam proibidos). A lista
+//     numerada que o Core escreve vira botao tambem aqui; se o envio com botao falhar, sai a lista
+//     numerada em texto, como antes. Depois do toque, a mensagem mostra "✅ <opcao>".
+// 12/11/2026: texto no formato do Telegram. O Core escreve no estilo do WhatsApp (*negrito*,
+//     _italico_, ~riscado~); aqui vira HTML (parse_mode HTML). Se o Telegram recusar o HTML, reenvia
+//     em texto puro sem os marcadores.
+// 12/11/2026: as chaves (Supabase e token do bot) ficam so no no desativado
+//     'Chaves Telegram (não apagar)' deste workflow e sao lidas aqui em tempo de execucao.
+//     Este codigo nao carrega chave nenhuma e e igual no repo e no n8n.
+const _fonte = String((($('Chaves Telegram (não apagar)').params) || {}).jsCode || '');
+const _k = (re) => { const m = _fonte.match(re); return m ? m[1] : ''; };
+const SK = _k(/const SK = '([^']*)'/);
+const _TOKEN = _k(/const BOT = 'http:\/\/telegram-bot-api:8081\/bot([^'\/]+)\/'/) || _k(/api\.telegram\.org\/bot([^'\/]+)\//);
+if (!SK || !_TOKEN) return [{ json: { ok: false, erro: 'chaves nao encontradas no no Chaves Telegram (não apagar)' } }];
 const SB = 'https://supabase.americanutrition.com/pg/query';
 const CORE = 'https://n8n.americanutrition.com/webhook/serena-core';
 const PUSH = 'https://n8n.americanutrition.com/webhook/serena-push';
 const INBOX = 'https://n8n.americanutrition.com/webhook/serena-inbox?t=an-serena-9Kx4Lm2Q';
-const BOT = 'http://telegram-bot-api:8081/bot<TOKEN>/';
-const BOT_PUB = 'https://api.telegram.org/bot<TOKEN>/';
+const BOT = 'http://telegram-bot-api:8081/bot' + _TOKEN + '/';
+const BOT_PUB = 'https://api.telegram.org/bot' + _TOKEN + '/';
 // grupo "America Nutrition Alertas", topico 1628 (Atendimento): a equipe inteira ve, nao so um celular
 const TG_GRUPO = '-1003766435449';
 const TG_TOPICO = 1628;
@@ -56,6 +67,25 @@ function extrairLista(txt, doCore) {
   if (ops.length < 2) return null;
   const titulo = (linhas[i] || '').trim();
   return { texto: linhas.slice(0, i).join(NL).trim(), titulo: (titulo || 'Escolha uma opcao').slice(0, 200), ops: ops.slice(0, 8) };
+}
+
+// WhatsApp -> HTML do Telegram. Links ficam de fora (um _ dentro de URL nao vira italico).
+function tgHtml(txt) {
+  const urls = [];
+  let t = String(txt || '').replace(/https?:\/\/[^\s<>]+/g, (u) => { urls.push(u); return '\u0001' + (urls.length - 1) + '\u0001'; });
+  t = t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  t = t.replace(/```([\s\S]+?)```/g, '<code>$1</code>');
+  const marca = (ch, tag) => {
+    const c = '\\' + ch;
+    const re = new RegExp('(^|[\\s(“"\'])' + c + '(?!\\s)([^' + c + '\\n]+?)(?<!\\s)' + c + '(?=$|[\\s).,!?:;”"\'])', 'gm');
+    t = t.replace(re, '$1<' + tag + '>$2</' + tag + '>');
+  };
+  marca('*', 'b'); marca('_', 'i'); marca('~', 's');
+  return t.replace(/\u0001(\d+)\u0001/g, (m, i) => urls[Number(i)].replace(/&/g, '&amp;'));
+}
+// texto puro, sem os marcadores, para quando o HTML for recusado
+function tgPuro(txt) {
+  return String(txt || '').replace(/```([\s\S]+?)```/g, '$1').replace(/(^|[\s(])[*_~](?!\s)([^*_~\n]+?)(?<!\s)[*_~](?=$|[\s).,!?:;])/gm, '$1$2');
 }
 
 // No modo business nao existe botao de compartilhar telefone: teclado so o bot tem.
@@ -158,10 +188,17 @@ if (lim.length && lim[0].pausada === true && lim[0].desde_humano !== null && Num
 
 const BOTAO_TEL = { keyboard: [[{ text: '\u{1F4F1} Compartilhar meu telefone', request_contact: true }]], resize_keyboard: true, one_time_keyboard: true };
 const enviar = async (texto, extra) => {
-  const c = Object.assign({ chat_id: chatId, text: texto, disable_web_page_preview: false }, extra || {});
-  // mensagem em nome de uma conta de pessoa nao aceita teclado nenhum
-  if (bcid) { c.business_connection_id = bcid; delete c.reply_markup; }
-  return await req({ method: 'POST', url: BOT + 'sendMessage', headers: { 'Content-Type': 'application/json' }, body: c, json: true, timeout: 30000 });
+  const c = Object.assign({ chat_id: chatId, text: tgHtml(texto), parse_mode: 'HTML', disable_web_page_preview: false }, extra || {});
+  // em nome da conta business so o teclado inline e aceito (teclado de resposta e remove_keyboard nao)
+  if (bcid) { c.business_connection_id = bcid; if (!(c.reply_markup && c.reply_markup.inline_keyboard)) delete c.reply_markup; }
+  const manda = async (corpo) => await req({ method: 'POST', url: BOT + 'sendMessage', headers: { 'Content-Type': 'application/json' }, body: corpo, json: true, timeout: 30000 });
+  let r = await manda(c);
+  if (!r || r.ok === false) { // HTML recusado: vai em texto puro
+    const p = Object.assign({}, c, { text: tgPuro(texto) });
+    delete p.parse_mode;
+    r = await manda(p);
+  }
+  return (r && r.ok !== false) ? r : null;
 };
 const tg = async (metodo, corpo) => await req({ method: 'POST', url: BOT + metodo, headers: { 'Content-Type': 'application/json' }, body: (bcid ? Object.assign({ business_connection_id: bcid }, corpo) : corpo), json: true, timeout: 30000 });
 // o webhook ja mandou a resposta: marca entregue para o cron de 1 minuto nao mandar de novo
@@ -175,7 +212,11 @@ if (cq) {
   const kb = (cq.message && cq.message.reply_markup && cq.message.reply_markup.inline_keyboard) || [];
   texto = (kb[linha] && kb[linha][0] && kb[linha][0].text) ? String(kb[linha][0].text) : '';
   if (!texto) return [];
-  await tg('editMessageReplyMarkup', { chat_id: chatId, message_id: cq.message.message_id, reply_markup: { inline_keyboard: [] } });
+  // a mensagem passa a mostrar o que foi escolhido, sem os botoes
+  const base = String(cq.message.text || '').trim();
+  const ed = await tg('editMessageText', { chat_id: chatId, message_id: cq.message.message_id, parse_mode: 'HTML', disable_web_page_preview: true,
+    text: (base ? base.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + NL + NL : '') + '\u2705 <b>' + texto.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</b>' });
+  if (!ed || ed.ok === false) await tg('editMessageReplyMarkup', { chat_id: chatId, message_id: cq.message.message_id, reply_markup: { inline_keyboard: [] } });
 } else if (msg.contact && msg.contact.phone_number) {
   let tel = String(msg.contact.phone_number).replace(/[^0-9]/g, '');
   if (tel.length >= 10 && tel.indexOf('55') !== 0) tel = '55' + tel;
@@ -239,16 +280,23 @@ if (r.pausada === true) { return [{ json: { ok: true, acao: 'pausada', chat_id: 
 
 let resposta = String(r.resposta || '').replace(/\[\[ARQUIVO:[^\]]*\]\]/gi, '').trim();
 let inline = null;
-// no modo business as opcoes ficam numeradas no texto: conta de pessoa nao manda botao
-const ex = bcid ? null : extrairLista(resposta, r.lista);
+// lista numerada vira botao (no bot e na conta business); texto e pergunta saem numa mensagem so
+const original = resposta;
+const ex = extrairLista(resposta, r.lista);
 if (ex) {
   resposta = ex.texto;
   inline = { titulo: ex.titulo, teclado: { inline_keyboard: ex.ops.map((o, i) => [{ text: String(o).slice(0, 60), callback_data: 'op:' + i }]) } };
 }
 
 let enviou = false;
-if (resposta) { const e1 = await enviar(resposta, { reply_markup: { remove_keyboard: true } }); enviou = !!e1; }
-if (inline) { const e2 = await enviar(inline.titulo, { reply_markup: inline.teclado }); enviou = enviou || !!e2; }
+if (inline) {
+  const e = await enviar((resposta ? resposta + NL + NL : '') + inline.titulo, { reply_markup: inline.teclado });
+  enviou = !!e;
+  if (!enviou) { const e2 = await enviar(original); enviou = !!e2; } // botao recusado: vai a lista numerada, como antes
+} else if (resposta) {
+  const e1 = await enviar(resposta, bcid ? {} : { reply_markup: { remove_keyboard: true } });
+  enviou = !!e1;
+}
 if (enviou) await marcarEntregue();
 if (r.arquivo && r.arquivo.url) await tg('sendDocument', { chat_id: chatId, document: r.arquivo.url, caption: String(r.arquivo.nome || '').slice(0, 200) });
 if (r.handoff) {

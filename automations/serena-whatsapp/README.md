@@ -1000,6 +1000,24 @@ A resposta da Serena ficava com `entregue = null`, e o cron de 1 minuto **reenvi
 
 Testado ponta a ponta antes de abrir: `/start`, pergunta livre, lista com 8 botões, clique num botão (virou "ImunoFosfo 60 cápsulas · R$ 247" e a Serena seguiu a venda), vídeo sem legenda e a flag de entrega. Conversa de teste apagada depois.
 
+### Botões e formatação do Telegram (12/11/2026)
+
+Pedido do Jaderson, vendo a conversa do José B. pela conta do Samuel: a lista numerada ("Responde só com o
+número") aparecia como texto e os marcadores do WhatsApp (`_..._`, `*...*`) saíam crus.
+
+- **Botões também no modo Business.** A Bot API hoje só proíbe o *teclado de resposta* e o `remove_keyboard` em
+  mensagem enviada em nome da conta business; o **teclado inline** passa. A lista vira botão nos dois modos, e o
+  texto e a pergunta saem numa mensagem só, com os botões embaixo. Ao tocar, a mensagem é editada para mostrar
+  "✅ <opção>" e os botões somem. Se o Telegram recusar o envio com botão, sai a lista numerada em texto, como antes.
+- **Formatação do Telegram.** `*negrito*`, `_itálico_`, `~riscado~` e ```` ``` ```` do estilo WhatsApp viram HTML
+  (`parse_mode: HTML`), tanto na resposta da Serena quanto no que a equipe escreve pelo Inbox. Links ficam de fora
+  (um `_` dentro de URL não vira itálico). Se o HTML for recusado, reenvia em texto puro, sem os marcadores.
+- **Chaves fora do código.** O nó antigo virou `Chaves Telegram (não apagar)` (desativado, sem ligação): guarda a
+  chave do Supabase e o token do bot, e os nós `Tratar Mensagem` e `Entregar do Inbox` leem de lá em execução. O
+  código dos dois (`nodes/telegram-tratar-mensagem.js` e `nodes/telegram-entregar-inbox.js`) agora é igual no
+  repositório e no n8n. Ligações: `Telegram IN` → `Boleto para o Financeiro?` (saída 2) → `Tratar Mensagem` →
+  `Gravar fala durante pausa`; `A cada minuto` → `Entregar do Inbox`.
+
 ## Avisos: do privado para o grupo da equipe (09/09/2026)
 
 Auditoria feita a pedido do Jaderson ("todo mundo recebe as coisas que vão pra lá?"). A resposta era **não**: estava dividido em dois lugares, e a divisão não fazia sentido.
