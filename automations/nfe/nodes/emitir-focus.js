@@ -18,6 +18,10 @@
 //   ImunoPet 2309.90.90, Life Protein 2106.10.00. Unidade UN. GTIN: SEM GTIN.
 //   Juros do parcelamento (linha "Juros de parcelamento") entram como outras despesas, rateados nos itens.
 // Pedido que nao fecha (sem CPF, item sem preco, total diferente) fica "revisar" e vai para o Telegram.
+// 12/11/2026: pedido com a tag BONIFICACAO (reenvio/brinde sem custo, total R$ 0) sai como remessa em bonificacao:
+//   CFOP 5910/6910, natureza 'Remessa em bonificacao, doacao ou brinde', itens pelo preco de tabela (o desconto de
+//   100% e ignorado), ICMS e DIFAL como na venda, PIS/COFINS CST 08 (sem receita), pagamento 90 (sem pagamento).
+//   Tributacao aprovada pelo Jaderson (caso reenvio do pedido US AN-15710).
 // 09/11/2026: as chaves ficam so no no 'Chaves NF-e (não apagar)' deste workflow (desativado, nao executa) e sao lidas
 // aqui em tempo de execucao. Este codigo nao carrega chave nenhuma e e igual no repo e no n8n.
 const _fonte = String((($('Chaves NF-e (não apagar)').params) || {}).jsCode || '');
@@ -86,6 +90,7 @@ function attr(o, k) { const a = (o.customAttributes || []).find((x) => String(x.
 
 async function montar(o) {
   const probs = [];
+  const bonif = (o.tags || []).some((t) => /^bonifica(c|\u00e7)(a|\u00e3)o$/i.test(String(t).trim()));
   const sa = o.shippingAddress || {};
   const uf = String(sa.provinceCode || '').toUpperCase();
   const interna = uf === 'SP';
@@ -126,7 +131,8 @@ async function montar(o) {
       probs.push('item sem produto: ' + li.title); continue;
     }
     const unit = Number(li.originalUnitPriceSet.shopMoney.amount);
-    const liq = li.discountAllocations ? r2(qtd * unit - aloc(li)) : r2(qtd * Number(li.discountedUnitPriceAfterAllDiscountsSet.shopMoney.amount));
+    let liq = li.discountAllocations ? r2(qtd * unit - aloc(li)) : r2(qtd * Number(li.discountedUnitPriceAfterAllDiscountsSet.shopMoney.amount));
+    if (bonif) liq = r2(qtd * unit); // bonificacao: vale o preco de tabela, sem o desconto de 100%
     if (!(unit > 0) || !(liq > 0)) { probs.push('item sem valor (brinde?): ' + li.title); continue; }
     prods.push({ li: li, qtd: qtd, unit: unit, bruto: r2(unit * qtd), liq: liq });
   }
@@ -136,7 +142,8 @@ async function montar(o) {
   const outras = r2(juros.reduce((s, v) => s + v, 0));
   const somaLiq = r2(prods.reduce((s, p) => s + p.liq, 0));
   const dif = r2(total - (somaLiq + frete + outras));
-  if (prods.length && Math.abs(dif) > 0.05) probs.push('total do pedido (' + total + ') nao fecha com itens + frete + juros (' + r2(somaLiq + frete + outras) + ')');
+  if (bonif) { /* remessa sem cobranca: o total do pedido (R$ 0) nao precisa fechar com os itens */ }
+  else if (prods.length && Math.abs(dif) > 0.05) probs.push('total do pedido (' + total + ') nao fecha com itens + frete + juros (' + r2(somaLiq + frete + outras) + ')');
   else if (prods.length && dif !== 0) prods[0].liq = r2(prods[0].liq + dif);
 
   // Rateio de frete e juros pelos itens; o ultimo leva a sobra do arredondamento
@@ -159,14 +166,14 @@ async function montar(o) {
     const aliq = interna ? ICMS_SP : ICMS_INTER_IMPORTADO;
     const icms = r2(base * aliq / 100);
     const bPis = r2(base - icms);
-    const vPis = r2(bPis * 0.0065), vCofins = r2(bPis * 0.03);
+    const vPis = bonif ? 0 : r2(bPis * 0.0065), vCofins = bonif ? 0 : r2(bPis * 0.03);
     let estaduais = icms;
     const desc = limpa(li.title + (li.variantTitle && li.variantTitle !== 'Default Title' ? ' - ' + li.variantTitle : ''));
     const it = {
       numero_item: i + 1,
       codigo_produto: dig(li.variant.id),
       descricao: desc.slice(0, 120),
-      cfop: interna ? '5102' : '6108',
+      cfop: bonif ? (interna ? '5910' : '6910') : (interna ? '5102' : '6108'),
       codigo_ncm: NCM[dig(li.product && li.product.id)] || NCM_PADRAO,
       codigo_barras_comercial: 'SEM GTIN', codigo_barras_tributavel: 'SEM GTIN',
       unidade_comercial: 'UN', quantidade_comercial: p.qtd, valor_unitario_comercial: p.unit, valor_bruto: p.bruto,
@@ -183,6 +190,10 @@ async function montar(o) {
     if (p.desc > 0) it.valor_desconto = p.desc;
     if (p.frete > 0) it.valor_frete = p.frete;
     if (p.outras > 0) it.valor_outras_despesas = p.outras;
+    if (bonif) { // remessa sem receita: PIS/COFINS sem incidencia (CST 08)
+      ['pis_base_calculo', 'pis_aliquota_porcentual', 'pis_valor', 'cofins_base_calculo', 'cofins_aliquota_porcentual', 'cofins_valor'].forEach((k) => { delete it[k]; });
+      it.pis_situacao_tributaria = '08'; it.cofins_situacao_tributaria = '08';
+    }
     totIcms += icms;
     if (!interna) {
       const vDest = r2(base * (pDest - ICMS_INTER_IMPORTADO) / 100);
@@ -207,16 +218,18 @@ async function montar(o) {
   if (/cart/.test(pag) && /d[eé]bito/.test(pag)) fp = { indicador_pagamento: 0, forma_pagamento: '04', valor_pagamento: total, tipo_integracao: 2 };
   else if (/cart/.test(pag)) fp = { indicador_pagamento: parcelas > 1 ? 1 : 0, forma_pagamento: '03', valor_pagamento: total, tipo_integracao: 2 };
   else if (/boleto/.test(pag)) fp = { indicador_pagamento: 0, forma_pagamento: '15', valor_pagamento: total };
-  else if (!/pix/.test(pag)) probs.push('forma de pagamento nao reconhecida: ' + (pag || 'vazia'));
+  else if (!/pix/.test(pag) && !bonif) probs.push('forma de pagamento nao reconhecida: ' + (pag || 'vazia'));
+  if (bonif) fp = { indicador_pagamento: 0, forma_pagamento: '90', valor_pagamento: 0 };
 
   const info = ['Pedido ' + o.name + '.'];
+  if (bonif) info.push('Remessa em bonificacao, sem cobranca do destinatario.');
   const brl = (v) => r2(v).toFixed(2).replace('.', ',');
   if (!interna) info.push('ICMS DIFAL para a UF de destino (' + uf + '): R$ ' + brl(totDifal) + (totFcp > 0 ? ' + FCP R$ ' + brl(totFcp) : '') + '.');
   const totEst = totIcms + totDifal + totFcp;
   info.push('Valor aproximado dos tributos: R$ ' + brl(totEst + totFed) + ' (federais R$ ' + brl(totFed) + ', estaduais R$ ' + brl(totEst) + '). Lei 12.741/2012.');
   const tel = dig(sa.phone || o.phone).replace(/^55(?=\d{10,11}$)/, '');
   const nf = {
-    natureza_operacao: 'Venda de mercadoria',
+    natureza_operacao: bonif ? 'Remessa em bonificacao, doacao ou brinde' : 'Venda de mercadoria',
     data_emissao: new Date(Date.now() - 3 * 3600000).toISOString().slice(0, 19) + '-03:00',
     tipo_documento: 1, finalidade_emissao: 1, local_destino: interna ? 1 : 2,
     consumidor_final: 1, presenca_comprador: 2, indicador_intermediario: 0,

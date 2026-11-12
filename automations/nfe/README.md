@@ -240,6 +240,24 @@ Testado: simulação local do emissor no AN-16477 (IE → indicador 1, ISENTO �
 DIFAL); checkout no navegador antes e depois de publicar (CNPJ mostra o campo, sem IE bloqueia, Isento manda
 `ISENTO`, CPF esconde).
 
+## Reenvio ou brinde sem custo: tag BONIFICACAO (12/11/2026)
+
+Pedido de R$ 0 (reenvio, brinde) com a tag `BONIFICACAO` sai como **remessa em bonificação**, sem ir para "revisar":
+
+| Campo | Valor |
+|---|---|
+| Natureza | Remessa em bonificacao, doacao ou brinde |
+| CFOP | 5910 (SP) / 6910 (outros estados) |
+| Valor dos itens | preço de tabela (o desconto de 100% do rascunho é ignorado) |
+| ICMS / DIFAL | como na venda (18% em SP; 4% importado + DIFAL fora de SP) |
+| PIS/COFINS | CST 08 (sem incidência, não há receita) |
+| Pagamento | 90 (sem pagamento) |
+
+Tributação aprovada pelo Jaderson no primeiro caso (AN-16562, reenvio para Manaus do pedido US AN-15710).
+Como fazer: rascunho com o produto, desconto de 100%, frete R$ 0, CPF (`localizedFields` TAX_CREDENTIAL_BR; sem CPF a
+Shopify não finaliza) e a tag `BONIFICACAO`; finalizar o rascunho. O aviso orders/create emite na hora.
+O endereço segue o padrão do checkout: `address2` = "complemento, bairro" (a última parte depois da vírgula é o bairro).
+
 ## Pedido cancelado cancela a NF-e (11/11/2026)
 
 Pedido do Jaderson: pedido cancelado na Shopify cancela a nota na SEFAZ sozinho, se ainda estiver no prazo.
