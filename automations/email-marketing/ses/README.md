@@ -139,6 +139,11 @@ gerado no banco; o link completo foi passado ao Jaderson e não vai para o repos
   sem clique, até 2 dias depois de uma abertura. Só emails reais (fila `enviado`), nunca testes.
 - **UTM**: o despachante acrescenta `utm_source=email&utm_medium=fluxo&utm_campaign=<fluxo>&utm_content=<modelo>`
   nos links do site, para as vendas aparecerem também nos relatórios da Shopify.
+- **Tag na Shopify (12/11/2026)**: pedido atribuído pela regra acima ganha as tags `EMAIL`, `email:clique` ou
+  `email:abertura` e `email:<modelo>` (ex.: `email:7.1-campanha-esquenta`). Workflow `[Email] Marcar vendas na
+  Shopify` (`LKMxgsM9gd5MZGX2`, a cada 10 min, `marcar-vendas.workflow.js`) + funções em `marcar-vendas.sql`
+  (`email_vendas_para_marcar()`, `email_venda_marcada()`; colunas `email_pedidos.tag_email` e `tag_email_em`).
+  Cada pedido é marcado uma vez; se a Shopify recusar, volta na rodada seguinte. Filtrar na Shopify: `tag:EMAIL`.
 - `email_pedidos` ganhou `total` (valor do pedido), preenchido pela sincronização.
 - **Redesenho (10/11, noite)**: abas Visão geral, Emails, Vendas, Contatos e Operação. A aba Emails mostra a
   prévia de cada modelo (miniatura e o email inteiro ao clicar, com assunto, prévia e números do modelo). Prévia por
