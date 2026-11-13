@@ -1,0 +1,49 @@
+--- a/index.html
++++ b/index.html
+@@ -376,27 +376,41 @@
+     T[1]=`O seu ${esc(prod1)} saiu do nosso centro de distribuição normalmente e foi entregue à ${esc(transp)}, mas a transportadora extraviou o pacote durante o transporte. O problema foi com a transportadora, não com o nosso envio.<br><br><b>${novoCod?'Já reenviamos o seu pedido, sem nenhum custo para você.':'Vamos reenviar o seu pedido sem nenhum custo para você.'}</b>${novoCod?'':' O novo código de rastreio chega pelo WhatsApp assim que ele for postado.'}`
+       +(novoCod?`<a class="reenv" href="/${encodeURIComponent(novoCod)}"><i class="ti ti-truck-delivery"></i>Acompanhar o reenvio</a>`:'');
+   }
++  // RETIRADA (13/11/2026): quando os Correios deixam o pacote numa agencia, o motor manda rastreio.retirada (no
++  // 'Detectar Retirada'). A pagina mostrava "Ta chegando" com a previsao antiga; agora mostra onde retirar, o que levar
++  // e o prazo, com botao para o mapa. Caso: AN-16285, AP678058035BR, Sao Pedro do Iguacu/PR.
++  const ret=(!ext&&st!=='delivered'&&R.retirada&&R.retirada.aguardando)?R.retirada:null;
++  const retPrazo=ret?parseData(ret.prazo_ate):null;
++  if(ret){
++    const ondeRet=ret.endereco?`<b>${esc(ret.endereco)}</b>`:`na agência dos Correios${ret.cidade?' de '+esc(ret.cidade)+(ret.uf?'/'+esc(ret.uf):''):''}`;
++    T[0]=['Pronto pra','retirar'];
++    T[1]=`Os Correios não conseguiram entregar no endereço e deixaram o seu ${esc(prod1)} para retirada ${ret.endereco?'em:<br>':''}${ondeRet}.`
++      +`<br><br>Leve o código <b>${esc(R.codigo||'')}</b> e um documento oficial com foto de quem vai receber. Outra pessoa também pode retirar, com uma autorização assinada e a cópia do documento do destinatário.`
++      +(retPrazo?`<br><br><b>Retire até ${retPrazo.getDate()} de ${MESES[retPrazo.getMonth()]}.</b> Depois disso o pacote volta pra gente.`:'')
++      +(ret.maps_url?`<a class="reenv" href="${esc(ret.maps_url)}" target="_blank" rel="noopener"><i class="ti ti-map-pin"></i>Ver a agência no mapa</a>`:'');
++  }
+   const vermelho=st==='exception'||st==='returned';
+   $('r-titulo').innerHTML=`${T[0][0]}<br><em class="${vermelho?'r':''}">${T[0][1]}</em>${st==='delivered'?'':'<span class="dt"></span>'}`;
+   {const e24=parseData(R.entregue_em);if(st==='delivered'&&e24&&(Date.now()-e24)/36e5<=24)$('r-titulo').querySelector('em').classList.add('shine');}
+   $('r-sub').innerHTML=T[1];
+   let tags='';
+-  if(R.atrasado&&st!=='delivered')tags+='<span class="tag warn"><i class="ti ti-clock"></i>Um pouco atrasado</span>';
++  if(ret)tags+='<span class="tag warn"><i class="ti ti-building-store"></i>Retirada nos Correios</span>';
++  else if(R.atrasado&&st!=='delivered')tags+='<span class="tag warn"><i class="ti ti-clock"></i>Um pouco atrasado</span>';
+   if(ext)tags+='<span class="tag lost"><i class="ti ti-package-off"></i>Reenvio sem custo</span>';
+   if(evs.some(e=>e.eh_importacao))tags+='<span class="tag usa"><i class="ti ti-plane"></i>Importado dos EUA</span>';
+   $('r-tags').innerHTML=tags;
+ 
+-  const n=ETAPA[st]??2;setBars(Math.min(n,5),st!=='delivered',vermelho,st==='delivered');
+-  $('etapa').textContent=st==='delivered'?'Todas as etapas concluídas':`Etapa ${Math.min(n+1,5)} de 5 · ${vermelho?(st==='returned'?'Devolvido':ext?'Extraviado':'Atenção'):st==='waiting'?'Aguardando postagem':NOMES[n]}`;
++  const n=ret?3:(ETAPA[st]??2);setBars(Math.min(n,5),st!=='delivered',vermelho,st==='delivered');
++  $('etapa').textContent=st==='delivered'?'Todas as etapas concluídas':`Etapa ${Math.min(n+1,5)} de 5 · ${vermelho?(st==='returned'?'Devolvido':ext?'Extraviado':'Atenção'):st==='waiting'?'Aguardando postagem':ret?'Aguardando retirada':NOMES[n]}`;
+   $('hdr-dir').textContent=P.numero?'#'+P.numero:'';
+ 
+   const serv=/SEDEX/i.test(R.servico||'')?'Sedex':/PAC/i.test(R.servico||'')?'PAC':(R.transportadora||'Correios');
+   const ent=parseData(R.entregue_em);
+   const celebrar=st==='delivered'&&ent&&(Date.now()-ent)/36e5<=24;
+-  const bigTxt=ext?(novoCod?'Já<br>reenviado':'Reenvio<br>sem custo'):st==='delivered'&&ent?(ent.getDate()+' de '+MESES[ent.getMonth()]+',<br>às '+hhmm(ent)):(dataLonga(R.previsao_entrega)||(st==='waiting'?'Assim que<br>postarem':'Em breve'));
++  const bigTxt=ret?(retPrazo?'Até '+retPrazo.getDate()+'<br>de '+MESES[retPrazo.getMonth()]:'Na agência'):ext?(novoCod?'Já<br>reenviado':'Reenvio<br>sem custo'):st==='delivered'&&ent?(ent.getDate()+' de '+MESES[ent.getMonth()]+',<br>às '+hhmm(ent)):(dataLonga(R.previsao_entrega)||(st==='waiting'?'Assim que<br>postarem':'Em breve'));
+   const nomeGarrafa=nomeGarrafaDe(prod1);
+   let cards=`<div class="card main ${vermelho?'alert':''}${celebrar?' cele':''}">${celebrar?'<div class="sweep"></div><div class="selo">'+(ROSA?laco(13):'')+'Entregue</div>':''}
+-    <small>${ext?'Seu pedido':st==='delivered'?'Entregue em':'Previsão de entrega'}</small><div class="big">${bigTxt}</div>
++    <small>${ret?'Retire na agência':ext?'Seu pedido':st==='delivered'?'Entregue em':'Previsão de entrega'}</small><div class="big">${bigTxt}</div>
+     <div class="meta"><span>${esc(serv)}${cidade?' · '+esc(cidade)+(uf?', '+esc(uf):''):''}</span>${R.codigo?`<button class="code" onclick="copiar()"><i class="ti ti-copy"></i>${esc(R.codigo)}</button>`:''}</div>
+     ${(()=>{const rod=prods.length>1?'+'+(prods.length-1)+' item'+(prods.length>2?'s':''):'America';const foto=prods[0]&&prods[0].img;
+       if(!foto)return garrafaCss(nomeGarrafa,rod);

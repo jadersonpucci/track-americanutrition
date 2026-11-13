@@ -67,6 +67,12 @@ Diadema/SP.
 - prazo: `dataLimiteRetirada` quando a API manda; senão 7 dias corridos a partir do evento (`prazo_estimado: true`);
 - na linha do tempo, o evento de retirada ganha "Endereço para retirada: ...".
 
+**Página (13/11/2026):** a página não lia `rastreio.retirada` e seguia mostrando "Tá chegando" com a previsão antiga
+(caso AN-16285, `AP678058035BR`, agência de São Pedro do Iguaçu/PR). `site-index-retirada.patch` (contra o `index.html`
+do `main`) cria o estado "Pronto pra retirar": endereço da agência, o que levar, prazo ("Retire até 18 de nov"), botão
+"Ver a agência no mapa", selo "Retirada nos Correios" e etapa 4 de 5 "Aguardando retirada". Testado com o motor real
+(sem erro de JS). Publicar no `main` só com autorização.
+
 **Aviso pelo WhatsApp:** `[Serena] Aviso de Retirada` (`automations/serena-whatsapp/retirada-aviso.workflow.js`).
 
 ## Comprovante de entrega na página (26/10/2026)
