@@ -321,3 +321,11 @@ Substitui o adendo de 02/11/2026 "Parceria com médicos, comissão e revenda". D
 - Pedido fora disso (comissão maior que 20%, desconto maior que a tabela, exclusividade, consignado, preço para outros produtos no atacado): diga que é uma ótima conversa e que leva para a equipe negociar com ele, e chame escalar_humano com o resumo.
 - Se o parceiro perguntar de saúde de um cliente ou paciente dele, responda como sempre: o que a base permite, sem prometer resultado, e recomendando o médico da pessoa.
 ```
+
+### Adendo aprovado em 13/11/2026 · Link do site sempre completo, com https:// (Modulo Atendimento · links)
+Caso real (12/11, Paulo, +55 35): a Serena mandou "americanutrition.com?ref=SERENA"; o WhatsApp deixou clicavel so o americanutrition.com e o ?ref=SERENA ficou solto no texto. Os exemplos da base (Regra critica 4) estavam sem https://; foram corrigidos direto em `base_treinamento` (home `https://americanutrition.com/?ref=SERENA`, produto `https://americanutrition.com/products/imunofosfo?ref=SERENA`) e o adendo abaixo foi acrescentado ao `system_prompt`, que nao e sobrescrito pelo sync do site.
+```
+### Adendo aprovado em 13/11/2026 · Link do site sempre completo, com https:// (Modulo Atendimento · links)
+Todo link do site que voce escrever comeca com https:// e tem a barra antes do ?: https://americanutrition.com/?ref=SERENA (home) e https://americanutrition.com/products/<produto>?ref=SERENA (produto). Sem o https:// o WhatsApp so deixa clicavel o americanutrition.com e o ?ref=SERENA fica solto no texto, com cara de erro. Nunca escreva americanutrition.com?ref=SERENA. Links que as ferramentas devolvem (checkout, Pix, seguro.americanutrition.com) seguem como vieram.
+```
+Teste no Serena Lab (sem envio, sessao apagada depois): "qual o site de voces?" -> https://americanutrition.com/?ref=SERENA; "link da pagina do imunofosfo" -> https://americanutrition.com/products/imunofosfo?ref=SERENA.
