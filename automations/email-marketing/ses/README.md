@@ -261,6 +261,9 @@ Caso: `vitalinarocha67@gamil.vom` (carrinho) deu bounce no 6.1. ~2% dos emails d
   último. Ondas às 10h: 11/11 250 · 12/11 450 · 13/11 750 · 14/11 1.150 · 15/11 1.900 · 16/11 1.900 · 17/11 2.192.
 - Aquecimento: `envio_rampa` (limite por dia, vale sobre `envio_limite_dia`): 300, 500, 800, 1.200, 2.000, 2.000,
   2.500 e 1.000 em 18/11 para sobras.
+- Depois da rampa (13/11, pedido do Jaderson): 3.000/dia de 19 a 23/11 e 5.000/dia de 24 a 30/11 (Black Friday em
+  27/11). A partir de 01/12 volta para `envio_limite_dia` (300) se ninguém mudar. O despachante comporta até
+  ~21.600/dia (150 a cada 5 min, 8h às 20h para marketing).
 - Freio: com 50+ envios nas últimas 24h, bounce permanente acima de 5% ou reclamação acima de 0,3% segura todo o
   marketing (o serviço continua). Quem se cadastra na landing antes de receber é pulado.
 - Cancelar as ondas que faltam: `update email_fila set status = 'pulado', motivo = 'campanha cancelada'
