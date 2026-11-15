@@ -33,6 +33,7 @@ language sql stable security definer set search_path = public as $$
        order by (ev.tipo = 'click') desc, ev.criado_em desc
        limit 1) a
    where p.criado_em >= p_desde and not p.cancelado and p.tag_email is null
+     and not email_pedido_renovacao(p.email, p.criado_em)  -- renovacao automatica de assinatura (renovacao-assinatura.sql)
      and p.pedido_id like 'gid://shopify/Order/%'
    order by p.criado_em
    limit 50

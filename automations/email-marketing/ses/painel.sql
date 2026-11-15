@@ -77,6 +77,7 @@ begin
          order by (ev.tipo = 'click') desc, ev.criado_em desc
          limit 1) a
      where p.criado_em >= ini and not p.cancelado
+       and not email_pedido_renovacao(p.email, p.criado_em)  -- renovacao automatica de assinatura (renovacao-assinatura.sql)
   ), dia as (
     select d::date as dia from generate_series((ini at time zone 'America/Sao_Paulo')::date,
       (now() at time zone 'America/Sao_Paulo')::date, interval '1 day') d

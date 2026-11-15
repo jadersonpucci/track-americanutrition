@@ -237,6 +237,15 @@ Caso: `vitalinarocha67@gamil.vom` (carrinho) deu bounce no 6.1. ~2% dos emails d
   carrinhos falsos (apagados) e reativou o carrinho real da Vitalina (restaurado para `abandonado`) antes de qualquer
   mensagem sair. Testar com o HTML servido localmente (rotas interceptadas) ou apagar os carrinhos logo depois.
 
+## Renovação de assinatura não é venda do email (15/11/2026)
+
+O AN-16614 (renovação da Compra Programada do Hércules, cobrada no cartão pelo motor de assinaturas) ganhou a tag
+EMAIL e entrou no painel porque ele tinha clicado no 3.1-recompra-acabando 5 dias antes. `renovacao-assinatura.sql`
+cria `email_pedido_renovacao(email, criado_em)`: cobrança paga da assinatura que não é a primeira compra, até 2h do
+pedido, mesmo email. `email_vendas_para_marcar` e `email_painel` ignoram esses pedidos (a primeira compra da
+assinatura continua podendo ser do email). Conferido: entre os pedidos já marcados, só o AN-16614 caía na regra; as
+tags dele foram tiradas na Shopify (ficou só ASSINATURA).
+
 ## Bounce: o que acontece com cada tipo (12/11/2026)
 
 - **Permanente** (endereço não existe, domínio inválido): o contato vira `bounce` na hora e nunca mais recebe nada,
