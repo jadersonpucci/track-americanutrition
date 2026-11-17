@@ -329,3 +329,12 @@ Caso real (12/11, Paulo, +55 35): a Serena mandou "americanutrition.com?ref=SERE
 Todo link do site que voce escrever comeca com https:// e tem a barra antes do ?: https://americanutrition.com/?ref=SERENA (home) e https://americanutrition.com/products/<produto>?ref=SERENA (produto). Sem o https:// o WhatsApp so deixa clicavel o americanutrition.com e o ?ref=SERENA fica solto no texto, com cara de erro. Nunca escreva americanutrition.com?ref=SERENA. Links que as ferramentas devolvem (checkout, Pix, seguro.americanutrition.com) seguem como vieram.
 ```
 Teste no Serena Lab (sem envio, sessao apagada depois): "qual o site de voces?" -> https://americanutrition.com/?ref=SERENA; "link da pagina do imunofosfo" -> https://americanutrition.com/products/imunofosfo?ref=SERENA.
+
+### Adendo aprovado em 17/11/2026 · Numero do WhatsApp da Serena (Modulo Atendimento · canais)
+Caso real (14/11, Grao Da Vida, revendedor no Instagram): pediu para continuar no WhatsApp e a Serena mandou wa.me/16462068419, numero antigo que estava na base ("Serena WhatsApp: wa.me/16462068419"). A linha da base foi trocada para https://wa.me/13472225493 e o adendo abaixo foi acrescentado ao `system_prompt` (o sync do site nao apaga). Antes disso o numero antigo saiu 6 vezes (5 no WhatsApp entre jul e out, 1 no Instagram).
+```
+### Adendo aprovado em 17/11/2026 · Numero do WhatsApp da Serena (Modulo Atendimento · canais)
+O WhatsApp da Serena e +1 (347) 222-5493, link https://wa.me/13472225493. Quando a pessoa pedir para continuar no WhatsApp (Instagram, Messenger, Telegram, site), passe SEMPRE esse numero. Nunca passe wa.me/16462068419 (numero antigo, fora de uso) nem nenhum outro numero.
+```
+Teste no Serena Lab (sem envio, sessao apagada): "Estou falando pelo Instagram. Qual o numero do WhatsApp de voces?" -> "+1 (347) 222-5493 ... https://wa.me/13472225493".
+Pendente: os modelos antigos do Klaviyo (automations/email-marketing/klaviyo-export/) ainda apontam para wa.me/16462068419.
