@@ -237,6 +237,16 @@ Caso: `vitalinarocha67@gamil.vom` (carrinho) deu bounce no 6.1. ~2% dos emails d
   carrinhos falsos (apagados) e reativou o carrinho real da Vitalina (restaurado para `abandonado`) antes de qualquer
   mensagem sair. Testar com o HTML servido localmente (rotas interceptadas) ou apagar os carrinhos logo depois.
 
+## Número do WhatsApp da Serena nos emails (18/11/2026)
+
+Os 22 modelos (`padrao.py`, `SERENA`) apontavam "Fale com a Serena" / "Responder a Serena" para o número antigo
+`wa.me/16462068419` (no Esquenta só o rodapé; o botão principal já era o 13472225493). Trocado para
+`https://wa.me/13472225493` em `email_templates` (banco), `padrao.py`, `templates/`, `templates.sql` e na página de
+descadastro (n8n `MBgdT5Cy65pGQie3`, publicada e conferida no ar). Também na landing `paginas_html` slug `lp`.
+O link "WhatsApp" do rodapé (`EQUIPE`) continua no número da equipe (16464270203).
+As notificações de envio da Shopify (`../../rastreio/shopify-*-envio.liquid`) foram corrigidas no repositório; na
+Shopify a troca é manual (Configurações > Notificações).
+
 ## Renovação de assinatura não é venda do email (15/11/2026)
 
 O AN-16614 (renovação da Compra Programada do Hércules, cobrada no cartão pelo motor de assinaturas) ganhou a tag

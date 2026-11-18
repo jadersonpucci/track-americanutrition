@@ -43,7 +43,7 @@ const banco = node({ type: 'n8n-nodes-base.postgres', version: 2.6, credentials:
 const pagina = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Shopify e Pagina', parameters: { jsCode: `
 const BASE = 'https://n8n.americanutrition.com/webhook/descadastro';
 const LOGO = 'https://cdn.shopify.com/s/files/1/0643/9000/4908/files/an-logo-branco-email.png?v=1793847024';
-const SERENA = 'https://wa.me/16462068419';
+const SERENA = 'https://wa.me/13472225493';
 const ent = $input.first().json;
 let r = ent.r || {};
 if (typeof r === 'string') { try { r = JSON.parse(r); } catch (e) { r = {}; } }

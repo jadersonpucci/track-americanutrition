@@ -22,7 +22,7 @@ IMG = {
 SITE = "https://americanutrition.com"
 PROD = SITE + "/products/imunofosfo"
 DEP = SITE + "/pages/depoimentos"
-SERENA = "https://wa.me/16462068419"
+SERENA = "https://wa.me/13472225493"
 SERENA_PROTO = SERENA + "?text=Ol%C3%A1%20Serena!%20Quero%20meu%20protocolo%20personalizado"
 EQUIPE = "https://wa.me/16464270203"
 RASTREIO = "https://track.americanutrition.com"
