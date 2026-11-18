@@ -126,6 +126,26 @@ antes de qualquer resposta automática. Não afeta as mensagens transacionais de
 - Pela URL de config: `&bloquear=5513999999999&motivo=parceiro` / `&desbloquear=5513999999999`. Sem parâmetros lista os bloqueados.
 - Lista inicial carregada: 10 números informados em 03/09/2026.
 
+## Aviso "pedido enviado" só depois da postagem (18/11/2026)
+
+Caso AN-16659 (Yronne, AP765457377BR): o aviso "foi postado e já está com a transportadora" saía quando a etiqueta
+era gerada (fulfillment da Shopify, 08h09), mas o rastreio mostrava "Preparando seu pedido" porque os Correios ainda
+não tinham recebido o pacote (a postagem costuma vir horas depois).
+
+- `[Transacional] Pedido Enviado` (`XzWcKoGQrvVhovb8`): grava o aviso em `scheduled_messages` com
+  `status = 'aguardando_postagem'` (antes ia direto como `pendente`).
+- `[Transacional] Liberar Pedido Enviado (postagem)` (`IeG0iSYs4sPHVf7B`, `liberar-pedido-enviado.workflow.js`, cron
+  15 min): consulta o motor de rastreio; com `postado_em` ou `status_chave` de transporte (picked_up, in_transit,
+  out_for_delivery, delivered, exception, returned) muda para `pendente` com `send_at = now()`; com 48h sem postagem
+  libera com `custom_fields.sem_postagem = true`.
+- `[Transacional] Dispatcher Samuel v3` (`WXncUehLXyuIMoSm`, `nodes/dispatcher-montar-mensagem.js`): com
+  `sem_postagem` manda o texto aprovado "Seu pedido X já foi embalado e etiquetado para os Correios 📦 Assim que eles
+  registrarem a postagem, você acompanha cada etapa aqui: 🔍 link" + aviso de taxas; sem a marca, o texto de sempre.
+- A expiração de 48h do Dispatcher conta a partir do `send_at`, que é renovado na liberação.
+- Teste (18/11): 3 avisos fictícios sem telefone (postado, preparando, 49h): os dois primeiros casos certos foram
+  liberados (um com `sem_postagem`), o "preparando" ficou retido, o Dispatcher montou e pulou por `dados_incompletos`;
+  apagados depois. Os 14 avisos que estavam agendados (AN-16633 a AN-16661) passaram para `aguardando_postagem`.
+
 ## Mensagens transacionais pelo Samuel
 
 `[Transacional] Dispatcher Samuel v3` (`WXncUehLXyuIMoSm`) substitui o `Cron Dispatcher Scheduled Messages v2`

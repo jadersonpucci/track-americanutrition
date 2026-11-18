@@ -64,6 +64,13 @@ function textoEnviado(nome, pedido, transportadora, codigo) {
     + TRACK + codigo + NL + NL
     + AVISO;
 }
+// 18/11/2026: o aviso de envio so sai quando os Correios registram a postagem (workflow "[Transacional] Liberar Pedido
+// Enviado"). Se em 48h a postagem nao aparecer, sai esta versao, que nao diz que ja foi postado.
+function textoEnviadoSemPostagem(nome, pedido, codigo) {
+  return 'Olá, ' + nome + '! 😊' + NL + NL
+    + 'Seu pedido ' + pedido + ' já foi embalado e etiquetado para os Correios 📦 Assim que eles registrarem a postagem, você acompanha cada etapa aqui: 🔍 ' + TRACK + codigo + NL + NL
+    + AVISO;
+}
 function textoEntregue(nome, pedido) {
   return 'Olá, ' + nome + '! 😊' + NL + NL
     + 'Seu pedido ' + pedido + ' foi entregue! 📦' + NL + NL
@@ -93,7 +100,7 @@ for (const it of $input.all()) {
     if (!bruto) { out.push({ json: Object.assign(base, { skip: true, motivo: 'sem_rastreio', text: '' }) }); continue; }
     const cod = soCodigo(bruto);
     if (!cod) { out.push({ json: Object.assign(base, { skip: true, motivo: 'rastreio_invalido: ' + bruto.slice(0, 80), text: '' }) }); continue; }
-    text = textoEnviado(nome, pedido, String(cf.tracking_company || 'transportadora'), cod);
+    text = cf.sem_postagem ? textoEnviadoSemPostagem(nome, pedido, cod) : textoEnviado(nome, pedido, String(cf.tracking_company || 'transportadora'), cod);
   }
   if (!text) { out.push({ json: Object.assign(base, { skip: true, motivo: 'template_sem_texto', text: '' }) }); continue; }
   out.push({ json: Object.assign(base, { skip: false, motivo: null, text: text }) });
