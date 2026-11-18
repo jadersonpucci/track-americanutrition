@@ -243,7 +243,8 @@ Os 22 modelos (`padrao.py`, `SERENA`) apontavam "Fale com a Serena" / "Responder
 `wa.me/16462068419` (no Esquenta só o rodapé; o botão principal já era o 13472225493). Trocado para
 `https://wa.me/13472225493` em `email_templates` (banco), `padrao.py`, `templates/`, `templates.sql` e na página de
 descadastro (n8n `MBgdT5Cy65pGQie3`, publicada e conferida no ar). Também na landing `paginas_html` slug `lp`.
-O link "WhatsApp" do rodapé (`EQUIPE`) continua no número da equipe (16464270203).
+Depois, a pedido do Jaderson ("todos são esse número atual"), o link "WhatsApp" do rodapé (`EQUIPE`) também passou
+para 13472225493: os 22 modelos só têm esse número.
 As notificações de envio da Shopify (`../../rastreio/shopify-*-envio.liquid`) foram corrigidas no repositório; na
 Shopify a troca é manual (Configurações > Notificações).
 
