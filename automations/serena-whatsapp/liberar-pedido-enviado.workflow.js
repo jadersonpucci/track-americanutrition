@@ -37,7 +37,7 @@ for (const it of lista) {
 return [{ json: Object.assign({ payload: JSON.stringify(liberar) }, resumo) }];` } } });
 
 const liberar = node({ type: 'n8n-nodes-base.postgres', version: 2.6, config: { name: 'Liberar para o Dispatcher', parameters: { operation: 'executeQuery',
-  query: "with p as (select $1::jsonb j), l as (select (x->>'id')::uuid as id, coalesce((x->>'fallback')::boolean, false) as fb from p, jsonb_array_elements(p.j) x) update scheduled_messages m set status = 'pendente', send_at = now(), template_params = case when l.fb then jsonb_set(coalesce(m.template_params, '{}'::jsonb), '{custom_fields,sem_postagem}', 'true'::jsonb, true) else m.template_params end from l where m.id = l.id and m.status = 'aguardando_postagem' returning m.id",
+  query: "with p as (select $1::jsonb j), l as (select (x->>'id')::uuid as id, coalesce((x->>'fallback')::boolean, false) as fb from p, jsonb_array_elements(p.j) x) update scheduled_messages m set status = 'pendente', send_at = now() + random() * interval '45 minutes', template_params = case when l.fb then jsonb_set(coalesce(m.template_params, '{}'::jsonb), '{custom_fields,sem_postagem}', 'true'::jsonb, true) else m.template_params end from l where m.id = l.id and m.status = 'aguardando_postagem' returning m.id",
   options: { queryReplacement: '={{ [$json.payload] }}' } }, credentials: PG } });
 
 export default workflow('transacional-liberar-pedido-enviado', '[Transacional] Liberar Pedido Enviado (postagem)')
