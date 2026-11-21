@@ -96,3 +96,11 @@ frascos reais como referência; ampliada para 2160 px.
   tem o texto dele).
 - Texto alternativo das duas imagens atualizado no tema (`templates/page.esquenta.liquid`, `snippets/an-esquenta-popup.liquid`).
 - O post do dia 09/11 (`broadcasts_grupos` 234) já tinha saído com a arte anterior; o arquivo novo vale para um próximo post.
+
+## Desligado (21/11/2026)
+
+Pedido do Jaderson depois do aviso de restrição no WhatsApp da Serena: o Esquenta trazia muitas conversas de pessoas
+novas. Desligado: slider do site (`an_site.esquenta_popup = off`) e página `/pages/esquenta` (Shopify page
+143119646892, `isPublished = false`). A campanha de e-mail já tinha terminado (8.580 enviados até 20/11) e não havia
+post agendado nos grupos. Quem já se cadastrou (293) continua com o desconto até 26/11 pela Serena; os cupons e o
+cadastro ficam como estavam. Religar: metafield `on` e publicar a página.

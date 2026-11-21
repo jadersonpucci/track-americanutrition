@@ -154,6 +154,9 @@ comunidade; pico de 19 mensagens/minuto (18/11).
 
 1. **Pausas (serena_config)**: `retomada_lead=off`, `reposicao_ativa=off`, `comunidade_convite_dia=10` (era 20).
    Voltar quando o aviso sumir (cerca de 7 dias).
+   Mais tarde em 21/11: `comunidade_convite=off` (convite pausado de vez) e Esquenta Black Friday sem portas de
+   entrada novas (slider do site `an_site.esquenta_popup=off` e página `/pages/esquenta` despublicada; ver
+   `esquenta-bf/README.md`).
 2. **Transacional só com opt-in** (`optin-transacional.sql` + `checar-optin.workflow.js`, n8n `1lw2tKeLj2atInon`,
    cron 1 min). O gatilho `trg_sm_reter_sem_optin` em `scheduled_messages` troca para `checar_optin` toda
    pedido_pago_confirmado / pedido_enviado / pedido_entregue que vira `pendente` sem `template_params.optin_ok`.
