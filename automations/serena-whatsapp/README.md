@@ -146,6 +146,36 @@ não tinham recebido o pacote (a postagem costuma vir horas depois).
   liberados (um com `sem_postagem`), o "preparando" ficou retido, o Dispatcher montou e pulou por `dados_incompletos`;
   apagados depois. Os 14 avisos que estavam agendados (AN-16633 a AN-16661) passaram para `aguardando_postagem`.
 
+## Proteção do número da Serena contra restrição (21/11/2026)
+
+Aviso do WhatsApp "Sua conta poderá ser restringida em breve" no +1 347 222-5493. Nos 10 dias anteriores: 262
+pedido pago (108 para quem nunca escreveu), 229 retomadas, 176 pedido enviado, 157 reposições, 141 convites de
+comunidade; pico de 19 mensagens/minuto (18/11).
+
+1. **Pausas (serena_config)**: `retomada_lead=off`, `reposicao_ativa=off`, `comunidade_convite_dia=10` (era 20).
+   Voltar quando o aviso sumir (cerca de 7 dias).
+2. **Transacional só com opt-in** (`optin-transacional.sql` + `checar-optin.workflow.js`, n8n `1lw2tKeLj2atInon`,
+   cron 1 min). O gatilho `trg_sm_reter_sem_optin` em `scheduled_messages` troca para `checar_optin` toda
+   pedido_pago_confirmado / pedido_enviado / pedido_entregue que vira `pendente` sem `template_params.optin_ok`.
+   O robô lê o atributo "WhatsApp opt-in" do pedido na Shopify e a conversa:
+   - `sim` → libera; `nao` → só libera se a pessoa escreveu para a Serena (WhatsApp) nas últimas 24h;
+   - sem o atributo (draft order da Serena, checkout-us) → libera se já escreveu alguma vez; senão não manda;
+   - bloqueado vira `status = 'sem_optin'`, `erro = 'whatsapp_sem_optin: <motivo>'` (fica só o e-mail);
+   - Shopify fora do ar: espera; com 30 min libera (`optin_ok = 'sem_consulta'`).
+   Kill switch: `wpp_optin_filtro=off`. Teste (21/11): AN-16679 (nao) e AN-16657 (draft, sem conversa) bloqueados,
+   AN-16701 (sim) liberado, em linhas fictícias sem telefone, apagadas depois; gatilho testado com rollback.
+3. **SAIR**: texto aguardando aprovação do Jaderson (não ligado). Hoje nada marca `disparos_wpp.optout` (0 registros).
+4. **Limite global de proativos** (`limite-proativo.sql`, `wpp-vaga.workflow.js` n8n `kTyNTNhqTqhOCFs2`,
+   `nodes/envio-limite-proativo.js`). O Envio Samuel ganhou o nó "Limite proativo" entre "Webhook Enviar" e
+   "Preparar": antes de cada mensagem chama `POST /webhook/wpp-vaga` → `wpp_aguardar_vaga(numero)`.
+   - passa na hora: conversa ativa (a pessoa escreveu nos últimos 15 min), equipe, LID;
+   - o resto espera vaga: no máximo `wpp_limite_por_minuto` (6) proativos em 60s somando todos os robôs, fila por
+     advisory lock, espera máxima `wpp_limite_espera_s` (30s; os robôs chamam o envio com timeout de 60s);
+   - registro em `wpp_envios_proativos` (esperou_ms, estourou); falha do limite nunca trava o envio.
+   Kill switch: `wpp_limite_proativo=off`. Teste: conversa → passa; vaga livre → 1 ms; balde cheio → esperou 4s
+   (com espera de teste 4s, rollback). Envio com número inválido confirmou o nó repassando o corpo intacto.
+5. **Médio prazo (sugestão)**: transacionais pela WhatsApp Cloud API oficial, com templates aprovados, em outro número.
+
 ## Mensagens transacionais pelo Samuel
 
 `[Transacional] Dispatcher Samuel v3` (`WXncUehLXyuIMoSm`) substitui o `Cron Dispatcher Scheduled Messages v2`
