@@ -104,3 +104,9 @@ novas. Desligado: slider do site (`an_site.esquenta_popup = off`) e página `/pa
 143119646892, `isPublished = false`). A campanha de e-mail já tinha terminado (8.580 enviados até 20/11) e não havia
 post agendado nos grupos. Quem já se cadastrou (293) continua com o desconto até 26/11 pela Serena; os cupons e o
 cadastro ficam como estavam. Religar: metafield `on` e publicar a página.
+
+## Vagas encerradas (21/11/2026)
+
+Aprovado pelo Jaderson: ninguém novo entra no Esquenta. O workflow de cadastro (`ZlZIbmHyCkAk9zB5`) foi despublicado e a
+Serena ganhou o adendo `adendo-encerramento.md`: quem não está cadastrado ouve que as vagas encerraram e é atendido pelo
+preço normal (sem ESQ10/ESQ15, sem convite "responda ESQUENTA"); os 293 cadastrados mantêm o desconto até 26/11.

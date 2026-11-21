@@ -167,7 +167,20 @@ comunidade; pico de 19 mensagens/minuto (18/11).
    - Shopify fora do ar: espera; com 30 min libera (`optin_ok = 'sem_consulta'`).
    Kill switch: `wpp_optin_filtro=off`. Teste (21/11): AN-16679 (nao) e AN-16657 (draft, sem conversa) bloqueados,
    AN-16701 (sim) liberado, em linhas fictícias sem telefone, apagadas depois; gatilho testado com rollback.
-3. **SAIR**: texto aguardando aprovação do Jaderson (não ligado). Hoje nada marca `disparos_wpp.optout` (0 registros).
+3. **SAIR** (aprovado e ligado em 21/11; `optout-sair.sql`, `nodes/envio-limite-proativo.js`):
+   - cliente que manda SAIR / PARAR / STOP / "sair da lista" vira opt-out (gatilho `trg_serena_optout` em
+     `serena_mensagens` → `serena_wpp_optout` + `disparos_wpp.optout`); "cancelar" não conta. Carga inicial: 1 contato
+     que já tinha pedido;
+   - a Serena responde o texto aprovado: "Pronto, não vou mais te enviar mensagens automáticas por aqui. Se precisar
+     de algo, é só me chamar que eu respondo 😊" (adendo de 21/11);
+   - proativo para quem saiu não é enviado: o "Limite proativo" desvia pelo nó "Pular opt-out?" direto para o
+     "Responder" com `{ ok: false, erro: 'optout_sair' }`. Se a pessoa voltar a escrever, a conversa segue normal;
+   - mensagem proativa ganha no fim "_Se preferir não receber mensagens por aqui, é só responder SAIR._" quando:
+     não é transacional/pós-entrega (`autor`), não é rastreio/retirada (link do track ou "retirar"), a última
+     mensagem da conversa não é do cliente e não é conversa ativa. Lembrete, carrinho, satisfação, indicação,
+     aviso de estoque, reposição e retomada entram; pedido pago/enviado/entregue, rastreio e retirada não.
+   - Teste (21/11): contato fictício com "Sair." → opt-out gravado e vaga `optout`; envio para número fictício em
+     opt-out → não enviado; envio proativo para número fictício → texto saiu com a linha do SAIR.
 4. **Limite global de proativos** (`limite-proativo.sql`, `wpp-vaga.workflow.js` n8n `kTyNTNhqTqhOCFs2`,
    `nodes/envio-limite-proativo.js`). O Envio Samuel ganhou o nó "Limite proativo" entre "Webhook Enviar" e
    "Preparar": antes de cada mensagem chama `POST /webhook/wpp-vaga` → `wpp_aguardar_vaga(numero)`.

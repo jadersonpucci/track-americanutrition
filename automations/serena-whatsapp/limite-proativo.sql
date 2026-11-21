@@ -30,6 +30,7 @@ declare
   ini timestamptz := clock_timestamp();
   n integer;
   ms integer;
+  ult_cliente boolean := false;
 begin
   if coalesce((select valor from serena_config where chave = 'wpp_limite_proativo'), 'on') = 'off' then
     return jsonb_build_object('tipo', 'desligado');
@@ -49,6 +50,14 @@ begin
                and m.papel = 'cliente' and m.criado_em > now() - interval '15 minutes') then
     return jsonb_build_object('tipo', 'conversa');
   end if;
+  -- 21/11: quem respondeu SAIR nao recebe proativo (optout-sair.sql)
+  if exists (select 1 from serena_wpp_optout o where o.telefone in (d, nat, alt, '55' || nat, '55' || alt)) then
+    return jsonb_build_object('tipo', 'optout');
+  end if;
+  -- a ultima mensagem da conversa e do cliente? (resposta atrasada, nao proativo de verdade: sem rodape SAIR)
+  select m.papel = 'cliente' into ult_cliente from serena_contatos c join serena_mensagens m on m.contato_id = c.id
+   where c.telefone in (d, '+' || d, nat, alt, '55' || nat, '55' || alt, '+55' || nat, '+55' || alt)
+   order by m.criado_em desc limit 1;
 
   limite := coalesce(nullif((select valor from serena_config where chave = 'wpp_limite_por_minuto'), '')::integer, 6);
   espera_max := coalesce(nullif((select valor from serena_config where chave = 'wpp_limite_espera_s'), '')::integer, 30);
@@ -61,7 +70,7 @@ begin
   ms := round(extract(epoch from clock_timestamp() - ini) * 1000);
   insert into wpp_envios_proativos (numero, esperou_ms, estourou) values (d, ms, n >= limite);
   delete from wpp_envios_proativos where criado_em < now() - interval '30 days';
-  return jsonb_build_object('tipo', 'proativo', 'esperou_ms', ms, 'estourou', n >= limite);
+  return jsonb_build_object('tipo', 'proativo', 'esperou_ms', ms, 'estourou', n >= limite, 'ultima_cliente', coalesce(ult_cliente, false));
 end $$;
 
 insert into serena_config (chave, valor) values ('wpp_limite_proativo', 'on'), ('wpp_limite_por_minuto', '6'), ('wpp_limite_espera_s', '30')

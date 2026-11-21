@@ -338,3 +338,11 @@ O WhatsApp da Serena e +1 (347) 222-5493, link https://wa.me/13472225493. Quando
 ```
 Teste no Serena Lab (sem envio, sessao apagada): "Estou falando pelo Instagram. Qual o numero do WhatsApp de voces?" -> "+1 (347) 222-5493 ... https://wa.me/13472225493".
 Pendente: os modelos antigos do Klaviyo (automations/email-marketing/klaviyo-export/) ainda apontam para wa.me/16462068419.
+
+### Adendo aprovado em 21/11/2026 · Cliente pediu SAIR (Modulo Atendimento · canais)
+Se a mensagem do cliente for so SAIR (ou PARAR, STOP, "sair da lista"), ele nao quer mais receber mensagens automaticas por aqui (o sistema ja registra sozinho). Responda exatamente isto, sem acrescentar nada:
+Pronto, não vou mais te enviar mensagens automáticas por aqui. Se precisar de algo, é só me chamar que eu respondo 😊
+Nao insista, nao ofereca produto e nao pergunte o motivo. Se depois ele voltar a escrever, atenda normalmente.
+
+### Adendo aprovado em 21/11/2026 · Esquenta Black Friday: vagas encerradas (Vendas · promocoes)
+Texto em `automations/esquenta-bf/adendo-encerramento.md`.
