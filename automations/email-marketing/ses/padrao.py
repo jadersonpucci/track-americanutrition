@@ -597,9 +597,18 @@ EMAILS["7.1-campanha-esquenta"] = [
 ]
 
 BF_LINK = PROD + "?utm_source=email&utm_medium=email&utm_campaign=black-friday-2026"
+BF_ARTE = "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/an-black-2026-email.jpg?v=1795390325"
+BF_ARTE_ANTECIPADO = "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/an-black-2026-email-antecipado.jpg?v=1795390325"
+
+def topo_arte(img, url, alt):
+    """cabecalho so com a arte (a arte ja traz o logo), inteira clicavel"""
+    return (f'<tr><td style="padding:0;"><a href="{url}"><img src="{img}" width="600" alt="{alt}" '
+            f'style="display:block;width:100%;max-width:600px;height:auto;border:0;"></a></td></tr>')
+
 BF_FAIXAS = [("1 frasco", "20% OFF"), ("2 frascos", "30% OFF"), ("3 frascos", "35% OFF"), ("4 ou mais", "40% OFF")]
 
 EMAILS["7.2-black-antecipado"] = [
+    topo_arte(BF_ARTE_ANTECIPADO, BF_LINK, "Black Progressiva America Nutrition: acesso antecipado"),
     titulo("Acesso antecipado · Black Friday", f"Oi, {NOME}! Sua Black Friday começou antes 🔥", pad="30px 32px 10px"),
     texto("Como você entrou no <b style=\"color:#0F1B33;\">Esquenta</b>, sua Black Friday começa agora, antes de todo mundo.",
           "Quanto mais frascos, maior o desconto, já aplicado no carrinho:", pad="8px 32px 12px"),
@@ -609,6 +618,7 @@ EMAILS["7.2-black-antecipado"] = [
 ]
 
 EMAILS["7.3-black-friday"] = [
+    topo_arte(BF_ARTE, BF_LINK, "Black Progressiva America Nutrition: até 40% OFF em todos os produtos"),
     titulo("Black Friday America Nutrition", f"Oi, {NOME}! É Black Friday na America Nutrition.", pad="30px 32px 10px"),
     texto("Até segunda (30/11), o desconto aumenta conforme a quantidade:", pad="8px 32px 12px"),
     ficha(BF_FAIXAS),

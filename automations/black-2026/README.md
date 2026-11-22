@@ -43,3 +43,14 @@ Decisões do Jaderson (22/11/2026):
 - **Serena:** `adendo-serena.md` no `system_prompt` (vale de 26/11 20h a 30/11 23h59; antes, avisa que começa quinta 20h).
 - **Representantes:** `texto-representantes.md` (o Jaderson envia).
 - Nada sai pelo WhatsApp da Serena de forma proativa (restrição do número).
+
+## Artes (aprovadas em 22/11/2026)
+
+Estilo da "Black Progressiva" de 2025 (fundo preto com fumaça, faixa azul), agora com a linha toda e as faixas de 2026.
+Arquivos na Shopify (Conteúdo → Arquivos):
+- `an-black-2026-post.jpg`: post dos grupos de 27/11 08h (broadcast 263), etiqueta "TODOS OS PRODUTOS".
+- `an-black-2026-ultimo-dia.jpg`: post de 30/11 10h (broadcast 264), etiqueta "ÚLTIMO DIA", rodapé "*Só até hoje, 23h59".
+- `an-black-2026-email-antecipado.jpg`: topo do e-mail 7.2 (Esquenta, 26/11 20h).
+- `an-black-2026-email.jpg`: topo do e-mail 7.3 (27 e 28/11).
+Os broadcasts 263/264 receberam a imagem em base64 (lida do CDN da Shopify por um fluxo temporário no n8n, já arquivado).
+Os e-mails usam `topo_arte()` em `email-marketing/ses/padrao.py`; md5 do banco = arquivos em `templates/`.
