@@ -596,6 +596,27 @@ EMAILS["7.1-campanha-esquenta"] = [
     acao([("Ver a página do Esquenta", ESQ_PAGINA, "navy")], "Condição exclusiva para quem entra no Esquenta · não soma com outros cupons", pad="0 32px 26px"),
 ]
 
+BF_LINK = PROD + "?utm_source=email&utm_medium=email&utm_campaign=black-friday-2026"
+BF_FAIXAS = [("1 frasco", "20% OFF"), ("2 frascos", "30% OFF"), ("3 frascos", "35% OFF"), ("4 ou mais", "40% OFF")]
+
+EMAILS["7.2-black-antecipado"] = [
+    titulo("Acesso antecipado · Black Friday", f"Oi, {NOME}! Sua Black Friday começou antes 🔥", pad="30px 32px 10px"),
+    texto("Como você entrou no <b style=\"color:#0F1B33;\">Esquenta</b>, sua Black Friday começa agora, antes de todo mundo.",
+          "Quanto mais frascos, maior o desconto, já aplicado no carrinho:", pad="8px 32px 12px"),
+    ficha(BF_FAIXAS),
+    destaque("4 ImunoFosfo 90 por R$ 784,80 (R$ 196,20 cada), em até 3x sem juros."),
+    acao([("Garantir meu desconto", BF_LINK, "red")], "Vale até segunda, 30/11, às 23h59", pad="8px 32px 26px"),
+]
+
+EMAILS["7.3-black-friday"] = [
+    titulo("Black Friday America Nutrition", f"Oi, {NOME}! É Black Friday na America Nutrition.", pad="30px 32px 10px"),
+    texto("Até segunda (30/11), o desconto aumenta conforme a quantidade:", pad="8px 32px 12px"),
+    ficha(BF_FAIXAS),
+    destaque("ImunoFosfo 90: de R$ 327 por R$ 196,20 cada levando 4."),
+    texto("O desconto entra sozinho no carrinho, sem cupom.", pad="0 32px 14px"),
+    acao([("Aproveitar a Black Friday", BF_LINK, "red")], "Vale até segunda, 30/11, às 23h59", pad="8px 32px 26px"),
+]
+
 ASSUNTOS = {
     "1.1-boas-vindas-cupom": "{{ nome }}, seu cupom de 10% OFF chegou 🎁",
     "1.3-boas-vindas-como-age": "{{ nome }}, sabe como o ImunoFosfo age no seu organismo?",
@@ -611,6 +632,8 @@ ASSUNTOS = {
     "6.2-carrinho-duvidas": "Ficou alguma dúvida, {{ nome }}?",
     "6.3-carrinho-ultima-chamada": "⏳ {{ nome }}, 10% OFF por 24h para finalizar seu carrinho",
     "7.1-campanha-esquenta": "🔥 {{ nome }}, sua Black Friday começa antes (só para clientes)",
+    "7.2-black-antecipado": "Sua Black Friday começou antes 🔥",
+    "7.3-black-friday": "Black Friday: até 40% OFF em todos os produtos",
 }
 PREVIAS = {
     "1.1-boas-vindas-cupom": "Código exclusivo dentro. O desconto aplica sozinho no clique.",
@@ -627,6 +650,8 @@ PREVIAS = {
     "6.2-carrinho-duvidas": "Relatos de quem já usa, e a Serena para responder qualquer pergunta.",
     "6.3-carrinho-ultima-chamada": "Um cupom só seu, válido pelas próximas 24 horas, já aplicado no botão.",
     "7.1-campanha-esquenta": "Esquenta Black Friday: condição de Black Friday em toda a linha, antes de todo mundo. Só até 26/11.",
+    "7.2-black-antecipado": "Quanto mais frascos, maior o desconto: até 40% OFF, já aplicado no carrinho.",
+    "7.3-black-friday": "1 frasco 20%, 2 frascos 30%, 3 frascos 35%, 4 ou mais 40% OFF. Até segunda, 30/11.",
 }
 
 def sql_texto(x):
