@@ -25,3 +25,9 @@ Decisões do Jaderson (22/11/2026):
   `POST /webhook/afiliado-cupom` (`t3JGmaZZc4OeUzPo`). Na janela: cupom de afiliado = 0%; outros = recusados com
   "Na Black Friday o desconto já está aplicado no carrinho e não soma com cupons.". Teste com `teste_black: 'sim'`.
 - **Comissão:** nó `Black: comissão metade` no `Afiliados - Registrar Comissão` (`afiliados/black-comissao-metade.md`).
+- **Nome real do desconto no pedido:** nó `Nome do Desconto` no `Pagar.me — Confirmação Pago → Shopify`
+  (`checkout/nodes/confirmacao-nome-desconto.js`), entre `Truncar Tags (max 40)` e `Criar Pedido Shopify`. O pedido
+  saía com "DESCONTO" quando o desconto era automático; agora grava o nome que a Shopify aplicou no carrinho
+  ("PACK 6+", "Kit Mensal", "Black Friday 40% OFF"). Cupom de verdade continua com o próprio código. A representante
+  segue identificada pela anotação "Cupom usado". Testes (22/11) contra o cálculo real: AN-16725 → "Kit Mensal";
+  6 frascos → "PACK 6+"; ESQ15-U5E → mantém; PROMO5 + 6 frascos → "PACK 6+"; valor que não bate → mantém "DESCONTO".
