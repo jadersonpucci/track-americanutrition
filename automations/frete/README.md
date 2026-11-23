@@ -80,3 +80,11 @@ Teste ao vivo de 09/11 (antes do corte; os números da tabela já com a folga de
 | Manaus | PAC, 22 dias | 26 a 30 dias |
 | Macapá | PAC, 17 dias | 21 a 25 dias |
 | São Paulo | PAC, 7 dias | continua 10 a 15 dias |
+
+## J&T Express desligada (23/11/2026)
+
+Pedido do Jaderson: checkout e Serena cotam só Correios por enquanto. Nó novo **"Sem J&T (23/11)"** na cotação
+(`lszlpy1Pl4dnHW2w`), entre "Normalizar Opcoes + Regra Gratis" e "Renomear JT"
+([`cotacao-sem-jt.js`](cotacao-sem-jt.js)). Vale também para a reserva da Envia dentro da cotação. Testado no ar com
+São Paulo, Manaus e Curitiba: só SEDEX e PAC. A Serena usa a mesma cotação; a reserva própria dela (nós "Cotar J&T"
+da Envia) só entra se a cotação do checkout não devolver nada. Religar: `JT_OFF = false` no nó.
