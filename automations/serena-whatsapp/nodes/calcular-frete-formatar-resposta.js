@@ -4,6 +4,8 @@
 // 04/11/2026, pedido do Jaderson: o frete da Serena e o MESMO do checkout. As opcoes vem do /webhook/frete-cotacao
 // (Frenet, +2% em cada valor, mesmas regras e prazos exibidos no checkout). Os nos "Cotar Correios"/"Cotar J&T"
 // (Envia) continuam rodando e so entram se o checkout nao devolver nada, tambem com +2%.
+// 23/11/2026, pedido do Jaderson: J&T Express desligada; a Serena cota so Correios (tambem na reserva da Envia).
+const JT_OFF = true;
 const MARGEM = 0.02;
 const COTACAO_CHECKOUT = 'https://n8n.americanutrition.com/webhook/frete-cotacao';
 const dadosBase = $('Calcular peso e subtotal').first().json;
@@ -32,6 +34,7 @@ try {
   for (const o of ((r && r.options) || [])) {
     if (!o || !(Number(o.price) > 0)) continue; // Frete Gratis e tratado a parte (elegivel_frete_gratis)
     const jt = /jt/i.test(String(o.carrier || ''));
+    if (JT_OFF && jt) continue;
     const svc = jt ? 'J&T Express' : (/sedex/i.test(o.service) ? 'SEDEX' : (/pac/i.test(o.service) ? 'PAC' : String(o.service || 'Correios')));
     opcoes.push({
       transportadora: jt ? 'J&T Express' : 'Correios',
@@ -68,7 +71,7 @@ if (!opcoes.length) {
       }
     }
   }
-  if (respJT && respJT.data && Array.isArray(respJT.data)) {
+  if (!JT_OFF && respJT && respJT.data && Array.isArray(respJT.data)) {
     for (const cot of respJT.data) {
       if (cot.totalPrice) {
         const v = mais(cot.totalPrice);

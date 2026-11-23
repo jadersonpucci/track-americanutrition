@@ -86,5 +86,7 @@ Teste ao vivo de 09/11 (antes do corte; os números da tabela já com a folga de
 Pedido do Jaderson: checkout e Serena cotam só Correios por enquanto. Nó novo **"Sem J&T (23/11)"** na cotação
 (`lszlpy1Pl4dnHW2w`), entre "Normalizar Opcoes + Regra Gratis" e "Renomear JT"
 ([`cotacao-sem-jt.js`](cotacao-sem-jt.js)). Vale também para a reserva da Envia dentro da cotação. Testado no ar com
-São Paulo, Manaus e Curitiba: só SEDEX e PAC. A Serena usa a mesma cotação; a reserva própria dela (nós "Cotar J&T"
-da Envia) só entra se a cotação do checkout não devolver nada. Religar: `JT_OFF = false` no nó.
+São Paulo, Manaus e Curitiba: só SEDEX e PAC. A Serena usa a mesma cotação, e a reserva própria dela (Envia, nós "Cotar J&T") também ficou sem J&T:
+`JT_OFF = true` no "Formatar resposta" do `D1l2l3IUrk4Lf9O1`
+(`automations/serena-whatsapp/nodes/calcular-frete-formatar-resposta.js`). Testado: Curitiba devolveu só PAC e SEDEX.
+Religar: `JT_OFF = false` nos dois nós.
