@@ -110,3 +110,10 @@ cadastro ficam como estavam. Religar: metafield `on` e publicar a página.
 Aprovado pelo Jaderson: ninguém novo entra no Esquenta. O workflow de cadastro (`ZlZIbmHyCkAk9zB5`) foi despublicado e a
 Serena ganhou o adendo `adendo-encerramento.md`: quem não está cadastrado ouve que as vagas encerraram e é atendido pelo
 preço normal (sem ESQ10/ESQ15, sem convite "responda ESQUENTA"); os 293 cadastrados mantêm o desconto até 26/11.
+
+## Página no ar de novo (23/11/2026)
+
+Pedido do Jaderson: `/pages/esquenta` republicada como era antes (`isPublished = true`), com o formulário e o botão para a
+Serena. O workflow da landing (`1m6U1d74zXfDEJsD`) continua ativo e grava em `esquenta_leads`. As vagas seguem
+encerradas: quem chega agora ouve da Serena que o Esquenta fechou e é atendido pelo preço normal (adendo de 21/11). O
+slider do site continua desligado.
