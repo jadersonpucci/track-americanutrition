@@ -52,7 +52,6 @@ normal do Brasil (Frenet, nota fiscal, avisos). Os links também podem ser criad
 - **Link de teste de permissão** (`plink_1UfKLJ…`): desativado.
 
 ## Pendências
-- **Permissão de preços:** a chave restrita da Stripe (final `VIW4`) não tem **Prices: Write**. Sem ela, link com
-  desconto não sai, e o sync não consegue mudar preço de produto que já existe. O link sem desconto e a criação de
-  produto funcionam.
+- **Permissão de preços:** liberada pelo Jaderson em 24/11 (Prices: Write). O primeiro link com desconto saiu nesse
+  dia: ImunoFosfo 90 tradicional com 10% (R$ 294,30, frete grátis), `plink_1UfKYSAyjp16Jvlh0t5t0LlW`.
 - **Teste de ponta a ponta:** não foi feito. O primeiro pagamento real valida; a Cris recebe o pedido criado ou o erro.
