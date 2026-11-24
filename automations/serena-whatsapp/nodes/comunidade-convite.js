@@ -17,6 +17,12 @@
 // serena_config.comunidade_convite_dia: teto de convites por dia (20).
 // 07/11/2026, pedido do Jaderson: quando todos os grupos do WhatsApp estao cheios, o convite vai para o grupo da
 // comunidade no Facebook (facebook.com/groups/fosfoetanolamina) em vez de pular a pessoa (antes ficava 'sem_vaga').
+// 24/11/2026, pedido do Jaderson: convites de volta (estavam off desde 21/11), so para o #1 ImunoFosfo e o Facebook, e so
+// em conversa ja ativa (a pessoa falou nas ultimas 6h e a Serena respondeu por ultimo; nunca disparo frio). Com a
+// comunidade do #1 lotada (1.993/2.000 em 23/11), o convite vai para o #2.
+// 24/11/2026: o #2 ImunoFosfo saiu da comunidade (grupo solto, o WhatsApp agora deixa 1.500 membros). Ordem: #1 enquanto
+// a comunidade dele tiver vaga, depois o #2 (ate 1.480), e so com os dois cheios o convite vai so para o Facebook. Todo
+// convite do WhatsApp leva o Facebook como segunda opcao.
 const SK = 'SUPABASE_SERVICE_KEY';
 const SB = 'https://supabase.americanutrition.com/pg/query';
 const ADM = 'https://n8n.americanutrition.com/webhook/shopify-admin';
@@ -31,17 +37,21 @@ const TOKEN_MANUAL = '<COMUNIDADE_TOKEN_MANUAL>';
 const self = this;
 
 const GERAIS = {
-  '120363407686844370@g.us': '#3 ImunoFosfo - Fosfoetanolamina',
+  // 24/11/2026: so o #1 e o #2, nessa ordem (o primeiro com vaga leva). Os outros ficam comentados.
+  // '120363407686844370@g.us': '#3 ImunoFosfo - Fosfoetanolamina',
   // '120363423321725793@g.us' (Fosfoetanolamina (ImunoFosfo) #2) saiu em 07/11/2026: e o grupo de Avisos da comunidade #2
   // (so admin escreve); quem entra la nao conversa com ninguem.
-  '120363307265095030@g.us': '#2 ImunoFosfo - Fosfoetanolamina',
-  '120363353982971871@g.us': 'ImunoFosfo Connect - Tratamentos/Terapias Oncologicas',
-  '120363246659395526@g.us': '#1 ImunoFosfo - Fosfoetanolamina'
+  // '120363353982971871@g.us': 'ImunoFosfo Connect - Tratamentos/Terapias Oncologicas',
+  '120363246659395526@g.us': '#1 ImunoFosfo - Fosfoetanolamina',
+  '120363307265095030@g.us': '#2 ImunoFosfo - Fosfoetanolamina'
 };
+// Grupos soltos (fora de Comunidade): limite proprio e nao contam o limite de 2.000 da comunidade.
+const SOLTOS = { '120363307265095030@g.us': 1480 };
 const DIABETES = {
   // '120363404254700593@g.us' (ImunoFosfo Diabetes - Comunidade Oficial) saiu em 07/11/2026: e o grupo de Avisos da
   // comunidade Diabetes.
-  '120363407289053552@g.us': '#1 ImunoFosfo Diabetes'
+  // 24/11/2026: fora (so o #1 ImunoFosfo); interesse em diabetes cai no #1 / Facebook.
+  // '120363407289053552@g.us': '#1 ImunoFosfo Diabetes'
 };
 const LIMITE_GRUPO = 1000;
 // 07/11/2026: grupos dentro de uma Comunidade do WhatsApp dividem o limite de 2.000 membros da comunidade (soma de todos
@@ -121,10 +131,13 @@ const comunidadeCheia = (jid) => { const cm = comDe[jid]; return !!cm && (comTot
 function escolherGrupo(diabetes) {
   const pool = diabetes ? DIABETES : GERAIS;
   let melhor = null;
+  // 24/11/2026: ordem da lista (o primeiro com vaga), nao mais o mais cheio
   for (const jid of Object.keys(pool)) {
     const n = ocup[jid] == null ? 0 : ocup[jid];
-    if (n >= LIMITE_GRUPO || comunidadeCheia(jid)) continue;
-    if (!melhor || n > melhor.n) melhor = { jid: jid, nome: pool[jid], n: n };
+    const solto = Object.prototype.hasOwnProperty.call(SOLTOS, jid);
+    if (n >= (solto ? SOLTOS[jid] : LIMITE_GRUPO) || (!solto && comunidadeCheia(jid))) continue;
+    melhor = { jid: jid, nome: pool[jid], n: n };
+    break;
   }
   if (!melhor && diabetes) return escolherGrupo(false);
   return melhor;

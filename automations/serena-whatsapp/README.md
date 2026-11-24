@@ -2968,6 +2968,21 @@ da comunidade** (soma de todos os grupos + Avisos), além dos 1.024 de cada grup
 - Em 07/11: comunidade ImunoFosfo 1.992 (lotada), ImunoFosfo #2 232 (convites vão para o #3), Diabetes 50 (convites
   vão para o #1 ImunoFosfo Diabetes). Com tudo lotado, o convite vai para o Facebook.
 
+**Volta só com o #1, o #2 e o Facebook (24/11/2026).** Os convites estavam `off` desde 21/11 (aviso de restrição do
+número). Pedido do Jaderson: voltar, mas só em conversa já ativa e só para o #1 ImunoFosfo, com o Facebook junto.
+
+- **Só conversa ativa:** é a regra de sempre. A pessoa falou nas últimas 6h (há mais de 20 min) e a Serena respondeu
+  por último. Nunca é disparo frio, e o teto continua em 10 por dia (`comunidade_convite_dia`).
+- **#2 virou grupo solto:** o Jaderson tirou o #2 ImunoFosfo (`120363307265095030@g.us`) da comunidade. Fora de
+  comunidade, o WhatsApp deixa 1.500 membros: o limite dele é 1.480 (`SOLTOS`) e não conta o teto de 2.000 da comunidade.
+- **Ordem:** o primeiro da lista com vaga, não mais o mais cheio. Vai para o #1 enquanto a comunidade dele tiver vaga,
+  depois para o #2, e só com os dois cheios sai o convite apenas com o Facebook.
+- **Facebook:** todo convite do WhatsApp leva o grupo do Facebook como segunda opção.
+- **Fora da lista:** #3, Connect e #1 Diabetes ficam comentados no código. Interesse em diabetes cai no #1 ou no #2.
+- **Comunidade do #1 lotada:** estava com 1.993 de 2.000 em 23/11, então hoje os convites caem no #2.
+- **Simulação:** 10 candidatos; a IA convidou 8, todos para o #2, e recusou 2 porque a Serena ainda esperava resposta.
+  As linhas simuladas foram apagadas e depois `comunidade_convite` ficou `on`.
+
 **Primeira simulação (02/11):** de 8 candidatos, a IA convidou 6 (5 compradores e 1 engajado) e recusou 2:
 
 - um porque a Serena ainda esperava resposta sobre uma promoção;
