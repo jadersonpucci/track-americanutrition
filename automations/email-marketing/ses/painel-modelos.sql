@@ -1,4 +1,5 @@
 -- Painel do email: lista dos modelos com o fluxo e quando cada um sai, e o HTML de cada um para a previa. 10/11/2026.
+-- 24/11: campanhas da Black (7.2 e 7.3) na lista, a pedido do Jaderson.
 -- v2: modelos novos (carrinho, entrega, recompra) com variaveis; a previa usa os dados do ultimo envio do modelo ou o exemplo.
 create or replace function email_modelos(p_token text) returns jsonb
 language sql stable security definer set search_path = public, extensions as $$
@@ -23,7 +24,9 @@ language sql stable security definer set search_path = public, extensions as $$
       ('3.2-recompra-acabou', 'recompra', 42, '3 dias depois de acabar'),
       ('5.1-cliente-vip', 'vip', 51, '3 dias após o 3º pedido'),
       ('4.1-navegacao-abandonada', 'navegacao', 61, '~2h depois de ver um produto no site'),
-      ('7.1-campanha-esquenta', 'campanha', 71, 'Campanha: ondas de 11 a 17/11, 10h')) m(slug, fluxo, ordem, quando) on m.slug = t.slug), '[]'::jsonb) end
+      ('7.1-campanha-esquenta', 'campanha', 71, 'Campanha: ondas de 11 a 17/11, 10h'),
+      ('7.2-black-antecipado', 'campanha', 72, 'Black: qui 26/11, 20h (162 do Esquenta)'),
+      ('7.3-black-friday', 'campanha', 73, 'Black: sex 27/11 8h e sáb 28/11 10h (8.442)')) m(slug, fluxo, ordem, quando) on m.slug = t.slug), '[]'::jsonb) end
 $$;
 
 create or replace function email_modelo_html(p_token text, p_slug text) returns text
