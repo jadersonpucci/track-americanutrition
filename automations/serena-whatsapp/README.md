@@ -545,6 +545,15 @@ WhatsApp e no Telegram.
 - **Tokens:** os do Telegram e do Inbox saíram do `troca-devolucao.workflow.js` e viraram placeholders; os reais ficam
   só no n8n.
 
+- **WhatsApp da Cris (logística), pedido do Jaderson, 24/11:** todo caso novo ou reforço manda um WhatsApp pelo
+  Samuel para a Cris (+1 646 427-0203), do mesmo jeito que no cancelamento. A mensagem leva:
+  - o tipo e o número do caso, e o pedido;
+  - se o pedido ficou **EM ESPERA** ou se já foi enviado;
+  - cliente com link wa.me, produto, motivo e detalhes;
+  - o link do pedido na Shopify e o da conversa no Inbox.
+
+  O card do Telegram diz se a Cris foi avisada. O aviso dela ainda não foi testado com envio real.
+
 **Teste no caso real #23:** o AN-16729 já tinha sido enviado. Ele ganhou nota e tag, sem ficar em espera, e o aviso foi
 para o tópico 94. O caminho do pedido em espera não foi testado num pedido real: valem a mutation e o enum conferidos
 no schema 2026-07.

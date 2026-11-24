@@ -34,6 +34,9 @@ function esc(t) { return String(t == null ? '' : t).replace(/&/g, '&amp;').repla
 const NL = String.fromCharCode(10);
 const INBOX = 'https://n8n.americanutrition.com/webhook/serena-inbox?t=<TOKEN_INBOX>';
 const link = d.contato_id ? INBOX + '&c=' + encodeURIComponent(d.contato_id) : INBOX + '&fila=humano';
+const EVO = 'http://evolution-api-aru6-api-1:8080';
+const EVO_KEY = 'EVO_API_KEY';
+const CRIS = '16464270203';
 const tipoTxt = { troca: 'TROCA', devolucao: 'DEVOLUCAO', reembolso: 'REEMBOLSO' }[d.tipo] || 'TROCA';
 let msg = (r.reaproveitado ? '\\u{1F6A8} <b>REFORCO: ' : '\\u{1F501} <b>PEDIDO DE ') + tipoTxt + ' #' + id + '</b>' + (r.reaproveitado ? ' (cliente cobrou de novo)' : '') + NL + NL;
 msg += '\\u{1F464} <b>Cliente:</b> ' + esc(d.nome || 'Sem nome') + (d.telefone ? ' (+' + esc(d.telefone) + ')' : '') + NL;
@@ -49,6 +52,27 @@ if (sh.status === 'ok') {
 } else if (sh.status === 'erro') shTxt = '\\u{26A0} Nao consegui marcar o pedido na Shopify: ' + esc(sh.erro || '');
 else if (sh.status === 'pedido_nao_encontrado') shTxt = '\\u{26A0} Pedido ' + esc(sh.pedido || '') + ' nao encontrado na Shopify.';
 if (shTxt) msg += NL + shTxt + NL;
+// Aviso para a logistica no WhatsApp da Cris (24/11/2026, pedido do Jaderson), pelo Samuel, como no cancelamento.
+let cris = null;
+{
+  const tel = String(d.telefone || '').replace(/\\D/g, '');
+  let w = '*' + (r.reaproveitado ? 'REFORCO: ' : '') + tipoTxt + ' #' + id + (sh.pedido || d.pedido ? ' · PEDIDO ' + (sh.pedido || d.pedido) : '') + '*' + NL + NL;
+  if (sh.status === 'ok' && sh.segurado) w += '\\u{1F6D1} Pedido EM ESPERA na Shopify: nao enviar antes de ajustar. Depois, Liberar retencao.' + NL + NL;
+  else if (sh.status === 'ok' && sh.enviado) w += '\\u{1F4EE} Pedido ja enviado: tratar a ' + (d.tipo || 'troca') + ' depois da entrega.' + NL + NL;
+  else if (sh.status && sh.status !== 'ok' && sh.status !== 'sem_pedido') w += '\\u{26A0} Nao consegui marcar o pedido na Shopify (' + (sh.erro || sh.status) + '). Conferir o pedido.' + NL + NL;
+  w += 'Cliente: ' + (d.nome || 'Sem nome') + NL;
+  if (tel) w += 'WhatsApp: https://wa.me/' + tel + NL;
+  if (d.produtos) w += 'Produto(s): ' + d.produtos + NL;
+  w += NL + 'Motivo: ' + (d.motivo || '-') + NL;
+  if (d.detalhes) w += 'Detalhes: ' + d.detalhes + NL;
+  if (sh.link) w += NL + 'Pedido na Shopify: ' + sh.link;
+  w += NL + 'Conversa no Inbox: ' + link;
+  try {
+    await this.helpers.httpRequest({ method: 'POST', url: EVO + '/message/sendText/Samuel', headers: { apikey: EVO_KEY, 'Content-Type': 'application/json' }, body: { number: CRIS, text: w, delay: 800, linkPreview: false }, json: true, timeout: 20000 });
+    cris = { ok: true };
+  } catch (e) { cris = { ok: false, erro: String(e.message).slice(0, 200) }; }
+}
+msg += NL + (cris.ok ? '\\u{1F4E3} Logistica (Cris) avisada no WhatsApp.' : '\\u{26A0} Logistica (Cris) NAO foi avisada no WhatsApp: ' + esc(cris.erro || '')) + NL;
 msg += NL + 'A Serena ja coletou tudo e avisou o cliente que a equipe responde em ate 1 dia util.' + NL;
 msg += '<a href="' + link + '">\\u{1F5A5} Abrir no Inbox e decidir</a>' + (sh.link ? ' · <a href="' + sh.link + '">\\u{1F6CD} Pedido na Shopify</a>' : '');
 let tg = null, push = null;
@@ -59,7 +83,7 @@ let resultado = r.reaproveitado
   : 'Caso de ' + tipoTxt.toLowerCase() + ' registrado com protocolo #' + id + '. Informe o protocolo ao cliente e diga que a equipe analisa e responde por aqui em ate 1 dia util.';
 if (sh.status === 'ok' && sh.segurado) resultado += ' O pedido ' + sh.pedido + ' ficou em espera na loja: nao sai antes da equipe ajustar.';
 else if (sh.status === 'ok' && sh.enviado) resultado += ' O pedido ' + sh.pedido + ' ja tinha sido enviado; a equipe trata a troca depois da entrega.';
-return [{ json: { sucesso: true, protocolo: '#' + id, id: id, reaproveitado: !!r.reaproveitado, resultado: resultado, shopify: sh, telegram_ok: !!(tg && tg.ok), push: push } }];` } }, output: [{ sucesso: true, protocolo: '#1', resultado: 'ok' }] });
+return [{ json: { sucesso: true, protocolo: '#' + id, id: id, reaproveitado: !!r.reaproveitado, resultado: resultado, shopify: sh, telegram_ok: !!(tg && tg.ok), cris: cris, push: push } }];` } }, output: [{ sucesso: true, protocolo: '#1', resultado: 'ok' }] });
 
 const marcarShopify = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Marcar na Shopify', parameters: { jsCode: '// codigo em nodes/troca-marcar-shopify.js' } }, output: [{ id: 1, shopify: {} }] });
 
