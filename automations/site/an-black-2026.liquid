@@ -35,16 +35,18 @@
 .anbf-btn2{border:1.5px solid rgba(255,255,255,.5);color:#fff}
 .anbf-cd2{margin-top:20px;color:#9fb0cf;font-size:14px;font-variant-numeric:tabular-nums}
 .anbf-cd2 b{color:#fff}
-.anbf-pdp{background:#050505;color:#fff;border-radius:14px;padding:14px 14px 12px;margin:0 0 16px;border-bottom:3px solid #07388E}
-.anbf-pdp-t{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;margin-bottom:10px}
-.anbf-pdp-t b{letter-spacing:.12em}
-.anbf-pdp-t .anbf-tag{font-size:11px;padding:4px 9px}
-.anbf-chips{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
-.anbf-chip{background:#151515;border:1.5px solid #2c2c2c;color:#fff;border-radius:10px;padding:8px 4px;cursor:pointer;text-align:center;font:inherit}
-.anbf-chip span{display:block;font-size:11px;color:#9fb0cf;text-transform:uppercase;letter-spacing:.06em}
-.anbf-chip b{display:block;font-size:17px;font-weight:900}
-.anbf-chip.on{border-color:#AD0404;background:#2a0606}
-.anbf-pdp-n{font-size:12px;color:#9fb0cf;margin-top:9px;text-align:center}
+#anbf-pdp.anbf-pdp{background:#050505!important;color:#fff!important;border-radius:14px!important;padding:14px 14px 12px!important;margin:0 0 16px!important;border-bottom:3px solid #07388E!important;box-sizing:border-box}
+#anbf-pdp .anbf-pdp-t{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;margin:0 0 10px!important;color:#c9d3e6}
+#anbf-pdp .anbf-pdp-t b{letter-spacing:.06em;color:#fff}
+#anbf-pdp .anbf-tag{font-size:11px;padding:4px 10px!important}
+#anbf-pdp .anbf-chips{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+#anbf-pdp .anbf-chip{background:#151515;border:1.5px solid #2c2c2c;color:#fff;border-radius:10px;padding:9px 4px!important;margin:0!important;cursor:pointer;text-align:center;font:inherit;line-height:1.15}
+#anbf-pdp .anbf-chip span{display:block;font-size:11px;color:#9fb0cf;text-transform:uppercase;letter-spacing:.06em}
+#anbf-pdp .anbf-chip b{display:block;font-size:18px;font-weight:900;color:#fff;margin-top:2px}
+#anbf-pdp .anbf-chip.on{border-color:#AD0404;background:#2a0606}
+#anbf-pdp .anbf-pdp-n{font-size:12px;color:#9fb0cf;margin:9px 0 0!important;text-align:center;line-height:1.35}
+body.anbf-on #bbVal,body.anbf-on #bbBumpRow span:last-child{white-space:nowrap;text-align:right;flex:none}
+body.anbf-on #bbLabel{min-width:0}
 body.anbf-on #bbCup,body.anbf-on #bbCupRow,body.anbf-on #bbHint{display:none!important}
 @media(max-width:640px){
   .anbf-bar a{gap:8px;font-size:13px;padding:8px 10px}
@@ -52,6 +54,7 @@ body.anbf-on #bbCup,body.anbf-on #bbCupRow,body.anbf-on #bbHint{display:none!imp
   .anbf-tiers{grid-template-columns:repeat(2,1fr)}
   .anbf-home{padding:36px 16px 34px}
   .anbf-hl{font-size:16px}
+  body.anbf-on #bbVal s,body.anbf-on #bbBumpRow s{display:block;margin:0!important;font-size:.85em;line-height:1.1}
 }
 </style>
 <div id="anbf-bar" class="anbf-bar" hidden>
