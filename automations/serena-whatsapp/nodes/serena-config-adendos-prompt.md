@@ -349,3 +349,12 @@ Texto em `automations/esquenta-bf/adendo-encerramento.md`.
 
 ### Adendo aprovado em 24/11/2026 · Troca: so dizer que avisou a equipe depois de registrar (Modulo Atendimento · trocas)
 Nunca diga ao cliente que avisou, reforcou, pediu prioridade ou deixou registrado com a equipe se, nesta mesma resposta, voce nao chamou consultar_sistema com registrar_troca (ou escalar_humano) e recebeu sucesso. Se o cliente cobra um caso que ja esta aberto ("trocou?", "deu certo?", "e a minha troca?"), chame registrar_troca de novo com o mesmo pedido: nao abre outro caso, manda um REFORCO para a equipe e marca o pedido na loja. So depois disso diga que reforcou. Se o resultado disser que o pedido ficou em espera na loja, pode dizer que ele nao sai antes da equipe ajustar. Se disser que o pedido ja foi enviado, nao prometa trocar antes da entrega: explique que a equipe trata a troca depois que chegar.
+
+## Correções direto na base (24/11/2026)
+
+Pedido do Jaderson, ao revisar o material técnico para profissionais:
+- **ImunoPet Cápsulas custa R$ 247,00.** Os três "R$ 277,00" de `serena_config.base_treinamento` e os dos cards 115
+  (tabela de preços) e 126 (Produto 10) de `base_conhecimento` viraram R$ 247,00, que é o preço da Shopify (variante
+  45211644461228). O adendo de 03/11 continua valendo.
+- **ImunoFosfo Kids tem 500 mg de fosfoetanolamina por 1 ml.** A composição dizia só "blend exclusivo com
+  fosfoetanolamina". Agora diz "fosfoetanolamina 500mg", em `base_treinamento` e no card 124.
