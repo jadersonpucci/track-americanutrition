@@ -114,7 +114,7 @@ Nada foi apagado: é só publicar de novo, um de cada vez.
 | Convite Grupo \| WF2 Dispatcher | `4fThGqrY5TnS8Xle` | Mandava os convites a cada 10 min |
 | Popup Boas-Vindas - Cupom 10% | `9RlnW2MtMFGeQ07s` | Mandava o cupom de boas-vindas pelo Samuel |
 | AN - Popup Follow-up Cupom (Samuel) | `C0lG0p0hYBpfqDmU` | Lembrete do cupom 48h depois |
-| AN - Reviews Convite Pós-Entrega (Samuel) | `QWB9Gw8e7DTH4bP5` | Convite de avaliação 15 dias após a postagem |
+| AN - Reviews Convite Pós-Entrega (Samuel) | `QWB9Gw8e7DTH4bP5` | Convite de avaliação 51 dias após a postagem, uns 45 após a entrega (`review_config.dias_apos_entrega` = 51 desde 24/11; era 15, uns 9 dias após a entrega) |
 
 O popup dos 10% também saiu do site: no `layout/theme.liquid` a linha
 `{% render 'an-popup-boasvindas' %}` virou comentário, com a explicação em volta. O snippet
