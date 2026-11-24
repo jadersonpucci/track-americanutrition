@@ -12,11 +12,27 @@
 {%- assign anbf_pdp = false -%}
 {%- if template.name == 'product' and anbf_handles contains product.handle -%}{%- assign anbf_pdp = true -%}{%- endif -%}
 <style>
-.anbf-bar{background:#050505;border-bottom:3px solid #07388E;position:relative;z-index:30}
-.anbf-bar a{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;padding:9px 14px;color:#fff;text-decoration:none;font-size:14px;line-height:1.2}
-.anbf-tag{background:#AD0404;color:#fff;font-weight:800;letter-spacing:.12em;font-size:12px;padding:5px 10px;border-radius:999px}
+.anbf-bar{background:linear-gradient(90deg,#000 0%,#1c0303 50%,#000 100%);border-bottom:3px solid #07388E;position:sticky;top:0;z-index:25}
+body.anbf-on .header-section.header-sticky{top:var(--anbf-h,0px)!important}
+.anbf-bar a{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;padding:7px 14px;color:#fff;text-decoration:none;font-size:14px;line-height:1.2}
+.anbf-tag{background:#AD0404;color:#fff;font-weight:800;letter-spacing:.12em;font-size:12px;padding:5px 10px;border-radius:999px;box-shadow:0 0 14px rgba(173,4,4,.55)}
 .anbf-bar-t b{color:#fff;font-weight:800}
-.anbf-cd{font-variant-numeric:tabular-nums;font-weight:800;background:#1a1a1a;border:1px solid #333;border-radius:8px;padding:4px 9px;letter-spacing:.04em}
+.anbf-cdl{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#aab3c5}
+.anbf-cdx{display:inline-flex;align-items:center;gap:3px}
+.anbf-u{display:flex;flex-direction:column;align-items:center;min-width:36px;padding:4px 5px 3px;border-radius:7px;background:linear-gradient(180deg,#2b2b2b,#0f0f0f);border:1px solid #3a3a3a;box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
+.anbf-u b{font-size:17px;line-height:1;font-weight:900;color:#fff;font-variant-numeric:tabular-nums}
+.anbf-u small{font-size:8.5px;line-height:1;letter-spacing:.1em;text-transform:uppercase;color:#9aa3b5;margin-top:3px}
+.anbf-u.s{background:linear-gradient(180deg,#d30a0a,#7a0202);border-color:#e01b1b;box-shadow:0 0 12px rgba(211,10,10,.5)}
+.anbf-u.s small{color:#ffd9d9}
+.anbf-u b.tick{animation:anbfTick .35s ease-out}
+.anbf-sep{color:#d30a0a;font-weight:900;font-size:16px;animation:anbfBlink 1s steps(1) infinite}
+@keyframes anbfTick{0%{transform:translateY(-4px);opacity:.3}100%{transform:none;opacity:1}}
+@keyframes anbfBlink{50%{opacity:.2}}
+.anbf-home .anbf-cdx{gap:6px}
+.anbf-home .anbf-u{min-width:62px;padding:9px 8px 7px;border-radius:12px}
+.anbf-home .anbf-u b{font-size:30px}
+.anbf-home .anbf-u small{font-size:10px;margin-top:5px}
+.anbf-home .anbf-sep{font-size:26px}
 .anbf-home{background:radial-gradient(120% 140% at 10% 0%,#1d2a44 0%,#07090f 55%,#000 100%);color:#fff;padding:48px 18px 44px;text-align:center}
 .anbf-home-in{max-width:980px;margin:0 auto}
 .anbf-eyebrow{display:inline-block;background:#AD0404;color:#fff;font-weight:800;font-size:12px;letter-spacing:.18em;text-transform:uppercase;padding:6px 14px;border-radius:999px}
@@ -53,7 +69,14 @@ body.anbf-on #bbCup,body.anbf-on #bbCupRow,body.anbf-on #bbHint{display:none!imp
 #anlp .offer-br-vis img{display:block;width:100%!important;height:auto!important;object-fit:contain!important}
 @media(min-width:861px){#anlp .offer-br-vis{position:sticky;top:96px}}
 @media(max-width:640px){
-  .anbf-bar a{gap:8px;font-size:13px;padding:8px 10px}
+  .anbf-bar a{gap:8px;font-size:13px;padding:6px 8px}
+  .anbf-bar .anbf-tag{font-size:10.5px;padding:4px 8px}
+  .anbf-bar .anbf-u{min-width:28px;padding:3px 3px 2px;border-radius:6px}
+  .anbf-bar .anbf-u b{font-size:14px}
+  .anbf-bar .anbf-u small{font-size:7px}
+  .anbf-bar .anbf-sep{font-size:12px}
+  .anbf-home .anbf-u{min-width:52px}
+  .anbf-home .anbf-u b{font-size:24px}
   .anbf-bar-x{display:none}
   .anbf-tiers{grid-template-columns:repeat(2,1fr)}
   .anbf-home{padding:36px 16px 34px}
@@ -65,7 +88,8 @@ body.anbf-on #bbCup,body.anbf-on #bbCupRow,body.anbf-on #bbHint{display:none!imp
   <a href="/collections/america-nutrition">
     <span class="anbf-tag">BLACK FRIDAY</span>
     <span class="anbf-bar-t">Até <b>40% OFF</b><span class="anbf-bar-x"> · quanto mais frascos, maior o desconto</span></span>
-    <span class="anbf-cd" data-anbf-cd>00d 00:00:00</span>
+    <span class="anbf-cdl anbf-bar-x">Termina em</span>
+    <span class="anbf-cdx" data-anbf-cdx aria-label="Tempo restante"><span class="anbf-u"><b data-u="d">0</b><small>dias</small></span><span class="anbf-sep">:</span><span class="anbf-u"><b data-u="h">00</b><small>h</small></span><span class="anbf-sep">:</span><span class="anbf-u"><b data-u="m">00</b><small>min</small></span><span class="anbf-sep">:</span><span class="anbf-u s"><b data-u="s">00</b><small>seg</small></span></span>
   </a>
 </div>
 {%- if template.name == 'index' -%}
@@ -85,7 +109,7 @@ body.anbf-on #bbCup,body.anbf-on #bbCupRow,body.anbf-on #bbHint{display:none!imp
       <a class="anbf-btn" href="/products/imunofosfo-fosfoetanolamina-phospho">Aproveitar no ImunoFosfo</a>
       <a class="anbf-btn2" href="/collections/america-nutrition">Ver toda a linha</a>
     </div>
-    <div class="anbf-cd2">Termina em <b data-anbf-cd>00d 00:00:00</b></div>
+    <div class="anbf-cd2"><div style="margin-bottom:10px">Termina em</div><span class="anbf-cdx" data-anbf-cdx aria-label="Tempo restante"><span class="anbf-u"><b data-u="d">0</b><small>dias</small></span><span class="anbf-sep">:</span><span class="anbf-u"><b data-u="h">00</b><small>horas</small></span><span class="anbf-sep">:</span><span class="anbf-u"><b data-u="m">00</b><small>min</small></span><span class="anbf-sep">:</span><span class="anbf-u s"><b data-u="s">00</b><small>seg</small></span></span></div>
   </div>
 </section>
 {%- endif -%}
@@ -113,6 +137,8 @@ body.anbf-on #bbCup,body.anbf-on #bbCupRow,body.anbf-on #bbHint{display:none!imp
     var d=Math.max(0,FIM-Date.now()),s=Math.floor(d/1000);
     var t=Math.floor(s/86400)+'d '+pad(Math.floor(s%86400/3600))+':'+pad(Math.floor(s%3600/60))+':'+pad(s%60);
     document.querySelectorAll('[data-anbf-cd]').forEach(function(el){el.textContent=t;});
+    var u={d:String(Math.floor(s/86400)),h:pad(Math.floor(s%86400/3600)),m:pad(Math.floor(s%3600/60)),s:pad(s%60)};
+    document.querySelectorAll('[data-anbf-cdx] b[data-u]').forEach(function(b){var v=u[b.getAttribute('data-u')];if(b.textContent!==v){b.textContent=v;if(b.getAttribute('data-u')==='s'){b.classList.remove('tick');void b.offsetWidth;b.classList.add('tick');}}});
     if(d<=0&&!prev){document.body.classList.remove('anbf-on');['anbf-bar','anbf-home','anbf-pdp'].forEach(function(i){var e=document.getElementById(i);if(e)e.hidden=true;});}
   }
   function brl(v){return 'R$ '+v.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');}
@@ -121,7 +147,10 @@ body.anbf-on #bbCup,body.anbf-on #bbCupRow,body.anbf-on #bbHint{display:none!imp
   function $(i){return document.getElementById(i);}
   function iniciar(){
     document.body.classList.add('anbf-on');
-    var bar=$('anbf-bar');if(bar){document.body.insertBefore(bar,document.body.firstChild);bar.hidden=false;}
+    var bar=$('anbf-bar');
+    if(bar){document.body.insertBefore(bar,document.body.firstChild);bar.hidden=false;
+      var alt=function(){document.documentElement.style.setProperty('--anbf-h',bar.offsetHeight+'px');};
+      alt();window.addEventListener('resize',alt);setTimeout(alt,800);}
     var home=$('anbf-home');
     if(home){var main=document.querySelector('main')||document.getElementById('MainContent');if(main)main.insertBefore(home,main.firstChild);home.hidden=false;}
     relogio();setInterval(relogio,1000);
