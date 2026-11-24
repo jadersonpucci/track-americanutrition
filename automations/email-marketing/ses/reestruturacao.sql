@@ -304,7 +304,7 @@ begin
                         and f.criado_em > now() - interval '90 days') then
           insert into email_fila (email, slug, fluxo, ref, enviar_em, prioridade, dados)
           values (pd.email, '2.3-pos-entrega-avaliacao', 'pos_compra', 'pedido:' || pd.pedido_id,
-                  email_as(pd.entregue_em + interval '15 days', 11), 2, d->'pos')
+                  email_as(pd.entregue_em + interval '45 days', 11), 2, d->'pos')  -- 24/11: 45 dias apos a entrega (era 15), pedido do Jaderson
           on conflict do nothing;
           e := e + 1;
         end if;

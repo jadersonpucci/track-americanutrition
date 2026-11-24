@@ -304,7 +304,7 @@ EMAILS["1.4-boas-vindas-depoimentos"] = [
 
 EMAILS["2.3-pos-entrega-avaliacao"] = [
     hero("Avaliação", "★★★★★", "Sua opinião transforma a jornada de alguém 🎁",
-         f"{NOME}, já são cerca de 2 semanas com {{{{ produto_principal }}}}. Como está sendo a sua experiência?", tag_color="#F5A524"),
+         f"{NOME}, já são cerca de 6 semanas com {{{{ produto_principal }}}}. Como está sendo a sua experiência?", tag_color="#F5A524"),
     texto(f"Sua avaliação é muito mais do que uma nota: ela {b('ajuda outras pessoas')} que estão procurando exatamente o que você encontrou. Cada palavra sua tem o poder de mudar a jornada de saúde de alguém."),
     cupom("🎁 Seu presente por avaliar", "5% OFF", "na sua próxima compra", "Válido por 30 dias depois da avaliação", "⭐ Deixar minha avaliação agora", AVALIAR,
           "Leva menos de 2 minutos e faz uma diferença enorme 🧬"),

@@ -19,7 +19,7 @@ language sql stable security definer set search_path = public, extensions as $$
       ('6.3-carrinho-ultima-chamada', 'carrinho', 23, '3 dias após abandonar'),
       ('2.1-pos-entrega-leia-antes', 'pos_compra', 31, 'Quando o pedido é entregue'),
       ('2.2-pos-entrega-complemento', 'pos_compra', 32, '10 dias após a entrega'),
-      ('2.3-pos-entrega-avaliacao', 'pos_compra', 33, '15 dias após a entrega'),
+      ('2.3-pos-entrega-avaliacao', 'pos_compra', 33, '45 dias após a entrega'),
       ('3.1-recompra-acabando', 'recompra', 41, 'Alguns dias antes de acabar (calculado)'),
       ('3.2-recompra-acabou', 'recompra', 42, '3 dias depois de acabar'),
       ('5.1-cliente-vip', 'vip', 51, '3 dias após o 3º pedido'),
