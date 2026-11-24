@@ -1,0 +1,158 @@
+{%- comment -%}
+  Black Friday 2026 · America Nutrition (24/11/2026, pedido do Jaderson). Fica no lugar de snippets/an-esquenta-popup.liquid
+  (o popup do Esquenta sai). Liga sozinho de qui 26/11 20h até seg 30/11 23h59 (Brasília); fora disso não mostra nada.
+  Prévia antes da hora: ?black=preview no endereço (vale para a aba até fechar).
+  1) Barra preta no topo de todas as páginas, com contagem até 30/11 23h59.
+  2) Home: faixa da Black logo no começo da página.
+  3) Páginas de produto da Black (lista igual à dos descontos automáticos da Shopify): a caixa de compra calcula a Black
+     como o carrinho (conta todos os frascos da Black, inclusive o Ômega 3 adicionado junto), mostra o preço cheio
+     riscado e esconde o campo de cupom (na Black cupom não soma).
+{%- endcomment -%}
+{%- assign anbf_handles = 'imunofosfo-fosfoetanolamina-phospho,imunofosfo-liquid,imunopet,imunofosfo-healing,imunofosfo-kids-fosfoetanolamina,omega-3-meg3,d3-vitamin-with-k2-and-a,propolis-extract,green-propolis-premium-propolis-verde,creatine-ultra-micronized,life-gummy-creatina-em-gomas,carvao-vegetal-ativado-activated-charcoal-premium,imunofosfo-phase-one,vitamins-minerals-premium,life-hair,life-protein-proteina-vegetal,imunofosfo-diabetes,vitamina-d3-50000-ui-k2-a-e' | split: ',' -%}
+{%- assign anbf_pdp = false -%}
+{%- if template.name == 'product' and anbf_handles contains product.handle -%}{%- assign anbf_pdp = true -%}{%- endif -%}
+<style>
+.anbf-bar{background:#050505;border-bottom:3px solid #07388E;position:relative;z-index:30}
+.anbf-bar a{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;padding:9px 14px;color:#fff;text-decoration:none;font-size:14px;line-height:1.2}
+.anbf-tag{background:#AD0404;color:#fff;font-weight:800;letter-spacing:.12em;font-size:12px;padding:5px 10px;border-radius:999px}
+.anbf-bar-t b{color:#fff;font-weight:800}
+.anbf-cd{font-variant-numeric:tabular-nums;font-weight:800;background:#1a1a1a;border:1px solid #333;border-radius:8px;padding:4px 9px;letter-spacing:.04em}
+.anbf-home{background:radial-gradient(120% 140% at 10% 0%,#1d2a44 0%,#07090f 55%,#000 100%);color:#fff;padding:48px 18px 44px;text-align:center}
+.anbf-home-in{max-width:980px;margin:0 auto}
+.anbf-eyebrow{display:inline-block;background:#AD0404;color:#fff;font-weight:800;font-size:12px;letter-spacing:.18em;text-transform:uppercase;padding:6px 14px;border-radius:999px}
+.anbf-h{font-size:clamp(30px,5vw,52px);line-height:1.05;font-weight:900;margin:16px 0 10px;color:#fff;text-transform:uppercase;letter-spacing:-.01em}
+.anbf-h span{color:#6f9bff}
+.anbf-p{color:#c9d3e6;font-size:16px;margin:0 0 26px}
+.anbf-tiers{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;max-width:760px;margin:0 auto 22px}
+.anbf-tier{border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.04);border-radius:16px;padding:16px 8px}
+.anbf-tier span{display:block;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#9fb0cf;font-weight:700}
+.anbf-tier b{display:block;font-size:clamp(24px,3.4vw,34px);font-weight:900;color:#fff;margin-top:4px}
+.anbf-tier.top{border-color:#AD0404;background:rgba(173,4,4,.18)}
+.anbf-hl{font-size:18px;font-weight:700;color:#fff;margin:4px auto 22px;max-width:720px}
+.anbf-ctas{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.anbf-btn,.anbf-btn2{display:inline-block;padding:15px 28px;border-radius:999px;font-weight:800;text-decoration:none;font-size:16px}
+.anbf-btn{background:#AD0404;color:#fff}
+.anbf-btn2{border:1.5px solid rgba(255,255,255,.5);color:#fff}
+.anbf-cd2{margin-top:20px;color:#9fb0cf;font-size:14px;font-variant-numeric:tabular-nums}
+.anbf-cd2 b{color:#fff}
+.anbf-pdp{background:#050505;color:#fff;border-radius:14px;padding:14px 14px 12px;margin:0 0 16px;border-bottom:3px solid #07388E}
+.anbf-pdp-t{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;margin-bottom:10px}
+.anbf-pdp-t b{letter-spacing:.12em}
+.anbf-pdp-t .anbf-tag{font-size:11px;padding:4px 9px}
+.anbf-chips{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.anbf-chip{background:#151515;border:1.5px solid #2c2c2c;color:#fff;border-radius:10px;padding:8px 4px;cursor:pointer;text-align:center;font:inherit}
+.anbf-chip span{display:block;font-size:11px;color:#9fb0cf;text-transform:uppercase;letter-spacing:.06em}
+.anbf-chip b{display:block;font-size:17px;font-weight:900}
+.anbf-chip.on{border-color:#AD0404;background:#2a0606}
+.anbf-pdp-n{font-size:12px;color:#9fb0cf;margin-top:9px;text-align:center}
+body.anbf-on #bbCup,body.anbf-on #bbCupRow,body.anbf-on #bbHint{display:none!important}
+@media(max-width:640px){
+  .anbf-bar a{gap:8px;font-size:13px;padding:8px 10px}
+  .anbf-bar-x{display:none}
+  .anbf-tiers{grid-template-columns:repeat(2,1fr)}
+  .anbf-home{padding:36px 16px 34px}
+  .anbf-hl{font-size:16px}
+}
+</style>
+<div id="anbf-bar" class="anbf-bar" hidden>
+  <a href="/collections/america-nutrition">
+    <span class="anbf-tag">BLACK FRIDAY</span>
+    <span class="anbf-bar-t">Até <b>40% OFF</b><span class="anbf-bar-x"> · quanto mais frascos, maior o desconto</span></span>
+    <span class="anbf-cd" data-anbf-cd>00d 00:00:00</span>
+  </a>
+</div>
+{%- if template.name == 'index' -%}
+<section id="anbf-home" class="anbf-home" hidden aria-label="Black Friday America Nutrition">
+  <div class="anbf-home-in">
+    <div class="anbf-eyebrow">Black Friday America Nutrition</div>
+    <h2 class="anbf-h">Quanto mais frascos, <span>maior o desconto</span></h2>
+    <p class="anbf-p">Desconto aplicado sozinho no carrinho, sem cupom. Até segunda, 30/11, às 23h59.</p>
+    <div class="anbf-tiers">
+      <div class="anbf-tier"><span>1 frasco</span><b>20% OFF</b></div>
+      <div class="anbf-tier"><span>2 frascos</span><b>30% OFF</b></div>
+      <div class="anbf-tier"><span>3 frascos</span><b>35% OFF</b></div>
+      <div class="anbf-tier top"><span>4 ou mais</span><b>40% OFF</b></div>
+    </div>
+    <div class="anbf-hl">4 ImunoFosfo 90 por R$ 784,80 (R$ 196,20 cada), em até 12x, sendo 3x sem juros.</div>
+    <div class="anbf-ctas">
+      <a class="anbf-btn" href="/products/imunofosfo-fosfoetanolamina-phospho">Aproveitar no ImunoFosfo</a>
+      <a class="anbf-btn2" href="/collections/america-nutrition">Ver toda a linha</a>
+    </div>
+    <div class="anbf-cd2">Termina em <b data-anbf-cd>00d 00:00:00</b></div>
+  </div>
+</section>
+{%- endif -%}
+{%- if anbf_pdp -%}
+<div id="anbf-pdp" class="anbf-pdp" hidden>
+  <div class="anbf-pdp-t"><span class="anbf-tag">BLACK FRIDAY</span><span>Termina em <b data-anbf-cd>00d 00:00:00</b></span></div>
+  <div class="anbf-chips">
+    <button type="button" class="anbf-chip" data-n="1"><span>1 frasco</span><b>20%</b></button>
+    <button type="button" class="anbf-chip" data-n="2"><span>2 frascos</span><b>30%</b></button>
+    <button type="button" class="anbf-chip" data-n="3"><span>3 frascos</span><b>35%</b></button>
+    <button type="button" class="anbf-chip" data-n="4"><span>4 ou mais</span><b>40%</b></button>
+  </div>
+  <div class="anbf-pdp-n">Desconto aplicado no carrinho, sem cupom. Vale para todos os produtos da Black no pedido.</div>
+</div>
+{%- endif -%}
+<script>
+(function(){
+  var INI=Date.parse('2026-11-26T20:00:00-03:00'),FIM=Date.parse('2026-11-30T23:59:59-03:00');
+  var prev=/[?&]black=preview/.test(location.search);
+  try{if(prev)sessionStorage.setItem('anbf_prev','1');else if(sessionStorage.getItem('anbf_prev')==='1')prev=true;}catch(e){}
+  var agora=Date.now();
+  if(!prev&&(agora<INI||agora>FIM))return;
+  function pad(n){return String(n).padStart(2,'0');}
+  function relogio(){
+    var d=Math.max(0,FIM-Date.now()),s=Math.floor(d/1000);
+    var t=Math.floor(s/86400)+'d '+pad(Math.floor(s%86400/3600))+':'+pad(Math.floor(s%3600/60))+':'+pad(s%60);
+    document.querySelectorAll('[data-anbf-cd]').forEach(function(el){el.textContent=t;});
+    if(d<=0&&!prev){document.body.classList.remove('anbf-on');['anbf-bar','anbf-home','anbf-pdp'].forEach(function(i){var e=document.getElementById(i);if(e)e.hidden=true;});}
+  }
+  function brl(v){return 'R$ '+v.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');}
+  function num(t){var m=String(t||'').match(/R\$\s*[\d.]+,\d{2}/g);if(!m)return 0;return parseFloat(m[m.length-1].replace(/R\$\s*/,'').replace(/\./g,'').replace(',','.'))||0;}
+  function pct(n){return n>=4?40:n>=3?35:n>=2?30:n>=1?20:0;}
+  function $(i){return document.getElementById(i);}
+  function iniciar(){
+    document.body.classList.add('anbf-on');
+    var bar=$('anbf-bar');if(bar){document.body.insertBefore(bar,document.body.firstChild);bar.hidden=false;}
+    var home=$('anbf-home');
+    if(home){var main=document.querySelector('main')||document.getElementById('MainContent');if(main)main.insertBefore(home,main.firstChild);home.hidden=false;}
+    relogio();setInterval(relogio,1000);
+    var pdp=$('anbf-pdp'),parc=$('bbParcel');
+    if(!pdp||!parc)return;
+    var box=$('comprar')||document.querySelector('.bbx');
+    if(box){box.insertBefore(pdp,box.firstChild);pdp.hidden=false;}
+    function bumpOn(){var c=$('bbBumpChk');return !!(c&&c.checked);}
+    function aplicar(){
+      var qEl=$('bbQ'),val=$('bbVal'),lbl=$('bbLabel'),tot=$('bbTotal');
+      if(!qEl||!val||!tot)return;
+      var q=parseInt(qEl.textContent,10)||1;
+      var s=val.querySelector('s');var cheio=s?num(s.textContent):num(val.textContent);
+      var row=$('bbBumpRow'),bp=0;
+      if(row){if(!row.dataset.anbfP){var sp=row.querySelectorAll('span');row.dataset.anbfP=String(num(sp.length?sp[sp.length-1].textContent:''));}bp=parseFloat(row.dataset.anbfP)||0;}
+      var on=bumpOn(),n=q+(on?1:0),d=pct(n);
+      var sub=cheio*(1-d/100),bv=on?bp*(1-d/100):0,total=sub+bv;
+      var RS='<s data-bf="1" style="opacity:.55;font-weight:600;margin-right:6px">';
+      if(lbl)lbl.textContent=lbl.textContent.replace(/\s*\((?:Black\s*)?[-−]\d+%\)\s*$/,'')+'  (Black −'+d+'%)';
+      val.innerHTML=RS+brl(cheio)+'</s>'+brl(sub);
+      if(row&&on){var sp2=row.querySelectorAll('span');if(sp2.length)sp2[sp2.length-1].innerHTML=RS+brl(bp)+'</s>'+brl(bv);}
+      var fr=$('bbFrete'),msg=$('bbMsg'),barra=$('bbBar');
+      if(barra)barra.style.width=Math.min(100,Math.round(total/250*100))+'%';
+      if(fr&&msg){if(total>=250){fr.textContent='Grátis';fr.className='bb-g';msg.className='bb-msg ok';msg.textContent='✓ Você ganhou frete grátis';}
+        else{fr.textContent='a calcular';fr.className='';msg.className='bb-msg';msg.innerHTML='Faltam <b>'+brl(250-total)+'</b> para o frete grátis';}}
+      tot.textContent=brl(total);
+      parc.innerHTML='<span data-bf="1"></span>ou <b>3x de '+brl(total/3)+'</b> sem juros · em até 12x';
+      pdp.querySelectorAll('.anbf-chip').forEach(function(c){var k=parseInt(c.getAttribute('data-n'),10);c.classList.toggle('on',k===Math.min(n,4));});
+    }
+    new MutationObserver(function(){if(!parc.querySelector('[data-bf]'))aplicar();}).observe(parc,{childList:true,characterData:true,subtree:true});
+    var bc=$('bbBumpChk');if(bc)bc.addEventListener('change',function(){setTimeout(aplicar,0);});
+    pdp.querySelectorAll('.anbf-chip').forEach(function(c){c.addEventListener('click',function(){
+      var alvo=Math.max(1,parseInt(c.getAttribute('data-n'),10)-(bumpOn()?1:0)),i=0;
+      while(i++<120){var q=parseInt(($('bbQ')||{}).textContent,10)||1;if(q===alvo)break;var b=$(q<alvo?'bbPlus':'bbMinus');if(!b)break;b.click();}
+      aplicar();
+    });});
+    aplicar();
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(iniciar,0);});else setTimeout(iniciar,0);
+})();
+</script>
