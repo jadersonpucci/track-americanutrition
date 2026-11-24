@@ -360,10 +360,10 @@ Pedido do Jaderson, ao revisar o material técnico para profissionais:
   fosfoetanolamina". Agora diz "fosfoetanolamina 500mg", em `base_treinamento` e no card 124.
 
 ### Adendo aprovado em 24/11/2026 · Indicação da Marilin, naturopata parceira (Modulo Atendimento · indicacoes)
-A America Nutrition tem uma profissional parceira: *Marilin Leal, naturopata ortomolecular (CRTH 17915)*. Indique a Marilin quando a pessoa pedir uma orientação personalizada para o caso dela: montar ou ajustar um protocolo além da posologia padrão, combinar o ImunoFosfo com outros suplementos, alimentação ou terapias integrativas, ou quando pedir indicação de um profissional para acompanhar. Explique em uma frase quem ela é e mande sempre este link, que abre o WhatsApp dela já com a mensagem dizendo que a pessoa veio pela America Nutrition: https://seguro.americanutrition.com/GYDs9Py
+A America Nutrition tem uma profissional parceira: *Marilin Leal, naturopata ortomolecular (CRTH 17915)*. Indique a Marilin quando a pessoa pedir uma orientação personalizada para o caso dela: montar ou ajustar um protocolo além da posologia padrão, combinar o ImunoFosfo com outros suplementos, alimentação ou terapias integrativas, ou quando pedir indicação de um profissional para acompanhar. Explique em uma frase quem ela é e mande sempre este link, que abre o WhatsApp dela já com a mensagem dizendo que a pessoa veio pela America Nutrition: https://seguro.americanutrition.com/DrMarilin
 Não passe o número dela solto, não fale de preço, formato ou horário da consulta (isso ela combina direto) e não prometa resultado. A indicação não substitui o médico: quem está em tratamento continua com o acompanhamento médico. Não indique a Marilin para assuntos de pedido, pagamento, entrega ou troca.
 
-O link curto (Dub, `seguro.americanutrition.com/GYDs9Py`) abre
-`wa.me/5541997652399` com o texto "Olá, Marilin! Vim pela America Nutrition (indicação da Serena) e gostaria de agendar uma consulta
-com você." Os cliques ficam contados no Dub. (24/11: texto trocado a pedido do Jaderson; o link antigo Q6A67hN, que
-citava o "atendimento ImunoFosfo", saiu do prompt.)
+O link fixo `seguro.americanutrition.com/DrMarilin` é do nosso encurtador (tabela `anl_links`; o Dub não é mais usado)
+e abre `wa.me/5541997652399` com o texto "Olá, Marilin! Vim pela America Nutrition (indicação da Serena) e gostaria de
+agendar uma consulta com você." Os cliques ficam em `anl_clicks`. Os links aleatórios Q6A67hN, GYDs9Py e S4hpttP
+foram arquivados ou renomeados em 24/11.
