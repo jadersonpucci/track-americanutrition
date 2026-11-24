@@ -47,6 +47,7 @@
 #anbf-pdp .anbf-pdp-n{font-size:12px;color:#9fb0cf;margin:9px 0 0!important;text-align:center;line-height:1.35}
 body.anbf-on #bbVal,body.anbf-on #bbBumpRow span:last-child{white-space:nowrap;text-align:right;flex:none}
 body.anbf-on #bbLabel{min-width:0}
+.anbf-lbl{color:#AD0404;font-weight:800}
 body.anbf-on #bbCup,body.anbf-on #bbCupRow,body.anbf-on #bbHint{display:none!important}
 @media(max-width:640px){
   .anbf-bar a{gap:8px;font-size:13px;padding:8px 10px}
@@ -146,6 +147,16 @@ body.anbf-on #bbCup,body.anbf-on #bbCupRow,body.anbf-on #bbHint{display:none!imp
       tot.textContent=brl(total);
       parc.innerHTML='<span data-bf="1"></span>ou <b>3x de '+brl(total/3)+'</b> sem juros · em até 12x';
       pdp.querySelectorAll('.anbf-chip').forEach(function(c){var k=parseInt(c.getAttribute('data-n'),10);c.classList.toggle('on',k===Math.min(n,4));});
+      var cards=$('bbCards');
+      if(cards){
+        cards.querySelectorAll('.bb-price').forEach(function(el){
+          if(!el.querySelector('s[data-bf]'))el.setAttribute('data-anbf-p',String(num(el.textContent)));
+          var p=parseFloat(el.getAttribute('data-anbf-p'))||0;
+          if(p>0)el.innerHTML='<s data-bf="1">'+brl(p)+'</s>'+brl(p*(1-d/100));
+        });
+        var lb=cards.previousElementSibling;
+        if(lb&&lb.classList.contains('bb-lbl')){var t=lb.querySelector('.anbf-lbl');if(!t){t=document.createElement('span');t.className='anbf-lbl';lb.appendChild(t);}t.textContent=' · preço com '+d+'% OFF da Black';}
+      }
     }
     new MutationObserver(function(){if(!parc.querySelector('[data-bf]'))aplicar();}).observe(parc,{childList:true,characterData:true,subtree:true});
     var bc=$('bbBumpChk');if(bc)bc.addEventListener('change',function(){setTimeout(aplicar,0);});
