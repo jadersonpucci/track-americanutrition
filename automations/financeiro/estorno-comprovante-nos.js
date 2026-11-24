@@ -31,6 +31,8 @@ return [{ json: { headers: JSON.stringify(headers), url: p.base + '/banking/v2/e
 
 // ===================== MONTAR COMPROVANTES =====================
 // (+ as funcoes comprovantePdf e camposDoExtrato de estorno-comprovante-pdf.js, coladas no topo do no)
+// (+ LOGO_INTER = { jpg, w: 300, h: 76 } com o inter-logo.jpg em base64; confere tamanho e hash FNV-1a 3654949830 e,
+//  se nao bater, sai sem logo. Logo do Inter no topo a pedido do Jaderson, 24/11)
 const SHOP = 'https://n8n.americanutrition.com/webhook/shopify-admin';
 const self = this;
 const ex = $input.first().json || {};
@@ -50,7 +52,7 @@ for (const p of pend) {
   if (!m) continue;
   const tx = trans.find((x) => x && x.detalhes && x.detalhes.endToEndId === m[1]);
   if (!tx) continue;                      // ainda nao apareceu no extrato: proxima rodada
-  const pdf = comprovantePdf(camposDoExtrato(tx, p.pedido_shopify));
+  const pdf = comprovantePdf(camposDoExtrato(tx, p.pedido_shopify), LOGO_INTER);
   const nome = 'comprovante-estorno-' + (p.pedido_shopify || p.shopify_order_id) + '-' + p.id + '.pdf';
   const su = await gql('mutation($i:[StagedUploadInput!]!){ stagedUploadsCreate(input:$i){ stagedTargets { url resourceUrl parameters { name value } } userErrors { message } } }',
     { i: [{ resource: 'FILE', filename: nome, mimeType: 'application/pdf', httpMethod: 'PUT', fileSize: String(pdf.length) }] });

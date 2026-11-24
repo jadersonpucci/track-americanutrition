@@ -6,7 +6,8 @@
 // instituicao, quem pagou). O PDF repete esse conteudo e esse formato, sem a marca do banco, e diz de onde vieram
 // os dados.
 // PDF escrito a mao (sem biblioteca): Helvetica/Helvetica-Bold com WinAnsiEncoding (acentos em latin1).
-function comprovantePdf(t) {
+function comprovantePdf(t, logo) {
+  // logo (opcional): { jpg: Buffer JPEG, w, h } -> logo do Inter no topo (pedido do Jaderson, 24/11)
   // t: { titulo, valor, dataHora (Date em BRT ja ajustada como texto), dia, hora, id, rec: {nome, doc, agencia, conta, inst},
   //      pag: {nome, doc, inst}, pedido, gerado }
   const W = 420, H = 760;
@@ -35,9 +36,15 @@ function comprovantePdf(t) {
   const tracejado = (y) => ops.push('0.75 0.75 0.75 RG 0.8 w [3 3] 0 d 36 ' + y + ' m ' + (W - 36) + ' ' + y + ' l S [] 0 d');
   const linha = (y, rot, val) => { txt(36, y, 10, false, rot, '0.42 0.42 0.42'); dir(y, 10, true, val); };
 
-  // marca no topo (texto, nao a logo do banco)
-  centro(H - 52, 11, true, 'America Nutrition', '0.03 0.22 0.56');
-  centro(H - 66, 8, false, 'Comprovante de devolução Pix', '0.45 0.45 0.45');
+  if (logo && logo.jpg) {
+    // logo do Inter no topo, 110 pt de largura, centralizado
+    const lw = 110, lh = Math.round(110 * logo.h / logo.w * 100) / 100;
+    ops.push('q ' + lw + ' 0 0 ' + lh + ' ' + ((W - lw) / 2) + ' ' + (H - 30 - lh) + ' cm /Im1 Do Q');
+    centro(H - 76, 8, false, 'Comprovante de devolução Pix', '0.45 0.45 0.45');
+  } else {
+    centro(H - 52, 11, true, 'America Nutrition', '0.03 0.22 0.56');
+    centro(H - 66, 8, false, 'Comprovante de devolução Pix', '0.45 0.45 0.45');
+  }
   // circulo verde com check
   const cx = W / 2, cy = H - 120, r = 28, k = 0.5523 * r;
   ops.push('0.11 0.69 0.32 rg ' + (cx + r) + ' ' + cy + ' m ' + (cx + r) + ' ' + (cy + k) + ' ' + (cx + k) + ' ' + (cy + r) + ' ' + cx + ' ' + (cy + r) + ' c '
@@ -67,18 +74,22 @@ function comprovantePdf(t) {
   linha(y, 'Instituição', t.pag.inst); y -= 18;
   tracejado(y); y -= 26;
   linha(y, 'Pedido', t.pedido); y -= 26;
-  txt(36, y, 7.5, false, 'Dados do extrato oficial da conta da America Nutrition no Banco Inter (API do banco).', '0.5 0.5 0.5'); y -= 11;
+  txt(36, y, 7.5, false, 'Emitido pela America Nutrition com dados do extrato oficial do Banco Inter (API do banco).', '0.5 0.5 0.5'); y -= 11;
   txt(36, y, 7.5, false, 'Documento gerado automaticamente em ' + t.gerado + '.', '0.5 0.5 0.5');
 
   const conteudo = ops.join('\n');
   const objs = [
     '<< /Type /Catalog /Pages 2 0 R >>',
     '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
-    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + W + ' ' + H + '] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + W + ' ' + H + '] /Resources << /Font << /F1 4 0 R /F2 5 0 R >>'
+      + (logo && logo.jpg ? ' /XObject << /Im1 7 0 R >>' : '') + ' >> /Contents 6 0 R >>',
     '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>',
     '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>',
     '<< /Length ' + Buffer.byteLength(conteudo, 'latin1') + ' >>\nstream\n' + conteudo + '\nendstream'
   ];
+  if (logo && logo.jpg) objs.push('<< /Type /XObject /Subtype /Image /Width ' + logo.w + ' /Height ' + logo.h
+    + ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ' + logo.jpg.length + ' >>\nstream\n'
+    + logo.jpg.toString('latin1') + '\nendstream');
   let pdf = '%PDF-1.4\n%\xe2\xe3\xcf\xd3\n';
   const offs = [];
   objs.forEach((o, i) => { offs.push(Buffer.byteLength(pdf, 'latin1')); pdf += (i + 1) + ' 0 obj\n' + o + '\nendobj\n'; });

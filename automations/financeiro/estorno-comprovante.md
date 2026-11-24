@@ -27,8 +27,9 @@ A API do Inter não entrega o PDF oficial do app. O extrato completo traz os mes
 - quem recebeu: nome, CPF mascarado como o Inter faz, agência, conta e instituição;
 - quem pagou.
 
-O PDF segue a ordem e o visual do comprovante do app. Ele não usa a marca do banco: no topo vai "America Nutrition ·
-Comprovante de devolução Pix", e no rodapé diz que os dados são do extrato oficial do Inter. O PDF é escrito à mão, sem
+O PDF segue a ordem e o visual do comprovante do app. No topo vai o logo do Inter ([`inter-logo.jpg`](inter-logo.jpg),
+pedido do Jaderson em 24/11) e "Comprovante de devolução Pix". O rodapé diz que foi emitido pela America Nutrition com
+dados do extrato oficial do Inter. O PDF é escrito à mão, sem
 biblioteca: Helvetica com WinAnsiEncoding e larguras AFM para alinhar à direita.
 
 ## Primeira rodada (24/11)
