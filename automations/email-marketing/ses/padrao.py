@@ -613,7 +613,7 @@ EMAILS["7.2-black-antecipado"] = [
     texto("Como você entrou no <b style=\"color:#0F1B33;\">Esquenta</b>, sua Black Friday começa agora, antes de todo mundo.",
           "Quanto mais frascos, maior o desconto, já aplicado no carrinho:", pad="8px 32px 12px"),
     ficha(BF_FAIXAS),
-    destaque("4 ImunoFosfo 90 por R$ 784,80 (R$ 196,20 cada), em até 3x sem juros."),
+    destaque("4 ImunoFosfo 90 por R$ 784,80 (R$ 196,20 cada), em até 12x, sendo 3x sem juros."),
     acao([("Garantir meu desconto", BF_LINK, "red")], "Vale até segunda, 30/11, às 23h59", pad="8px 32px 26px"),
 ]
 
