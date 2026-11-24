@@ -516,6 +516,42 @@ formata). Fonte: `meta-instagram-messenger.workflow.js`. O texto abaixo é o des
 - Nova ação `registrar_troca` na ferramenta do Core. O cabeçalho instrui a Serena a coletar, uma pergunta por vez: pedido (busca pelo telefone se não souber), produto e quantidade, motivo detalhado e foto se houver dano (a descrição da imagem que a Entrada já gera). Com tudo em mãos chama `POST /webhook/serena-troca`, que grava `serena_trocas`, abre atribuição `troca`, etiqueta `troca` e avisa Telegram (tópico 94) + push; devolve o protocolo `#id`. Caso igual nas últimas 48h é reaproveitado.
 - Se o cliente já tem caso aberto, a Serena informa que está em análise e não abre outro. Inbox: Mais > Trocas e devoluções (status aberta / em_analise / aprovada / recusada / concluida, com resolução); a aba Equipe mostra os casos do contato. Recusada/concluída fecha a atribuição.
 
+### Troca no pedido da Shopify (24/11/2026)
+
+Pedido do Jaderson: o caso de troca tem que aparecer no próprio pedido da Shopify, para a logística ver, e não só no
+WhatsApp e no Telegram.
+
+**O que aconteceu.** No caso #23 (Gilberto, AN-16729), a cliente pagou o Liquid quando queria o de 42 cápsulas.
+- **22/11 (domingo):** a Serena abriu a troca antes do envio. Saiu o aviso no tópico 94 e ninguém viu.
+- **23/11, 09:06:** a remessa foi preparada.
+- **23/11, 17:37:** o pedido saiu com o produto errado.
+- **No mesmo dia:** a Serena disse duas vezes ao cliente que tinha "avisado" ou "reforçado" com a equipe, sem ter
+  chamado nenhuma ferramenta.
+
+**O que mudou:**
+- **Novo nó `Marcar na Shopify`** ([`nodes/troca-marcar-shopify.js`](nodes/troca-marcar-shopify.js)), entre
+  `Gravar Caso` e `Avisar Equipe`. Quando o caso tem o número do pedido:
+  1. **Nota:** entra no topo do pedido `⚠️ TROCA #id (Serena, data)`, com produto, motivo, detalhes e o que fazer.
+  2. **Tag:** `troca-pendente` (ou `devolucao-pendente`, `reembolso-pendente`), para filtrar na lista de pedidos.
+  3. **Em espera, se o pedido ainda não saiu:** `fulfillmentOrderHold` com o motivo. É a trava de verdade: o pedido
+     fica "Em espera" no admin, e o robô Frenet → Shopify não cria envio de pedido em espera. A equipe libera em
+     **Liberar retenção** depois de ajustar.
+- **Aviso no tópico 94:** diz o que foi feito no pedido e traz o link do pedido na Shopify.
+- **Reforço quando o cliente cobra de novo:** com o caso já aberto, sai **REFORÇO** no Telegram e push. Antes, o caso
+  reaproveitado não avisava ninguém.
+- **Adendo no prompt (24/11):** a Serena só diz que avisou ou reforçou com a equipe depois de chamar `registrar_troca`.
+  Para reforçar, chama de novo com o mesmo pedido.
+- **Erro na Shopify** não impede o registro do caso: o aviso mostra o erro.
+- **Tokens:** os do Telegram e do Inbox saíram do `troca-devolucao.workflow.js` e viraram placeholders; os reais ficam
+  só no n8n.
+
+**Teste no caso real #23:** o AN-16729 já tinha sido enviado. Ele ganhou nota e tag, sem ficar em espera, e o aviso foi
+para o tópico 94. O caminho do pedido em espera não foi testado num pedido real: valem a mutation e o enum conferidos
+no schema 2026-07.
+
+**Casos abertos:** os 22 casos de `serena_trocas` continuam `aberta`; nenhum foi fechado pelo Inbox. Os pedidos
+recentes deles já foram todos enviados.
+
 ## 17. Anti-spam (`Entrada Samuel`, node Pode Responder?)
 - Número sem histórico e sem pedido (`msgs_anteriores=0` e nenhum `scheduled_messages` com o telefone) cuja primeira mensagem tem cara de oferta (link, "tráfego pago", "parceria", "fornecedor", "renda extra"... ou texto > 600 caracteres) passa pelo Haiku. `spam=true` com confiança ≥ 0,8 (vendedor, golpe, bot, divulgação): entra em `serena_wpp_bloqueados` com motivo `antispam` e o texto em `detalhe`, a Serena não responde e a equipe é avisada no tópico 289. Cliente de verdade (dúvida de produto, pedido, saúde) passa mesmo com link.
 - Reversível: Inbox > Mais > Números bloqueados > desbloquear (ou `?desbloquear=55...` no endpoint de config). Config: `antispam`.
