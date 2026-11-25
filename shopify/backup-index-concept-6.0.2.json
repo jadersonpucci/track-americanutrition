@@ -1,0 +1,1005 @@
+{
+  "sections": {
+    "hero_rotativo_J9Qkww": {
+      "type": "hero-rotativo",
+      "blocks": {
+        "slide_cGthNn": {
+          "type": "slide",
+          "name": "ImunoFosfo",
+          "settings": {
+            "link": "\/products\/imunofosfo-fosfoetanolamina-phospho",
+            "video_desktop": "https:\/\/www.americanutrition.com\/cdn\/shop\/t\/26\/assets\/hrx-s1-bg.mp4",
+            "video_mobile": "",
+            "video_square": "https:\/\/www.americanutrition.com\/cdn\/shop\/t\/26\/assets\/hrx-s1-sq.mp4",
+            "video_square_pool": "https:\/\/www.americanutrition.com\/cdn\/shop\/t\/26\/assets\/hrx-s1-sq-p1.mp4\nhttps:\/\/www.americanutrition.com\/cdn\/shop\/t\/26\/assets\/hrx-s1-sq-p2.mp4",
+            "square_rotation": "random",
+            "video_opacity": 55,
+            "poster_bg_url": "https:\/\/www.americanutrition.com\/cdn\/shop\/t\/26\/assets\/hrx-s1-bg.jpg",
+            "poster_sq_url": "https:\/\/www.americanutrition.com\/cdn\/shop\/t\/26\/assets\/hrx-s1-sq.jpg",
+            "poster_sq_pool": "https:\/\/www.americanutrition.com\/cdn\/shop\/t\/26\/assets\/hrx-s1-sq-p1.jpg\nhttps:\/\/www.americanutrition.com\/cdn\/shop\/t\/26\/assets\/hrx-s1-sq-p2.jpg",
+            "eyebrow": "Fosfoetanolamina sintética bioidêntica",
+            "heading": "Uma molécula que seu corpo",
+            "heading_em": "já conhece",
+            "subheading": "A fosfoetanolamina sintética bioidêntica original, na forma mais pura. Apoio à saúde celular e ao equilíbrio da imunidade.",
+            "rating": "4.98 · 15.788 avaliações verificadas",
+            "price_prefix": "A partir de",
+            "price": "197",
+            "button_label": "Conhecer o ImunoFosfo",
+            "accent": "blue"
+          }
+        },
+        "slide_6pUC8i": {
+          "type": "slide",
+          "name": "ImunoFosfo Liquid",
+          "settings": {
+            "link": "shopify:\/\/products\/imunofosfo-liquid",
+            "video_desktop": "https:\/\/d8j0ntlcm91z4.cloudfront.net\/user_30Su4YgtusooKObryVKjG7oBgIk\/hf_20260810_015250_2ae0c04e-6655-4a65-8283-9c463bf00a0f.mp4",
+            "video_mobile": "",
+            "video_square": "https:\/\/d8j0ntlcm91z4.cloudfront.net\/user_30Su4YgtusooKObryVKjG7oBgIk\/hf_20260810_015358_e4ec1fb2-6278-4d62-8b62-e5693d9aed9d.mp4",
+            "video_square_pool": "",
+            "square_rotation": "random",
+            "video_opacity": 55,
+            "poster_bg_url": "https:\/\/www.americanutrition.com\/cdn\/shop\/t\/26\/assets\/hrx-s1-bg.jpg",
+            "poster_sq_url": "https:\/\/www.americanutrition.com\/cdn\/shop\/t\/26\/assets\/hrx-s1-sq.jpg",
+            "poster_sq_pool": "https:\/\/www.americanutrition.com\/cdn\/shop\/t\/26\/assets\/hrx-s1-sq-p1.jpg\nhttps:\/\/www.americanutrition.com\/cdn\/shop\/t\/26\/assets\/hrx-s1-sq-p2.jpg",
+            "eyebrow": "Fosfoetanolamina sintética bioidêntica",
+            "heading": "A formula original,",
+            "heading_em": "mas em gotas!",
+            "subheading": "nano micronizado, absorção mais rápida, dose exata, sem engolir cápsula <br>137<br>💧 Absorção acelerada · 🧪 Fórmula pura  <br>📋 Laudo por lote · ⚖️ Equilíbrio da imunidade",
+            "rating": "4.98 · 15.788 avaliações verificadas",
+            "price_prefix": "A partir de",
+            "price": "137",
+            "button_label": "Conhecer o ImunoFosfo Liquid",
+            "accent": "blue"
+          }
+        },
+        "slide_gBcJH4": {
+          "type": "slide",
+          "name": "Green Propolis",
+          "settings": {
+            "link": "shopify:\/\/products\/green-propolis-premium-propolis-verde",
+            "video_desktop": "https:\/\/www.americanutrition.com\/cdn\/shop\/t\/26\/assets\/hrx-s2-bg.mp4",
+            "video_mobile": "",
+            "video_square": "https:\/\/www.americanutrition.com\/cdn\/shop\/t\/26\/assets\/hrx-s2-sq.mp4",
+            "video_square_pool": "",
+            "square_rotation": "sequence",
+            "video_opacity": 50,
+            "poster_bg_url": "https:\/\/www.americanutrition.com\/cdn\/shop\/t\/26\/assets\/hrx-s2-bg.jpg",
+            "poster_sq_url": "https:\/\/www.americanutrition.com\/cdn\/shop\/t\/26\/assets\/hrx-s2-sq.jpg",
+            "poster_sq_pool": "",
+            "eyebrow": "PRÓPOLIS VERDE BRASILEIRA PREMIUM",
+            "heading": "O ESCUDO VERDE QUE SEU CORPO RECONHECE",
+            "heading_em": "",
+            "subheading": "O Green Propolis Premium concentra a própolis verde brasileira mais rica em compostos fenólicos e Artepillin C — o antioxidante que apoia o equilíbrio da sua imunidade e a defesa natural do organismo, todos os dias.",
+            "rating": "4.97 · 9.214 avaliações verificadas",
+            "price_prefix": "A partir de",
+            "price": "77",
+            "button_label": "Conhecer",
+            "accent": "red"
+          }
+        },
+        "slide_cAbcWN": {
+          "type": "slide",
+          "name": "Omega3",
+          "settings": {
+            "link": "shopify:\/\/products\/omega-3-meg3",
+            "video_desktop": "https:\/\/www.americanutrition.com\/cdn\/shop\/t\/26\/assets\/hrx-s3-bg.mp4",
+            "video_mobile": "",
+            "video_square": "https:\/\/www.americanutrition.com\/cdn\/shop\/t\/26\/assets\/hrx-s3-sq.mp4",
+            "video_square_pool": "",
+            "square_rotation": "sequence",
+            "video_opacity": 35,
+            "poster_bg_url": "https:\/\/www.americanutrition.com\/cdn\/shop\/t\/26\/assets\/hrx-s3-bg.jpg",
+            "poster_sq_url": "https:\/\/www.americanutrition.com\/cdn\/shop\/t\/26\/assets\/hrx-s3-sq.jpg",
+            "poster_sq_pool": "",
+            "eyebrow": "Pureza certificada",
+            "heading": "Ômega 3 ultra puro",
+            "heading_em": "MEG-3",
+            "subheading": "EPA e DHA de alta pureza para apoiar coração, cérebro e equilíbrio inflamatório.",
+            "rating": "4.98 · 3.488 avaliações",
+            "price_prefix": "A partir de",
+            "price": "77",
+            "button_label": "Conhecer o Omega 3",
+            "accent": "blue"
+          }
+        },
+        "slide_UTJqUk": {
+          "type": "slide",
+          "name": "ImunoFosfo Kids",
+          "settings": {
+            "link": "shopify:\/\/products\/imunofosfo-kids-fosfoetanolamina",
+            "video_desktop": "https:\/\/www.americanutrition.com\/cdn\/shop\/t\/26\/assets\/hrx-s4-bg.mp4",
+            "video_mobile": "",
+            "video_square": "https:\/\/www.americanutrition.com\/cdn\/shop\/t\/26\/assets\/hrx-s4-sq.mp4",
+            "video_square_pool": "",
+            "square_rotation": "sequence",
+            "video_opacity": 35,
+            "poster_bg_url": "https:\/\/www.americanutrition.com\/cdn\/shop\/t\/26\/assets\/hrx-s4-bg.jpg",
+            "poster_sq_url": "https:\/\/www.americanutrition.com\/cdn\/shop\/t\/26\/assets\/hrx-s4-sq.jpg",
+            "poster_sq_pool": "",
+            "eyebrow": "Defesa natural",
+            "heading": "ImunoFosfo",
+            "heading_em": "kids",
+            "subheading": "A defesa que nossos pequenos merecem!  Apoia o metabolismo celular e o equilíbrio da imunidade infantil",
+            "rating": "4.98 · 2.362 avaliações",
+            "price_prefix": "A partir de",
+            "price": "167",
+            "button_label": "Conhecer mais",
+            "accent": "blue"
+          }
+        }
+      },
+      "block_order": [
+        "slide_cGthNn",
+        "slide_6pUC8i",
+        "slide_gBcJH4",
+        "slide_cAbcWN",
+        "slide_UTJqUk"
+      ],
+      "name": "Hero rotativo",
+      "settings": {
+        "autoplay": true,
+        "interval_seconds": 10,
+        "pause_on_hover": true,
+        "show_dots": true,
+        "show_arrows": true,
+        "height": "tall",
+        "aria_label": "Destaques de produtos"
+      }
+    },
+    "slideshow_ArhTnR": {
+      "type": "slideshow",
+      "blocks": {
+        "image_whrYY3": {
+          "type": "image",
+          "disabled": true,
+          "settings": {
+            "image": "shopify:\/\/shop_images\/PHOTO-2026-05-06-20-54-28.jpg",
+            "heading": "",
+            "heading_size": "title-lg tracking-heading",
+            "heading_tag": "h2",
+            "button_label": "",
+            "button_link": "https:\/\/seguro.americanutrition.com\/diadasmaes_combo",
+            "button_style": "primary",
+            "button_external": false,
+            "button_icon": false
+          }
+        },
+        "video_nzD6My": {
+          "type": "video",
+          "name": "ImunoFosfo 180",
+          "settings": {
+            "video": "shopify:\/\/files\/videos\/ElevenLabs_video_kling-o-1_Make a teaser_2026-04-25T01_17_42.mp4",
+            "video_url": "",
+            "description": "",
+            "video_mobile": "shopify:\/\/files\/videos\/5d5b7fe2-72b1-427d-8b09-4bc31ff204ee_2c1ee7db-6e49-48e4-a50d-70c74572362c.mov",
+            "video_url_mobile": "",
+            "heading": "",
+            "heading_size": "title-md",
+            "heading_tag": "h2",
+            "button_label": "",
+            "button_link": "shopify:\/\/products\/imunofosfo-fosfoetanolamina-phospho",
+            "button_style": "link",
+            "button_external": false,
+            "button_icon": false
+          }
+        },
+        "video_FA7Kd6": {
+          "type": "video",
+          "name": "ImunoFosfo",
+          "settings": {
+            "video": "shopify:\/\/files\/videos\/América Nutrition - Vídeo ImunoFosfo 10s - 1920x1080.mp4",
+            "video_url": "",
+            "description": "",
+            "video_mobile": "shopify:\/\/files\/videos\/Calendário Setembro - Post 03 - América Nutrition.mp4",
+            "video_url_mobile": "",
+            "heading": "",
+            "heading_size": "title-md",
+            "heading_tag": "h2",
+            "button_label": "",
+            "button_link": "shopify:\/\/products\/imunofosfo-fosfoetanolamina-phospho",
+            "button_style": "link",
+            "button_external": false,
+            "button_icon": false
+          }
+        },
+        "video_pz7WQi": {
+          "type": "video",
+          "name": "ImunoFosfo Diabetes",
+          "settings": {
+            "video": "shopify:\/\/files\/videos\/Video ImunoFosfo Diabetes.mp4",
+            "video_url": "",
+            "description": "",
+            "video_mobile": "shopify:\/\/files\/videos\/Video ImunoFosfo Diabetes 1080x1920-2.mp4",
+            "video_url_mobile": "",
+            "heading": "",
+            "heading_size": "title-md",
+            "heading_tag": "h2",
+            "button_label": "",
+            "button_link": "shopify:\/\/products\/imunofosfo-diabetes",
+            "button_style": "link",
+            "button_external": false,
+            "button_icon": false
+          }
+        },
+        "video_hYCFMY": {
+          "type": "video",
+          "name": "ImunoFosfo Vegan",
+          "settings": {
+            "video": "shopify:\/\/files\/videos\/Site - VÍDEO PROMOCIONAL DE PRODUTOS - Vídeo 04 ImunoFosfo  - America Nutrition_14fc155f-170e-4ae4-a40d-ca48f98f7271.mp4",
+            "video_url": "",
+            "description": "",
+            "video_mobile": "shopify:\/\/files\/videos\/1080x1920px - VÍDEO PROMOCIONAL DE PRODUTOS - Vídeo 04 ImunoFosfo  - America Nutrition_2630ff88-1b70-4f33-baba-c0dc65dcfa12.mp4",
+            "video_url_mobile": "",
+            "heading": "",
+            "heading_size": "title-md",
+            "heading_tag": "h2",
+            "button_label": "",
+            "button_link": "shopify:\/\/products\/imunofosfo-fosfoetanolamina-phospho",
+            "button_style": "link",
+            "button_external": false,
+            "button_icon": false
+          }
+        }
+      },
+      "block_order": [
+        "image_whrYY3",
+        "video_nzD6My",
+        "video_FA7Kd6",
+        "video_pz7WQi",
+        "video_hYCFMY"
+      ],
+      "disabled": true,
+      "settings": {
+        "autoplay": true,
+        "autoplay_speed": 9,
+        "show_navigation": true,
+        "image_height": "adapt",
+        "content_width": "small",
+        "image_height_mobile": "500px",
+        "accessibility_info": "Slideshow about our brand",
+        "color_text": "#ffffff",
+        "color_background": "#ffffff",
+        "gradient_background": "",
+        "color_button_text": "#171717",
+        "color_button_background": "#ffffff",
+        "color_button_gradient": "",
+        "color_overlay": "#000000",
+        "overlay_opacity": 0,
+        "padding_top": 0,
+        "padding_bottom": 0,
+        "divider": false,
+        "full_width": true,
+        "rounded": false,
+        "enable_parallax": false,
+        "parallax_direction": "vertical"
+      }
+    },
+    "rich-text-1": {
+      "type": "rich-text",
+      "blocks": {
+        "text": {
+          "type": "text",
+          "settings": {
+            "text": "<p>Suplementos avançados, desenvolvidos para atuar no metabolismo celular, no equilíbrio da imunidade e no bem-estar integral, em todas as fases da vida.<\/p><p>➜ Tecnologia celular <strong>avançada<\/strong><br\/>➜ Fórmulas <strong>bioidênticas<\/strong> e ultra <strong>puras<\/strong><br\/>➜ Alta absorção e biodisponibilidade<br\/>➜ Produção em laboratório nos <strong>EUA<\/strong><br\/>➜ Padrão <strong>internacional<\/strong> de qualidade<br\/>​➜ Resultados reconhecidos por <strong>milhares<\/strong><\/p><p><\/p><p><\/p>",
+            "text_font": "body",
+            "text_size": "subtext-md",
+            "text_max_size": 32,
+            "text_line_height": 1.6,
+            "text_letter_spacing": 0,
+            "text_capitalize": false,
+            "secondary_color": false,
+            "highlighted_text": "scribble",
+            "highlighted_scribble": "basic-underline"
+          }
+        },
+        "liquid_V3BGJY": {
+          "type": "liquid",
+          "settings": {
+            "liquid": "<div class = \"message-under-cart\">\n<svg xmlns=\"http:\/\/www.w3.org\/2000\/svg\" width=\"25\" viewBox=\"0 0 7410 3900\">\n\t<title>Flag of USA — black &amp; white<\/title>\n\t<defs>\n\t\t<pattern patternUnits=\"userSpaceOnUse\" width=\"494\" height=\"420\" id=\"s\">\n\t\t\t<path fill=\"#fff\" d=\"m247 90 70.53 217.08-184.66-134.16h228.26L176.47 307.08z\"\/>\n\t\t<\/pattern>\n\t<\/defs>\n\t<path fill=\"#fff\" d=\"m0 0h7410v3900H0z\"\/>\n\t<path stroke=\"#676767\" stroke-width=\"7410\" stroke-dasharray=\"300\" d=\"m3705 0v3900\"\/>\n\t<path fill=\"#676767\" d=\"m0 0h2964v2100H0z\"\/>\n\t<g fill=\"url(#s)\">\n\t\t<path d=\"m0 0h2964v2100H0z\"\/>\n\t\t<path transform=\"translate(247,210)\" d=\"m0 0h2470v1680H0z\"\/>\n\t<\/g>\n<\/svg>\nProduzido nos EUA\n<\/div>\n\n<style>\n.message-under-cart {\n    display: flex;\n    justify-content: center;\n    gap: 10px;\n    font-size: 12px;\n    background: #f2f2f2;\n    border-radius: 8px;\n    width: max-content;\n    margin-left: auto;\n    margin-right: auto;\n    padding: 0px 20px;\n    font-weight: 600;\n    color: #676767;\n}\n<\/style>"
+          }
+        }
+      },
+      "block_order": [
+        "text",
+        "liquid_V3BGJY"
+      ],
+      "name": "CHEGA DE VIVER NO LIMITE",
+      "settings": {
+        "text_alignment": "left",
+        "text_alignment_mobile": "left",
+        "heading": "Chega de viver no <em>limite!<\/em>",
+        "heading_size": "title-lg tracking-heading",
+        "heading_alignment": "text-left md:items-end md:flex-row",
+        "heading_width": "small",
+        "heading_tag": "h2",
+        "subheading": "",
+        "description": "<p>A ciência aplicada à saúde, à célula e à <em>qualidade de vida<\/em>!<\/p>",
+        "button_label": "",
+        "button_link": "shopify:\/\/products\/imunofosfo-fosfoetanolamina-phospho",
+        "button_external": false,
+        "button_icon": true,
+        "highlighted_text": "scribble",
+        "highlighted_scribble": "basic-underline",
+        "highlighted_reveal": false,
+        "color_text": "",
+        "color_background": "",
+        "gradient_background": "",
+        "color_highlight": "#07388e",
+        "gradient_highlight": "",
+        "color_button_text": "",
+        "color_button_background": "",
+        "color_button_gradient": "",
+        "padding_top": 72,
+        "padding_bottom": 12,
+        "divider": false,
+        "narrow": false,
+        "rounded": false
+      }
+    },
+    "collection-list": {
+      "type": "collection-list",
+      "blocks": {
+        "collection-2": {
+          "type": "collection",
+          "settings": {
+            "collection": "imunofosfo",
+            "title": "Linha ImunoFosfo",
+            "description": "Fosfoetanolamina número 1 do MUNDO!",
+            "overlay_content": false,
+            "color_text": "#ffffff",
+            "color_overlay": "#000000",
+            "overlay_opacity": 40
+          }
+        },
+        "collection_QKcChD": {
+          "type": "collection",
+          "settings": {
+            "collection": "linha-pet-fosfoetanolamina",
+            "title": "",
+            "description": "Equilíbrio da imunidade e vitalidade para seu pet com qualidade e segurança",
+            "overlay_content": false,
+            "color_text": "#ffffff",
+            "color_overlay": "#000000",
+            "overlay_opacity": 30
+          }
+        },
+        "collection_8VEMkt": {
+          "type": "collection",
+          "settings": {
+            "collection": "linha-suplementos",
+            "title": "Vitaminas",
+            "description": "Fortaleça seu corpo com os melhores suplementos naturais",
+            "overlay_content": false,
+            "color_text": "#ffffff",
+            "color_overlay": "#000000",
+            "overlay_opacity": 40
+          }
+        },
+        "collection-3": {
+          "type": "collection",
+          "settings": {
+            "collection": "americanutrition-suplementos",
+            "title": "Suplementos",
+            "description": "Energia, força e saúde em cada dose",
+            "overlay_content": false,
+            "color_text": "#ffffff",
+            "color_overlay": "#000000",
+            "overlay_opacity": 40
+          }
+        }
+      },
+      "block_order": [
+        "collection-2",
+        "collection_QKcChD",
+        "collection_8VEMkt",
+        "collection-3"
+      ],
+      "name": "LINHA DE PRODUTOS",
+      "settings": {
+        "card_style": "card",
+        "image_type": "collection",
+        "image_ratio": "wide",
+        "show_products_count": true,
+        "show_view_all": false,
+        "columns": 3,
+        "carousel_on_desktop": true,
+        "columns_mobile": "1",
+        "swipe_on_mobile": false,
+        "heading": "Linha de <em>produtos<\/em>",
+        "heading_size": "title-md",
+        "heading_alignment": "text-left md:items-end md:flex-row",
+        "heading_tag": "h2",
+        "subheading": "",
+        "description": "<p>A <strong>America Nutrition<\/strong> é referência em suplementos de alta qualidade, desenvolvidos para fortalecer sua saúde e bem-estar. Nossa linha de produtos combina inovação científica e os melhores ingredientes para oferecer soluções eficazes e seguras.<\/p>",
+        "highlighted_text": "scribble",
+        "highlighted_scribble": "squiggle-underline",
+        "highlighted_reveal": false,
+        "color_text": "",
+        "color_background": "",
+        "gradient_background": "",
+        "color_highlight": "#07388e",
+        "gradient_highlight": "",
+        "color_button_text": "",
+        "color_button_background": "",
+        "color_button_gradient": "",
+        "padding_top": 60,
+        "padding_bottom": 60,
+        "divider": false,
+        "full_width": true,
+        "rounded": true
+      }
+    },
+    "featured-collections": {
+      "type": "featured-collections",
+      "blocks": {
+        "collection-2": {
+          "type": "collection",
+          "settings": {
+            "collection": "america-nutrition",
+            "products": [
+              "imunofosfo-fosfoetanolamina-phospho",
+              "imunofosfo-diabetes",
+              "omega-3-meg3",
+              "green-propolis-premium-propolis-verde",
+              "vitamins-minerals-premium",
+              "life-hair",
+              "d3-vitamin-with-k2-and-a",
+              "propolis-extract",
+              "imunopet",
+              "life-gummy-creatina-em-gomas",
+              "life-protein-proteina-vegetal",
+              "imunofosfo-healing",
+              "creatine-ultra-micronized",
+              "imunofosfo-liquid",
+              "carvao-vegetal-ativado-activated-charcoal-premium"
+            ],
+            "title": "Escolher qualidade é uma decisão inteligente"
+          }
+        }
+      },
+      "block_order": [
+        "collection-2"
+      ],
+      "name": "MAIS PROCURADOS",
+      "settings": {
+        "product_limit": 12,
+        "columns": 5,
+        "carousel_on_desktop": true,
+        "show_view_all": true,
+        "columns_mobile": "2",
+        "swipe_on_mobile": false,
+        "heading": "<em>Mais procurados...<\/em>",
+        "heading_size": "title-md",
+        "heading_alignment": "text-left md:items-end md:flex-row",
+        "heading_tag": "h2",
+        "subheading": "",
+        "description": "",
+        "highlighted_text": "text",
+        "highlighted_scribble": "squiggle-underline",
+        "highlighted_reveal": false,
+        "color_text": "#353535",
+        "color_background": "#07388e",
+        "gradient_background": "",
+        "color_highlight": "#ffffff",
+        "gradient_highlight": "",
+        "color_button_text": "#ffffff",
+        "color_button_background": "",
+        "color_button_gradient": "",
+        "padding_top": 32,
+        "padding_bottom": 32,
+        "divider": false,
+        "full_width": false,
+        "rounded": true
+      }
+    },
+    "rich_text_Fewbkg": {
+      "type": "rich-text",
+      "disabled": true,
+      "name": "MONTE SEU COMBO",
+      "settings": {
+        "text_alignment": "left",
+        "text_alignment_mobile": "left",
+        "heading": "Monte seu <em>combo<\/em>",
+        "heading_size": "title-md",
+        "heading_alignment": "text-left md:items-end md:flex-row",
+        "heading_width": "large",
+        "heading_tag": "h2",
+        "subheading": "",
+        "description": "<p>Escolha seus produtos favoritos e crie o combo ideal para sua saúde e bem-estar. Quanto mais você combina, mais vantagens você ganha! <\/p>",
+        "button_label": "",
+        "button_link": "",
+        "button_external": false,
+        "button_icon": true,
+        "highlighted_text": "scribble",
+        "highlighted_scribble": "squiggle-underline",
+        "highlighted_reveal": false,
+        "color_text": "",
+        "color_background": "",
+        "gradient_background": "",
+        "color_highlight": "#07388e",
+        "gradient_highlight": "",
+        "color_button_text": "",
+        "color_button_background": "",
+        "color_button_gradient": "",
+        "padding_top": 52,
+        "padding_bottom": 52,
+        "divider": false,
+        "narrow": false,
+        "rounded": false
+      }
+    },
+    "product_bundle_PrkbR7": {
+      "type": "product-bundle",
+      "disabled": true,
+      "name": "COMBO",
+      "settings": {
+        "collection": "",
+        "products": [
+          "imunofosfo-fosfoetanolamina-phospho",
+          "vitamins-minerals-premium",
+          "green-propolis-premium-propolis-verde",
+          "omega-3-meg3",
+          "life-hair",
+          "imunofosfo-healing",
+          "d3-vitamin-with-k2-and-a",
+          "life-gummy-creatina-em-gomas",
+          "propolis-extract",
+          "life-protein-proteina-vegetal",
+          "imunopet",
+          "imunofosfo-liquid",
+          "creatine-ultra-micronized",
+          "carvao-vegetal-ativado-activated-charcoal-premium",
+          "imunofosfo-diabetes"
+        ],
+        "product_limit": 8,
+        "columns": 2,
+        "columns_mobile": "2",
+        "minimum_quantity": 2,
+        "maximum_quantity": 12,
+        "prevent_duplicate_products": false,
+        "allow_quantity_change": true,
+        "quantity_increment": "1",
+        "quantity_minimum": "1",
+        "quantity_maximum": "",
+        "show_variant_labels": true,
+        "picker_type": "button",
+        "enable_color_swatches": false,
+        "color_swatch_type": "color",
+        "heading": "<em>Seu combo<\/em>",
+        "heading_size": "lg:text-5xl text-2xl",
+        "heading_alignment": "text-left",
+        "heading_tag": "h2",
+        "subheading": "economize agora!",
+        "description": "<p>Adicione pelo menos 2 produtos...<\/p>",
+        "highlighted_text": "scribble",
+        "highlighted_scribble": "squiggle-underline",
+        "highlighted_reveal": false,
+        "color_text": "",
+        "color_background": "",
+        "gradient_background": "",
+        "color_highlight": "#0b61cd",
+        "gradient_highlight": "",
+        "color_button_text": "",
+        "color_button_background": "",
+        "color_button_gradient": "",
+        "padding_top": 0,
+        "padding_bottom": 0,
+        "divider": false,
+        "full_width": true,
+        "rounded": false
+      }
+    },
+    "scrolling-text-1": {
+      "type": "scrolling-text",
+      "blocks": {
+        "text": {
+          "type": "text",
+          "settings": {
+            "text": "<em><strong>FOSFOETANOLAMINA ORIGINAL<\/strong><\/em>",
+            "text_size": 60,
+            "text_font": "body",
+            "highlighted_text": "scribble",
+            "highlighted_scribble": "squiggle-underline"
+          }
+        }
+      },
+      "block_order": [
+        "text"
+      ],
+      "settings": {
+        "direction": "left",
+        "speed": 20,
+        "grid_horizontal": 70,
+        "enable_twin": false,
+        "enable_parallax": true,
+        "color_text": "",
+        "color_background": "",
+        "gradient_background": "",
+        "color_highlight": "",
+        "gradient_highlight": "",
+        "padding_top": 120,
+        "padding_bottom": 120,
+        "divider": false,
+        "rounded": false
+      }
+    },
+    "video-with-text-overlay": {
+      "type": "video-with-text-overlay",
+      "blocks": {
+        "text": {
+          "type": "text",
+          "settings": {
+            "text": "<p><strong>DESTAQUE<\/strong><\/p>",
+            "text_font": "body",
+            "text_size": "subtext-xl",
+            "text_max_size": 32,
+            "text_line_height": 1.6,
+            "text_letter_spacing": 0,
+            "text_capitalize": false,
+            "secondary_color": true,
+            "highlighted_text": "none",
+            "highlighted_scribble": "circle"
+          }
+        },
+        "heading": {
+          "type": "heading",
+          "settings": {
+            "heading": "<em>ImunoFosfo<\/em>",
+            "heading_size": "title-md",
+            "heading_tag": "h2",
+            "highlighted_text": "scribble",
+            "highlighted_scribble": "squiggle-underline",
+            "highlighted_reveal": false
+          }
+        },
+        "text_YADPja": {
+          "type": "text",
+          "settings": {
+            "text": "<p><em><strong>Fosfoetanolamina Sintética Bioidêntica<\/strong><\/em><strong><br\/><br\/>O câncer pode ser um desafio enorme, mas você não está sozinho nessa batalha. <br\/><br\/>ImunoFosfo foi desenvolvido para ser um suporte real no seu dia a dia, promovendo mais qualidade de vida e ajudando seu corpo a reagir.<\/strong><\/p>",
+            "text_font": "body",
+            "text_size": "subtext-md",
+            "text_max_size": 32,
+            "text_line_height": 1.6,
+            "text_letter_spacing": 0,
+            "text_capitalize": false,
+            "secondary_color": true,
+            "highlighted_text": "none",
+            "highlighted_scribble": "circle"
+          }
+        }
+      },
+      "block_order": [
+        "text",
+        "heading",
+        "text_YADPja"
+      ],
+      "settings": {
+        "transparent_header": false,
+        "video": "shopify:\/\/files\/videos\/pilulas.mp4",
+        "video_url": "",
+        "description": "",
+        "enable_video_autoplay": true,
+        "enable_video_looping": true,
+        "image_height": "400px",
+        "content_width": "medium",
+        "content_position": "md:items-center md:justify-center",
+        "text_alignment": "center",
+        "video_url_mobile": "",
+        "image_height_mobile": "400px",
+        "content_position_mobile": "items-center justify-center",
+        "text_alignment_mobile": "center",
+        "color_text": "#ffffff",
+        "color_background": "",
+        "gradient_background": "",
+        "color_highlight": "#0b61cd",
+        "gradient_highlight": "",
+        "color_button_text": "#171717",
+        "color_button_background": "#ffffff",
+        "color_button_gradient": "",
+        "color_overlay": "#000000",
+        "overlay_opacity": 66,
+        "padding_top": 0,
+        "padding_bottom": 0,
+        "divider": false,
+        "full_width": true,
+        "rounded": true
+      }
+    },
+    "featured-product": {
+      "type": "featured-product",
+      "blocks": {
+        "title": {
+          "type": "title",
+          "settings": {
+            "title_size": "product-title-md",
+            "title_size_mobile": "product-title-md",
+            "title_tag": "h2",
+            "show_price": true,
+            "show_rating": true
+          }
+        },
+        "liquid_pfjRAM": {
+          "type": "liquid",
+          "settings": {
+            "liquid": "<div class = \"message-under-cart\">\n<svg xmlns=\"http:\/\/www.w3.org\/2000\/svg\" width=\"25\" viewBox=\"0 0 7410 3900\">\n\t<title>Flag of USA — black &amp; white<\/title>\n\t<defs>\n\t\t<pattern patternUnits=\"userSpaceOnUse\" width=\"494\" height=\"420\" id=\"s\">\n\t\t\t<path fill=\"#fff\" d=\"m247 90 70.53 217.08-184.66-134.16h228.26L176.47 307.08z\"\/>\n\t\t<\/pattern>\n\t<\/defs>\n\t<path fill=\"#fff\" d=\"m0 0h7410v3900H0z\"\/>\n\t<path stroke=\"#676767\" stroke-width=\"7410\" stroke-dasharray=\"300\" d=\"m3705 0v3900\"\/>\n\t<path fill=\"#676767\" d=\"m0 0h2964v2100H0z\"\/>\n\t<g fill=\"url(#s)\">\n\t\t<path d=\"m0 0h2964v2100H0z\"\/>\n\t\t<path transform=\"translate(247,210)\" d=\"m0 0h2470v1680H0z\"\/>\n\t<\/g>\n<\/svg>\nVendido e entregue por America Nutrition\n<\/div>\n\n<style>\n.message-under-cart {\n    display: flex;\n    justify-content: center;\n    gap: 10px;\n    font-size: 12px;\n    background: #07388E;\n    border-radius: 8px;\n    width: max-content;\n    margin-left: auto;\n    margin-right: auto;\n    padding: 0px 20px;\n    font-weight: 600;\n    color: #FFFFFF;\n}\n<\/style>"
+          }
+        },
+        "text_aNT8XK": {
+          "type": "text",
+          "settings": {
+            "icon": "none",
+            "iwidth": "custom",
+            "icon_width": 20,
+            "text": "O <strong>ImunoFosfo<\/strong> se destaca por trazer a fórmula <strong>autêntica<\/strong> da <strong>fosfoetanolamina<\/strong>, atuando de forma inteligente no fortalecimento da imunidade, identificar e eliminar <strong>células tumorais<\/strong> ou <strong>disfuncionais<\/strong> promovendo um bem-estar completo, atuando também como <strong>preventivo<\/strong>",
+            "text_size": "text-base"
+          }
+        },
+        "countdown": {
+          "type": "countdown",
+          "settings": {
+            "heading": "Rápido",
+            "subheading": "PROMOÇÃO ACABA EM",
+            "color_text": "#e11d48",
+            "color_background": "#fff1f2",
+            "gradient_background": ""
+          }
+        },
+        "variant_picker": {
+          "type": "variant_picker",
+          "disabled": true,
+          "settings": {
+            "enable_dynamic_variants": true,
+            "show_variant_labels": true,
+            "picker_type": "button",
+            "enable_color_swatches": false,
+            "color_swatch_type": "color",
+            "size_chart": ""
+          }
+        },
+        "inventory": {
+          "type": "inventory",
+          "settings": {
+            "inventory_threshold": 15,
+            "show_inventory_transfer": true,
+            "show_inventory_quantity": "low",
+            "color_scheme": "accent-1"
+          }
+        },
+        "buy_buttons": {
+          "type": "buy_buttons",
+          "settings": {
+            "show_quantity_selector": true,
+            "show_price": false,
+            "show_dynamic_checkout": true,
+            "show_gift_card_recipient": false,
+            "enable_back_in_stock": false,
+            "show_back_in_stock_name": false,
+            "show_back_in_stock_phone": false
+          }
+        },
+        "liquid_CcHKtB": {
+          "type": "liquid",
+          "settings": {
+            "liquid": "<!DOCTYPE html>\n<html lang=\"pt\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Pessoas comprando<\/title>\n<\/head>\n<body>\n    <div id=\"checkout-message\"><strong class=\"changing-number\">458<\/strong> pessoas comprando agora<\/div>\n    \n    <script>\n        let currentCount = 23;\n        const minCount = 355;\n        const maxCount = 624; \/\/ Set max limit if needed\n        \n        function updateCheckoutMessage() {\n            const changeFactor = Math.random() < 0.5 ? -1 : 1;\n            const changeValue = Math.floor(Math.random() * 2) + 1;\n            \n            currentCount += changeFactor * changeValue;\n            \n            if (currentCount < minCount) {\n                currentCount = minCount;\n            } else if (currentCount > maxCount) {\n                currentCount = maxCount;\n            }\n            \n            document.getElementById('checkout-message').innerHTML = `<strong class=\"changing-number\">${currentCount}<\/strong> pessoas comprando agora`;\n        }\n        \n        setInterval(updateCheckoutMessage, 10000); \/\/ Update every 10 seconds\n    <\/script>\n<\/body>\n<\/html>\n\n<style>\n#checkout-message {\n    font-size: 13px;\n    text-align: center;\n    background: #07388E;\n    border-radius: 5px;\n    width: max-content;\n    margin-left: auto;\n    margin-right: auto;\n    padding: 1px 8px;\n    color: #D2D2D2;\n    line-height: 22px;\n}\n.changing-number{\nfont-size: 14px;\nfont-weight: 800;\n}\n<\/style>"
+          }
+        },
+        "liquid_73EY9U": {
+          "type": "liquid",
+          "settings": {
+            "liquid": ""
+          }
+        },
+        "pickup_availability": {
+          "type": "pickup_availability",
+          "settings": {}
+        },
+        "share": {
+          "type": "share",
+          "settings": {
+            "share_label": "Compartilhe",
+            "show_help_desk": true,
+            "help_label": "Precisa de ajuda?",
+            "help_page": "depoimentos",
+            "help_page_external": false
+          }
+        },
+        "read_more": {
+          "type": "read_more",
+          "settings": {}
+        },
+        "spinning_text": {
+          "type": "spinning_text",
+          "settings": {
+            "text": "FOSFOETANOLAMINA"
+          }
+        }
+      },
+      "block_order": [
+        "title",
+        "liquid_pfjRAM",
+        "text_aNT8XK",
+        "countdown",
+        "variant_picker",
+        "inventory",
+        "buy_buttons",
+        "liquid_CcHKtB",
+        "liquid_73EY9U",
+        "pickup_availability",
+        "share",
+        "read_more",
+        "spinning_text"
+      ],
+      "settings": {
+        "product": "imunofosfo-fosfoetanolamina-phospho",
+        "enable_sticky_info": true,
+        "media_size": 64,
+        "gallery_layout": "thumbnail",
+        "thumbnail_position": "beside",
+        "image_ratio": "adapt_first",
+        "image_zoom": "lightbox",
+        "hide_variants": true,
+        "enable_video_autoplay": true,
+        "enable_video_looping": true,
+        "mobile_layout": "full_width",
+        "image_ratio_mobile": "adapt_first",
+        "mobile_thumbnail": true,
+        "padding_top": 120,
+        "padding_bottom": 0,
+        "divider": false,
+        "full_width": false,
+        "rounded": true
+      }
+    },
+    "collage_grid_d98KUB": {
+      "type": "collage-grid",
+      "settings": {
+        "grid_columns": "10",
+        "row_height": 300,
+        "row_height_mobile": 150,
+        "heading": "Confira alguns <em>depoimentos<\/em>",
+        "heading_size": "title-md",
+        "heading_alignment": "text-left md:items-end md:flex-row",
+        "heading_tag": "h2",
+        "subheading": "Confiança acima de tudo!",
+        "description": "<p>Histórias inspiradoras de quem transformou sua saúde e bem-estar com o ImunoFosFo, testado e aprovado por clientes ao redor do mundo. Confira relatos autênticos de quem já experimentou e sentiu a diferença!<\/p>",
+        "button_label": "VEJA MAIS",
+        "button_link": "shopify:\/\/pages\/depoimentos",
+        "button_external": true,
+        "button_icon": true,
+        "highlighted_text": "scribble",
+        "highlighted_scribble": "squiggle-underline",
+        "highlighted_reveal": false,
+        "color_text": "",
+        "color_background": "",
+        "gradient_background": "",
+        "color_highlight": "",
+        "gradient_highlight": "",
+        "color_button_text": "",
+        "color_button_background": "",
+        "color_button_gradient": "",
+        "padding_top": 60,
+        "padding_bottom": 0,
+        "divider": false,
+        "full_width": true,
+        "rounded": false,
+        "enable_parallax": true
+      }
+    },
+    "custom_liquid_wPFhi3": {
+      "type": "custom-liquid",
+      "name": "t:sections.custom-liquid.name",
+      "settings": {
+        "liquid": "{%- comment -%}\n  Carrossel de Depoimentos em Video (Home) - Custom Liquid\n  America Nutrition - v2.0\n\n  COMO USAR: cole este codigo inteiro num bloco \"Custom Liquid\"\n  no editor de tema.\n\n  Busca os depoimentos via Storefront API (mesma fonte da galeria),\n  filtrando apenas videos. Pega TODOS os videos, nao so os 50 do Liquid.\n  Cards verticais 9:16 com lightbox.\n\n  AJUSTES: veja MAX_VIDEOS no inicio do script, e as variaveis de cor\n  no style do primeiro div.\n{%- endcomment -%}\n\n<div class=\"dep-carrossel-section\" id=\"dep-car-home\"\n     style=\"\n       --dc-cor-primaria: #08398E;\n       --dc-cor-borda: #08398E;\n       --dc-bg: #FFFFFF;\n       --dc-pad-top: 20px;\n       --dc-pad-bottom: 20px;\n     \">\n\n  <div class=\"dep-car-viewport\">\n    <button class=\"dep-car-seta dep-car-seta-prev\" aria-label=\"Anterior\" type=\"button\">\n      <svg viewBox=\"0 0 24 24\" width=\"24\" height=\"24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\">\n        <polyline points=\"15 18 9 12 15 6\"\/>\n      <\/svg>\n    <\/button>\n\n    <div class=\"dep-car-track\" id=\"dep-track-home\">\n      <div class=\"dep-car-card dep-car-skeleton\"><div class=\"dep-car-midia\"><\/div><\/div>\n      <div class=\"dep-car-card dep-car-skeleton\"><div class=\"dep-car-midia\"><\/div><\/div>\n      <div class=\"dep-car-card dep-car-skeleton\"><div class=\"dep-car-midia\"><\/div><\/div>\n      <div class=\"dep-car-card dep-car-skeleton\"><div class=\"dep-car-midia\"><\/div><\/div>\n      <div class=\"dep-car-card dep-car-skeleton\"><div class=\"dep-car-midia\"><\/div><\/div>\n    <\/div>\n\n    <button class=\"dep-car-seta dep-car-seta-next\" aria-label=\"Proximo\" type=\"button\">\n      <svg viewBox=\"0 0 24 24\" width=\"24\" height=\"24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\">\n        <polyline points=\"9 18 15 12 9 6\"\/>\n      <\/svg>\n    <\/button>\n  <\/div>\n\n  <div class=\"dep-car-dots\" id=\"dep-dots-home\"><\/div>\n<\/div>\n\n<div class=\"dep-car-lightbox\" id=\"dep-lb-home\" aria-hidden=\"true\">\n  <button class=\"dep-lb-fechar\" aria-label=\"Fechar\" type=\"button\">&times;<\/button>\n  <button class=\"dep-lb-prev\" aria-label=\"Anterior\" type=\"button\">&#10094;<\/button>\n  <button class=\"dep-lb-next\" aria-label=\"Proximo\" type=\"button\">&#10095;<\/button>\n  <div class=\"dep-lb-content\"><\/div>\n<\/div>\n\n<style>\n  #dep-car-home {\n    background: var(--dc-bg);\n    padding-top: var(--dc-pad-top);\n    padding-bottom: var(--dc-pad-bottom);\n    overflow: hidden;\n  }\n\n  #dep-car-home .dep-car-viewport {\n    position: relative;\n    max-width: 1280px;\n    margin: 0 auto;\n    padding: 0 24px;\n  }\n\n  #dep-car-home .dep-car-track {\n    display: flex;\n    gap: 18px;\n    overflow-x: auto;\n    scroll-behavior: smooth;\n    scroll-snap-type: x mandatory;\n    -webkit-overflow-scrolling: touch;\n    padding: 8px 4px 16px;\n    scrollbar-width: none;\n  }\n\n  #dep-car-home .dep-car-track::-webkit-scrollbar { display: none; }\n\n  #dep-car-home .dep-car-card {\n    flex: 0 0 auto;\n    width: 200px;\n    scroll-snap-align: start;\n  }\n\n  #dep-car-home .dep-car-midia {\n    position: relative;\n    width: 100%;\n    aspect-ratio: 9 \/ 16;\n    border-radius: 20px;\n    overflow: hidden;\n    cursor: pointer;\n    background: #e8eef7;\n    border: 4px solid var(--dc-cor-borda);\n    box-shadow: 0 8px 24px rgba(8, 57, 142, 0.18);\n    transition: transform 0.25s ease, box-shadow 0.25s ease;\n  }\n\n  #dep-car-home .dep-car-midia:hover {\n    transform: translateY(-6px);\n    box-shadow: 0 14px 32px rgba(8, 57, 142, 0.28);\n  }\n\n  #dep-car-home .dep-car-poster {\n    width: 100%;\n    height: 100%;\n    object-fit: cover;\n    display: block;\n  }\n\n  #dep-car-home .dep-car-play {\n    position: absolute;\n    inset: 0;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    pointer-events: none;\n  }\n\n  #dep-car-home .dep-car-play::before {\n    content: \"\";\n    position: absolute;\n    width: 64px;\n    height: 64px;\n    background: rgba(255, 255, 255, 0.28);\n    border: 2px solid rgba(255, 255, 255, 0.85);\n    border-radius: 50%;\n    backdrop-filter: blur(2px);\n  }\n\n  #dep-car-home .dep-car-play svg {\n    position: relative;\n    margin-left: 4px;\n    filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4));\n  }\n\n  #dep-car-home .dep-car-skeleton .dep-car-midia {\n    border-color: #d4deef;\n    background: linear-gradient(90deg, #e8eef7 25%, #f2f5fa 50%, #e8eef7 75%);\n    background-size: 200% 100%;\n    animation: dep-shimmer 1.4s infinite;\n    cursor: default;\n  }\n\n  #dep-car-home .dep-car-skeleton .dep-car-midia:hover {\n    transform: none;\n    box-shadow: 0 8px 24px rgba(8, 57, 142, 0.18);\n  }\n\n  @keyframes dep-shimmer {\n    0% { background-position: 200% 0; }\n    100% { background-position: -200% 0; }\n  }\n\n  #dep-car-home .dep-car-seta {\n    position: absolute;\n    top: calc(50% - 8px);\n    transform: translateY(-50%);\n    z-index: 3;\n    width: 44px;\n    height: 44px;\n    border-radius: 50%;\n    border: none;\n    background: #fff;\n    color: var(--dc-cor-primaria);\n    box-shadow: 0 4px 14px rgba(0,0,0,0.18);\n    cursor: pointer;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    transition: background 0.2s, transform 0.15s;\n  }\n\n  #dep-car-home .dep-car-seta:hover {\n    background: var(--dc-cor-primaria);\n    color: #fff;\n  }\n\n  #dep-car-home .dep-car-seta:active {\n    transform: translateY(-50%) scale(0.92);\n  }\n\n  #dep-car-home .dep-car-seta-prev { left: 4px; }\n  #dep-car-home .dep-car-seta-next { right: 4px; }\n\n  #dep-car-home .dep-car-seta[disabled] {\n    opacity: 0.35;\n    cursor: default;\n    pointer-events: none;\n  }\n\n  #dep-car-home .dep-car-dots {\n    display: flex;\n    justify-content: center;\n    flex-wrap: wrap;\n    gap: 7px;\n    margin-top: 18px;\n  }\n\n  #dep-car-home .dep-car-dot {\n    width: 8px;\n    height: 8px;\n    border-radius: 50%;\n    border: none;\n    background: #c7d2e3;\n    cursor: pointer;\n    padding: 0;\n    transition: background 0.2s, width 0.2s;\n  }\n\n  #dep-car-home .dep-car-dot.ativo {\n    background: var(--dc-cor-primaria);\n    width: 22px;\n    border-radius: 4px;\n  }\n\n  #dep-car-home .dep-car-vazio {\n    text-align: center;\n    color: #888;\n    padding: 2rem;\n    width: 100%;\n  }\n\n  @media (max-width: 700px) {\n    #dep-car-home .dep-car-card { width: 210px; }\n    #dep-car-home .dep-car-seta { display: none; }\n  }\n\n  #dep-lb-home {\n    position: fixed;\n    inset: 0;\n    background: rgba(0,0,0,0.93);\n    z-index: 99999;\n    display: none;\n    align-items: center;\n    justify-content: center;\n    padding: 20px;\n  }\n\n  #dep-lb-home.ativo { display: flex; }\n\n  #dep-lb-home .dep-lb-content {\n    display: flex;\n    align-items: center;\n    justify-content: center;\n  }\n\n  #dep-lb-home .dep-lb-content video {\n    max-width: 92vw;\n    max-height: 88vh;\n    width: auto;\n    height: auto;\n    border-radius: 12px;\n    background: #000;\n  }\n\n  #dep-lb-home .dep-lb-fechar,\n  #dep-lb-home .dep-lb-prev,\n  #dep-lb-home .dep-lb-next {\n    position: absolute;\n    background: rgba(255,255,255,0.12);\n    border: none;\n    color: #fff;\n    font-size: 2rem;\n    width: 52px;\n    height: 52px;\n    border-radius: 50%;\n    cursor: pointer;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    transition: background 0.2s;\n  }\n\n  #dep-lb-home .dep-lb-fechar:hover,\n  #dep-lb-home .dep-lb-prev:hover,\n  #dep-lb-home .dep-lb-next:hover {\n    background: rgba(255,255,255,0.25);\n  }\n\n  #dep-lb-home .dep-lb-fechar { top: 18px; right: 18px; }\n  #dep-lb-home .dep-lb-prev { left: 18px; top: 50%; transform: translateY(-50%); }\n  #dep-lb-home .dep-lb-next { right: 18px; top: 50%; transform: translateY(-50%); }\n\n  @media (max-width: 600px) {\n    #dep-lb-home .dep-lb-prev,\n    #dep-lb-home .dep-lb-next {\n      width: 40px; height: 40px; font-size: 1.4rem;\n    }\n  }\n<\/style>\n\n<script>\n  (function() {\n    var SHOPIFY_DOMAIN = 'imunofosfo.myshopify.com';\n    var STOREFRONT_TOKEN = '5d67469f488ffea95b24072a0b5ac98c';\n    var STOREFRONT_VERSION = '2024-10';\n    var MAX_VIDEOS = 15;\n\n    var section = document.getElementById('dep-car-home');\n    if (!section) return;\n\n    var track = document.getElementById('dep-track-home');\n    var dotsWrap = document.getElementById('dep-dots-home');\n    var lightbox = document.getElementById('dep-lb-home');\n    var content = lightbox.querySelector('.dep-lb-content');\n    var btnFechar = lightbox.querySelector('.dep-lb-fechar');\n    var btnPrev = lightbox.querySelector('.dep-lb-prev');\n    var btnNext = lightbox.querySelector('.dep-lb-next');\n    var setaPrev = section.querySelector('.dep-car-seta-prev');\n    var setaNext = section.querySelector('.dep-car-seta-next');\n\n    var videos = [];\n    var cards = [];\n    var dots = [];\n    var indexAtual = 0;\n\n    function fetchPagina(after) {\n      var query = [\n        'query GetDeps($first: Int!, $after: String) {',\n        '  metaobjects(type: \"depoimento\", first: $first, after: $after, sortKey: \"id\", reverse: true) {',\n        '    edges {',\n        '      cursor',\n        '      node {',\n        '        id',\n        '        tipo: field(key: \"tipo\") { value }',\n        '        midia: field(key: \"midia\") {',\n        '          reference {',\n        '            ... on Video {',\n        '              sources { url mimeType }',\n        '              previewImage { url }',\n        '            }',\n        '          }',\n        '        }',\n        '        produto: field(key: \"produto\") {',\n        '          reference { ... on Product { title handle } }',\n        '        }',\n        '      }',\n        '    }',\n        '    pageInfo { hasNextPage endCursor }',\n        '  }',\n        '}'\n      ].join('\\n');\n\n      return fetch('https:\/\/' + SHOPIFY_DOMAIN + '\/api\/' + STOREFRONT_VERSION + '\/graphql.json', {\n        method: 'POST',\n        headers: {\n          'Content-Type': 'application\/json',\n          'X-Shopify-Storefront-Access-Token': STOREFRONT_TOKEN\n        },\n        body: JSON.stringify({ query: query, variables: { first: 50, after: after } })\n      }).then(function(r) { return r.json(); });\n    }\n\n    function escolherFonteVideo(sources) {\n      if (!sources || !sources.length) return null;\n      for (var i = 0; i < sources.length; i++) {\n        if (sources[i].mimeType === 'video\/mp4') return sources[i].url;\n      }\n      return sources[0].url;\n    }\n\n    async function carregarVideos() {\n      var after = null;\n      var hasNext = true;\n      var tentativas = 0;\n\n      try {\n        while (hasNext && videos.length < MAX_VIDEOS && tentativas < 8) {\n          tentativas++;\n          var data = await fetchPagina(after);\n          if (data.errors) {\n            console.error('Storefront API erro:', data.errors);\n            break;\n          }\n          var mo = data.data.metaobjects;\n          mo.edges.forEach(function(edge) {\n            if (videos.length >= MAX_VIDEOS) return;\n            var node = edge.node;\n            var tipo = node.tipo && node.tipo.value;\n            if (tipo !== 'video') return;\n            var ref = node.midia && node.midia.reference;\n            if (!ref) return;\n            var src = escolherFonteVideo(ref.sources);\n            if (!src) return;\n            videos.push({\n              videoSrc: src,\n              poster: ref.previewImage ? ref.previewImage.url : '',\n              produto: node.produto && node.produto.reference ? node.produto.reference.title : ''\n            });\n          });\n          hasNext = mo.pageInfo.hasNextPage;\n          after = mo.pageInfo.endCursor;\n        }\n      } catch (e) {\n        console.error('Erro ao carregar depoimentos:', e);\n      }\n\n      renderizar();\n    }\n\n    function renderizar() {\n      track.innerHTML = '';\n\n      if (videos.length === 0) {\n        track.innerHTML = '<p class=\"dep-car-vazio\">Nenhum depoimento em video disponivel.<\/p>';\n        return;\n      }\n\n      videos.forEach(function(v, i) {\n        var card = document.createElement('div');\n        card.className = 'dep-car-card';\n        card.dataset.index = i;\n\n        var midia = document.createElement('div');\n        midia.className = 'dep-car-midia';\n\n        if (v.poster) {\n          var img = document.createElement('img');\n          img.className = 'dep-car-poster';\n          img.src = v.poster;\n          img.loading = 'lazy';\n          img.alt = 'Depoimento ' + (v.produto || '');\n          midia.appendChild(img);\n        } else {\n          var vid = document.createElement('video');\n          vid.className = 'dep-car-poster';\n          vid.muted = true;\n          vid.playsInline = true;\n          vid.preload = 'metadata';\n          vid.src = v.videoSrc + '#t=0.5';\n          midia.appendChild(vid);\n        }\n\n        var play = document.createElement('div');\n        play.className = 'dep-car-play';\n        play.innerHTML = '<svg viewBox=\"0 0 24 24\" fill=\"#fff\" width=\"32\" height=\"32\"><path d=\"M8 5v14l11-7z\"\/><\/svg>';\n        midia.appendChild(play);\n\n        midia.addEventListener('click', function() { abrir(i); });\n        card.appendChild(midia);\n        track.appendChild(card);\n      });\n\n      cards = Array.prototype.slice.call(track.querySelectorAll('.dep-car-card'));\n      montarDots();\n      atualizaSetas();\n      atualizaDots();\n    }\n\n    function passoScroll() {\n      var card = cards[0];\n      if (!card) return 300;\n      var estilo = window.getComputedStyle(track);\n      var gap = parseFloat(estilo.columnGap || estilo.gap || 18);\n      return card.offsetWidth + gap;\n    }\n\n    function atualizaSetas() {\n      if (!setaPrev || !setaNext) return;\n      var maxScroll = track.scrollWidth - track.clientWidth - 2;\n      setaPrev.disabled = track.scrollLeft <= 2;\n      setaNext.disabled = track.scrollLeft >= maxScroll;\n    }\n\n    function montarDots() {\n      dotsWrap.innerHTML = '';\n      cards.forEach(function(card, i) {\n        var dot = document.createElement('button');\n        dot.className = 'dep-car-dot';\n        dot.type = 'button';\n        dot.setAttribute('aria-label', 'Ir para depoimento ' + (i + 1));\n        dot.addEventListener('click', function() {\n          track.scrollTo({ left: passoScroll() * i, behavior: 'smooth' });\n        });\n        dotsWrap.appendChild(dot);\n      });\n      dots = Array.prototype.slice.call(dotsWrap.querySelectorAll('.dep-car-dot'));\n    }\n\n    function atualizaDots() {\n      var passo = passoScroll();\n      var ativo = Math.round(track.scrollLeft \/ passo);\n      dots.forEach(function(d, i) {\n        d.classList.toggle('ativo', i === ativo);\n      });\n    }\n\n    if (setaPrev) setaPrev.addEventListener('click', function() {\n      track.scrollBy({ left: -passoScroll(), behavior: 'smooth' });\n    });\n    if (setaNext) setaNext.addEventListener('click', function() {\n      track.scrollBy({ left: passoScroll(), behavior: 'smooth' });\n    });\n\n    var scrollTimer;\n    track.addEventListener('scroll', function() {\n      window.clearTimeout(scrollTimer);\n      scrollTimer = window.setTimeout(function() {\n        atualizaSetas();\n        atualizaDots();\n      }, 60);\n    });\n\n    window.addEventListener('resize', function() {\n      atualizaSetas();\n      atualizaDots();\n    });\n\n    function abrir(index) {\n      indexAtual = index;\n      var v = videos[index];\n      content.innerHTML = '';\n\n      var video = document.createElement('video');\n      video.src = v.videoSrc;\n      video.controls = true;\n      video.autoplay = true;\n      video.playsInline = true;\n      content.appendChild(video);\n\n      lightbox.classList.add('ativo');\n      lightbox.setAttribute('aria-hidden', 'false');\n      document.body.style.overflow = 'hidden';\n    }\n\n    function fechar() {\n      var v = content.querySelector('video');\n      if (v) { v.pause(); }\n      lightbox.classList.remove('ativo');\n      lightbox.setAttribute('aria-hidden', 'true');\n      content.innerHTML = '';\n      document.body.style.overflow = '';\n    }\n\n    function navegar(dir) {\n      var novo = (indexAtual + dir + videos.length) % videos.length;\n      abrir(novo);\n    }\n\n    btnFechar.addEventListener('click', fechar);\n    btnPrev.addEventListener('click', function() { navegar(-1); });\n    btnNext.addEventListener('click', function() { navegar(1); });\n\n    lightbox.addEventListener('click', function(e) {\n      if (e.target === lightbox) fechar();\n    });\n\n    document.addEventListener('keydown', function(e) {\n      if (!lightbox.classList.contains('ativo')) return;\n      if (e.key === 'Escape') fechar();\n      if (e.key === 'ArrowLeft') navegar(-1);\n      if (e.key === 'ArrowRight') navegar(1);\n    });\n\n    carregarVideos();\n  })();\n<\/script>",
+        "color_text": "",
+        "color_background": "",
+        "gradient_background": "",
+        "color_button_text": "",
+        "color_button_background": "",
+        "color_button_gradient": "",
+        "padding_top": 0,
+        "padding_bottom": 0,
+        "divider": false,
+        "narrow": false,
+        "rounded": false
+      }
+    },
+    "scrolling-text-2": {
+      "type": "scrolling-text",
+      "blocks": {
+        "image-1": {
+          "type": "image",
+          "settings": {
+            "image": "shopify:\/\/shop_images\/AE.png",
+            "height": 60,
+            "link": "",
+            "accessibility_info": "",
+            "external": false
+          }
+        },
+        "image-3": {
+          "type": "image",
+          "settings": {
+            "image": "shopify:\/\/shop_images\/ImunoFosfo---Emblema.png",
+            "height": 60,
+            "link": "",
+            "accessibility_info": "",
+            "external": false
+          }
+        }
+      },
+      "block_order": [
+        "image-1",
+        "image-3"
+      ],
+      "settings": {
+        "direction": "right",
+        "speed": 5,
+        "grid_horizontal": 140,
+        "enable_twin": true,
+        "enable_parallax": true,
+        "color_text": "",
+        "color_background": "#07388e",
+        "gradient_background": "",
+        "color_highlight": "",
+        "gradient_highlight": "",
+        "padding_top": 36,
+        "padding_bottom": 36,
+        "divider": false,
+        "rounded": false
+      }
+    },
+    "blog-posts-collage": {
+      "type": "blog-posts-collage",
+      "settings": {
+        "blog": "blog-america-nutrition",
+        "post_limit": 4,
+        "show_view_all": true,
+        "image_ratio": "wide",
+        "show_tags": false,
+        "show_date": false,
+        "show_comments": false,
+        "show_author": false,
+        "show_excerpt": false,
+        "heading": "Blog America Nutrition",
+        "heading_size": "title-lg tracking-heading",
+        "heading_alignment": "text-left md:items-end md:flex-row",
+        "heading_tag": "h2",
+        "subheading": "",
+        "description": "",
+        "highlighted_text": "none",
+        "highlighted_scribble": "circle",
+        "highlighted_reveal": false,
+        "color_text": "",
+        "color_background": "",
+        "gradient_background": "",
+        "color_highlight": "",
+        "gradient_highlight": "",
+        "color_button_text": "",
+        "color_button_background": "",
+        "color_button_gradient": "",
+        "padding_top": 100,
+        "padding_bottom": 100,
+        "divider": false,
+        "full_width": false,
+        "rounded": false
+      }
+    }
+  },
+  "order": [
+    "hero_rotativo_J9Qkww",
+    "slideshow_ArhTnR",
+    "rich-text-1",
+    "collection-list",
+    "featured-collections",
+    "rich_text_Fewbkg",
+    "product_bundle_PrkbR7",
+    "scrolling-text-1",
+    "video-with-text-overlay",
+    "featured-product",
+    "collage_grid_d98KUB",
+    "custom_liquid_wPFhi3",
+    "scrolling-text-2",
+    "blog-posts-collage"
+  ]
+}
