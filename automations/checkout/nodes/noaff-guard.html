@@ -1,0 +1,67 @@
+<!-- AN-NOAFF: modo sem afiliado (opt-out por navegador). ?noaff=1 liga por 1 ano, ?noaff=0 desliga. -->
+<script>
+/* 03/11/2026, pedido do Jaderson: nos navegadores da equipe nao pode ficar cookie de afiliado.
+   Este bloco roda antes de qualquer outro script (loja: layout/theme.liquid, logo depois do meta charset; checkout:
+   logo depois do <head>). Sem o cookie an_noaff ele nao faz nada, entao o cliente nao e afetado.
+   Com an_noaff=1 (dominio .americanutrition.com, vale loja + checkout):
+   - apaga an_aff, an_ref e an_bg_ref (cookies) e an_bg_ref (localStorage do checkout);
+   - tira ref, aff, bg_ref e d da URL antes dos outros scripts lerem, entao nenhum link de afiliado grava nada;
+   - bloqueia nova gravacao desses cookies e do an_bg_ref no localStorage. */
+(function () {
+  try {
+    var D = '.americanutrition.com', K = 'an_noaff';
+    var NOMES = ['an_aff', 'an_ref', 'an_bg_ref'];
+    var sp = new URLSearchParams(location.search);
+    var modo = sp.get('noaff');
+    function ler(n) { var m = document.cookie.match('(?:^|; )' + n + '=([^;]*)'); return m ? m[1] : ''; }
+    function apagar(n) { var x = n + '=; path=/; max-age=0'; document.cookie = x + '; domain=' + D; document.cookie = x; }
+    if (modo === '1') document.cookie = K + '=1; domain=' + D + '; path=/; max-age=31536000; SameSite=Lax; Secure';
+    else if (modo === '0') apagar(K);
+    var ativo = ler(K) === '1';
+    window.__AN_NOAFF = ativo;
+    if (ativo) {
+      NOMES.forEach(apagar);
+      try { localStorage.removeItem('an_bg_ref'); } catch (e) {}
+      var desc = Object.getOwnPropertyDescriptor(Document.prototype, 'cookie');
+      if (desc && desc.set && desc.get) {
+        Object.defineProperty(document, 'cookie', {
+          configurable: true,
+          get: function () { return desc.get.call(document); },
+          set: function (v) {
+            var s = String(v), i = s.indexOf('=');
+            var nome = (i > 0 ? s.slice(0, i) : s).trim();
+            var valor = i > 0 ? s.slice(i + 1).split(';')[0].trim() : '';
+            if (NOMES.indexOf(nome) !== -1 && valor !== '') return;
+            desc.set.call(document, v);
+          }
+        });
+      }
+      try {
+        var si = Storage.prototype.setItem;
+        Storage.prototype.setItem = function (k) { if (k === 'an_bg_ref') return; return si.apply(this, arguments); };
+      } catch (e) {}
+    }
+    // tira da URL so os parametros removidos, sem recodificar o resto (o checkout le items=ID:QTD:PRECO)
+    var tirar = ['noaff'].concat(ativo ? ['ref', 'aff', 'bg_ref', 'd'] : []);
+    var partes = location.search.replace(/^\?/, '').split('&').filter(function (x) {
+      if (!x) return false;
+      var k = x.split('=')[0];
+      try { k = decodeURIComponent(k); } catch (e) {}
+      return tirar.indexOf(k) === -1;
+    });
+    var nova = location.pathname + (partes.length ? '?' + partes.join('&') : '') + location.hash;
+    if (nova !== location.pathname + location.search + location.hash) history.replaceState(history.state, '', nova);
+    if (modo === '1' || modo === '0') {
+      var aviso = function () {
+        var b = document.createElement('div');
+        b.textContent = modo === '1' ? 'Modo sem afiliado LIGADO neste navegador (vale 1 ano).' : 'Modo sem afiliado DESLIGADO neste navegador.';
+        b.style.cssText = 'position:fixed;left:50%;top:16px;transform:translateX(-50%);z-index:2147483647;background:#07388E;color:#fff;padding:12px 18px;border-radius:10px;font:600 15px/1.3 sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.3);max-width:90vw;text-align:center';
+        document.body.appendChild(b);
+        setTimeout(function () { if (b.parentNode) b.parentNode.removeChild(b); }, 6000);
+      };
+      if (document.body) aviso(); else document.addEventListener('DOMContentLoaded', aviso);
+    }
+  } catch (e) {}
+})();
+</script>
+<!-- /AN-NOAFF -->

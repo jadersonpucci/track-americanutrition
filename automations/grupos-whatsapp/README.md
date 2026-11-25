@@ -1,0 +1,465 @@
+# Grupos WhatsApp — Moderação Automática (n8n `AyS0758LjFJ1qx8v`)
+
+Fluxo: `Moderacao IN` (POST /webhook/grupo-moderacao, alimentado pelo dispatcher do Samuel) → `Pre-filtro de Suspeita` (Code) → `Direto?` (IF) → regra direta vai para `Apagar ou Alertar`; o resto passa por `Classificar com Claude` (Sonnet) antes.
+
+Fontes aqui (`moderacao-prefiltro.js`, `moderacao-apagar-ou-alertar.js`) têm as chaves substituídas por placeholders; as reais ficam só no n8n.
+
+## Convite para grupo de fora (03/09/2026)
+
+Caso: às 17:59 a Vanderli postou em dois grupos (#1 ImunoFosfo e Connect Oncológicas) o link `chat.whatsapp.com/J7YGFsy6QuNFtx27vHSvyc` "grupo sobre tratamentos alternativos para o câncer". O pré-filtro antigo só mandava para a IA link acompanhado de palavra de venda, então a mensagem passou sem moderação.
+
+Regra nova, sem IA: qualquer `chat.whatsapp.com/<codigo>` (ou cartão nativo de convite, `groupInviteMessage`) é resolvido na Evolution (`GET /group/inviteInfo/Samuel?inviteCode=`). Se o grupo de destino não estiver na lista `GRUPOS` (os oficiais ImunoFosfo), a mensagem recebe a categoria `link_grupo_externo` com confiança 100 e é apagada para todos, com registro em `grupo_moderacao` e aviso no Telegram. Se o convite estiver inválido ou a Evolution falhar, confere pelo `inviteCode` de cada grupo oficial; se ainda assim não der para confirmar, só alerta (confiança 60). Mensagens da equipe e de admins continuam intocadas.
+
+Reprocessadas na hora as duas mensagens da Vanderli: o convite resolveu para o grupo **"SUPERANDO O CÂNCER - CALCIUM 2-AEP"** (concorrente) e as duas foram apagadas (`acao = apagada`).
+
+## Limpar tudo o que um número postou (08/09/2026) — n8n `OlDkvRz2Phh7ISvy`
+
+Caso: na manhã de 08/09 o número **+55 86 92002-8427** (Luercio / "Carvalho" / "L.chaves") despejou 57 mensagens em três grupos (#1, #2 e Connect Oncológicas) — texto, vídeo, foto e chave PIX pedindo doação. A moderação automática pegou só parte (15 no Connect); o resto passou porque pedido de ajuda pessoal é classificado como `normal`, e é assim que deve continuar sendo.
+
+Faltava uma forma de limpar **o número inteiro** de uma vez, sem depender do classificador. Fonte em `limpar-numero.js`.
+
+`GET /webhook/grupo-limpar?t=an-mod-5Rt8Bn2W&numero=5586920028427`
+
+- Varre as mensagens recentes na Evolution (`POST /chat/findMessages/Samuel`) e filtra no código — nessa versão a Evolution **ignora o `where`**, então filtro server-side não funciona.
+- Considera só os 11 grupos oficiais, só mensagens de terceiros (`fromMe: false`) e casa o número tanto em `key.participant` (que hoje vem em `@lid`) quanto em `key.participantAlt`.
+- Grava o texto original em `grupo_moderacao` **antes** de apagar (`categoria = spam_geral`, `motivo = 'Limpeza manual do numero inteiro'`) e só então chama `DELETE /chat/deleteMessageForEveryone/Samuel`.
+- Manda um resumo para o Telegram e devolve JSON com o total por grupo.
+
+Parâmetros: `&teste=1` só lista (use sempre antes), `&horas=48` amplia a janela (padrão 24, máx. 720), `&remover=1` também tira a pessoa dos grupos onde ela postou. Números da equipe são recusados.
+
+Limite do WhatsApp: só dá para apagar para todos **em grupo**. Na conversa privada, mensagem que o outro mandou não pode ser "desenviada" — some só do nosso lado.
+
+### Correção de 10/09/2026 — o endpoint achava "0 encontradas" com o número certo
+
+Pedido para apagar duas respostas automáticas de bots comerciais no **#1 ImunoFosfo**, o endpoint
+respondeu `encontradas: 0` para os dois números, inclusive com `&horas=720`. As mensagens estavam lá.
+
+Duas causas somadas:
+
+1. O WhatsApp hoje manda o autor em `key.participant` como **`@lid`** (um id interno, só dígitos, que
+   **não é telefone**) e põe o telefone real em `key.participantAlt`.
+2. Esse telefone vem **sem o nono dígito**: `556292506712`, não `5562992506712`. Quem pede a limpeza
+   digita o número como ele aparece no celular, com o 9.
+
+A comparação era `indexOf(numero)` sobre os três campos concatenados — não casava, e pior, podia casar
+por acaso com o `@lid` de outra pessoa (um `@lid` terminado em `7475` entrou na busca por `...96317475`).
+
+Agora o node descarta qualquer identificador `@lid` e compara pela **chave tolerante ao nono dígito**
+(`DDD + os 8 últimos`), a mesma usada em `envio-rota-telegram.js`. Com isso `5562992506712` e
+`556292506712` viram a mesma pessoa, e `@lid` nenhum entra na conta.
+
+Resultado: as duas respostas automáticas eram **quatro** mensagens, porque cada bot postou nos dois
+grupos. Todas apagadas para todos, texto salvo antes em `grupo_moderacao`:
+
+| Quem | Número | Grupos |
+|---|---|---|
+| espaçodelazer | `5562992506712` | #1 ImunoFosfo, ImunoFosfo Connect Oncológicas |
+| Daniele Sales | `5583996317475` | #1 ImunoFosfo, ImunoFosfo Connect Oncológicas |
+
+A moderação automática **não** tinha esse problema: `moderacao-prefiltro.js` já resolve `@lid` para
+telefone consultando `GET /group/participants/Samuel`. O furo era só na limpeza manual.
+
+### As "mensagens vazias" do Samuel nos grupos — 11/09/2026
+
+Logo depois dessa limpeza apareceram duas bolhas azuis vazias nossas no **#1 ImunoFosfo**, sem texto,
+só a hora e o tique. O Samuel já tinha visto esse mesmo padrão na época do banimento.
+
+Não é automação mandando mensagem em branco. Levantamento feito:
+
+- A Evolution registra as próprias saídas (o broadcast das 18:07 está lá, 12 registros). No #1
+  ImunoFosfo **não existe nenhuma saída nossa** naquele horário.
+- O único envio que rodou no minuto foi para um número privado, não para grupo.
+- O `Preparar` do Envio Samuel já lança erro se `text`, `audio_texto` e `lista` vierem todos vazios,
+  então o caminho de envio não consegue emitir texto em branco.
+- A única mensagem nossa realmente vazia no período saiu do **WhatsApp Web** (`source: "web"`,
+  com status `EDITED`) para um chat privado, sem execução de n8n correspondente. Foi alguém digitando.
+
+O que sobra, e bate em grupo, contagem e minuto: **é o recibo da exclusão**. `deleteMessageForEveryone`
+manda uma mensagem de protocolo a partir do nosso número, e o app do celular desenha uma bolha vazia
+nossa para cada uma. Foram duas exclusões nesse grupo, e são duas bolhas.
+
+**A consequência é o que importa.** Apagar não é grátis: cada exclusão é tráfego de saída do nosso
+número. No dia do banimento (08/09) foram **55 exclusões**, sendo **41 em cerca de 90 segundos** e
+mais 14 num segundo lote. Somado aos 150 convites de grupo do mesmo dia, é um segundo sinal de
+rajada vindo do mesmo número.
+
+Por isso a limpeza manual agora tem ritmo:
+
+| Trava | Valor | Para quê |
+|---|---|---|
+| `MAX_POR_RODADA` | 25 | teto por chamada; o resto volta no JSON em `restantes` |
+| `PAUSA_MS` | 4s + jitter | nunca mais 41 exclusões em 90 segundos |
+| `TETO_HORA` | 40 | conta junto com o que a Moderação Automática já apagou na mesma hora |
+
+A Moderação Automática já tinha `LIMITE_APAGAR_HORA = 20`, e as duas agora dividem o mesmo teto
+porque leem a mesma tabela. `&remover=1` só age quando a limpeza terminou (`restantes = 0`), para não
+tirar a pessoa do grupo deixando mensagem dela para trás.
+
+## Pausa geral das automações de grupo (09/09/2026)
+
+O número do Samuel voltou depois do banimento. Antes de religar qualquer coisa, tudo o que
+posta ou apaga em grupo, e tudo o que dispara mensagem não pedida, foi **despublicado no n8n**.
+Nada foi apagado: é só publicar de novo, um de cada vez.
+
+| Workflow | ID | O que fazia |
+|---|---|---|
+| Grupos \| Auto-Resposta v2 (IA) | `4fR11ODZtAJB6rWc` | Respondia preço, link e posologia dentro dos grupos |
+| Grupos \| Moderação Automática | `AyS0758LjFJ1qx8v` | Apagava spam para todos |
+| Grupos \| Resumo Diário com Aprovação | `OgE8nAxAwjCwKtJp` | Gerava o resumo diário |
+| Grupos \| Publicar Resumo Aprovado | `mWXSSyxqBfhpLX3V` | Publicava o resumo no clique do botão |
+| Grupos \| Disparador de Resumos Agendados | `8ZGjprsMgYiwNQNC` | Postava os resumos aprovados a cada 5 min |
+| AN - Receita do Dia (Grupos WhatsApp) | `5ZJByEsg1RWkk9gr` | 1 receita por dia, 10h BRT, em todos os grupos |
+| Broadcast Grupos \| WF-B Dispatcher | `Znr91NDLNbICdik3` | Cron de 1 min que disparava os broadcasts agendados |
+| Convite Grupo \| WF1 Agendador | `L291r4YlBnxu4Cfs` | Agendava convite 3 dias após cada compra |
+| Convite Grupo \| WF2 Dispatcher | `4fThGqrY5TnS8Xle` | Mandava os convites a cada 10 min |
+| Popup Boas-Vindas - Cupom 10% | `9RlnW2MtMFGeQ07s` | Mandava o cupom de boas-vindas pelo Samuel |
+| AN - Popup Follow-up Cupom (Samuel) | `C0lG0p0hYBpfqDmU` | Lembrete do cupom 48h depois |
+| AN - Reviews Convite Pós-Entrega (Samuel) | `QWB9Gw8e7DTH4bP5` | Convite de avaliação 51 dias após a postagem, uns 45 após a entrega (`review_config.dias_apos_entrega` = 51 desde 24/11; era 15, uns 9 dias após a entrega) |
+
+O popup dos 10% também saiu do site: no `layout/theme.liquid` a linha
+`{% render 'an-popup-boasvindas' %}` virou comentário, com a explicação em volta. O snippet
+continua no tema, então religar é tirar o comentário. Conferido no HTML servido de
+`www.americanutrition.com`: o popup sumiu e o chat da Serena continua lá.
+
+### Por que a pressa: a fila de convites
+
+Antes de pausar, a tabela `convites_grupo` tinha **1.207 convites vencidos** esperando envio,
+o mais antigo agendado para **24/06**. O histórico de envio conta o resto:
+
+| Quando (BRT) | Convites enviados |
+|---|---|
+| 30/05 10h | 1 |
+| 08/09 18h | 118 |
+| 08/09 19h | 32 |
+
+Ou seja: o dispatcher passou meses sem entregar, acumulou mais de mil convites e despejou 150
+em duas horas no dia 08/09 — o mesmo dia do banimento. Convite não solicitado, em volume, para
+gente que nunca escreveu para o número. É o padrão que o WhatsApp pune.
+
+Não dá para afirmar que foi a única causa, mas é o sinal mais forte que os dados mostram. E a
+fila continuava armada: no minuto em que o número voltasse, os outros 1.207 sairiam.
+
+O mesmo padrão, menor, estava em `review_convites`: **76 convites de avaliação vencidos**, o mais
+antigo de **02/07**. Por isso esse workflow entrou na lista, mesmo não sendo de grupo.
+
+**Antes de religar qualquer um desses, esvaziar ou expirar a fila acumulada.** Publicar sem
+limpar repete exatamente o disparo que derrubou o número.
+
+### O que continua ligado (e por quê)
+
+- **Entrada Samuel** e **Envio Samuel**: a Serena só responde quem escreve primeiro.
+- **Dispatcher Transacional v3**: pago, enviado e entregue. Fila vazia, é resposta a compra real.
+- **Carrinho Abandonado**: 1 carrinho vencido na fila, sem represamento.
+- **Rastreio Proativo** e **Reposição Automática**: 0 vencidos nas duas filas.
+- Leitura pura, que nunca posta: Radar, Snapshot de grupos, Leitor de Imagens, Raio-X Semanal,
+  Fila de Oportunidades, Expurgo, painéis.
+- **Grupos | Limpar Mensagens de um Numero**: endpoint manual, só roda quando alguém chama.
+
+## Filas zeradas e a trava contra represamento (09/09/2026)
+
+### O que foi removido
+
+| Fila | Antes | Depois |
+|---|---|---|
+| `convites_grupo` | 1.255 agendados, 1.207 vencidos, o mais antigo de 24/06 | 0 |
+| `carrinhos_abandonados` | 124 pendentes vencidos, o mais antigo de 22/06 | 0 |
+
+Nada foi apagado: as linhas viraram `status = 'expirado'`, então o histórico continua lá para
+auditoria e nenhuma dessas mensagens sai mais. As demais filas (transacional, avaliação,
+reposição, broadcast) já estavam limpas.
+
+**Correção sobre o relato anterior.** Os "76 convites de avaliação vencidos" que eu citei não
+eram fila: os 76 estão com `status = 'cancelado'`. A consulta que eu usei filtrava só por
+`enviado_em is null`, que naquela tabela não distingue cancelado de pendente. Não havia
+represamento em `review_convites`. O workflow `AN - Reviews Convite Pós-Entrega` foi pausado
+por causa dessa leitura errada — continua pausado, mas por decisão, não por fila.
+
+**Achado no lugar disso:** `carrinhos_abandonados` tinha 124 pendentes vencidos desde 22/06,
+num cron de 1 minuto e com o workflow **ligado**. Minha primeira consulta usou `abandonado_em`
+em vez de `abandonar_em` e por isso mostrou 1. Nenhuma mensagem de carrinho chegou a sair
+depois que o número voltou; o `Dispatcher Carrinho Abandonado` (`MqCaAfZt6PIVat1R`) foi pausado
+antes disso.
+
+### A trava: `Filas | Guarda de Represamento` (`z75qStbDY4Xu2pUv`)
+
+Código em `guarda-filas.js`. Cron de 15 minutos, mais
+`GET /webhook/filas-guarda?t=TOKEN` (`&teste=1` só conta, não expira).
+
+A regra é uma frase: **mensagem atrasada demais não é mensagem atrasada, é mensagem que não
+deve mais existir.** A cada rodada ele expira o que passou do prazo e alerta no tópico 289
+quando ainda sobra fila vencida.
+
+| Fila | Prazo | TTL | Alerta acima de |
+|---|---|---|---|
+| `convites_grupo` | `enviar_em` | 72h | 30 |
+| `carrinhos_abandonados` | `abandonar_em` | 72h | 30 |
+| `scheduled_messages` | `send_at` | 48h | 30 |
+| `review_convites` | `enviar_em` | 168h | 30 |
+| `serena_reposicao` | `avisar_em` | 168h | 30 |
+| `broadcasts_grupos` | `enviar_em` | 24h | 3 |
+
+Duas camadas, de propósito. O TTL impede o disparo em massa mesmo que ninguém esteja olhando:
+por mais tempo que um disparador fique parado, a fila não vira bomba. O alerta é o que evita a
+próxima surpresa: represamento passa a ser aviso, não descoberta depois do estrago.
+
+Os nomes de tabela e coluna são fixos no node, nunca vêm do banco — o node monta SQL e isso
+tinha que ficar fechado. O webhook exige token porque mexe em dado de produção; o cron entra
+sem query e roda direto.
+
+**Para vigiar uma fila nova**, acrescente uma linha em `FILAS`. Fila de disparo nova sem linha
+aqui é fila que pode represar de novo.
+
+Testado em produção: `?teste=1` contou 124 carrinhos vencidos sem tocar em nada; a rodada real
+expirou os 124, zerou todas as filas e mandou o alerta no tópico 289; sem token, responde
+`token invalido`.
+
+### A própria guarda virou spam, e o conserto (10/09)
+
+Print da madrugada: "Guarda de filas — carrinhos_abandonados, ainda vencidos: 31" às 02:30,
+02:45, 03:00, 03:15... O cron é de 15 minutos e a primeira versão avisava sempre que uma fila
+passava do limite, sem checar se algo havia mudado. Foi o mesmo erro que o watchdog cometia com
+a fila humana, cometido de novo por mim no dia seguinte.
+
+**Fila esvaziada.** 33 carrinhos `pendente` vencidos (de 09/09 em diante) viraram `expirado`.
+Sobrou 1, que ainda não venceu. Nenhum deles ia sair mesmo: o `Dispatcher Carrinho Abandonado`
+está despublicado.
+
+**Dedupe de verdade.** O alerta agora fala quando o **conjunto** de filas em alarme muda, e se
+nada mudou repete no máximo uma vez a cada 12h. O conjunto vai em `serena_alertas.detalhe`,
+mesma tabela que o watchdog usa. Quando o alarme cessa, manda uma linha de "filas normalizadas"
+e apaga o estado. Erro de SQL e expurgo grande (10+) mantêm aviso próprio, com piso de 30 min.
+
+Importante: o conjunto é comparado por **nome de fila**, não pela contagem. Comparar contagem
+não resolveria nada — era justamente o que fazia o texto parecer novo a cada rodada, porque o
+número muda sozinho.
+
+**Flag `pausado`.** Fila cujo disparador está desligado de propósito (`convites_grupo` e
+`carrinhos_abandonados` hoje) continua sendo expirada, mas não gera alerta: acumular era o
+esperado, e avisar disso a cada rodada é só barulho. **Ao republicar o disparador, tire a flag** —
+senão a fila volta a acumular sem ninguém ser avisado, que é exatamente o buraco de 08/09.
+
+Conferido em produção: modo conferência e rodada real, as duas com `em_alarme: null` e
+`avisou: false`.
+
+## Moderação religada só para a mensagem automática de ausência (10/09/2026)
+
+Print do grupo #1 ImunoFosfo: uma cliente perguntou sobre a fórmula e, logo em seguida, dois
+robôs de WhatsApp Business responderam no grupo — "Agradecemos sua mensagem. Não estamos
+disponíveis no momento" e "Olá! Obrigada pelo seu contato. No momento estou fora do atendimento
+(...) Daniele Sales Corretora de Imóveis, Creci 5853f". É o robô de quem está no grupo
+respondendo à mensagem dos outros. Enterra a pergunta de quem é cliente de verdade.
+
+**A capacidade já existia e não foi acionada porque eu tinha pausado a moderação em 09/09.**
+A categoria `ausencia_automatica` já estava no pré-filtro e já era de remoção automática.
+Conferido com os textos exatos do print, mais quatro mensagens legítimas de controle:
+
+| Mensagem | Resultado |
+|---|---|
+| "Agradecemos sua mensagem. Não estamos disponíveis no momento..." | apaga |
+| "Obrigada pelo seu contato. No momento estou fora do atendimento..." | apaga |
+| "Oi boa tarde, gostaria de saber sobre essa fórmula, a opinião de quem usou" | passa |
+| "Comecei a tomar mês passado e minha disposição melhorou muito, obrigada a todos" | passa |
+| "Muito obrigada pela atenção de vocês, Deus abençoe" | passa |
+| "Bom dia, quantas cápsulas por dia devo tomar?" | passa |
+
+**O que mudou ao religar:**
+
+- `MODO_AUTO` ficou só com `ausencia_automatica`. Spam de venda, golpe, spam geral e convite
+  para grupo de fora continuam sendo detectados e avisados no tópico 🛡 Moderação, mas **não
+  apagam nada sozinhos** — reativando por partes, como combinado. Para voltar a apagar, é só
+  devolvê-los à lista.
+- **Teto de 20 remoções por hora**, contadas em `grupo_moderacao`. Acima disso o Samuel para de
+  apagar e passa a só alertar, mesmo com confiança alta. Apagar em massa é comportamento de
+  conta comprometida, e foi volume que derrubou o número em 08/09. Um grupo saudável não produz
+  20 mensagens automáticas por hora; se produzir, alguém precisa olhar antes.
+- O aviso no Telegram passou a dizer **por que** não apagou: teto batido, ou categoria em modo
+  aviso.
+
+**Dois limites honestos.** A decisão final é do classificador (Claude), que precisa devolver
+confiança de 90 ou mais; abaixo disso a mensagem só é avisada, não apagada. E o texto original
+fica salvo em `grupo_moderacao` antes de qualquer remoção, para repostar se algo for apagado
+por engano.
+
+## Religamento de 11/09/2026 — carrinho, convite de avaliação e receita do dia
+
+Três disparadores voltaram. Antes de cada um, a fila foi contada.
+
+**Dispatcher Carrinho Abandonado** (`MqCaAfZt6PIVat1R`). A tabela tinha 24 pendentes, mas o node
+`Buscar Pendentes` só pega carrinho com `atualizado_em` nas últimas 3 horas (52h para boleto). Na
+prática eram 3. Esse filtro é o que sempre protegeu o carrinho: fila velha não dispara nem quando o
+disparador volta, que é exatamente o que faltava em `convites_grupo`. O `Montar Texto` já dorme
+30 a 50 segundos antes de cada envio. Primeira rodada: 3 candidatos, 2 já tinham comprado e viraram
+`convertido`, 1 mensagem saiu, escrita pela Serena, com link encurtado. A flag `pausado` saiu de
+`carrinhos_abandonados` no guarda de filas.
+
+**AN - Reviews Convite Pós-Entrega** (`QWB9Gw8e7DTH4bP5`). Nenhum convite vencido: os 76 que eu tinha
+contado em 09/09 estavam todos `cancelado`. O workflow também não acumula, porque só olha uma janela
+fixa de pedidos (entre 15 e 25 dias atrás) e deduplica por `order_id`. O problema era outro: ele
+mandava **15 de uma vez**, com só 2,5 a 9 segundos entre um e outro. Em 02/07 fez isso três vezes
+seguidas. Para um número recém-desbanido é rajada demais, então `review_config.convites_por_rodada`
+caiu de 15 para 5. Continua sendo 10 por hora de capacidade contra uma demanda real de 7 a 28 por dia.
+
+**AN - Receita do Dia** (`5ZJByEsg1RWkk9gr`). 1 grupo, 1 receita por dia às 10h, 8 pendentes na fila e
+modo cíclico ligado. Vai pelo dispatcher de broadcast, que já espaça 4 segundos por grupo. Risco baixo.
+
+`convites_grupo` continua pausado e com a flag no guarda de filas. É o único que ainda não voltou.
+
+## A bolha vazia nos grupos — diagnóstico e correção (11/09/2026)
+
+O Samuel vinha deixando **bolhas vazias** nos grupos: no #1 ImunoFosfo, e depois no ImunoFosfo
+Connect às 21:02, uma bolha vazia para cada mensagem apagada. O Jaderson associava isso ao
+banimento, e com razão: em 08/09 foram 55 exclusões.
+
+Primeiro, o que é impossível. Apagar para todos **é** um envio. A própria Evolution mostra na
+resposta do `DELETE /chat/deleteMessageForEveryone`:
+
+```json
+{"key":{"id":"3EB06F42F038331CE633D2"},
+ "message":{"protocolMessage":{"key":{"id":"3EB0932019871747BD5257"},"type":"REVOKE"}}}
+```
+
+Uma mensagem nova, com id próprio, saindo do nosso número. Tem que ser assim: a revogação precisa
+chegar em todos os aparelhos do grupo. Não existe apagar sem enviar.
+
+O que **não** é normal é a revogação aparecer como bolha. O certo é a original virar "Mensagem
+apagada" no lugar dela, sem nada extra. Três testes no grupo QA Teste Evolution:
+
+| Teste | `participant` enviado | Resultado no aparelho |
+|---|---|---|
+| 1 | omitido | bolha órfã E a original nem sumiu |
+| A | `136795312382168@lid` | limpo |
+| B | `13472225493@s.whatsapp.net` | limpo |
+
+O apagar manual, feito no dedo pelo WhatsApp, também sai limpo. Ou seja: a revogação precisa
+declarar de quem era a mensagem, e esse autor tem que ser resolvível. Sem isso ela não casa com a
+original e o cliente desenha uma bolha para um comando que deveria ser invisível.
+
+Nas exclusões reais a gente mandava `key.participant`, que hoje vem como **`@lid`** — o mesmo
+formato que naquela manhã tinha feito a limpeza por número responder "0 encontradas". Agora os dois
+nós mandam o **telefone** (`participantAlt`), com o `@lid` só como reserva:
+
+- `limpar-numero.js`: guarda `participant_fone` junto de cada alvo e usa `a.participant_fone || a.participant`.
+- `moderacao-apagar-ou-alertar.js`: usa `ctx.telefone + '@s.whatsapp.net'`, caindo em `ctx.participant`.
+
+Com isso a moderação voltou a apagar sozinha a resposta automática de ausência. As outras categorias
+seguem só avisando, e o aviso agora traz um link pronto (em modo teste) para conferir o que aquele
+número postou nas últimas 6 horas. Reclamação e menção a concorrente nunca recebem essa sugestão:
+é fala legítima de cliente.
+
+## A bolha vazia voltou — o teste de 11/09 era incompleto (14/09/2026)
+
+Em 13/09 às 22:33 a moderação apagou sozinha três respostas automáticas de ausência (#1 ImunoFosfo
+e ImunoFosfo Connect), já mandando o autor como telefone, do jeito corrigido em 11/09. No celular
+do Samuel apareceu, logo abaixo do "Mensagem apagada por um admin (você)", **uma bolha verde vazia
+por exclusão**, com um ✓ só. O Jaderson mandou a foto: "ainda está enviando mensagem vazia".
+
+O que ficou claro relendo os testes de 11/09: **os três testes (1, A e B) revogaram mensagens do
+próprio Samuel.** O grupo QA Teste Evolution só tem o Samuel como membro, então nunca houve uma
+mensagem de terceiro para apagar lá. A revogação de admin sobre mensagem *nossa* sai limpa com
+autor no telefone ou no `@lid`; sobre mensagem *de outra pessoa* a bolha aparece, e apareceu tanto
+com `@lid` (antes de 11/09) quanto com telefone (13/09). Ou seja, o formato do autor não é a causa.
+
+O que a Evolution guardou daquela hora, via o workflow de diagnóstico `sAxu8r5jlVx6wq1f`
+(`GET /webhook/evo-debug?t=<token>&jid=<grupo>&horas=3&so_minhas=1`): nenhum texto vazio nosso, nenhuma
+`conversation` em branco. A bolha não é um `sendText` disparado por engano; é a própria mensagem de
+protocolo `REVOKE` que o aparelho desenha. No código (Evolution 2.3.7 sobre Baileys 7.0.0-rc.9)
+`deleteMessage` faz um único `sendMessage(jid, { delete })`, e o Baileys marca o stanza com
+`edit="8"` (revogação de admin) sempre que `fromMe` é falso em grupo. Nada de errado visível ali, e
+nenhuma issue pública da Evolution ou do Baileys descreve a bolha com solução.
+
+**Mitigação aplicada agora:** `MODO_AUTO = []` em `moderacao-apagar-ou-alertar.js` (live e repo).
+A moderação continua classificando e avisando no Telegram (tópico 1630) com o link de limpeza em
+modo teste; apagar passa a ser gesto humano, pelo celular, que sai limpo. Para religar depois do
+teste: `MODO_AUTO = ['ausencia_automatica']`.
+
+**Teste que falta, e que só dá para fazer com uma pessoa de fora no grupo QA.** O workflow de
+diagnóstico ganhou dois modos, ambos travados no grupo QA (`120363429298095918@g.us`), fonte em
+`evolution-debug.js`:
+
+- `&convidar=<numero>` adiciona o número ao grupo QA (o Jaderson entra com o dele).
+- `&apagar=1&modo=lid` ou `&modo=fone` apaga a mensagem mais recente de terceiro no QA mandando o
+  autor no formato escolhido, e devolve a chave original e o corpo exato enviado.
+
+Roteiro: o Jaderson posta "teste 1" no QA pelo celular dele; abre o link com `modo=lid`; olha o
+celular do Samuel e o dele. Posta "teste 2"; abre com `modo=fone`; olha de novo. Se um dos dois sair
+limpo, é só usar aquele formato nos dois nós (`limpar-numero.js` e `moderacao-apagar-ou-alertar.js`).
+Se os dois deixarem bolha, o problema está entre Baileys e o aparelho: aí o caminho é subir a
+Evolution (a 2.4.0-rc traz "LID → phone-number mapping and caching") e repetir o teste, mantendo
+enquanto isso o modo aviso.
+
+### A pista da limpeza manual (14/09/2026, mais tarde)
+
+Na mesma noite o Jaderson pediu para limpar tudo o que o +55 86 92002-8427 tinha postado: 26
+mensagens em três grupos, apagadas pelo `grupo-limpar` mandando o autor como telefone
+(`participantAlt`). **Nenhuma bolha.** As três exclusões automáticas de 13/09 mandaram o mesmo
+autor, no mesmo formato, e deixaram bolha. Conferido na Evolution: o `participantAlt` daquelas
+mensagens é exatamente o telefone que a moderação usou. A única diferença entre os dois casos é a
+**idade da mensagem na hora da revogação**: a limpeza apagou mensagens com horas ou dias; a
+moderação apagou 3, 4 e 32 segundos depois de a mensagem chegar. Os testes limpos do QA (11/09)
+apagaram mensagens com uns 2 minutos.
+
+A leitura: se a revogação chega ao celular do Samuel antes de ele ter processado a original (o
+Samuel roda como aparelho ligado à Evolution, e o app do celular fica atrás em segundos quando está
+em segundo plano), ela não casa com nada, vira bolha, e quando a original chega é marcada como
+apagada. Bate com os dois sintomas da foto: "Mensagem apagada por um admin (você)" e a bolha logo
+abaixo.
+
+**Aplicado:** a moderação voltou a apagar sozinha a ausência automática, mas só depois de a
+mensagem ter pelo menos 3 minutos (`ESPERA_MIN = 180` em `moderacao-apagar-ou-alertar.js`; o
+pré-filtro passou a carregar `ts`, o `messageTimestamp` da mensagem). O webhook já respondeu quando
+a espera acontece, então segurar a execução não represa nada. O `setTimeout` dentro do Code node foi
+testado pelo `evo-debug?espera=5`. Se a próxima exclusão automática vier sem bolha, está resolvido.
+Se vier com bolha, o teste no grupo QA (seção anterior) continua sendo o próximo passo.
+
+### Remover um número de todos os grupos oficiais
+
+O `grupo-limpar&remover=1` só tira a pessoa dos grupos onde ainda há mensagem dela na janela; depois
+de limpo, não tem de onde partir. Para isso o diagnóstico ganhou `&remover=<numero ou lid>`: varre
+os 10 grupos oficiais, procura pelo telefone ou pelo `@lid` do roster, remove onde estiver e devolve
+`estava_em`, `removido_de`, `falhou`. Não toca em admin nem em número da equipe. Usado em 14/09 para
+o +55 86 92002-8427 depois da limpeza: já não estava em nenhum grupo.
+
+## Bolhas vazias em todos os grupos de uma vez, sem nenhuma exclusão nossa (16/09/2026)
+
+Às 11:06-11:07 apareceram ~27 bolhas vazias do Samuel (12 no Connect, 11 no #1, 4 no #2), um ✓
+só. O Jaderson desconectou a Evolution na hora achando que era disparo de mensagem.
+
+Não foi. Conferido:
+
+- A Evolution não tem nenhum envio nosso a grupo nesse horário (último: Receita do Dia às 10:01).
+- `grupo_moderacao` sem nenhuma exclusão em 26 h; `grupo-limpar` sem execução; teste do QA não usado.
+- Volume de envios normal (217 em 16 h, máximo 18 por 10 min), nenhum contato em loop.
+- O watchdog registrou `Samuel desconectado, estado close` às 11:10.
+
+Mesmo padrão de 09/09 ("a sessão do Baileys travou... o aparelho principal encheu de bolhas vazias,
+tráfego de protocolo de uma sessão quebrada, e o número acabou banido"): mensagens de protocolo da
+sessão (troca de chaves de grupo, retransmissões), que o celular principal desenha como bolha e a
+Evolution nem armazena. Aparecem em todos os grupos no mesmo minuto porque a sessão faz isso para
+cada grupo em que o número está.
+
+**Feito:** `MODO_AUTO = []` de novo na moderação (revogar em grupo é mais tráfego de protocolo saindo
+do número). O que a Evolution 2.3.7 (Baileys 7.0.0-rc.9) faz com grupos em modo lid é instável; a
+correção de verdade é subir a Evolution (2.4.0-rc2 traz o mapeamento lid → telefone) e, se as
+bolhas voltarem ao reconectar, reiniciar o container antes de conectar. Ideal: tirar as automações
+de grupo do número de vendas e usar um segundo número só para grupos.
+
+### Correção do diagnóstico e sentinela (16/09/2026, mais tarde)
+
+Olhando o registro cru da Evolution, as 27 bolhas **estão** gravadas: mensagens nossas
+(`fromMe`, `source: web`, ids `3EB0…` gerados pelo Baileys) com `messageType: conversation` e
+`conversation: ""`, para 3 grupos (12 no Connect, 11 no #1, 4 no #2), de 11:06:15 a 11:07:53, a
+cada 1-2 s. Ou seja, a sessão de fato **enviou** mensagens de texto vazias, não foi só o celular
+desenhando protocolo. Nenhuma execução do n8n cobre esse intervalo (consulta por janela em
+`search_executions`: só fan-outs de 100 ms e a resposta ao Reginaldo), e revogações não ficam
+gravadas assim (as 26 da limpeza de 14/09 não aparecem). Quem mandou foi a sessão do Baileys por
+conta própria. Outro sintoma antes da rajada: de 10:24 até a queda, cada envio nosso aparecia em
+dobro, uma cópia para o número e outra para o `@lid`; depois da reconexão (11:16) sumiu.
+
+**Sentinela** (`Grupos | Sentinela de Bolhas`, fonte `sentinela-bolhas.js`): a cada 2 min lê as
+últimas 100 mensagens da Evolution; 4 ou mais mensagens nossas vazias em grupo nos últimos 6 min
+disparam aviso no Telegram (tópicos 289 e 1630) e `PUT /instance/restart/Samuel` (sessão nova,
+sem QR); 6 ou mais envios duplicados para `@lid` só avisam. Dedupe de 20 min. Desligar o restart
+automático: `serena_config.sentinela_reiniciar = off` (sem a linha, fica ligado).
+
+Reginaldo (+55 62 8137-9595): a resposta das 11:08 ficou marcada como entregue mas não saiu (a
+Evolution já estava caindo). Reenviada pelo Inbox às 11:24 e a Serena religada na conversa.

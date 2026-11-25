@@ -1,0 +1,40 @@
+<!-- AN-UTMIFY-INTERNOS: a Utmify nao cola os UTMs do anuncio nos links internos da loja -->
+<script>
+/* 03/11/2026, pedido do Jaderson: o link "produtos" da home ia para
+   /collections/america-nutrition?utm_source=FB&utm_campaign=...&utm_term=Facebook_Mobile_Feed.
+   Quem faz isso e a Utmify (cdn.utmify.com.br/scripts/utms/latest.js): ela guarda os UTMs do anuncio por 7 dias no
+   navegador e cola em todos os links do site. A tag dela ganhou data-utmify-ignore-classes="an-int", e este
+   bloco marca com a classe an-int os links que ficam dentro da loja (americanutrition.com e www). Ficam de fora,
+   e continuam com os UTMs, os links para o checkout, para o WhatsApp e para outros sites, que e onde a atribuicao
+   do anuncio importa. A origem do trafego da loja continua no cookie an_src (dominio .americanutrition.com).
+   A Utmify decora no "load" e depois de mudancas na pagina; este bloco marca antes (DOMContentLoaded) e o
+   observador dele foi registrado antes do dela, entao roda primeiro. */
+(function () {
+  try {
+    var LOJA = /^(www\.)?americanutrition\.com$/i;
+    function marcar(raiz) {
+      var as = (raiz && raiz.querySelectorAll) ? raiz.querySelectorAll('a[href]') : [];
+      for (var i = 0; i < as.length; i++) {
+        var a = as[i];
+        if (a.classList.contains('an-int')) continue;
+        var h = a.getAttribute('href') || '';
+        if (/^(mailto:|tel:|javascript:|#)/i.test(h)) continue;
+        try { if (LOJA.test(new URL(a.href, location.href).hostname)) a.classList.add('an-int'); } catch (e) {}
+      }
+    }
+    function iniciar() {
+      marcar(document);
+      try {
+        new MutationObserver(function (ms) {
+          for (var i = 0; i < ms.length; i++) for (var j = 0; j < ms[i].addedNodes.length; j++) {
+            var n = ms[i].addedNodes[j];
+            if (n.nodeType === 1) marcar(n.tagName === 'A' ? { querySelectorAll: function () { return [n]; } } : n);
+          }
+        }).observe(document.documentElement, { subtree: true, childList: true });
+      } catch (e) {}
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', iniciar); else iniciar();
+  } catch (e) {}
+})();
+</script>
+<!-- /AN-UTMIFY-INTERNOS -->

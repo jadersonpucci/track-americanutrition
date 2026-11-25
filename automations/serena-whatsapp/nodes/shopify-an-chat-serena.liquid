@@ -1,0 +1,59 @@
+{%- comment -%}
+  Chat do site (Serena) + botao do Telegram — canais de atendimento enquanto o WhatsApp esta fora.
+  Workflow n8n: "Serena | Chat do Site" (gVun1aWoIRm4VrXk), GET /webhook/serena-chat.
+
+  Os dois botoes flutuantes vivem dentro de #anchat-fab (Telegram em cima, chat embaixo),
+  entao aqui basta posicionar o container.
+
+  PARA VOLTAR AO WHATSAPP: apague a linha {% render 'an-chat-serena' %} no
+  layout/theme.liquid. O botao verde do WhatsApp volta sozinho, nada mais muda.
+{%- endcomment -%}
+
+<style>
+  /* o botao do WhatsApp aponta para um numero fora do ar: sai de cena enquanto isso */
+  .an-wpp-btn { display: none !important; }
+
+  /* o stack assume a mesma posicao que o botao verde tinha */
+  #anchat-fab {
+    bottom: 22px !important;
+    right: 22px !important;
+    z-index: 99999 !important;
+  }
+  /* so no desktop: no celular quem manda na geometria e o proprio widget (teclado do iOS) */
+  @media (min-width: 601px) {
+    #anchat-p { bottom: 92px !important; right: 22px !important; }
+  }
+  #anchat-p { z-index: 99999 !important; }
+
+  @media (max-width: 600px) {
+    /* Lado a lado, nao empilhados: empilhado o par tem 112px de altura e sobe demais
+       na pagina de produto. Em linha o conjunto volta a ter a altura de um botao so.
+
+       Sobre o 104px: o tema usava 178px (92 de folga + 86 da barra de compra), mas
+       os 92px ja passavam do topo da barra - estava contando a barra duas vezes, e o
+       botao ficava ~90px acima dela. 104px deixa ~17px de folga real. */
+    #anchat-fab {
+      flex-direction: row !important;
+      align-items: flex-end !important;
+      gap: 10px !important;
+      bottom: {% if template.name == 'product' %}104px{% else %}92px{% endif %} !important;
+      right: 18px !important;
+    }
+    /* tamanho dos dois botoes vem do widget (#anchat-b,#anchat-tg): iguais.
+       Lado a lado, diametros diferentes so parecem desalinhados. */
+    /* no mobile o painel e tela cheia e o proprio widget cuida da altura pelo
+       visualViewport (teclado do iOS): nao force bottom/height aqui. */
+  }
+
+  /* mesma regra do buybar: nao cobre carrinho, menu nem busca abertos */
+  body:has(.drawer[open]) #anchat-fab,
+  html.drawer-open #anchat-fab,
+  body:has(.drawer[open]) #anchat-p,
+  html.drawer-open #anchat-p {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+</style>
+
+<script src="https://n8n.americanutrition.com/webhook/serena-chat?acao=widget" defer></script>

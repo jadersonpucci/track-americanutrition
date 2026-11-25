@@ -1,0 +1,37 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800;900&display=block" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:1080px;height:1080px;overflow:hidden;background:#05070f}
+#c{position:relative;width:1080px;height:1080px;background:url(bg1.png) center/cover no-repeat;font-family:'Montserrat',sans-serif}
+#c::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(3,6,18,.55) 0%,rgba(3,6,18,.15) 30%,rgba(0,0,0,0) 45%)}
+.t{position:absolute;left:0;right:0;text-align:center}
+#k{top:54px;font-weight:900;font-size:104px;line-height:1;letter-spacing:2px;color:#fff;text-shadow:0 6px 24px rgba(0,0,0,.55)}
+#b{top:156px;font-weight:900;font-size:112px;line-height:1;letter-spacing:1px;background:linear-gradient(90deg,#ff2a1a 0%,#ff5a14 45%,#ffa21f 100%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 4px 18px rgba(255,80,20,.45))}
+#s{top:286px;font-weight:700;font-size:33px;color:#fff;letter-spacing:.3px;text-shadow:0 3px 14px rgba(0,0,0,.7)}
+#s b{color:#ffb547;font-weight:800}
+.p{position:absolute;transform:translateX(-50%);filter:drop-shadow(0 10px 10px rgba(0,0,0,.65)) drop-shadow(0 0 16px rgba(255,90,30,.28))}
+.p img{display:block;height:100%;width:auto}
+.sh{position:absolute;height:18px;transform:translateX(-50%);border-radius:50%;background:radial-gradient(ellipse at center,rgba(0,0,0,.75) 0%,rgba(0,0,0,.35) 55%,rgba(0,0,0,0) 75%);pointer-events:none}
+#badge{position:absolute;left:50%;transform:translateX(-50%);top:938px;padding:16px 46px;border-radius:999px;background:#fff;color:#0b1a3f;font-weight:900;font-size:40px;letter-spacing:.3px;box-shadow:0 8px 28px rgba(0,0,0,.45),0 0 0 3px rgba(255,120,40,.55)}
+</style></head>
+<body><div id="c">
+<div class="t" id="k">ESQUENTA</div>
+<div class="t" id="b">BLACK FRIDAY</div>
+<div class="t" id="s">Acesso antecipado a <b>toda a linha</b> America Nutrition</div>
+<div id="prod"></div>
+<div id="badge">Só até 26/11</div>
+</div>
+<script>
+// [arquivo, x centro, base (y onde o produto pisa), altura]
+const L = window.LAYOUT;
+const box = document.getElementById('prod');
+L.forEach(function (r) {
+  const d = document.createElement('div'); d.className = 'p';
+  d.style.left = r[1] + 'px'; d.style.top = (r[2] - r[3]) + 'px'; d.style.height = r[3] + 'px'; d.style.zIndex = r[4] || 1;
+  const i = document.createElement('img'); i.src = 'trim/' + r[0] + '.png'; d.appendChild(i); box.appendChild(d);
+  const sh = document.createElement('div'); sh.className = 'sh'; sh.style.left = r[1] + 'px'; sh.style.top = (r[2] - 9) + 'px'; sh.style.zIndex = r[4] || 1; sh.style.width = Math.round(r[3] * (r[5] || 0.5)) + 'px'; box.insertBefore(sh, d);
+});
+</script>
+</body></html>

@@ -1,0 +1,143 @@
+// Node "Limpar Mensagens" do workflow "Grupos | Limpar Mensagens de um Numero" (n8n OlDkvRz2Phh7ISvy).
+// Chaves reais so no n8n.
+// Limpeza manual: apaga para todos, nos grupos oficiais, tudo o que um numero postou na janela pedida.
+// Usa o mesmo caminho da Moderacao Automatica (deleteMessageForEveryone) e grava o texto original em
+// grupo_moderacao ANTES de apagar, para poder conferir ou repostar depois.
+const q = ($json.query || $json.body || $json) || {};
+const TOKEN = 'an-mod-5Rt8Bn2W';
+if (String(q.t || '') !== TOKEN) return [{ json: { erro: 'token invalido' } }];
+const numero = String(q.numero || '').replace(/[^0-9]/g, '');
+if (numero.length < 10) return [{ json: { erro: 'use ?numero=55DDD9XXXXXXXX' } }];
+// Chave tolerante ao nono digito: DDD + os 8 ultimos. 5562992506712 e 556292506712 viram a mesma coisa.
+// O WhatsApp entrega a MESMA pessoa nos dois formatos dependendo de onde o numero foi salvo, e em
+// 10/09 isso fez esta limpeza responder "0 encontradas" para mensagens que estavam la.
+const chave = (n) => { const d = String(n || '').replace(/[^0-9]/g, ''); return d.length < 10 ? '' : (d.slice(2, 4) + d.slice(-8)); };
+const alvoChave = chave(numero);
+const horas = Math.max(1, Math.min(720, Number(q.horas || 24)));
+const soListar = String(q.teste || '') === '1';
+const remover = String(q.remover || '') === '1';
+const GRUPOS = {
+  '120363233277583685@g.us': 'Fosfoetanolamina (ImunoFosfo)',
+  '120363246659395526@g.us': '#1 ImunoFosfo',
+  '120363353982971871@g.us': 'ImunoFosfo Connect Oncologicas',
+  '120363307265095030@g.us': '#2 ImunoFosfo',
+  '120363423321725793@g.us': 'Fosfoetanolamina (ImunoFosfo) #2',
+  '120363407686844370@g.us': '#3 ImunoFosfo',
+  '120363426145445382@g.us': 'Depoimentos sobre ImunoFosfo',
+  '120363404254700593@g.us': 'ImunoFosfo Diabetes Oficial',
+  '120363407289053552@g.us': '#1 ImunoFosfo Diabetes',
+  '120363425146226301@g.us': '#4 ImunoFosfo',
+  '120363429298095918@g.us': 'QA Teste Evolution'
+};
+const EQUIPE = ['5513981885555', '16464270203', '13472225493'];
+if (EQUIPE.indexOf(numero) !== -1) return [{ json: { erro: 'esse numero e da equipe, nao vou apagar' } }];
+// RITMO. Apagar para todos nao e uma operacao silenciosa: cada exclusao e uma mensagem de protocolo
+// que sai DO NOSSO NUMERO para o grupo, e o WhatsApp do celular ainda desenha uma bolha vazia nossa
+// para cada uma. Em 08/09 esta limpeza apagou 41 mensagens em ~90 segundos e outras 14 depois - 55 no
+// dia do banimento. Rajada de exclusao conta como rajada de envio.
+// Entao: no maximo MAX_POR_RODADA por chamada, com PAUSA_MS entre uma e outra, e um teto por hora
+// somado ao que a Moderacao Automatica ja apagou (mesma tabela, mesma conta). Se sobrar, o retorno
+// diz quantas faltam: e so chamar de novo mais tarde.
+const MAX_POR_RODADA = 25;
+const PAUSA_MS = 4000;
+const TETO_HORA = 40;
+const EVO = 'http://evolution-api-aru6-api-1:8080';
+const EVO_KEY = 'EVO_API_KEY';
+const SK = 'SUPABASE_SERVICE_KEY';
+const TG = 'http://telegram-bot-api:8081/bot<TOKEN>/sendMessage';
+// grupo "America Nutrition Alertas", topico 1630 (Moderacao): a equipe inteira ve, nao so um celular
+const TG_CHAT = '-1003766435449';
+const TG_TOPICO = 1630;
+const NL = String.fromCharCode(10);
+const E = (v) => (v === null || v === undefined || v === '') ? 'null' : ("'" + String(v).replace(/'/g, "''").slice(0, 900) + "'");
+const req = async (o) => { try { return await this.helpers.httpRequest(o); } catch (e) { return null; } };
+const sql = async (s) => await req({ method: 'POST', url: 'https://supabase.americanutrition.com/pg/query', headers: { apikey: SK, Authorization: 'Bearer ' + SK, 'Content-Type': 'application/json' }, body: { query: s }, json: true });
+// 1) coleta as mensagens recentes. Nessa versao a Evolution ignora o filtro where, entao filtramos aqui.
+const corte = Math.floor(Date.now() / 1000) - horas * 3600;
+const alvos = [];
+const vistos = {};
+for (let page = 1; page <= 40; page++) {
+  const r = await req({ method: 'POST', url: EVO + '/chat/findMessages/Samuel', headers: { apikey: EVO_KEY, 'Content-Type': 'application/json' }, body: { where: {}, page: page, offset: 100 }, json: true, timeout: 45000 });
+  const recs = (r && r.messages && r.messages.records) || [];
+  if (!recs.length) break;
+  let maisVelho = 0;
+  for (const m of recs) {
+    const k = m.key || {};
+    const ts = Number(m.messageTimestamp || 0);
+    if (ts && (!maisVelho || ts < maisVelho)) { maisVelho = ts; }
+    if (ts < corte) continue;
+    if (!GRUPOS[k.remoteJid]) continue;
+    if (k.fromMe === true) continue;
+    // O autor vem como @lid (id interno do WhatsApp, so digitos e NAO e telefone) e o telefone real
+    // aparece em participantAlt. Comparar por substring pegava @lid parecido de outra pessoa, entao
+    // aqui so entram identificadores que sao mesmo telefone, comparados pela chave tolerante.
+    const fones = [];
+    for (const b of [k.participant, k.participantAlt, k.senderPn, m.participant]) {
+      const raw = String(b || '');
+      if (!raw || raw.indexOf('@lid') !== -1) continue;
+      const d = raw.split('@')[0].replace(/[^0-9]/g, '');
+      if (d.length >= 10) fones.push(chave(d));
+    }
+    if (fones.indexOf(alvoChave) < 0) continue;
+    if (!m.message) continue;
+    // ja apagada: a Evolution guarda o corpo no banco dela e so marca o update como DELETED/REVOKED
+    const upd = Array.isArray(m.MessageUpdate) ? m.MessageUpdate : [];
+    if (upd.some((u) => /DELET|REVOK/i.test(String((u && u.status) || '')))) continue;
+    if (vistos[k.id]) continue;
+    vistos[k.id] = 1;
+    const mm = m.message || {};
+    let texto = mm.conversation || (mm.extendedTextMessage && mm.extendedTextMessage.text) || (mm.imageMessage && mm.imageMessage.caption) || (mm.videoMessage && mm.videoMessage.caption) || (mm.documentMessage && mm.documentMessage.caption) || '';
+    if (!texto) { texto = '[' + String(m.messageType || 'midia') + ']'; }
+    alvos.push({ id: String(k.id), jid: String(k.remoteJid), participant: String(k.participant || ''), participant_fone: String(k.participantAlt || k.senderPn || ''), grupo: GRUPOS[k.remoteJid], texto: String(texto), push_name: String(m.pushName || ''), ts: ts });
+  }
+  if (maisVelho && maisVelho < corte) break;
+  if (recs.length < 100) break;
+}
+alvos.sort((a, b) => a.ts - b.ts);
+if (soListar) {
+  return [{ json: { numero: numero, horas: horas, encontradas: alvos.length, modo: 'teste (nada foi apagado)', por_rodada: MAX_POR_RODADA, mensagens: alvos.map((a) => ({ grupo: a.grupo, texto: a.texto.slice(0, 120) })) } }];
+}
+// 2) grava e apaga, devagar
+const cHora = await sql("select count(*)::int as n from grupo_moderacao where acao = 'apagada' and criado_em > now() - interval '1 hour'");
+const jaNaHora = (Array.isArray(cHora) && cHora[0]) ? Number(cHora[0].n || 0) : 0;
+const cabeNaHora = Math.max(0, TETO_HORA - jaNaHora);
+const cota = Math.min(alvos.length, MAX_POR_RODADA, cabeNaHora);
+const fila = alvos.slice(0, cota);
+const restantes = alvos.length - fila.length;
+let apagadas = 0;
+const falhas = [];
+const porGrupo = {};
+for (const a of fila) {
+  if (apagadas || falhas.length) { await new Promise((r) => setTimeout(r, PAUSA_MS + Math.floor(Math.random() * 1500))); }
+  await sql('insert into grupo_moderacao (grupo_jid,grupo_nome,autor,telefone,push_name,msg_id,texto,categoria,confianca,motivo,acao) values (' + E(a.jid) + ',' + E(a.grupo) + ',' + E(numero) + ',' + E(numero) + ',' + E(a.push_name) + ',' + E(a.id) + ',' + E(a.texto) + ",'spam_geral',100,'Limpeza manual do numero inteiro','apagada') on conflict (msg_id) do nothing;");
+  // AUTOR NA REVOGACAO (11/09/2026). Apagar para todos manda uma mensagem de revogacao, e ela precisa
+  // dizer de quem era a mensagem. Se esse autor nao for resolvivel, a revogacao nao casa com a original
+  // e o aparelho desenha uma BOLHA VAZIA nossa no grupo - foi o que apareceu no ImunoFosfo Connect.
+  // Testado no grupo QA: sem autor -> bolha orfa e a original nem some; com autor -> limpo.
+  // O telefone (participantAlt) resolve sempre; o @lid nem sempre. Entao telefone primeiro.
+  const autorJid = a.participant_fone || a.participant;
+  const r = await req({ method: 'DELETE', url: EVO + '/chat/deleteMessageForEveryone/Samuel', headers: { apikey: EVO_KEY, 'Content-Type': 'application/json' }, body: { id: a.id, remoteJid: a.jid, fromMe: false, participant: autorJid }, json: true, timeout: 30000 });
+  if (r) { apagadas++; porGrupo[a.grupo] = (porGrupo[a.grupo] || 0) + 1; }
+  else { falhas.push(a.id); await sql("update grupo_moderacao set acao = 'falha_ao_apagar', erro = 'delete recusado pela Evolution' where msg_id = " + E(a.id) + ';'); }
+}
+// 3) opcional: tira a pessoa dos grupos onde ela postou
+const removidoDe = [];
+if (remover && !restantes) {
+  const jids = {};
+  for (const a of fila) { jids[a.jid] = a.participant_fone || a.participant; }
+  for (const j of Object.keys(jids)) {
+    const r = await req({ method: 'POST', url: EVO + '/group/updateParticipant/Samuel?groupJid=' + encodeURIComponent(j), headers: { apikey: EVO_KEY, 'Content-Type': 'application/json' }, body: { action: 'remove', participants: [jids[j] || (numero + '@s.whatsapp.net')] }, json: true, timeout: 30000 });
+    if (r) removidoDe.push(GRUPOS[j] || j);
+  }
+}
+let t = '\u{1F9F9} LIMPEZA MANUAL' + NL + NL;
+t += 'Numero: wa.me/' + numero + (alvos.length && alvos[0].push_name ? (' (' + alvos[0].push_name + ')') : '') + NL;
+t += 'Janela: ultimas ' + horas + 'h' + NL;
+t += 'Apagadas para todos: ' + apagadas + ' de ' + alvos.length + NL;
+if (restantes) { t += 'Faltam ' + restantes + ' (ritmo controlado). Chame de novo mais tarde.' + NL; }
+for (const g of Object.keys(porGrupo)) { t += '  - ' + g + ': ' + porGrupo[g] + NL; }
+if (falhas.length) { t += 'Falharam: ' + falhas.length + NL; }
+if (removidoDe.length) { t += 'Removido dos grupos: ' + removidoDe.join(', ') + NL; }
+t += NL + 'O texto original ficou salvo em grupo_moderacao.';
+await req({ method: 'POST', url: TG, headers: { 'Content-Type': 'application/json' }, body: { chat_id: TG_CHAT, message_thread_id: TG_TOPICO, text: t, disable_web_page_preview: true }, json: true });
+return [{ json: { numero: numero, horas: horas, encontradas: alvos.length, apagadas: apagadas, restantes: restantes, ja_apagadas_na_hora: jaNaHora, teto_hora: TETO_HORA, falhas: falhas.length, por_grupo: porGrupo, removido_de: removidoDe } }];

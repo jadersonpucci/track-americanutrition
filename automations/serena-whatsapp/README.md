@@ -1,0 +1,3220 @@
+# Serena no WhatsApp do Samuel (Evolution API)
+
+Alternativa ao Respond.io: o cérebro da Serena (`[Serena] Core`, `POST /webhook/serena-core`)
+passa a responder direto no número do Samuel, através da instância `Samuel` da Evolution API.
+
+Tudo roda no n8n (`https://n8n.americanutrition.com`). Este diretório guarda o código-fonte
+(n8n Workflow SDK) e a documentação de operação.
+
+## Workflows
+
+| Workflow | ID | Função |
+|---|---|---|
+| `[Serena WhatsApp] Entrada Samuel -> Serena Core -> Evolution` | `zeJ8nScEpt7TckFb` | Recebe os eventos do Samuel, normaliza, chama o Core e responde |
+| `[Serena WhatsApp] Saida Painel -> Samuel + Config` | `BTJBa03LiBillfHy` | Entrega o que o atendente escreve no Painel da Serena + endpoint de configuração |
+| `[Serena WhatsApp] UTIL Criar Tabelas` | `KWmhz68lU6bSUeAr` | Cria `serena_wpp_buffer`, `serena_wpp_pausas` e as chaves `wpp_*` (já executado, deixar inativo) |
+| `Evolution Samuel \| Dispatcher de Webhook` | `kW1lyiLPbmIIGjGR` | Já existia. Ganhou o alvo `serena` -> `/webhook/serena-wpp-in` |
+
+## Fluxo de entrada
+
+```
+Evolution (instância Samuel)
+  -> /webhook/samuel-in (dispatcher, fan-out)
+  -> /webhook/serena-wpp-in
+     Triagem ............ ignora grupos, status, reações, figurinhas; resolve @lid via wa_identidades
+     Rotear por Tipo .... texto | imagem | audio | humano (fromMe vindo do celular)
+       imagem ........... getBase64 na Evolution -> Claude Haiku descreve (via /webhook/claude-call)
+       audio ............ getBase64 na Evolution -> ElevenLabs scribe_v1 transcreve
+       humano ........... pausa a Serena para o número (wpp_pausa_humano_min) e grava no painel
+     Registrar no Buffer  dedup por msg_id, lê config wpp_*, checa pausa e limite por hora
+     Pode Responder? .... modo teste/producao/off, lista de teste, regex de assuntos do Clube
+     Aguardar ........... wpp_debounce_seg (junta mensagens picadas)
+     Coletar Buffer ..... só a execução da última mensagem continua; concatena o lote
+     Chamar Serena Core . POST /webhook/serena-core {canal: 'whatsapp', telefone, nome, texto}
+     Fatiar Resposta .... quebra respostas > 900 chars por parágrafo
+     Enviar pelo Samuel . POST /message/sendText/Samuel com delay (mostra "digitando")
+     Marcar Entregue .... entregue=true nas mensagens papel=serena canal=whatsapp
+```
+
+O Core já grava cliente + resposta em `serena_mensagens`, unifica identidade e respeita
+`serena_conversas.ia_pausada` (pausa feita pelo Painel).
+
+## Configuração (sem SQL, direto do iPhone)
+
+`GET https://n8n.americanutrition.com/webhook/serena-wpp-config?t=TOKEN`
+(o token está no nó `Validar Config` do workflow de saída)
+
+| Parâmetro | Exemplo | Efeito |
+|---|---|---|
+| `chave=wpp_modo&valor=teste` | `teste` / `producao` / `off` | Em `teste`, só os números da lista recebem a Serena |
+| `chave=wpp_teste_numeros&valor=5541999999999,5511888888888` | | Números (com 55 + DDD) liberados no modo teste |
+| `chave=wpp_max_por_hora&valor=30` | | Máximo de respostas da Serena por cliente por hora |
+| `chave=wpp_debounce_seg&valor=4` | | Segundos esperando mensagens picadas (4s por padrão) |
+| `chave=wpp_pausa_humano_min&valor=120` | | Minutos de pausa quando um humano responde pelo celular |
+| `chave=wpp_ignorar_regex&valor=(estrela\|saldo do clube\|resgat)` | | Mensagens que casam ficam com o bot do Clube |
+| `liberar=5541999999999` | | Remove a pausa automática daquele número |
+
+Sem parâmetros, o endpoint só mostra a config atual e as pausas ativas.
+
+## Rollout sugerido
+
+1. Histórico: ficou em `wpp_modo=teste` (só o número do Jaderson) de 02/09 até 03/09/2026 00:15 BRT, quando passou para **`wpp_modo=producao`** (todos os clientes). Para voltar ao teste ou desligar: `...&chave=wpp_modo&valor=teste` ou `valor=off`.
+2. Colocar o próprio número na lista: `...&chave=wpp_teste_numeros&valor=55DDDNUMERO`.
+3. Mandar mensagens para o Samuel (texto, áudio, foto de comprovante) e acompanhar no
+   Painel da Serena (`/webhook/painel-serena`).
+4. Quando estiver satisfeito: `...&chave=wpp_modo&valor=producao`.
+5. Desligar o Respond.io do fluxo de atendimento (Custom Channel) para não haver resposta dupla.
+
+## Convivência com os outros bots do Samuel
+
+- `Clube — Assistente WhatsApp (Samuel)` responde a `estrela|ponto|saldo|clube|resgat` e a mensagens
+  contendo e-mail. A regex `wpp_ignorar_regex` evita que a Serena responda os mesmos assuntos.
+  Mensagens de cliente que contenham um e-mail ainda podem gerar resposta dupla; se isso
+  incomodar, remova o alvo `clube` do dispatcher quando a Serena estiver em produção.
+- Disparos automáticos (dunning, reviews, fidelidade, carrinho) continuam iguais. A resposta do
+  cliente a esses disparos agora cai na Serena.
+- Pausa automática por humano depende do campo `data.source` da Evolution ser `android|ios|web|desktop`.
+  Se o build da Evolution não enviar esse campo, a pausa automática simplesmente não acontece
+  (a pausa pelo Painel continua funcionando).
+
+## Comandos pelo celular do Samuel
+
+Na conversa com o cliente, digitar:
+
+- `#serena off` -> Serena para de responder aquele cliente por 30 dias
+- `#serena on` -> Serena volta a responder na hora
+
+## Painel de Conversas com ficha 360
+
+`GET https://n8n.americanutrition.com/webhook/serena-inbox?t=TOKEN` (workflow `[Serena] Painel de Conversas`,
+token no nó `Montar SQL` do `[Serena] Painel API`).
+
+Ao abrir uma conversa, a coluna da direita monta a **ficha 360** do contato (ação `ficha360` da API):
+
+- **Serena**: status (ativa, pausada pelo painel, pausada por humano no celular), contagem de mensagens por papel,
+  canais usados, primeira/última conversa, origem do lead (anúncio CTWA / site).
+- **Shopify**: cliente encontrado por telefone (com variações do 9º dígito) ou email, total de pedidos, total gasto,
+  cidade, tags, nota, link direto para o admin.
+- **Último envio**: rastreio ao vivo do pedido mais recente com código (mesmo motor do track.americanutrition.com):
+  status, onde está, previsão, atraso, recebido por, último evento, link.
+- **Pedidos**: últimos 8 com status, valor, cupom, itens, código de rastreio e link para o pedido no admin.
+- **Assinatura**, **Clube America** (nível, estrelas), **Carrinho abandonado** (com link do checkout),
+  **Avaliações**, **Disparos do Samuel** (com ack e opt-out) e **Fatos memorizados**.
+- Botões: pausar/reativar a Serena e abrir o contato no WhatsApp.
+
+A thread agora separa as mensagens por dia e mostra o canal de cada uma.
+
+## Contexto e pedidos pelo telefone (Core)
+
+O `[Serena] Core` carrega as últimas 20 mensagens do contato (qualquer canal, qualquer data) mais os fatos de
+`serena_fatos`. O prompt passou a incluir o telefone do canal e a regra: em pergunta sobre pedido, último pedido,
+entrega ou rastreio, chamar `buscar_pedido_telefone` com o número do WhatsApp sem pedir nada ao cliente e, se
+for o caso, `consultar_status_pedido` com o rastreio do pedido mais recente.
+
+## Painel admin central
+
+O card **Inbox Serena** foi adicionado ao painel admin central (`assets/america_admin.html` no tema Shopify,
+servido em `GET /webhook/admin`), grupo Clientes, com badge de "aguardando resposta" vindo de
+`GET /webhook/serena-inbox-count?t=TOKEN` (contatos cuja última mensagem é do cliente há mais de 2 min, nos últimos 3 dias).
+
+## Lista de números que a Serena nunca responde
+
+Tabela `serena_wpp_bloqueados` (telefone DDI+DDD+número, com tolerância ao 9º dígito). Checada na entrada
+antes de qualquer resposta automática. Não afeta as mensagens transacionais de pedido.
+
+- Pelo painel: botão "Nunca responder automaticamente" na ficha do contato.
+- Pela URL de config: `&bloquear=5513999999999&motivo=parceiro` / `&desbloquear=5513999999999`. Sem parâmetros lista os bloqueados.
+- Lista inicial carregada: 10 números informados em 03/09/2026.
+
+## Aviso "pedido enviado" só depois da postagem (18/11/2026)
+
+Caso AN-16659 (Yronne, AP765457377BR): o aviso "foi postado e já está com a transportadora" saía quando a etiqueta
+era gerada (fulfillment da Shopify, 08h09), mas o rastreio mostrava "Preparando seu pedido" porque os Correios ainda
+não tinham recebido o pacote (a postagem costuma vir horas depois).
+
+- `[Transacional] Pedido Enviado` (`XzWcKoGQrvVhovb8`): grava o aviso em `scheduled_messages` com
+  `status = 'aguardando_postagem'` (antes ia direto como `pendente`).
+- `[Transacional] Liberar Pedido Enviado (postagem)` (`IeG0iSYs4sPHVf7B`, `liberar-pedido-enviado.workflow.js`, cron
+  15 min): consulta o motor de rastreio; com `postado_em` ou `status_chave` de transporte (picked_up, in_transit,
+  out_for_delivery, delivered, exception, returned) muda para `pendente` com `send_at = now()`; com 48h sem postagem
+  libera com `custom_fields.sem_postagem = true`.
+- `[Transacional] Dispatcher Samuel v3` (`WXncUehLXyuIMoSm`, `nodes/dispatcher-montar-mensagem.js`): com
+  `sem_postagem` manda o texto aprovado "Seu pedido X já foi embalado e etiquetado para os Correios 📦 Assim que eles
+  registrarem a postagem, você acompanha cada etapa aqui: 🔍 link" + aviso de taxas; sem a marca, o texto de sempre.
+- A expiração de 48h do Dispatcher conta a partir do `send_at`, que é renovado na liberação.
+- Teste (18/11): 3 avisos fictícios sem telefone (postado, preparando, 49h): os dois primeiros casos certos foram
+  liberados (um com `sem_postagem`), o "preparando" ficou retido, o Dispatcher montou e pulou por `dados_incompletos`;
+  apagados depois. Os 14 avisos que estavam agendados (AN-16633 a AN-16661) passaram para `aguardando_postagem`.
+
+## Proteção do número da Serena contra restrição (21/11/2026)
+
+Aviso do WhatsApp "Sua conta poderá ser restringida em breve" no +1 347 222-5493. Nos 10 dias anteriores: 262
+pedido pago (108 para quem nunca escreveu), 229 retomadas, 176 pedido enviado, 157 reposições, 141 convites de
+comunidade; pico de 19 mensagens/minuto (18/11).
+
+1. **Pausas (serena_config)**: `retomada_lead=off`, `reposicao_ativa=off`, `comunidade_convite_dia=10` (era 20).
+   Voltar quando o aviso sumir (cerca de 7 dias).
+   Mais tarde em 21/11: `comunidade_convite=off` (convite pausado de vez) e Esquenta Black Friday sem portas de
+   entrada novas (slider do site `an_site.esquenta_popup=off` e página `/pages/esquenta` despublicada; ver
+   `esquenta-bf/README.md`).
+2. **Transacional só com opt-in** (`optin-transacional.sql` + `checar-optin.workflow.js`, n8n `1lw2tKeLj2atInon`,
+   cron 1 min). O gatilho `trg_sm_reter_sem_optin` em `scheduled_messages` troca para `checar_optin` toda
+   pedido_pago_confirmado / pedido_enviado / pedido_entregue que vira `pendente` sem `template_params.optin_ok`.
+   O robô lê o atributo "WhatsApp opt-in" do pedido na Shopify e a conversa:
+   - `sim` → libera; `nao` → só libera se a pessoa escreveu para a Serena (WhatsApp) nas últimas 24h;
+   - sem o atributo (draft order da Serena, checkout-us) → libera se já escreveu alguma vez; senão não manda;
+   - bloqueado vira `status = 'sem_optin'`, `erro = 'whatsapp_sem_optin: <motivo>'` (fica só o e-mail);
+   - Shopify fora do ar: espera; com 30 min libera (`optin_ok = 'sem_consulta'`).
+   Kill switch: `wpp_optin_filtro=off`. Teste (21/11): AN-16679 (nao) e AN-16657 (draft, sem conversa) bloqueados,
+   AN-16701 (sim) liberado, em linhas fictícias sem telefone, apagadas depois; gatilho testado com rollback.
+3. **SAIR** (aprovado e ligado em 21/11; `optout-sair.sql`, `nodes/envio-limite-proativo.js`):
+   - cliente que manda SAIR / PARAR / STOP / "sair da lista" vira opt-out (gatilho `trg_serena_optout` em
+     `serena_mensagens` → `serena_wpp_optout` + `disparos_wpp.optout`); "cancelar" não conta. Carga inicial: 1 contato
+     que já tinha pedido;
+   - a Serena responde o texto aprovado: "Pronto, não vou mais te enviar mensagens automáticas por aqui. Se precisar
+     de algo, é só me chamar que eu respondo 😊" (adendo de 21/11);
+   - proativo para quem saiu não é enviado: o "Limite proativo" desvia pelo nó "Pular opt-out?" direto para o
+     "Responder" com `{ ok: false, erro: 'optout_sair' }`. Se a pessoa voltar a escrever, a conversa segue normal;
+   - mensagem proativa ganha no fim "_Se preferir não receber mensagens por aqui, é só responder SAIR._" quando:
+     não é transacional/pós-entrega (`autor`), não é rastreio/retirada (link do track ou "retirar"), a última
+     mensagem da conversa não é do cliente e não é conversa ativa. Lembrete, carrinho, satisfação, indicação,
+     aviso de estoque, reposição e retomada entram; pedido pago/enviado/entregue, rastreio e retirada não.
+   - Teste (21/11): contato fictício com "Sair." → opt-out gravado e vaga `optout`; envio para número fictício em
+     opt-out → não enviado; envio proativo para número fictício → texto saiu com a linha do SAIR.
+4. **Limite global de proativos** (`limite-proativo.sql`, `wpp-vaga.workflow.js` n8n `kTyNTNhqTqhOCFs2`,
+   `nodes/envio-limite-proativo.js`). O Envio Samuel ganhou o nó "Limite proativo" entre "Webhook Enviar" e
+   "Preparar": antes de cada mensagem chama `POST /webhook/wpp-vaga` → `wpp_aguardar_vaga(numero)`.
+   - passa na hora: conversa ativa (a pessoa escreveu nos últimos 15 min), equipe, LID;
+   - o resto espera vaga: no máximo `wpp_limite_por_minuto` (6) proativos em 60s somando todos os robôs, fila por
+     advisory lock, espera máxima `wpp_limite_espera_s` (30s; os robôs chamam o envio com timeout de 60s);
+   - registro em `wpp_envios_proativos` (esperou_ms, estourou); falha do limite nunca trava o envio.
+   Kill switch: `wpp_limite_proativo=off`. Teste: conversa → passa; vaga livre → 1 ms; balde cheio → esperou 4s
+   (com espera de teste 4s, rollback). Envio com número inválido confirmou o nó repassando o corpo intacto.
+5. **Médio prazo (sugestão)**: transacionais pela WhatsApp Cloud API oficial, com templates aprovados, em outro número.
+
+## Mensagens transacionais pelo Samuel
+
+`[Transacional] Dispatcher Samuel v3` (`WXncUehLXyuIMoSm`) substitui o `Cron Dispatcher Scheduled Messages v2`
+(Respond.io, despublicado). A cada minuto lê `scheduled_messages` pendentes e envia pelo Samuel:
+
+- `pedido_pago_confirmado` (agendado por `/webhook/pedido-pago`, disparado pela confirmação do Pagar.me).
+- `pedido_enviado` (agendado por `/webhook/pedido-enviado`, fulfillment da Shopify), com link
+  `https://track.americanutrition.com/CODIGO` sem encurtar.
+- Idempotente por pedido, respeita opt-out, 3 tentativas, e grava a mensagem na conversa do contato
+  (aparece no Inbox e vira contexto da Serena). Kill switch: `wpp_transacional=off`.
+- `pedido_entregue` (agendado quando o rastreio marca entrega), com o texto de 03/09.
+- Agendamentos com mais de 48h são marcados como expirados e não saem.
+
+## Memória a partir das conversas
+
+`[Serena Memoria] Extrair Fatos das Conversas` (`j57i6dFvooHMFqu4`): a cada 30 min, contatos com mensagens
+novas e conversa ociosa há 30+ min têm a transcrição enviada ao Claude Haiku, que devolve só fatos duráveis
+(saúde, família, preferências, compra, perfil). Grava em `serena_fatos` (chave = categoria, com sufixo numérico
+quando repete) e o Core injeta no prompt. Controle em `serena_memoria_runs`. Não depende mais do Respond.io.
+
+## Ficha sem Respond.io
+
+O bloco "Campos (Respond.io)" saiu da ficha. Entrou "Cadastro (Shopify)" com endereço, CEP, cidade/UF, país,
+consentimento de email/SMS, opt-in de WhatsApp (note_attributes do último pedido), último pedido com cupom e
+pagamento, e cupom de boas-vindas do popup (`popup_leads`).
+
+## Tabelas novas
+
+- `serena_wpp_buffer(id, msg_id unique, telefone, nome, texto, processado, criado_em, processado_em)`
+- `serena_wpp_pausas(telefone pk, ate, motivo, atualizado_em)`
+- `serena_wpp_bloqueados(telefone pk, motivo, criado_por, criado_em)`
+- `serena_memoria_runs(contato_id pk, processado_ate, fatos_extraidos, atualizado_em)`
+
+---
+
+# Bloco 2 (03/09/2026): handoff, alertas, fila, correções, áudio, pós-entrega, métricas
+
+## Workflows adicionados ou alterados
+
+| Workflow | ID | Função |
+|---|---|---|
+| `[Serena WhatsApp] UTIL v3 Handoff + Agentes + Correcoes` | `FRKUmJfZvORXfpST` | Cria `serena_correcoes`, `serena_agentes`, `serena_atribuicoes`, `serena_alertas` e semeia config nova (já executado) |
+| `[Serena WhatsApp] Watchdog -> Telegram` | `sYBUj3v8LGAtZYR8` | Alerta de falha a cada 5 min no tópico 289 do Telegram |
+| `[Serena WhatsApp] Envio Samuel (texto ou audio)` | `EhmndFruX6hOIRDN` | `POST /webhook/serena-samuel-enviar`: texto ou áudio (ElevenLabs) pelo Samuel |
+| `[Serena] Sync Base de Treinamento` | `D71uJKMi3u442bL0` | Ganhou cron de 1 min com ETag + hash: sincroniza na hora que o site muda |
+| `[Serena] Core` | `5Z5MdXAiatwnjc73` | Handoff pausa e abre fila; injeta carrinho abandonado, correções e notas; base primeiro para o cache do Claude |
+| `[Serena Tool] Escalar Humano` | `pENiiK4JvuowUEqn` | Card no Telegram com link "Assumir no Inbox" |
+| `[Serena WhatsApp] Entrada Samuel -> Serena Core -> Evolution` | `zeJ8nScEpt7TckFb` | Ack rápido (resposta em duas etapas) e resposta em áudio |
+| `[Transacional] Dispatcher Samuel v3` | `WXncUehLXyuIMoSm` | Pós-entrega: manda o modo de uso dos produtos depois do "pedido entregue" |
+| `[Serena] Painel API` | `YDUxkTRfg6uTucHB` | Ações novas: filas, agentes, atribuir, nota, corrigir, metricas |
+| `[Serena] Painel de Conversas` (Inbox) | `yX8m7r9Zff5L77Ec` | Identidade do atendente, filas, atribuição, notas, correção, métricas |
+
+## 1. Sincronização instantânea da base de treinamento
+
+O site `https://serena.americanutrition.com` está na Hostinger e devolve `ETag` e `Last-Modified`. O workflow de sync
+agora roda **a cada 1 minuto**: faz um `HEAD`, compara com `serena_config.base_etag` e só baixa a página quando o
+cabeçalho mudou. Depois de limpar o HTML calcula um hash do texto e só regrava `base_treinamento` (e `base_hash`)
+se o conteúdo realmente mudou. Quando muda, avisa no Telegram (tópico 289): "Base da Serena atualizada, versão X".
+
+Na prática a Serena passa a usar o treinamento novo em até 1 minuto depois de o site ser publicado, em todos os canais.
+Para forçar: `POST /webhook/serena-sync-base` com `{"force": true}`. O cron diário das 4h continua como rede de segurança.
+
+### Trava de versão (19/10/2026)
+
+Em 18/10 o site passou a dar 403 na raiz: o `index.html` sumiu da Hostinger e a base ficou só em `/index.php`. O texto
+desse `index.php` era **mais antigo** que a base da Serena, que vinha sendo editada direto no banco: tinha a D3 a
+R$ 57, a Cris com título de saúde, "Fase de Choque" e não tinha Pix Automático nem extravio. Com a raiz consertada,
+o sync teria trocado a base boa pela antiga em 1 minuto.
+
+Agora o "Salvar Base" só regrava quando o hash mudou **e** a versão do site ("Versão: X.YY" no topo) é maior que
+`serena_config.base_versao`, ou quando vem `force: true`. Site mudou com versão igual ou menor sai como
+`bloqueado: true`, a base não é tocada e o Telegram (tópico 289) recebe "Base do site NAO aplicada na Serena".
+Ao aplicar, `base_versao` passa a ser a versão do site.
+
+Regra prática: **toda edição feita direto no banco precisa ir também para o site**, e toda publicação do site precisa
+subir a versão. O site foi alinhado na versão 7.66 (19/10), com o texto idêntico ao do banco. O aviso de bloqueio sai
+uma vez por conteúdo (`base_bloqueado_hash`), não a cada rodada.
+
+**Publicar o site:** `POST https://serena.americanutrition.com/upload.php` com o header `X-Deploy-Key: <DEPLOY_KEY>`
+e o HTML inteiro no corpo. Ele grava o `index.html` e responde `{"ok":true,"target":"index.html",...}`. Depois é só
+esperar o sync (até 5 min) ou chamar `/webhook/serena-sync-base`. A chave fica com a equipe, não vai para o repositório.
+
+**26/10/2026:** a raiz do site passou a servir um `index.php` parado na 7.66, enquanto o `upload.php` grava o
+`index.html`. O sync (`Baixar Base` e `Checar Cabecalho`) agora lê direto `https://serena.americanutrition.com/index.html`,
+que manda `Last-Modified`. Base publicada na 7.67 (cápsula do ImunoFosfo toda branca no lote novo).
+
+Desde 10/2026 a Hostinger não manda `ETag` nem `Last-Modified` neste site. Sem esses cabeçalhos, o "Mudou?" deixa
+baixar a página a cada 5 minutos e o hash decide se mudou. Se o cabeçalho voltar, o cron de 1 minuto volta a valer.
+
+## 2. Alerta de falha no Telegram (watchdog)
+
+`[Serena WhatsApp] Watchdog -> Telegram`, a cada 5 min:
+
+- **Samuel desconectado**: `connectionState` da instância na Evolution diferente de `open` (repete a cada 30 min, e manda "reconectado" quando volta).
+- **Serena sem responder**: clientes cuja última mensagem é deles há mais de `wpp_alerta_min` (10 min) com a Serena ativa
+  (em modo teste só conta os números da lista de teste). Repete a cada 30 min.
+- **Clientes aguardando atendente**: conversas pausadas com mensagem pendente, ou handoff/atribuição aberta sem resposta
+  humana há mais de 30 min. Repete a cada 60 min.
+
+Dedupe em `serena_alertas`. Os alertas trazem link direto para o Inbox.
+
+## 3. Handoff inteligente + fila "aguardando humano"
+
+Quando a Serena usa `escalar_humano`:
+
+1. O Core passa `contato_id`, `canal`, `telefone` e `nome_cliente` para a ferramenta. O card no Telegram (tópico 94)
+   ganhou o link **"Assumir no Inbox da Serena"** (`serena-inbox?t=...&c=<contato_id>` abre a conversa direto).
+2. A Serena é pausada naquele contato: no WhatsApp via `serena_wpp_pausas` (motivo `handoff`, duração `wpp_pausa_handoff_min`,
+   720 min por padrão); no site/outros canais via `serena_conversas.ia_pausada`.
+3. Abre uma atribuição em `serena_atribuicoes` (status `aberto`, motivo `handoff`). Ela some da fila quando alguém clica
+   **"Resolvido: devolver para a Serena"** (ou reativa a Serena), que também limpa as pausas.
+
+No Inbox, o seletor "Todas as conversas" tem **Aguardando resposta**, **Fila: esperando atendente** e **Fila: esperando a Serena**,
+ordenadas por tempo de espera (⏱ na lista). O KPI "Fila humano" no topo mostra as atribuições abertas.
+
+## 4. Carrinho abandonado, correções e notas no cérebro
+
+`Carregar Contexto` do Core passou a trazer:
+
+- **Carrinho abandonado** dos últimos 7 dias, não convertido (por telefone ou email): itens, total, cupom, recusa de cartão,
+  boleto pendente e o `checkout_url` oficial. O prompt orienta a Serena a ajudar a concluir a compra (mandar o link, oferecer
+  PIX/boleto em caso de recusa) sem forçar a venda se o cliente veio por outro assunto.
+- **Correções** da equipe (`serena_correcoes`): as do próprio contato e as últimas 30 dias em geral (até 8), no formato
+  "Serena disse X -> correto é Y".
+- **Notas internas** (`serena_fatos` com `origem='manual'`) marcadas como "(nota da equipe)".
+
+Também mudou a ordem do system prompt: a base de treinamento vem primeiro (prefixo idêntico em todas as chamadas) e o
+contexto do cliente por último. Assim o cache de prompt do Claude passa a ser aproveitado de verdade (antes o cabeçalho
+variável vinha antes da base e invalidava o cache a cada conversa).
+
+## 5. Pós-entrega inteligente (modo de uso)
+
+No `[Transacional] Dispatcher Samuel v3`, depois que a mensagem `pedido_entregue` sai com sucesso, um segundo passo pega
+`produto_entregue` dos `template_params`, carrega a base de treinamento e pede ao Claude uma mensagem curta com o modo de uso
+de cada produto (dose, horário, com/sem alimento, dica), sem inventar o que não está na base. Envia pelo Samuel logo em seguida
+e grava em `serena_mensagens` com autor `pos_entrega:pedido_entregue`. Liga/desliga com `wpp_pos_entrega=on|off`.
+
+## 6. Resposta em duas etapas (ack rápido)
+
+Se a mensagem do cliente casa com `wpp_ack_regex` (pedido, rastreio, frete, CEP, entrega, prazo, boleto, PIX, cupom, reembolso, troca),
+é a primeira do lote e a Serena não falou nos últimos 10 min, o Samuel responde na hora com `wpp_ack_texto`
+("Só um instante, já estou verificando isso pra você 🙂") e a resposta completa vem depois. O ack fica gravado na conversa com autor `ack`.
+`wpp_ack_rapido=on|off`.
+
+## 7. Resposta em áudio
+
+Quando o cliente manda áudio e a resposta da Serena é curta (até 400 caracteres, sem link), a resposta sai como mensagem de voz:
+ElevenLabs `eleven_v3` (desde 03/09; reserva `eleven_multilingual_v2`) com a voz `wpp_voz_id` (padrão **Letícia**, `CcElPA8NBrawbunFs7rh`) e
+`sendWhatsAppAudio` da Evolution (PTT). Se a geração falhar, cai no texto normal. `wpp_audio_resposta=on|off`.
+Para trocar a voz: `...&chave=wpp_voz_id&valor=<voice_id do ElevenLabs>`.
+
+Tudo isso passa pelo workflow auxiliar `POST /webhook/serena-samuel-enviar`
+(`{number, text, delay}` ou `{number, audio_texto, voz_id, delay}` -> `{ok, tipo, message_id}`), que também serve para qualquer envio avulso.
+
+## 8. Inbox: atendentes, notas, correção, atribuição e métricas
+
+- **Identidade**: o chip "quem está atendendo?" no topo pede o nome (fica salvo no navegador) e ele vai como autor das mensagens,
+  notas e correções. Atendentes cadastrados em `serena_agentes` (Jaderson, Cris, Samuel); abrindo o Inbox com `&a=<token do agente>`
+  o nome é reconhecido automaticamente. Para cadastrar mais, inserir em `serena_agentes (nome, token)`.
+- **Atribuição**: seção "Atendimento" na ficha mostra o responsável, permite "Atribuir a..." e "Resolvido: devolver para a Serena".
+  Responder pelo Inbox atribui a conversa a quem respondeu. A lista mostra o nome do responsável em cada conversa.
+- **Notas internas**: textarea na ficha grava em `serena_fatos` (origem `manual`), com "x" para apagar. A Serena lê as notas como "nota da equipe".
+- **Correção**: link "corrigir" em cada bolha da Serena. Você escreve como ela deveria ter respondido; fica em `serena_correcoes`
+  (a Serena passa a seguir nas próximas respostas) e, se quiser, é enviado ao cliente como sua mensagem, sem pausar a Serena.
+- **Métricas** (botão no topo, 7/30/90 dias): conversas, autonomia (sem mensagem humana), mensagens por papel, handoffs, fila aberta,
+  tempo médio e mediano de resposta, links de pagamento enviados, transacionais, pós-entrega, correções, áudios, por dia, por canal,
+  por atendente e **vendas atribuídas**: pedidos pagos na Shopify de clientes atendidos pela Serena entre a primeira resposta e 72h
+  depois da última (com link para cada pedido).
+
+## Config nova (`serena_config`, via `/webhook/serena-wpp-config?t=TOKEN&chave=...&valor=...`)
+
+| Chave | Padrão | Efeito |
+|---|---|---|
+| `wpp_pausa_handoff_min` | `720` | Minutos de pausa no WhatsApp após um handoff |
+| `wpp_ack_rapido` / `wpp_ack_regex` / `wpp_ack_texto` | `on` / lista de assuntos / frase | Resposta em duas etapas |
+| `wpp_audio_resposta` / `wpp_voz_id` | `on` / Letícia | Resposta em áudio |
+| `wpp_pos_entrega` | `on` | Modo de uso após "pedido entregue" |
+| `wpp_alerta_min` | `10` | Minutos sem resposta da Serena que disparam alerta |
+| `base_hash` / `base_etag` | automático | Controle do sync da base |
+| `base_versao` | automático (`7.66` em 19/10) | Versão da base em uso; o sync só aplica versão maior do site |
+| `base_bloqueado_hash` | automático | Último conteúdo do site bloqueado (evita repetir o aviso) |
+
+## Tabelas novas
+
+- `serena_correcoes(id, contato_id, mensagem_id, texto_serena, correcao, autor, criado_em)`
+- `serena_agentes(nome pk, token unique, ativo, criado_em)`
+- `serena_atribuicoes(contato_id pk, agente, status aberto|resolvido, motivo, atribuido_em, atualizado_em)`
+- `serena_alertas(chave pk, ultimo_em, detalhe)`
+
+## Testes feitos em 03/09
+
+- Sync: cron de 1 min rodando; primeira passada detectou o site (v7.64, 311k caracteres) e avisou no Telegram.
+- Handoff via site de teste: Core devolveu `handoff: true`, card no tópico 94 com link do Inbox, atribuição aberta, contato apareceu na fila humana com tempo de espera.
+- Envio auxiliar: áudio (Letícia) e texto entregues no número de teste.
+- Métricas de 7 dias com 8 vendas atribuídas encontradas na Shopify.
+- Ack rápido: mensagem simulada "qual o rastreio do meu último pedido?" no número de teste recebeu "Só um instante..." na hora
+  e a resposta completa da Serena (consulta do pedido pelo telefone) 10 s depois.
+- Pós-entrega: linha `pedido_entregue` de teste (ImunoFosfo + Creatina) gerou o "pedido entregue" e, em seguida, o modo de uso
+  tirado da base (dose, intervalo, com/sem alimento), ambos entregues no número de teste e gravados na conversa.
+- Contato de teste do handoff (canal site) foi apagado depois dos testes.
+
+## Inbox v2 (visual novo) e onde o HTML mora
+
+O HTML do Inbox agora é o arquivo `inbox.html` deste diretório, hospedado como asset `assets/serena_inbox.html` do tema Shopify
+(mesmo esquema do painel admin). O workflow `[Serena] Painel de Conversas` só busca o asset (cache de 5 min; `&nocache=1` força).
+
+Para publicar uma alteração: editar `inbox.html` e enviar via `POST /webhook/shopify-admin` com
+`{"acao":"atualizar_pedido","endpoint":"themes/153190498476/assets.json","metodo":"PUT","payload":{"asset":{"key":"assets/serena_inbox.html","value":"<html...>"}}}`.
+
+Visual: três colunas (lista com avatares, filtros em chips e ponto de não lido; conversa com bolhas estilo WhatsApp e ações no cabeçalho;
+ficha 360 em abas Resumo / Pedidos / Cliente / Equipe), modais para atendente, correção e métricas, toasts em vez de alertas,
+e layout de celular (lista → conversa → ficha, com botão voltar). Atendentes cadastrados: Cris e Samuel.
+
+---
+
+# Bloco 3 (03/09/2026): respostas prontas, etiquetas, cliente irritado, carrinho pela Serena, app no iPhone
+
+| Workflow | ID | O que mudou |
+|---|---|---|
+| `[Serena WhatsApp] UTIL v4 Prontas + Etiquetas + Push` | `xvJIdAIv7Ie85e6H` | Cria `serena_respostas_prontas` (7 atalhos iniciais), `serena_etiquetas`, `serena_push_subs`; semeia `inbox_etiquetas`, `detectar_irritado`, `carrinho_via_serena` (já executado) |
+| `[Serena] Core` | `5Z5MdXAiatwnjc73` | Detecção de humor (Haiku) com escalonamento automático; etiquetas automáticas; modo proativo |
+| `Dispatcher Carrinho Abandonado` | `MqCaAfZt6PIVat1R` | A primeira mensagem do carrinho é escrita pela Serena (fallback nos templates) |
+| `[Serena Tool] Escalar Humano` | `pENiiK4JvuowUEqn` | Além do card no Telegram, dispara push para os atendentes |
+| `[Serena WhatsApp] Push -> Atendentes` | `TBjkNpRT6iYJvsSC` | `POST /webhook/serena-push`: Web Push nativo (RFC 8291 + VAPID) sem biblioteca |
+| `[Serena] Painel API` | `YDUxkTRfg6uTucHB` | Ações `setup`, `prontas`, `pronta_salvar`, `pronta_apagar`, `etiquetar`, `push_sub`, `push_unsub`; filtro por etiqueta; métricas por etiqueta e irritados |
+| `[Serena] Painel de Conversas` | `yX8m7r9Zff5L77Ec` | Serve também `/webhook/serena-inbox-manifest` e `/webhook/serena-inbox-sw.js` (PWA) |
+
+## Respostas prontas
+Digite `/` no campo de resposta para abrir a lista (setas navegam, Tab ou Enter escolhe). O botão ⚡ abre a lista e o link
+"gerenciar" cadastra, edita e apaga. Variáveis: `{primeiro_nome}`, `{nome}`, `{agente}`, `{pedido}`, `{rastreio}`, `{rastreio_link}`,
+preenchidas com os dados da ficha. Atalhos iniciais: `/oi`, `/aguarde`, `/rastreio`, `/pix`, `/prazo`, `/troca`, `/encerrar`.
+
+## Etiquetas
+Lista padrão em `serena_config.inbox_etiquetas` (reclamacao, venda, duvida de uso, rastreio, troca/reembolso, elogio, urgente).
+No cabeçalho da conversa: "+ etiqueta" (ou uma nova digitada), "×" remove. Filtro "Todas as etiquetas" na lista e contagem
+por etiqueta nas métricas. A Serena etiqueta sozinha pelo que fez na conversa: `venda` (checkout/PIX/boleto), `rastreio`,
+`frete`, `endereco`, `humano` (escalou), `reclamacao` + `urgente` (cliente irritado), `insatisfeito`.
+
+## Cliente irritado: escala sozinha
+A cada mensagem, o Core pede ao Haiku uma classificação das últimas mensagens do cliente (`neutro | insatisfeito | irritado`).
+`irritado` (raiva explícita, ameaça de Procon/Reclame Aqui/processo, xingamento, terceira cobrança sem solução): a Serena ainda
+responde essa mensagem, mas já pausa, abre a atribuição com motivo `irritado`, manda o card no Telegram e o push.
+`insatisfeito` só etiqueta. Desliga com `detectar_irritado=off`. Testado: mensagem em caixa alta ameaçando Procon foi classificada e escalada.
+
+## Carrinho abandonado conduzido pela Serena
+O dispatcher continua decidindo quem recebe e quando (carrinho, cartão recusado, boleto pendente, checagem de pagamento na Shopify,
+link encurtado, intervalo anti-ban). A mensagem em si agora vem do Core em **modo proativo** (`modo: 'proativo'`, `tipo_proativo: 'carrinho'`,
+`instrucao` + `contexto.carrinho`): a Serena escreve no tom dela, com histórico do cliente se houver, e a mensagem fica gravada na conversa
+(autor `proativo:carrinho`), então a resposta do cliente continua com ela. Se o Core falhar ou `carrinho_via_serena=off`, caem os templates antigos.
+Métrica "Carrinhos pela Serena" no modal.
+
+## Inbox como app no iPhone, com notificação
+- Abra `https://n8n.americanutrition.com/webhook/serena-inbox?t=TOKEN` no Safari → Compartilhar → **Adicionar à Tela de Início**.
+  O manifest (`/webhook/serena-inbox-manifest?t=TOKEN`) deixa o app em tela cheia com ícone próprio.
+- Dentro do app instalado, toque em 🔔 **Notificações**, informe quem está atendendo e aceite. A inscrição vai para `serena_push_subs`.
+- A cada escalonamento (pedido pelo cliente ou irritado detectado) o `Escalar Humano` chama `/webhook/serena-push`, que cifra o aviso
+  e entrega pelo serviço de push da Apple/Google. Tocar na notificação abre a conversa direto.
+- Requisitos: iOS 16.4+ e o Inbox aberto pelo ícone da Tela de Início (Safari solto não recebe push). Android/Chrome funciona sem instalar.
+- Com o Inbox aberto, a fila também avisa na hora: toast, vibração, bip e contador no título.
+- Chaves VAPID geradas automaticamente na primeira chamada e guardadas em `serena_config` (`push_vapid_public/private`).
+
+## Tabelas
+- `serena_respostas_prontas(id, atalho unique, titulo, texto, ativo, criado_por, criado_em, atualizado_em)`
+- `serena_etiquetas(contato_id, etiqueta, origem manual|auto, criado_por, criado_em)`
+- `serena_push_subs(endpoint pk, p256dh, auth, agente, ua, ativo, falhas, criado_em, atualizado_em)`
+
+## Modelo e cache (03/09/2026, 07:00 BRT)
+
+- `serena_config.modelo` = **`claude-sonnet-5`** (antes `claude-sonnet-4-5-20250929`). O Core manda `output_config.effort = medium` para os modelos da família 5 / 4.6+ (eles pensam por padrão; médio mantém a resposta rápida no chat).
+- A base de treinamento vai no primeiro bloco do system prompt com **cache de 1 hora** (`cache_control: {type: ephemeral, ttl: 1h}`), no Core e no pós-entrega. Antes era 5 min e, como as mensagens chegam espaçadas, quase toda resposta pagava o cache frio.
+- Medido com a base atual (v7.64): 143.905 tokens em cache no Sonnet 5; resposta em 8 a 11 s.
+- Custo aproximado por resposta (US$ 1 = R$ 5,50): cache quente ≈ R$ 0,19; gravação do cache (no máximo uma por hora de atividade) ≈ R$ 3,20. Com ~60 respostas/dia: ≈ R$ 55/dia, ≈ R$ 1.700/mês. Antes (Sonnet 4.5, cache de 5 min): ≈ R$ 210/dia.
+- Para voltar: `update serena_config set valor = 'claude-sonnet-4-5-20250929' where chave = 'modelo'` (ou `claude-haiku-4-5-20251001` para o mais barato, ≈ R$ 0,07 por resposta quente).
+- Alerta de falha da API (saldo, limite) no Telegram tópico 289 via `/webhook/serena-alerta` (dedupe 30 min) e reprocessamento automático a cada 10 min (`[Serena WhatsApp] Reprocessar sem resposta`, `wXN30aD4YloMV2NN`) quando a API volta.
+
+---
+
+# Lote 2 (03/09/2026, tarde): reposição, Instagram/Messenger, resumo, sugestão, lacunas, auditoria, rastreio proativo, trocas, anti-spam
+
+Tudo ligado em produção, exceto Instagram/Messenger (`meta_ativo=off` até configurar o app da Meta). O item 4 da lista ("checkout pelo WhatsApp") já existia: a Serena gera link de pagamento, PIX e boleto pelas ações `gerar_checkout`, `gerar_pix` e `gerar_boleto` do Router.
+
+## 1. Reposição automática (`[Serena] Reposicao Automatica`, id nWHsrcGNkuBDgYA2, cron 1h)
+- Depois que o aviso "pedido entregue" sai pelo Samuel, o pedido entra em `serena_reposicao`. A Serena (mesmo modelo e cache da base) estima em quantos dias os produtos acabam pela dose recomendada (ex.: ImunoFosfo 90 caps a 3/dia = 30 dias; fallback sem IA: cápsulas/2 por dia). O aviso fica para `dura_dias - reposicao_dias_antes` (mínimo `reposicao_min_dias`, padrão 15).
+- No dia, dentro de `reposicao_hora_ini..reposicao_hora_fim` (BRT), o Core em modo proativo (`tipo_proativo=reposicao`) escreve a mensagem: pergunta como está o uso, avisa que está acabando e oferece mandar o link. Se o cliente responder "quero", a conversa normal gera o checkout.
+- Pula quem comprou de novo depois da entrega (`scheduled_messages` pedido_pago_confirmado), opt-out, bloqueados, quem já recebeu reposição em 30 dias; pausados tentam na próxima hora. Um agendamento por telefone por vez.
+- Primeira execução agendou 15 pedidos entregues nos últimos 3 dias. Ver no Inbox: Mais > Reposições agendadas. Kill switch: `reposicao_ativa=off`.
+
+## 6. Instagram Direct + Messenger (`[Serena Meta] Instagram + Messenger`, id N3Ek4yZuJUvgiOCh; era ntmDA1FhQFZkvQNM)
+
+**12/11/2026:** reescrito para a credencial do n8n **"Meta DM Instagram"** (token de página do app *America Nutrition -
+Serena*, id 1256093486686607, só com permissões de mensagem; `instagram_manage_messages` e `pages_messaging` em acesso
+padrão, suficiente para a página da própria empresa). O token dos comentários continua na "Meta Graph API" e não é usado
+aqui. Nenhum token no banco nem no código (`meta_page_token` ficou vazio). `meta_ativo`: `off` | `teste` | `on`; em
+`teste` a Serena só responde aos @ de `meta_teste_usernames`. Resposta sem os marcadores do WhatsApp (Instagram não
+formata). Fonte: `meta-instagram-messenger.workflow.js`. O texto abaixo é o desenho original de 03/09.
+- `GET /webhook/serena-meta` responde ao desafio de verificação da Meta (`hub.verify_token` = `serena_config.meta_verify_token`, hoje `an-meta-5251646623f1`).
+- `POST /webhook/serena-meta` recebe `entry[].messaging[]` (mesmo formato para Instagram e Messenger), manda ao Core com `canal=instagram|messenger` e identidade `session_site = ig:<id>` ou `fb:<id>` (não existe telefone; a Serena pede e-mail ou número do pedido quando precisa), responde pela Graph API (`/v21.0/me/messages`) e marca `entregue`. Cron de 1 min entrega o que o atendente escreve no Inbox nesses canais.
+- Para ligar: criar app em developers.facebook.com, assinar os webhooks `messages` da Página e do Instagram apontando para a URL acima, gerar token de página de longa duração e gravar: `meta_page_token`, opcionalmente `meta_ig_token` (Instagram Login) e `meta_app_secret` (valida `X-Hub-Signature-256`), depois `meta_ativo=on`. Tudo via `/webhook/serena-wpp-config?t=an-wpp-7Qm3Vz9K&chave=...&valor=...`.
+- Testado: verificação responde o challenge com token certo e 403 com token errado; POST com `meta_ativo=off` é ignorado.
+
+## 8. Resumo automático ao cair na fila (`[Serena Tool] Escalar Humano`)
+- Em todo handoff (pedido do cliente, cliente irritado ou callback) o Escalar busca a conversa pela API do painel, o Haiku resume em 4 linhas (quem/o que quer, o que a Serena fez, o que falta, dados úteis) e grava em `serena_atribuicoes.resumo` (ação `resumo_salvar`).
+- Aparece no card do Telegram, no push, na lista do Inbox (linha 📝 sob a conversa da fila), acima do campo de resposta e na aba Equipe.
+
+## 9. Sugestão de resposta para o atendente (Core `modo=sugerir`)
+- Botão ✨ Sugerir no Inbox. Chama `POST /webhook/serena-core` com `{modo:'sugerir', t:TOKEN, contato_id, nome:agente, instrucao}`; o Core carrega o histórico completo, pode consultar pedidos/rastreio (sem `escalar_humano` nem `registrar_troca`), escreve a mensagem em primeira pessoa como o atendente e NÃO grava nem envia nada. Funciona mesmo com a Serena pausada. O texto vai para o campo; o atendente revisa e envia.
+- Se já houver texto no campo, ele vira instrução interna ("diga que vamos reenviar").
+
+## 12. Perguntas sem resposta (lacunas de treinamento)
+- O mesmo classificador Haiku do humor agora recebe também a resposta da Serena e devolve `sem_resposta` + `pergunta` (reescrita de forma genérica) + `tema`. Quando a Serena diz que não sabe, que vai verificar, ou ignora a pergunta, vira linha em `serena_lacunas` (uma por contato a cada 2h) e etiqueta `sem-resposta`.
+- Inbox: Mais > Perguntas sem resposta (filtro por dias, só abertas, temas; marcar resolvida depois de acrescentar na base em serena.americanutrition.com). Aba Equipe mostra as do contato. O boletim diário lista as de ontem. Config: `detectar_lacunas`.
+
+## 13. Auditoria de qualidade (`[Serena] Auditoria Diaria + Lacunas`, id 1oB1bJlRNnuIR97Z, 07:30 BRT)
+- Amostra de até `auditoria_amostra` (15) conversas de ontem com cliente + Serena. Um segundo Claude (mesmo modelo e base em cache, effort low) dá nota 1-10, `resolveu`, problemas tipados (fato_errado, invencao, nao_respondeu, tom, processo, formato), resumo e sugestão para a base. Grava em `serena_auditorias` (única por contato e dia).
+- Telegram (tópico 289): média, conversas com nota ≤ `auditoria_nota_alerta` (6) com link do Inbox, sugestões para a base e as lacunas do dia. Inbox: Mais > Auditoria da Serena. Primeira rodada manual (02/09): 3 conversas, média 7,7.
+
+## 15. Rastreio proativo (`[Serena] Rastreio Proativo`, id OtzYsPkyTEIfPG4P, cron 6h)
+- Pedidos com aviso "enviado" e sem aviso "entregue" (45 dias) são consultados no motor de rastreio (`/webhook/rastreio/buscar`). Sem movimentação há `rastreio_parado_dias` (3) e não entregue, entre 8h e 20h BRT: o Core proativo (`tipo_proativo=rastreio_parado`) avisa o cliente antes dele perguntar (com o link track.americanutrition.com), grava nota "rastreio parado" e etiqueta `rastreio-parado` no contato e a equipe recebe a lista no tópico 289. Máximo 2 avisos por código, 4 dias entre eles.
+- Entregues, cancelados, devolvidos e extraviados são fechados (`serena_rastreio_alertas.entregue=true`). Teste a seco (config off): 25 códigos, datas lidas corretamente, 24 já entregues. Inbox: Mais > Rastreios parados.
+
+## 16. Troca e devolução guiada (`[Serena Tool] Troca e Devolucao`, id VujldCtkPDLPLxzL)
+- Nova ação `registrar_troca` na ferramenta do Core. O cabeçalho instrui a Serena a coletar, uma pergunta por vez: pedido (busca pelo telefone se não souber), produto e quantidade, motivo detalhado e foto se houver dano (a descrição da imagem que a Entrada já gera). Com tudo em mãos chama `POST /webhook/serena-troca`, que grava `serena_trocas`, abre atribuição `troca`, etiqueta `troca` e avisa Telegram (tópico 94) + push; devolve o protocolo `#id`. Caso igual nas últimas 48h é reaproveitado.
+- Se o cliente já tem caso aberto, a Serena informa que está em análise e não abre outro. Inbox: Mais > Trocas e devoluções (status aberta / em_analise / aprovada / recusada / concluida, com resolução); a aba Equipe mostra os casos do contato. Recusada/concluída fecha a atribuição.
+
+### Troca no pedido da Shopify (24/11/2026)
+
+Pedido do Jaderson: o caso de troca tem que aparecer no próprio pedido da Shopify, para a logística ver, e não só no
+WhatsApp e no Telegram.
+
+**O que aconteceu.** No caso #23 (Gilberto, AN-16729), a cliente pagou o Liquid quando queria o de 42 cápsulas.
+- **22/11 (domingo):** a Serena abriu a troca antes do envio. Saiu o aviso no tópico 94 e ninguém viu.
+- **23/11, 09:06:** a remessa foi preparada.
+- **23/11, 17:37:** o pedido saiu com o produto errado.
+- **No mesmo dia:** a Serena disse duas vezes ao cliente que tinha "avisado" ou "reforçado" com a equipe, sem ter
+  chamado nenhuma ferramenta.
+
+**O que mudou:**
+- **Novo nó `Marcar na Shopify`** ([`nodes/troca-marcar-shopify.js`](nodes/troca-marcar-shopify.js)), entre
+  `Gravar Caso` e `Avisar Equipe`. Quando o caso tem o número do pedido:
+  1. **Nota:** entra no topo do pedido `⚠️ TROCA #id (Serena, data)`, com produto, motivo, detalhes e o que fazer.
+  2. **Tag:** `troca-pendente` (ou `devolucao-pendente`, `reembolso-pendente`), para filtrar na lista de pedidos.
+  3. **Em espera, se o pedido ainda não saiu:** `fulfillmentOrderHold` com o motivo. É a trava de verdade: o pedido
+     fica "Em espera" no admin, e o robô Frenet → Shopify não cria envio de pedido em espera. A equipe libera em
+     **Liberar retenção** depois de ajustar.
+- **Aviso no tópico 94:** diz o que foi feito no pedido e traz o link do pedido na Shopify.
+- **Reforço quando o cliente cobra de novo:** com o caso já aberto, sai **REFORÇO** no Telegram e push. Antes, o caso
+  reaproveitado não avisava ninguém.
+- **Adendo no prompt (24/11):** a Serena só diz que avisou ou reforçou com a equipe depois de chamar `registrar_troca`.
+  Para reforçar, chama de novo com o mesmo pedido.
+- **Erro na Shopify** não impede o registro do caso: o aviso mostra o erro.
+- **Tokens:** os do Telegram e do Inbox saíram do `troca-devolucao.workflow.js` e viraram placeholders; os reais ficam
+  só no n8n.
+
+- **WhatsApp da Cris (logística), pedido do Jaderson, 24/11:** todo caso novo ou reforço manda um WhatsApp pelo
+  Samuel para a Cris (+1 646 427-0203), do mesmo jeito que no cancelamento. A mensagem leva:
+  - o tipo e o número do caso, e o pedido;
+  - se o pedido ficou **EM ESPERA** ou se já foi enviado;
+  - cliente com link wa.me, produto, motivo e detalhes;
+  - o link do pedido na Shopify e o da conversa no Inbox.
+
+  O card do Telegram diz se a Cris foi avisada. O aviso dela ainda não foi testado com envio real.
+
+**Teste no caso real #23:** o AN-16729 já tinha sido enviado. Ele ganhou nota e tag, sem ficar em espera, e o aviso foi
+para o tópico 94. O caminho do pedido em espera não foi testado num pedido real: valem a mutation e o enum conferidos
+no schema 2026-07.
+
+**Casos abertos:** os 22 casos de `serena_trocas` continuam `aberta`; nenhum foi fechado pelo Inbox. Os pedidos
+recentes deles já foram todos enviados.
+
+## 17. Anti-spam (`Entrada Samuel`, node Pode Responder?)
+- Número sem histórico e sem pedido (`msgs_anteriores=0` e nenhum `scheduled_messages` com o telefone) cuja primeira mensagem tem cara de oferta (link, "tráfego pago", "parceria", "fornecedor", "renda extra"... ou texto > 600 caracteres) passa pelo Haiku. `spam=true` com confiança ≥ 0,8 (vendedor, golpe, bot, divulgação): entra em `serena_wpp_bloqueados` com motivo `antispam` e o texto em `detalhe`, a Serena não responde e a equipe é avisada no tópico 289. Cliente de verdade (dúvida de produto, pedido, saúde) passa mesmo com link.
+- Reversível: Inbox > Mais > Números bloqueados > desbloquear (ou `?desbloquear=55...` no endpoint de config). Config: `antispam`.
+
+## Painel API: ações novas
+`resumo_salvar`, `lacunas` (dias, so_abertas), `lacuna_resolver` (id, resolver), `auditorias` (dias), `trocas` (dias, so_abertas), `troca_status` (id, status, resolucao), `bloqueados`, `desbloquear` (telefone), `reposicoes`, `rastreios`. `conversas` devolve `resumo`; `ficha360` devolve `atribuicao.resumo`, `trocas` e `lacunas`; `metricas` ganhou lacunas, auditoria (média e ruins), trocas, spam, reposições e rastreios.
+
+Bug antigo corrigido: `atribuir` com `resolver=true` falhava no Postgres (referência a `p` dentro do `ON CONFLICT`), então o botão "✓ Resolvido" do Inbox nunca devolvia a conversa para a Serena. Agora usa `excluded.status`.
+
+## Endpoint de config liberado para as chaves novas
+`GET /webhook/serena-wpp-config?t=an-wpp-7Qm3Vz9K&chave=X&valor=Y` aceita agora: on/off em `wpp_transacional, wpp_ack_rapido, wpp_audio_resposta, wpp_pos_entrega, detectar_irritado, detectar_lacunas, carrinho_via_serena, reposicao_ativa, antispam, auditoria_ativa, rastreio_proativo, meta_ativo`; números em `wpp_max_por_hora, wpp_pausa_humano_min, wpp_pausa_handoff_min, wpp_debounce_seg, wpp_alerta_min, max_tokens, reposicao_dias_antes, reposicao_min_dias, reposicao_hora_ini, reposicao_hora_fim, auditoria_amostra, auditoria_nota_alerta, rastreio_parado_dias`; texto em `wpp_teste_numeros, wpp_ignorar_regex, wpp_ack_regex, wpp_ack_texto, wpp_voz_id, modelo, inbox_etiquetas, meta_*`. `&bloquear=55...&motivo=...&detalhe=...` também grava o detalhe. A resposta lista toda a config (tokens da Meta mascarados).
+
+## Inbox v4 (arquivo `inbox.html`, asset `assets/serena_inbox.html`)
+Menu "☰ Mais" (Métricas, Perguntas sem resposta, Auditoria, Trocas, Reposições, Rastreios, Bloqueados, Respostas prontas), botão ✨ Sugerir no campo de resposta, resumo automático acima do composer e na aba Equipe, trocas e lacunas do contato na aba Equipe, canal `messenger`, métricas novas, `?modal=lacunas|auditoria|trocas` abre direto (links do Telegram). Cabeçalho compacto no celular.
+
+## Tabelas e config (UTIL v5, id tpxfFjyaCRIypRep)
+`serena_reposicao`, `serena_lacunas`, `serena_auditorias`, `serena_trocas`, `serena_rastreio_alertas`; colunas `resumo`/`resumo_em` em `serena_atribuicoes` e `detalhe` em `serena_wpp_bloqueados`. Config: `reposicao_ativa=on, reposicao_dias_antes=5, reposicao_min_dias=15, reposicao_hora_ini=9, reposicao_hora_fim=20, antispam=on, auditoria_ativa=on, auditoria_amostra=15, auditoria_nota_alerta=6, rastreio_proativo=on, rastreio_parado_dias=3, detectar_lacunas=on, meta_ativo=off, meta_verify_token, meta_page_token='', meta_ig_token='', meta_app_secret='', meta_page_id='', meta_ig_id=''`.
+
+## Fontes neste diretório
+`troca-devolucao.workflow.js`, `reposicao-automatica.workflow.js`, `rastreio-proativo.workflow.js`, `auditoria-diaria.workflow.js`, `meta-instagram-messenger.workflow.js`, `util-v5-lote2.workflow.js` (SDK, criados por `create_workflow_from_code`) e `nodes/` com o código atual dos nodes editados em workflows existentes: Core (Normalizar, Carregar Contexto, Cerebro Serena, Salvar Conversa, Montar Resposta), Painel API (Montar SQL, Formatar) e Entrada Samuel (Registrar no Buffer, Pode Responder?).
+
+## Custo adicional estimado
+Humor + lacuna: 1 chamada Haiku por resposta (já existia, só cresceu o prompt). Resumo no handoff: 1 Haiku por handoff. Sugestão: 1 chamada Sonnet com cache por clique. Reposição: 1 Sonnet (cache) por pedido entregue + 1 por aviso. Auditoria: até 15 Sonnet (cache, effort low) por dia ≈ R$ 0,80/dia. Rastreio: só o motor de rastreio, Sonnet apenas quando avisa. Anti-spam: 1 Haiku só em número novo suspeito. No total, bem abaixo de R$ 10/dia a mais.
+
+## PDF no WhatsApp (03/09, 14h40)
+A Serena respondia "não consegui abrir o arquivo" para PDF (comprovante Pix, receita, exame). Agora `Triagem` trata `documentMessage`/`documentWithCaptionMessage` com PDF como o caminho da imagem: baixa pelo Evolution (`getBase64FromMediaMessage`) e `Descrever Imagem (Claude)` manda o arquivo ao Haiku como bloco `document` (application/pdf), extraindo valor, data, pagador, recebedor e id da transação (ou medicamentos/dosagens em receitas, itens em notas). O texto vira "[Cliente enviou um PDF (nome): ...]" e a Serena responde normalmente, sem nunca confirmar pagamento só pelo comprovante. Outros formatos (docx, vídeo) continuam pedindo foto ou PDF. Testado com o comprovante real do cliente +55 11 95207-6181 (msg 4A20DC049251B3437975): leu valor, data, pagador e ID. Fontes: `nodes/entrada-triagem.js`, `nodes/entrada-descrever-imagem-pdf.js`.
+
+## Arquivar conversas encerradas no WhatsApp (`[Serena WhatsApp] Arquivar Encerradas`, id yxmtI8rj4UU3XeYB, cron 30 min)
+- Conversa encerrada = última mensagem foi nossa (Serena, atendente ou transacional) há mais de `wpp_arquivar_horas` (12) ou o cliente escreveu por último há mais de 7 dias sem resposta. Nunca arquiva quem está na fila humana ou com pausa ativa.
+- Busca a última mensagem do chat na Evolution (`chat/findMessages`, pelo @lid do `wa_identidades` quando conhecido, senão `telefone@s.whatsapp.net`) e chama `chat/archiveChat` com essa chave. Registro em `serena_wpp_arquivadas` (não repete até chegar mensagem nova; comparação com tolerância de 1s por causa dos microssegundos).
+- Limite: a Evolution só arquiva chats que ela conhece, ou seja, com mensagem trocada depois que o Samuel foi conectado nela (setembro). Conversas antigas do celular (era Respond.io) ficam como `sem_chat` e precisam ser arquivadas à mão uma vez. Daqui em diante toda conversa encerrada é arquivada sozinha.
+- Quando o cliente escreve de novo, o WhatsApp desarquiva o chat automaticamente. Para isso, no celular do Samuel, deixe DESLIGADA a opção Configurações > Conversas > Arquivadas > "Manter conversas arquivadas".
+- Config: `wpp_arquivar=on|off`, `wpp_arquivar_horas` (via `/webhook/serena-wpp-config`). Testes de 03/09: 9 conversas arquivadas (`archived: true`), inclusive a do próprio Jaderson.
+
+
+## Tag WPP nos pedidos gerados pela Serena (03/09, 16h30)
+
+Pedido do Jaderson: todo link que a Serena gera precisa chegar na Shopify com uma tag que identifique o canal, tipo `WPP`.
+
+**Como funciona.** O checkout customizado só repassa o parâmetro `ref` da URL ao Pagar.me (`metadata.ref`), e quem cria o pedido na Shopify é o workflow "Pagar.me — Confirmação Pago → Shopify". Então a marcação vai pelo `ref`:
+
+| Canal da conversa | Link da Serena | Tag no pedido Shopify |
+|---|---|---|
+| WhatsApp (Samuel) | `...&ref=serena` (inalterado) | `AF: Serena, WPP` |
+| Instagram | `...&ref=serena-ig` | `AF: Serena, SERENA-IG` |
+| Messenger | `...&ref=serena-msg` | `AF: Serena, SERENA-MSG` |
+| Link manual da equipe com `ref=whatsapp` | como já era | `WPP` |
+
+A afiliada continua `SERENA` (o `aff_ref` e a comissão não mudam): qualquer `ref` que comece com `serena` é tratado como SERENA. Nada foi mexido no checkout (front) nem no Fluxo A.
+
+**PIX e boleto** (draft order criado pela Serena) ganham a tag de canal direto no draft: `origem:serena, canal:whatsapp, pagamento:pix, WPP` (ou `SERENA-IG` / `SERENA-MSG`). Quando o pagamento cai e o draft vira pedido, as tags vão junto.
+
+**O que mudou.**
+- `[Serena] Core`, nó Cerebro Serena: a chamada ao Router agora leva `canal` (`nodes/core-cerebro-serena.js`).
+- `[Serena Tool] ROUTER`, nó Preparar rota: `canal` entra na lista de campos repassados à sub-ferramenta (`nodes/router-preparar-rota.js`).
+- `[Serena Tool] Gerar Checkout`, nó Montar URL checkout: `ref` por canal (`nodes/gerar-checkout-montar-url.js`). Sem `canal` no body, cai em `serena` (WhatsApp).
+- `[Serena Tool] Gerar PIX` e `Gerar Boleto`, nó Montar draft: tag de canal e nota "via Serena (WhatsApp)" (`nodes/gerar-pix-montar-draft.js`, `nodes/gerar-boleto-montar-draft.js`).
+- "Pagar.me — Confirmação Pago → Shopify" (dtDYBZJuAbFZV3cB), nó Montar Pedido Shopify: `refBase` + tabela `TAG_CANAL` (`nodes/confirmacao-pago-tag-canal.js`, só o trecho, porque o nó completo carrega a chave do Supabase).
+
+**Teste feito.** Router chamado com `gerar_checkout` e `canal` whatsapp / instagram / messenger / vazio: URLs saíram com `ref=serena`, `serena-ig`, `serena-msg` e `serena`. A lógica do nó da Confirmação foi testada isolada: `serena` → `AF: Serena, WPP`; `serena-ig` → `AF: Serena, SERENA-IG`; `serena-msg` com bg_ref → `AF: Serena, SERENA-MSG`; `whatsapp` → `WPP`; `promo5` → só a tag do afiliado; vazio → sem tag. O primeiro pedido pago vindo de link da Serena depois das 16h30 de 03/09 já deve aparecer com `WPP` na Shopify (filtro: tag `WPP`).
+
+**Não coberto.** Links de recuperação de carrinho (`note=CARRINHO|RECUSA|BOLETO`) continuam com `LINK: X`; os que a Serena manda já vão com `ref=serena` e por isso também ganham `WPP`. Links mandados por outros fluxos sem `ref` não ganham tag de canal.
+
+**Rede de segurança (cron "AN - Marcar Pedidos Recuperados", 15 min).** O primeiro pedido pago logo depois da publicação (AN-15190, 16:31) saiu só com "AF: Serena": a instância do n8n ainda estava com a versão antiga do nó em memória. Para não depender disso, o cron ganhou a ETAPA B: pedido das últimas 8h com `aff_ref` SERENA ou whatsapp e sem nenhuma tag de canal (WPP / SERENA-IG / SERENA-MSG) recebe `WPP` (`nodes/marcar-recuperados-etapa-b.js`). Rodado na hora: marcou os pedidos da Serena de hoje (AN-15174 a AN-15190).
+
+
+## Voz mais natural (03/09, 17h)
+
+Jaderson achou a voz da Serena robotizada. Mudanças no `[Serena WhatsApp] Envio Samuel (texto ou audio)` (EhmndFruX6hOIRDN, fonte `envio-samuel.workflow.js`):
+
+- **Modelo `eleven_v3`** no lugar do `eleven_multilingual_v2` (muito mais expressivo e com entonação de conversa). Estabilidade 0,5 ("natural"), similaridade 0,8. Se o v3 falhar, o mesmo nó roda uma segunda passada com o `multilingual_v2` mais solto (estabilidade 0,38, estilo 0,45, speaker boost, velocidade 1,03); se falhar de novo, manda texto. Áudio a 128 kbps (era 64).
+- **Texto limpo antes de falar**: tira asteriscos e sublinhados do WhatsApp, emojis, links e marcadores; "R$ 1.147,90" vira "1147 reais e 90 centavos", "10%" vira "10 por cento", "nº" vira "número"; quebras de linha viram pausas. Antes o modelo lia os símbolos.
+- Webhook aceita `modelo: "v2"` e `estabilidade` para testes. A resposta traz `modelo`.
+
+**Amostras enviadas ao Jaderson (13 98188-5555)**: 1) v3 com Letícia, 2) v3 com Fabi (`e06XicPETIbfUaeHM9zH`, voz feminina brasileira "natural e emocional, ideal para conteúdos de IA"), 3) v2 novo com Letícia. As três geraram áudio (v3 funciona na chave da conta). Jaderson escolheu primeiro a Fabi (`e06XicPETIbfUaeHM9zH`), depois achou lenta; na rodada seguinte (9 vozes, v3 a 1,1) escolheu **Helen Mariane** (`MLAEAegxkMReslK34j8T`), que é o `wpp_voz_id` atual. Letícia continua como padrão do nó se a config ficar vazia.
+
+Para trocar a voz: `GET /webhook/serena-wpp-config?t=an-wpp-7Qm3Vz9K&chave=wpp_voz_id&valor=<voice_id>`. Outras vozes brasileiras femininas na conta: Beatriz "Warm and Natural" (`IWjNPa0ORoXjItd6yur0`), Pri "Warm & Natural" (`8EY2gK6oUxZCDZAlvUpZ`), Bruna "Energetic" (`ltwuRv7ECcYttSkIv4p8`).
+
+
+## Mensagens picadas e link repetido (03/09, 17h30)
+
+Caso relatado pelo Jaderson: a cliente +55 64 99225-0638 (Angelucia) recebeu 4 links de pagamento em 2 minutos. Ela escreveu 11 mensagens curtas em 2 minutos ("Eu já tomei", "Conheço", "Só quero comprar", "42 cápsula", "Eu uso", "Querobpedir", "E só isso"...). O debounce de 8 s juntava só as que chegavam antes da Serena começar a responder; as que chegavam **durante** a chamada ao Core (10 a 20 s) viravam uma execução nova, às vezes sem a resposta anterior no histórico, e a Serena reenviava o link a cada "quero pedir". Ela também gerou o link do frasco de 90 antes de a cliente dizer "42".
+
+Três correções:
+
+1. **Trava por telefone na Entrada** (`serena_wpp_lock`, nova tabela). "Chamar Serena Core" grava a trava antes de chamar o Core (vence em 120 s); "Marcar Entregue" apaga quando a resposta sai. "Coletar Buffer" devolve `segurar=true` enquanto a trava existir ou a mensagem mais nova tiver menos de 3 s, e o fluxo espera 3 s (nó "Esperar trava") e tenta de novo. Resultado: o que chegar durante a resposta é juntado e respondido depois, com a resposta anterior já no histórico. Fontes: `nodes/entrada-coletar-buffer.sql`, `nodes/entrada-chamar-serena-core.js`, `nodes/entrada-marcar-entregue.sql`.
+2. **Regras no Core** (cabeçalho do prompt): mensagens curtas que só confirmam ("quero pedir", "e só isso") recebem uma frase, sem repetir explicação nem link; nunca mandar o mesmo link duas vezes; antes de gerar link, confirmar produto, versão e tamanho se o cliente não disse.
+3. **Trava de link repetido no Core** (código, não depende do modelo): se a resposta traz uma URL que já apareceu nas últimas 8 mensagens da Serena e o cliente não pediu o link de novo ("manda de novo", "não abriu"...), a linha do link é removida e entra "É só abrir o link que te mandei acima ☝️". URL duplicada na mesma resposta também cai. A conversa ganha a etiqueta `link-repetido` para acompanhar no Inbox.
+
+Testes: SQL do Coletar Buffer com trava ativa (segura), sem trava (junta as 2 mensagens), já processado (nada) e mensagem de 1 s (segura). Guarda de link testada com 4 cenários (repete sem pedir: remove; pede de novo: mantém; link novo: mantém; sem link: intacto).
+
+**Ajuste de velocidade (03/09, 19h).** Jaderson achou a voz nova lenta ("cansada"). O v3 aceita `speed`: padrão agora é **1,1** (v2 de reserva 1,08). O webhook aceita `velocidade` (0,7 a 1,2) e `tag` (direção do v3 no início do texto, ex. `[animada]`). Amostras enviadas: Fabi 1,1; Fabi 1,15 com `[animada]`; Bruna 1,05. Todas geradas pelo v3.
+
+
+## Respostas mais curtas e ordem das partes (03/09, 20h50)
+
+Print do Jaderson: primeiro contato recebeu um texto enorme (apresentação + explicação técnica + lista de 6 versões com preço) e a última parte ("Me conta um pouco mais...") chegou ANTES do bloco grande. Nos últimos 7 dias a resposta mediana da Serena tinha 353 caracteres, mas 10% passavam de 940.
+
+- **Core, cabeçalho**: regra FORMATO NO WHATSAPP: até 3 parágrafos curtos e uns 500 caracteres (1 ou 2 frases para dúvida simples), responder só o que foi perguntado e terminar com uma pergunta, apresentação em uma frase no primeiro contato, no máximo 2 versões citadas (nunca a lista inteira com preços), sem cabeçalhos ou explicação técnica não pedida. Pedido, rastreio, frete e link de pagamento podem ser completos.
+- **Entrada, Fatiar Resposta** (`nodes/entrada-fatiar-resposta.js`): a inversão acontecia porque cada parte vai para a Evolution com um `delay` ("digitando...") proporcional ao tamanho, e a Evolution aplica esse delay por conta própria: a parte curta (800 ms) chegava antes da longa (2500 ms). Agora cada parte espera pelo menos o delay da anterior + 600 ms.
+
+
+## Lote 3 (03/09, 22h-23h): contatos unificados, cliente recorrente, follow-up de link, relatório diário, opções numeradas, resposta barata
+
+Pedido: "faça o 1, 2, 3, 4, 5, 6 (verificar) e 8" da lista de melhorias.
+
+**1. Contatos com e sem o 9 unificados.** Função `serena_tel_canon` (`nodes/sql-serena-tel-canon.sql`): celular BR de 12 dígitos ganha o 9. 23 pares duplicados foram unidos no contato de 13 dígitos (backup reversível em `serena_merge_backup`, função `serena_unificar_full`), 11 contatos sem gêmeo foram canonizados, um fixo repetido (Vox) foi unido. A Angelucia (caso do dia) agora é um contato só com 48 mensagens. Daqui em diante: Core `Normalizar` canoniza o telefone; Entrada (`Registrar no Buffer + Config`, `Registrar Intervencao Humana`) compara contatos e pausas pelo canônico (`nodes/entrada-registrar-buffer.sql`, `nodes/entrada-registrar-intervencao-humana.sql`). O envio continua pelo JID original.
+
+**2. Pedidos da Shopify no contexto.** Tabela `serena_pedidos_cache` (6h). O Cerebro chama `buscar-pedidos-telefone` quando o cache venceu, grava e coloca no cabeçalho "PEDIDOS DESTE CLIENTE NA LOJA" com a regra de cliente recorrente (oferecer repetir o último produto, não explicar do zero, usar os dados para status). Nome do cliente vem da Shopify quando o contato não tem. Teste: "quero comprar de novo" → "Você quer repetir o mesmo pedido do ImunoFosfo 90 cápsulas (2 unidades)...?".
+
+**8. Resposta barata para mensagem trivial.** Agradecimento, saudação, emoji ou "ok/certo/combinado" (estes só quando a última fala da Serena não terminou em pergunta) vão para o Haiku com as últimas 6 mensagens, uma frase, sem ferramentas nem detecção de humor. Teste: "Obrigado!" → "💙".
+
+**3. Follow-up de link não aberto** (`link-followup.workflow.js`, id oL5sdxV2bQWGzUeC, cron 15 min). Link de checkout da Serena com mais de `link_followup_horas` (2) sem clique no AN Links (`anl_clicks`) e sem o cliente falar depois recebe uma mensagem única (8h-20h BRT, uma por contato a cada 7 dias); respeita fila humana, pausa, bloqueio e conversa pausada. Config `link_followup` on/off. Registro em `serena_link_followups`; a mensagem entra no histórico como `proativo:link_followup`.
+
+**3b. Follow-up de link ABERTO sem pagamento** (02/11/2026; `nodes/link-aberto-followup.js`, id `S9dhrGnafRbKMgOI`,
+cron 15 min, 9h-20h BRT; SQL em `nodes/link-aberto-followup.sql`). Quem abriu o link de pagamento que a Serena mandou
+na conversa e não pagou recebe UMA mensagem `link_aberto_followup_horas` (3) depois do clique. A mensagem pergunta se
+ficou dúvida e lembra que o cartão divide em até 3x sem juros e que a Serena gera PIX ou boleto ali mesmo. Fica de fora quem:
+
+- falou depois do clique, ou recebeu outra mensagem da Serena depois do link;
+- começou o checkout (linha em `carrinhos_abandonados`: a régua de carrinho cuida);
+- tem pedido na Shopify criado depois do link;
+- recebeu qualquer follow-up de link nos últimos 7 dias;
+- está na fila humana, pausado, bloqueado ou com a IA pausada;
+- é da equipe.
+
+Só vale link mandado na conversa (`autor` nulo ou `reprocessado`): o link da régua de carrinho tem as próprias etapas.
+
+- **Config:** `link_aberto_followup` = `off`, `simulacao` (grava o texto, não envia) ou `on`.
+- **Registro:** `serena_link_aberto_followups`. A mensagem entra no histórico como `proativo:link_aberto`.
+- **Rodar na mão:** `GET /webhook/link-aberto-followup?t=<LINK_ABERTO_TOKEN_MANUAL>&modo=simulacao`.
+- **Ligado (`on`) em 02/11/2026**, a pedido do Jaderson. Na semana de 26/10 a 01/11, a regra teria mandado 7 mensagens: Raiane (Propolis), Antônio
+  (ImunoFosfo 90 para o filho), Torquato (Líquido) e outros. Todos pediram o link e sumiram.
+
+**Clique de robô (achado em 02/11/2026).** O AN Links grava também a visita do nosso próprio servidor (navegador
+`node`, Boston), que abre todo link segundos depois do envio para montar a prévia. Em 14 dias foram 255 dos 753 cliques
+em links de checkout. Contando só gente (função `anl_click_humano(ua)`), a Serena teve 61% dos links abertos em 30 dias,
+não 97%.
+
+O follow-up de link **não** aberto (item 3) tratava esse clique como abertura. Na prática só disparava quando a mensagem
+nem tinha sido entregue: em setembro e outubro foram 12 envios e cerca de 20 falhas para números que não existem no
+WhatsApp. Agora ele:
+
+- ignora o clique de robô;
+- vale só para link mandado na conversa;
+- respeita o follow-up de link aberto no limite de um por contato a cada 7 dias.
+
+Previsão: umas 1 ou 2 mensagens por dia.
+
+**4. Relatório diário de vendas** (`relatorio-vendas.workflow.js`, id zwchhPYGzK73hFPd, 00h05 BRT fechando o dia anterior, Telegram tópico 289; até 16/09 rodava às 20h com o dia pela metade). Primeiro relatório (03/09): 59 conversas, 28 links para 17 clientes, 24 abertos (86%), 10 pedidos WPP = R$ 5.209,24 (43% da receita do dia), conversão link→pedido 36%. Config `relatorio_vendas`.
+
+**5. Escolha de versão.** A Serena marca `[[LISTA: título | opção | opção]]`. O plano era menu nativo (sendList), mas a Evolution atual devolve 400 `this.isZero is not a function`. Então o Core (`LISTA_NATIVA = false`) converte em opções numeradas no próprio texto ("Responde só com o número"). O caminho nativo está pronto (Envio Samuel aceita `{ number, lista }`, Entrada tem o nó `Enviar Lista`, `nodes/entrada-enviar-lista.js`); basta ligar quando a Evolution for atualizada.
+
+**6. Confirmação de pagamento no WhatsApp: já existia.** O `[Transacional] Dispatcher Samuel v3` manda `pedido_pago_confirmado` para todo pedido pago da Shopify, inclusive PIX/boleto gerados pela Serena (draft order): AN-15193 (PIX no checkout, 18:49) e AN-15083 (PIX da Serena, 28/08) receberam. Nada a fazer.
+
+
+## Proposta semanal de atualização da base (04/09, 01h50)
+
+Pedido: item 7 da segunda lista de ideias. Toda **segunda às 8h BRT** o Claude lê a base de treinamento inteira, os adendos já aprovados, as lacunas da semana (`serena_lacunas` não resolvidas) e as correções da equipe (`serena_correcoes`) e escreve até 8 adendos prontos para colar. Nada entra na base sem clique.
+
+- **`proposta-base.workflow.js`** (`[Serena] Proposta Semanal da Base`, id uAMAhYyFsr1fMQPx). Um nó Code: monta o prompt (base ≤ 380k caracteres + adendos + lacunas + correções), chama `/webhook/claude-call` com o modelo da config (`modelo`) e `effort: high`, exige JSON `{resumo, itens[]}`. Cada item tem `titulo`, `tipo` (`novo`, `ajuste` ou `pergunta` quando a informação não existe na base e a equipe precisa definir), `secao`, `texto`, `motivo` e as lacunas cobertas. Grava em `serena_base_propostas` (token por proposta) e manda ao Telegram (tópico 289) com botões: **Aplicar todos**, **Ver completo**, **Descartar** e **só n** por item. Se não houver lacuna nem correção na semana, não manda nada. Desligar: config `base_proposta = off`.
+- **`aprovar-proposta-base.workflow.js`** (`[Serena] Aprovar Proposta da Base`, id 1CfkoWCCfClLVId4). `GET /webhook/serena-base-proposta?t=TOKEN&id=N&acao=ver|aplicar|descartar[&item=n]`. Os botões do Telegram abrem esta página (o bot não tem webhook de callback, então os botões são links). Aplicar anexa `### Adendo aprovado em DD/MM/AAAA · título (seção)` + texto em **`serena_config.system_prompt`** (o Core carrega esse bloco junto com a base, em cache), marca o item como aplicado, a proposta como `aplicada` ou `parcial`, as lacunas cobertas como `resolvida` (`resolvido_por = adendo`) e avisa no Telegram. A Serena usa o adendo na mensagem seguinte.
+
+Por que `system_prompt` e não `base_treinamento`: a base é sobrescrita a cada minuto pelo sync do site (`serena.americanutrition.com`, workflow D71uJKMi3u442bL0), então qualquer texto colado nela sumiria. O aviso no Telegram lembra de copiar o adendo aprovado para o documento da base quando der.
+
+Tabela: `serena_base_propostas` (id, criado_em, periodo_ini, periodo_fim, resumo, itens jsonb, status pendente|aplicada|parcial|descartada, token, aplicado_em, telegram_msg_id). Config nova: `base_proposta` (on).
+
+**Mutirão das lacunas (02/11/2026).** As propostas 2 a 7 (de 14/09 a 02/11) ficaram sem aprovação: 46 itens, muitos
+repetidos, e 493 lacunas abertas.
+
+1. **Triagem.** Uma rodada de IA (Haiku, com os trechos da base ligados a cada pergunta) separou as lacunas:
+   - 105 alarmes falsos: a Serena tinha respondido certo. Fechadas como `triagem:alarme_falso`.
+   - 88 ruídos ou casos de um pedido específico. Fechadas como `triagem:ruido`.
+   - O resto foi ligado à proposta nova.
+2. **Proposta 8, consolidada.** Tem 16 itens e substitui as propostas 2 a 7, agora com status `substituida`. Os fatos
+   foram conferidos na Shopify e na base: preços, 650 mg por cápsula, PIX de 30 min (o da conversa; o do checkout dura
+   24 h), Kit 9 do Liquid. Erros das propostas antigas foram corrigidos, como a Cris apresentada com título de saúde
+   (proibido desde 04/06) e o link antigo dos depoimentos.
+   - O item 14 dá uma conduta geral de saúde para quadro ou remédio que a base não cita, cobrindo 89 lacunas.
+   - Ao aplicar, as 298 lacunas ligadas fecham.
+   - Duas ficam abertas esperando informação da equipe: quantas cápsulas tem a D3 diária e por quanto tempo dar o
+     ImunoPet.
+3. **Rotina semanal.** O `[Serena] Proposta Semanal da Base` mudou em três pontos:
+   - Com proposta pendente, não gera outra: manda no Telegram um lembrete com o link de aprovação.
+   - Lê as lacunas abertas sem a janela de 7 dias, então nada se perde enquanto espera.
+   - Fecha como `proposta:sem_item` a lacuna que ele leu e não ligou a nenhum item, porque já está coberta ou é ruído.
+
+
+## Lista de versões completa (04/09, 07h)
+
+Print do Jaderson (conversa da Letícia, 06:34): a Serena ofereceu só 90, 60 e 42 cápsulas e deixou de fora a Vegana, a Plus 180 e a Líquida. Causa: a regra FORMATO NO WHATSAPP de ontem ("cite no máximo 2 opções") estava valendo também para a lista de escolha. Além disso o texto terminava com "Qual versão faz mais sentido pra você?" e logo abaixo vinha o título da lista "Qual versão você prefere?", pergunta repetida.
+
+- **Core, regra FORMATO**: o limite de 2 opções vale só para o texto corrido. Quando o cliente precisa escolher, a LISTA CLICÁVEL traz todas as versões.
+- **Core, regra LISTA CLICÁVEL**: exemplo com as 6 versões do ImunoFosfo (90 · R$ 327, 60 · R$ 247, 42 · R$ 197, Vegano 90 · R$ 327, Plus 180 · R$ 597, Líquido frasco · R$ 137), instrução de trazer todas as variações da tabela de preços da base (até 8) e de não terminar o texto com pergunta, porque o título da lista já é a pergunta.
+- **Core, código**: ao montar as opções numeradas, se a última linha do texto for uma pergunta curta (sem link), ela é removida. Limite de opções passou de 6 para 8.
+
+Teste no Core (sem envio) com a mesma pergunta da Letícia: resposta em 3 parágrafos, 6 opções numeradas e uma única pergunta ("Qual versão você prefere?"). Fonte: `nodes/core-cerebro-serena.js`.
+
+
+## Link de rastreio quebrado no "pedido enviado" (04/09, 09h30)
+
+Print do Jaderson: a Gislene (AN-15173) recebeu `https://track.americanutrition.com/https%3A%2F%2Fenvia.com%2Ftracking%3Flabel%3D888030910163172`. A J&T mandou a **URL inteira** dentro do campo `tracking_number` do fulfillment da Shopify, e o texto do transacional fazia `track.americanutrition.com/ + encodeURIComponent(codigo)`, então a URL virou parte do caminho. O certo é `https://track.americanutrition.com/888030910163172`.
+
+Nos últimos 90 dias só 2 dos 1.359 avisos de envio vieram assim (AN-15173 e AN-14059); o padrão da J&T é o código puro `888030…`, Correios `AD…BR`, Loggi 20 caracteres.
+
+Correção: função `soCodigo` (`nodes/rastreio-so-codigo.js`, com a lista dos 4 lugares onde está colada) extrai o código de qualquer URL (`?label=`, `?id=`, `#nums=`, caminho, percent-encoding até 3 níveis) e devolve vazio quando o valor não parece código (precisa de 8 a 40 caracteres e ao menos um dígito).
+
+- **`[Transacional] Pedido Enviado`** (XzWcKoGQrvVhovb8): normaliza antes de gravar em `scheduled_messages`; valor irrecuperável não agenda (motivo `tracking_invalido`).
+- **`[Transacional] Dispatcher Samuel v3`** (WXncUehLXyuIMoSm): rede de segurança na hora de enviar; sem código válido a mensagem é pulada (`rastreio_invalido`) em vez de sair com link quebrado. O `encodeURIComponent` saiu (o código já é alfanumérico).
+- **`[Serena] Painel API`** e **`[Serena] Rastreio Proativo`**: mesmo tratamento, porque leem o rastreio direto da Shopify.
+
+As duas linhas antigas do `scheduled_messages` foram normalizadas no banco. Teste de ponta a ponta (agendamento com a URL da J&T para o WhatsApp do Jaderson, pedido fictício AN-TESTE-LINK): a mensagem saiu com `https://track.americanutrition.com/888030910163172`. Função testada em 17 formatos (J&T, Correios, Loggi, UPS, USPS, Canada Post, linkcorreios, 17track, valores inválidos).
+
+
+## PIX copia e cola em mensagem separada (05/09, manhã)
+
+Print do Jaderson (Clarice, +55 16 99717-0593): a Serena mandou o PIX copia e cola **dentro** da mensagem com pedido, valor e explicação. No WhatsApp o "Copiar" leva a mensagem inteira, então a cliente não conseguia copiar só o código; ela tentou clicar nele e recebeu "NÃO FOI POSSÍVEL ACESSAR O SITE" (o BR Code tem `pix.stone.com.br/...` dentro e o WhatsApp transforma em link).
+
+Correção em três camadas:
+
+1. **Entrada, `Fatiar Resposta`** (`nodes/entrada-fatiar-resposta.js`) — a garantia. Detecta o PIX BR Code (começa com `0002010x` e termina em `6304` + CRC) ou a linha digitável do boleto (47-48 dígitos) e envia **o código sozinho em uma mensagem**, com o texto antes e o texto depois em mensagens próprias. Na mensagem anterior entra a instrução: pedido já registrado, e para pagar é só tocar e segurar na mensagem de baixo, *Copiar*, e colar no app do banco em *Pix > Pix Copia e Cola* (avisando que o código não é link). Um rótulo solto no fim do texto ("PIX copia e cola:") é removido, já que a instrução o substitui. Vale para qualquer resposta da Serena, independente de como ela escreveu.
+2. **Core, cabeçalho**: regra CÓDIGO DE PAGAMENTO — reproduzir o código exatamente como a ferramenta devolveu, em uma linha sozinha, sem quebrar nem reescrever, sem repetir a explicação (o sistema já acrescenta) e dizendo antes que o pedido está registrado.
+3. **Ferramentas Gerar PIX e Gerar Boleto**: a mensagem base agora diz que o pedido já está registrado e reservado e explica onde colar no app do banco, com o código sempre em linha própria.
+
+Testado com a mensagem real da conversa: 3 partes (texto + instrução / código intacto / fechamento), código byte a byte igual ao original. Mesmo teste para boleto e para mensagem sem código (segue em uma parte só).
+
+
+## Página do Pix (05/09): quem não consegue copiar o código abre um link
+
+Pedido do Jaderson depois do caso da Clarice: além do código em mensagem separada, mandar também um link com uma página que facilite o pagamento.
+
+**`[Serena] Pagina do Pix`** (`pagina-pix.workflow.js`, id d8xacawAcoWtppWh):
+
+- `GET /webhook/pix?t=TOKEN` — página de pagamento no celular: pedido e valor, **contagem regressiva** do prazo, botão grande **Copiar código Pix** (clipboard com fallback de seleção), passo a passo em 4 linhas, **QR Code** gerado na hora a partir do próprio código (biblioteca no cliente; a imagem do Pagar.me fica como reserva) e o código em texto para selecionar à mão.
+- `GET /webhook/pix-status?t=TOKEN` — a página consulta a cada 10 s. Quando o draft order da Shopify vira `completed` (a Confirmação de Pagamento fecha o pedido assim que o Pix cai), a página se atualiza sozinha e mostra **Pagamento confirmado**. Também há tela própria para Pix expirado.
+- Sem dado do cliente na URL: o token é aleatório e os dados ficam em `serena_pix_links` (token, draft, valor, código, expiração, pago, aberturas).
+
+**`[Serena Tool] Gerar PIX`** grava a linha, encurta o link pelo AN Links (`seguro.americanutrition.com/xxxxx`) e manda junto com o código: "Se preferir, abra esta página para copiar o código com um toque ou pagar pelo QR Code". O link vai na mensagem depois do código, então não atrapalha a cópia. Se o Supabase ou o encurtador falharem, a mensagem sai normal, só sem o link.
+
+**Fatiar Resposta** ganhou detecção de explicação repetida: se o texto antes do código já ensina a colar no banco, entra só a dica curta ("toque e segure > *Copiar*"), senão entra a instrução completa.
+
+Teste de ponta a ponta: PIX real gerado pela ferramenta (pedido #D4083, R$ 327), link `seguro.americanutrition.com/CbZv6gH` redirecionando para a página, página respondendo com pedido/valor/código certos, status devolvendo `{"pago":false}`, e a mensagem fatiada em 3 partes (texto + dica / código sozinho / link + fechamento). O draft de teste foi apagado da Shopify e as linhas de teste do banco também.
+
+
+## Página do Pix com a marca + cadastro confirmado em vez de perguntado (05/09, manhã)
+
+Dois pedidos do Jaderson.
+
+**1. Página do Pix com a cara da América.** Fundo no azul da marca (#07388E, gradiente até #03204F), logo branco do CDN da Shopify no topo, cartão branco, botão no verde da marca (#108474), aviso de prazo em âmbar, tela de expirado no vermelho da marca (#AD0404) e fonte **Barlow** (a mesma do site). Estrutura igual: pedido, valor, contagem regressiva, botão de copiar, passo a passo, QR Code e o código em texto.
+
+**2. Cliente com cadastro não responde mais dado a dado.** Quando o telefone já tem pedido na Shopify, o Core busca o **último pedido** (`customers/<id>/orders.json`) junto com o cache de pedidos e guarda em `serena_pedidos_cache.cadastro` (coluna nova): nome, CPF (vem de `note_attributes`), email, telefone e endereço. O endereço da Shopify vem com rua e número juntos em `address1` e bairro no fim do `address2`, então o Core separa `rua / numero / complemento / bairro / cidade / estado / cep` para as ferramentas de pagamento.
+
+No prompt entra o bloco CADASTRO QUE JÁ TEMOS com a regra: para gerar PIX, boleto ou checkout, mandar **uma** mensagem repetindo nome, CPF e endereço e perguntar se está tudo certo; se confirmar, chamar a ferramenta com esses dados; se corrigir algo, trocar só aquilo; perguntar item a item apenas o que faltar.
+
+Teste (cliente com cadastro pedindo PIX):
+
+```
+Show, Jaderson! 💙 Antes de gerar, só confirmando os dados pra emitir certinho:
+📦 1x ImunoFosfo 90 cápsulas
+👤 Jaderson Pucci
+🪪 CPF 529.982.247-25
+📍 Avenida Ana Costa, 340, Sala 12, Gonzaga, Santos/SP, CEP 11060-002
+Tá tudo certo assim, ou muda a quantidade ou o endereço? 🧬
+```
+
+E no "pode gerar" ela chamou `gerar_pix` com esses dados, sem perguntar mais nada.
+
+**3. Link da página garantido.** Nesse teste a Serena resumiu a mensagem e cortou o link da página. Agora o Core guarda o `pagina_pix` devolvido pela ferramenta e, se o link não estiver na resposta, acrescenta ele no fim (com a instrução no prompt como reforço). Fontes: `nodes/core-cerebro-serena.js`, `nodes/core-carregar-contexto.sql`, `pagina-pix.workflow.js`.
+
+
+## Imagem de compartilhamento do link do Pix (05/09)
+
+Print do Jaderson: no WhatsApp o preview do link pegava o logo transparente do site e cortava, virando um borrão vermelho e branco.
+
+Agora a página do Pix tem **Open Graph próprio**:
+
+- **Imagem 1200x630 feita para o preview** (`assets/og-pix-america.png`, fonte em `assets/og-pix-america.html`): fundo azul da marca com brilho verde, faixa vermelho/branco/verde no topo, logo branco, "Pague com Pix / em segundos", a explicação de copiar ou escanear, selo "Pedido reservado · pagamento seguro" e um cartão branco com QR ilustrativo e o botão verde. Hospedada no CDN da AN (Supabase Storage, `imagens/pagamento/`).
+- **Título e descrição conforme o estado do Pix**: aberto vira "Pague R$ 327,00 com Pix" + "Pedido #D4086: copie o código com um toque ou escaneie o QR Code"; pago vira "Pagamento confirmado"; vencido, "Pix expirado".
+- `og:image:width/height`, `og:image:alt`, `twitter:card=summary_large_image`, `theme-color` no azul da marca.
+
+O WhatsApp guarda o preview por URL: links gerados antes desta mudança continuam com o preview antigo, os novos já saem com a imagem. Verificado buscando o link curto com o user-agent do WhatsApp.
+
+
+## Produto no lugar do número do rascunho (05/09)
+
+Observação do Jaderson: o `#D4085` que aparecia na mensagem e na página é o número do **rascunho** da Shopify. O número do pedido de verdade (AN-xxxxx) só nasce depois do pagamento, então mostrar o rascunho para o cliente só confunde. O que ele quer ver é **o que está comprando**.
+
+- `[Serena Tool] Gerar PIX`, `Montar draft`: a mutation `draftOrderCreate` agora também devolve `lineItems { title quantity variantTitle }`.
+- `Extrair draft`: monta o texto dos itens ("2x ImunoFosfo 90 Caps"). A variante vem como "Tradicionais / 90 Caps", então os pedaços genéricos (Tradicionais, Default Title, Padrão, Único) saem e o que identifica fica — "Vegano", "90 Caps" — sem repetir o que já está no título.
+- Mensagem do WhatsApp: `📦 2x ImunoFosfo 90 Caps` no lugar de `📦 Pedido: #D4085`. O rascunho continua no aviso do Telegram (é o que a equipe usa) e no JSON da ferramenta, com uma nota pedindo à Serena que não cite esse número ao cliente.
+- Página do Pix: linha **Produto** no lugar de Pedido, e a descrição do preview do WhatsApp virou "2x ImunoFosfo 90 Caps: copie o código com um toque ou escaneie o QR Code".
+- Coluna nova `serena_pix_links.itens`.
+
+Teste: PIX de 2 unidades gerado pela ferramenta, mensagem com o produto, página e Open Graph com "Pague R$ 654,00 com Pix" e o produto na descrição, sem nenhum `#D40xx` na parte visível ao cliente.
+
+
+## Serena manda arquivos no WhatsApp: laudo do ImunoFosfo (05/09)
+
+Pedido do Jaderson: "Laudo toxicológico, preciso mandar esse PDF quando pedirem sobre o lote, laudos". A Evolution manda arquivos por `POST /message/sendMedia/Samuel` (`{ number, mediatype, mimetype, media (URL), fileName, caption, delay }`) — testado de ponta a ponta antes de montar o resto.
+
+**Onde ficam os arquivos.** `serena_config.documentos` guarda um JSON com a lista. Cada item:
+
+```json
+{ "chave": "laudo",
+  "nome": "Laudo Toxicologico - ImunoFosfo (NuLab Inc.).pdf",
+  "tipo": "document",
+  "url": "https://supabase.americanutrition.com/storage/v1/object/public/AmericaNutrition/ImunoFosfo_Toxicology_Report_NuLab_Inc.pdf",
+  "legenda": "Laudo toxicologico do ImunoFosfo, feito pelo laboratorio NuLab Inc.",
+  "quando": "o cliente pedir o laudo, laudo toxicologico, analise laboratorial, certificado de analise, teste de metais pesados/pureza, ou perguntar se o produto e testado / se o lote tem laudo",
+  "gatilhos": ["laudo"] }
+```
+
+`quando` entra no prompt (é o critério que a Serena lê); `gatilhos` (opcional, cai na `chave` se ausente) são as palavras que a rede de segurança procura. Para acrescentar um arquivo novo basta inserir outro item no JSON — nenhum workflow precisa mudar.
+
+**Workflow novo** `[Serena] Enviar Arquivo` (`enviar-arquivo.workflow.js`, id `iy1YjV6hQutIsh5v`): `POST /webhook/serena-samuel-arquivo` com `{ number, url, tipo, nome, legenda }` → `sendMedia` na instância Samuel → `{ ok, tipo, nome, message_id, erro }`.
+
+**Como a Serena manda.** O Core carrega `documentos` no contexto (`nodes/core-carregar-contexto.sql`) e monta o bloco `ARQUIVOS QUE VOCE PODE ENVIAR` no cabeçalho. Para enviar, ela termina a mensagem com uma linha `[[ARQUIVO: laudo]]`; o Core tira o marcador do texto e devolve `arquivo: { chave, url, tipo, nome, legenda }`. A Entrada prende esse arquivo na **última parte** da resposta fatiada e o nó `Enviar Arquivo` despacha; se o `sendMedia` falhar, manda a URL como texto para o cliente não ficar sem o documento. A conversa ganha a etiqueta `arquivo-enviado` e o histórico guarda o próprio marcador (`\n[[ARQUIVO: laudo]]`), para o modelo aprender a sintaxe em vez de imitar um texto solto.
+
+**Duas redes de segurança**, porque nos testes o modelo prometia o arquivo e esquecia o marcador:
+
+1. Se ele escrever `(arquivo enviado: Nome.pdf)` — imitando o registro antigo do histórico —, isso vira um envio de verdade e o trecho sai do texto.
+2. Se o cliente falou do documento (um `gatilho` na mensagem dele), ou a resposta tem verbo de envio + o gatilho, o Core anexa o arquivo sozinho. Não reenvia se já mandou nas últimas 4 falas dela, a menos que o cliente diga que não chegou / peça de novo. 7 casos cobertos em teste local (marcador, imitação, promessa sem marcador, reenvio, já mandou, assunto diferente, resposta sem verbo).
+
+**Três nós repassavam só uma lista fixa de campos** e engoliam o `arquivo` (o `lista` também, que nunca tinha sido notado porque a lista nativa está desligada): `Montar Resposta` no Core, `Chamar Serena Core` na Entrada e, por tabela, o `Fatiar Resposta`. Todos passam `lista` e `arquivo` agora.
+
+Teste real: mensagem "me manda o laudo toxicológico do ImunoFosfo aqui" no WhatsApp → resposta curta + PDF entregue (`arquivo_enviado: true`, `message_id 3EB03FF1AEC62642E51264`).
+
+
+## Produto no lugar do número do rascunho: agora no boleto também (05/09)
+
+Mesmo tratamento que o PIX ganhou, aplicado ao `[Serena Tool] Gerar Boleto` (`gBgvM4y3bYzbnrE5`). O `#D40xx` é o rascunho da Shopify, interno; o número do pedido (AN-xxxxx) só nasce depois do pagamento.
+
+- `Montar draft` (`nodes/gerar-boleto-montar-draft.js`): a mutation `draftOrderCreate` também pede `lineItems(first: 20) { edges { node { title quantity variantTitle } } }`.
+- `Extrair draft` (`nodes/gerar-boleto-extrair-draft.js`): monta `itens_texto` com a mesma regra do PIX — a variante vem como "Tradicionais / 90 Caps" e os pedaços genéricos (Tradicionais, Default Title, Padrão, Único) saem, ficando o que identifica ("Vegano", "90 Caps"), sem repetir o que já está no título.
+- `Extrair boleto` (`nodes/gerar-boleto-extrair-boleto.js`): repassa `itens_texto` adiante.
+- `Formatar resposta` (`nodes/gerar-boleto-formatar-resposta.js`): a mensagem do cliente abre com `📦 2x ImunoFosfo 90 Caps` no lugar de `📦 Pedido: #D40xx`. O aviso do Telegram ganhou a linha do produto e o rascunho virou `📝 Rascunho:` (a equipe continua precisando dele para achar o pedido na Shopify). A saída da ferramenta ganhou `itens_texto` e a `nota_serena` pedindo que ela não cite o rascunho ao cliente, repita a linha digitável em uma linha sozinha e depois o link do PDF.
+
+Teste real (boleto de 2 itens diferentes, R$ 791,00): `itens_texto` = "2x ImunoFosfo 90 Caps, 1x ImunoFosfo Liquid", mensagem e card do Telegram conforme acima, nenhum `#D40xx` na parte visível ao cliente.
+
+
+## Cliente com câncer classificado como "irritado": Serena calava por 12h (05/09)
+
+Caso real: a cliente perguntou sobre o marido com câncer no fígado com metástase, a Serena respondeu bem e ofereceu a lista de versões. **No mesmo instante o detector de humor marcou `irritado`**, abriu fila humana e pausou a Serena por 720 min. Quando ela respondeu "3" (escolhendo a versão), 1h40 depois, ninguém respondeu — e a mensagem sumiu. Um segundo caso idêntico aconteceu 1h47 depois (cliente comprando para a mãe que ia começar quimioterapia, marcado `irritado` no "No caso é pra minha mãe").
+
+O detector estava lendo **peso emocional como raiva**. Isso atinge exatamente as conversas mais delicadas e mais próximas da venda.
+
+Três defeitos encadeados, os três corrigidos:
+
+**1. O classificador confundia dor com raiva.** O prompt do Haiku agora define `irritado` como raiva dirigida **a nós** (empresa, produto, entrega, atendimento) e traz o contra-exemplo explícito: tristeza, medo, choro, desespero, angústia ou desabafo por doença grave (câncer, metástase, quimioterapia, AVC), diagnóstico ruim, dor ou preocupação com um familiar são **neutro**, "por mais pesada que seja a mensagem, e um cliente assim precisa da assistente respondendo, não de silêncio"; na dúvida, neutro. Testado: os dois casos reais voltam `neutro`, e o cliente de verdade irritado ("terceira vez que cobro, vocês são golpistas, vou no Procon") continua escalando com `handoff`.
+
+**2. Um falso positivo custava 12 horas de silêncio.** Config nova `wpp_pausa_irritado_min` (**60**): quando o `irritado` foi detectado sozinho pela IA, a pausa é de 1h em vez das 12h de `wpp_pausa_handoff_min` (que continua valendo para o handoff pedido pelo cliente ou pela própria Serena). Tempo de sobra para um humano assumir, sem sumir com o cliente o dia inteiro. Verificado: pausa gravada com 60 min.
+
+**3. O que o cliente escrevia durante a pausa desaparecia.** O `Pode Responder?` parava no `if (r.pausada_ate) return []` **antes** de qualquer gravação, e o `Registrar no Buffer` marca como processada toda pendência com mais de 2 minutos na mensagem seguinte. Resultado: o "3" da cliente não entrou em `serena_mensagens`, não apareceu no Inbox para o atendente que deveria assumir, e não foi visto pelo reprocessador (que lê `serena_mensagens`, não o buffer). Agora o `Registrar no Buffer + Config` grava a fala do cliente no histórico quando há pausa ativa, e já insere a linha do buffer como processada (a Serena não volta horas depois respondendo mensagem velha fora de contexto). Testado nos dois caminhos: com pausa grava no histórico e marca processado; sem pausa nada muda.
+
+**Bônus do mesmo print: a pergunta aparecia duas vezes.** "Qual versão você prefere?" saía no fim do texto e de novo como título da lista. O corte antigo só removia a última linha se ela tivesse até 90 caracteres — e ali a pergunta vinha no fim de um parágrafo longo. Agora corta só a **frase** final, preservando a explicação que vem antes (6 casos em teste local), e o prompt da lista passou a proibir a pergunta no texto.
+
+Ações no caso real: pausas das duas clientes liberadas na hora; as filas ficaram abertas de propósito, para a equipe olhar as duas conversas.
+
+
+## Frasco que não cobre o protocolo: a Serena avisa antes de gerar o link (05/09)
+
+Saiu do caso da Eliane: em câncer com metástase a Serena indicou fase de choque (6 cápsulas/dia por 7 dias) e a cliente escolheu o frasco de **42 cápsulas** — que acaba exatamente no fim do choque, sem sobrar nada para a manutenção. A Serena respeitou a escolha e gerou o link, sem comentar.
+
+Adendo novo em `serena_config.system_prompt` (mesmo bloco cacheado da base, formato dos adendos aprovados — ver `nodes/serena-config-adendos-prompt.md`): quando a versão escolhida não cobre o protocolo indicado **para aquele caso**, a Serena avisa antes de gerar o link, com a conta feita (cápsulas ÷ dose diária = dias). Uma frase só, reconhecendo a escolha, dizendo quantos dias rende e qual versão cobriria; a decisão continua sendo do cliente e, se ele mantiver, ela gera o link sem repetir o assunto. Não vale quando o cliente não perguntou de protocolo nem em recompra de quem já sabe a dose.
+
+Teste com o caso real: *"o frasco de 42 cápsulas rende exatamente os 7 dias da fase de choque (6/dia), mas não sobra nada para começar a manutenção depois — pra isso você precisaria do frasco de 90 ou comprar um segundo depois. Quer que eu gere o link do 42 mesmo assim, ou prefere já o de 90?"*. E o teste negativo ("quero comprar o de 42 cápsulas", sem contexto de protocolo) segue direto para o link, sem sermão.
+
+
+## Lista de números bloqueados: o que é
+
+`serena_wpp_bloqueados` tem 10 números, todos com motivo `lista inicial` gravados pelo `setup` em 02/09 — é a lista de exceções definida quando a Serena entrou no ar: números internos e parceiros que ela nunca deve responder. O `Pode Responder?` para no `if (r.bloqueado === true) return []`, **antes de qualquer gravação**, então as mensagens desses números também não entram em `serena_mensagens` e não aparecem no Inbox.
+
+Isso está correto para o anti-spam (mesma tabela, motivo `antispam`), mas cega a equipe nos bloqueios manuais. Dois números da lista escreveram desde então: o número interno da América (+1 646) e o 13 98149-1402, uma afiliada que desde 04/09 15:41 pergunta por que o pedido AN-15217 não creditou a comissão dela, mandou prints e às 18:25 escreveu "Só nao me esquece!" — sem nenhum registro de resposta.
+
+**Implementado (05/09).** O `Registrar no Buffer + Config` agora separa os dois tipos de bloqueio:
+
+| Bloqueio | Serena responde | Entra no Inbox | Buffer |
+| --- | --- | --- | --- |
+| manual (`lista inicial` e qualquer motivo ≠ `antispam`) | não | **sim** | nasce processado |
+| `antispam` | não | não | segue pendente, como antes |
+
+Mesmo mecanismo da pausa (CTE `silencio` = pausa ativa **ou** bloqueio manual). Se o número bloqueado ainda não tem contato, o contato é criado na hora, senão a mensagem não teria onde entrar. Testado nos quatro caminhos — bloqueio manual grava e marca o buffer; anti-spam não grava, não cria contato e mantém o buffer pendente; pausa continua gravando; número normal segue intocado — e depois de ponta a ponta pelo webhook real: a mensagem apareceu no histórico e a Serena ficou calada.
+
+
+## Lista clicável virou config (05/09)
+
+O `sendList` da Evolution continua quebrado — testado direto na API de produção, **2.3.7** devolve `TypeError: this.isZero is not a function`. O fix da 2.3.6 não cobriu esse caminho; quem resolve é a **2.4.0-rc1**, que trocou para o `listMessage` legado com `SINGLE_SELECT` porque o formato interativo novo não renderizava no Web/Desktop. Só que 2.4.0 existe apenas como release candidate (rc2, 17/05/2026) e a instância `Samuel` é a única do ambiente — atualizar mexe no canal de produção e pode exigir parear o WhatsApp de novo pelo QR Code. Fica para quando sair estável, ou depois de validar numa VPS de teste.
+
+Enquanto isso, o `LISTA_NATIVA` deixou de ser constante no código e virou **`serena_config.lista_nativa`** (on/off, padrão `off`). No dia que a Evolution suportar, é um GET:
+
+```
+/webhook/serena-wpp-config?t=TOKEN&chave=lista_nativa&valor=on
+```
+
+Se o `sendList` falhar mesmo ligado, o nó `Enviar Lista` da Entrada já cai sozinho no texto numerado — ligar não quebra nada. Testado nos dois sentidos: com `off` as opções saem numeradas no texto e `lista` volta `null`; com `on` o Core devolve o objeto de lista nativa e o texto fica curto; valor inválido é recusado (`lista_nativa aceita: on, off`).
+
+O endpoint de config também passou a aceitar **`wpp_pausa_irritado_min`**, que tinha sido criada hoje e só dava para mudar pelo banco.
+
+
+## Depoimento de grupo vira review no site com um botão (06/09)
+
+O `Grupos | Radar de Oportunidade e Risco` já lia os 14 grupos e mandava no Telegram o card **DEPOIMENTO ESPONTANEO** com a leitura da IA e o texto original — 14 depoimentos detectados em 30 dias, confiança média 82%, mas nenhum virava nada porque o card era só texto. Agora ele tem botão.
+
+**No card:** `⭐ Virar review no site`. O `Decidir e Alertar` passou a capturar o id da linha do `grupo_radar` (o insert virou `... returning id`, com fallback de `select` quando a mensagem já existia) e o botão abre `/webhook/dep-review?t=TOKEN&id=<id>`. Os cards de compra quente e risco continuam iguais.
+
+**Workflow novo** `[Depoimentos] Review de Grupo` (`dep-review.workflow.js`, id `1z8vXF57zD3DicR2`), `GET /webhook/dep-review`. A página abre no celular com a marca da América e traz:
+
+- a mensagem original do grupo, quem escreveu, qual grupo, a data e a confiança da IA;
+- **nome sugerido no formato de e-commerce**: "MARCIA GABRIELA SP" vira `Marcia S.`; quando o `push_name` é um e-mail (acontece bastante), sugere `Cliente` para quem aprova digitar o nome de verdade;
+- o texto já limpo, **editável** numa textarea — dá para cortar o que não deve ir ao ar;
+- seletor de produto (os 11 que concentram os reviews) e de nota (padrão 5 estrelas), e uma caixa "marcar como destaque";
+- botões **Publicar review** e **Descartar**.
+
+**Aviso de alegação terapêutica.** Quando o texto cita cura, tumor, câncer, metástase, quimio, PSA, próstata, hiperplasia, "reduziu", "desapareceu" e afins, a página mostra um aviso amarelo listando os termos encontrados: suplemento não pode alegar que trata ou cura doença (ANVISA RDC 240/243) e review no site próprio conta como publicidade. **Não bloqueia nada** — só põe a informação na frente de quem clica. No depoimento do print (PSA + hiperplasia da próstata) o aviso aparece com os três termos.
+
+**Onde o review cai.** Na tabela `reviews` que já roda o site (42 mil linhas), com `origem = 'whatsapp'`, `status = 'aprovado'` (ou `destaque`) e `verified = false` — a pessoa não comprou por um pedido rastreável, então não leva selo de compra verificada. O `ia_flags` guarda o rastro: grupo, autor, confiança da IA e o **texto original** completo, para provar de onde veio se alguém questionar. O `grupo_radar` ganhou `review_id`, `decisao` e `decidido_em`, então clicar duas vezes no botão mostra "já virou review" em vez de duplicar.
+
+Testado de ponta a ponta: mensagem falsa pelo webhook do Radar → classificada como depoimento (82%) → card com botão → página → publicação → linha em `reviews` com o rastro certo → segundo clique recusado → token errado recusado. O review de teste foi marcado como `rejeitado` e as linhas de teste do radar como `teste`.
+
+**Decisões suas:** publica direto, sem pedir autorização à pessoa; nome no formato primeiro nome + inicial.
+
+**Fila (06/09).** `GET /webhook/dep-review?t=TOKEN`, sem `id`, lista tudo que ainda não foi decidido, do mais confiante para o menos: contadores no topo (na fila / publicados / descartados) e um cartão por depoimento com nome sugerido, grupo, data, a confiança da IA e uma etiqueta **alegacao** quando o texto tem termo terapêutico — dá para escolher pelo que ler antes de abrir. Cada cartão abre a página individual, e publicar ou descartar volta para a fila, então dá para varrer a lista de uma sentada. Os 13 depoimentos que já tinham sido detectados antes do botão existir aparecem aí (6 com etiqueta de alegação).
+
+
+## Serena entende vídeo (07/09)
+
+Cliente mandou um vídeo de 1 minuto com a legenda "Vídeo novo" — era um depoimento — e a Serena respondeu *"Não entendi bem o que você precisa com 'vídeo novo'"*. O motivo: a `Triagem` só tratava imagem (descrita pelo Claude), áudio (transcrito pelo ElevenLabs) e PDF. Vídeo caía na regra genérica e, **quando tinha legenda, só a legenda virava a mensagem** — o conteúdo do vídeo era invisível.
+
+O ElevenLabs `speech-to-text` aceita vídeo direto ("all major audio and video formats"), então o vídeo entrou no **mesmo caminho do áudio**, sem serviço novo:
+
+- `Triagem`: `videoMessage` vira `tipo: 'video'`, guardando a legenda separada em `legenda` e a duração em `segundos`. GIF disfarçado de vídeo (`gifPlayback`) e vídeo com mais de 5 minutos não são transcritos — o longo vira uma nota pedindo o resumo em texto ou avisando que a equipe vai assistir.
+- `Rotear por Tipo`: saída nova `video` apontando para o `Baixar Audio (Evolution)` que já existia.
+- `Preparar Audio`: reconhece vídeo (nomeia `video.mp4`, mimetype certo) e **barra arquivo acima de 25 MB** antes de carregar na memória do n8n.
+- `Montar Texto do Audio`: `[Video do cliente, fala transcrita]: ...` em vez de `[Audio...]`, e a legenda entra junto (`[Legenda que ele escreveu junto: ...]`). Sem fala, vira um pedido para a Serena perguntar o que a pessoa quis mostrar. O `tipo` continua `video`, então a resposta em áudio (que só vale para quem mandou áudio) não dispara.
+
+Testado em duas partes: a classificação com 7 casos (vídeo com e sem legenda, GIF, vídeo longo, áudio, imagem e texto — nenhuma regressão), e a transcrição de verdade num workflow temporário que baixou um mp4 de 3,8 MB e mandou pelo mesmo caminho binário da produção — 398 caracteres transcritos corretamente. O workflow de teste foi arquivado.
+
+**Número em atendimento manual.** `+55 96 98146-0353` entrou em `serena_wpp_bloqueados` com motivo `manual` — a Serena não responde, mas como o motivo não é `antispam`, as mensagens dele continuam entrando no histórico e aparecendo no Inbox.
+
+
+## Checkout não pede cadastro (08/09/2026)
+
+Caso real com `+55 74 8857-3235`: o cliente estava comprando **para a mãe**, que mora em Rio Verde de Goiás, e mandou o print da sacola com 3 itens. Em vez de gerar o link, a Serena respondeu *"preciso do telefone ou e-mail dela para eu já preparar o checkout no nome certo"* — e travou a venda ali.
+
+O link de checkout nunca precisou disso: `gerar-checkout-montar-url.js` monta a URL só com `items=variant_id:qtd` e o `ref` do canal. Quem preenche nome, endereço e pagamento é a própria pessoa na página. Não havia regra mandando pedir contato — a Serena inventou o requisito, ajudada por uma linha do bloco `CADASTRO QUE JA TEMOS` que juntava "PIX, boleto ou checkout" na hora de confirmar dados.
+
+Corrigido por **adendo em `serena_config.system_prompt`** (o mecanismo do projeto para correção de conduta, sem mexer nos 44 KB do node do Cérebro):
+
+- O link de checkout precisa **só** dos produtos e das versões. Nunca pedir nome, telefone, e-mail, CPF ou endereço para gerá-lo.
+- Carrinho pronto (print ou lista) → gerar o link na hora, sem reconfirmar item por item.
+- **Compra para outra pessoa** é venda normal: gera o link e avisa que o endereço dela é preenchido na própria página. Não pede contato dela e **não usa o cadastro deste telefone** (que é do dono do número que está falando).
+- Cadastro completo (nome, CPF, endereço) só para **PIX e boleto**, porque aí o pedido é registrado no sistema. A frase encerra dizendo que substitui qualquer instrução anterior que junte checkout com PIX e boleto.
+
+Testado no sandbox com as mensagens do print: ela gerou o link na primeira mensagem ("é só abrir e preencher o endereço de entrega da sua mãe por lá") e, com a lista dos 3 itens, gerou o link dos 3 direto — sem pedir contato em nenhum momento.
+
+## Sandbox de testes (08/09/2026) — n8n `0rrRVxUQWrb31Ob6`
+
+`GET /webhook/serena-lab?t=an-lab-6Hj2Pk8T`
+
+Página de conversa para perguntar coisas à Serena e ver o que ela responderia, sem WhatsApp e sem cliente real. Chama o `serena-core` direto (o mesmo Core da produção, mesmo prompt, mesmas ferramentas), então o que aparece ali é exatamente o que o cliente receberia.
+
+- **Contato isolado por aba.** Cada aba gera uma sessão em `localStorage` e ganha um contato próprio (`serena_contatos.session_site = 'lab-<sessao>'`). O histórico do teste nunca encosta em conversa de cliente.
+- **Telefone opcional.** Preenchendo o campo, o Core consulta os pedidos daquele número na Shopify — é assim que se testa o fluxo de cliente conhecido (cadastro, último pedido, rastreio). O `contato_id` continua mandando no `carregar contexto`, então a conversa segue gravada no contato de teste, não no do cliente.
+- **Mostra o que rodou.** Abaixo de cada resposta aparecem as ferramentas chamadas, se houve handoff, se saiu lista clicável ou arquivo, e o tempo da resposta. Ferramentas de escrita (`gerar_pix`, `gerar_boleto`, `escalar_humano`, `registrar_troca`) vêm destacadas em laranja.
+- **As ferramentas rodam de verdade** — PIX e boleto criam rascunho na Shopify, escalar abre card para a equipe. A página avisa isso no topo.
+- **Limpar conversa** apaga mensagens, conversa, fatos e o contato de teste da sessão.
+
+
+## Chat do site (09/09/2026) — n8n `gVun1aWoIRm4VrXk`
+
+**O WhatsApp do Samuel foi banido.** A sessão do Baileys travou às 19:15:05 UTC (contador da Evolution parado em 57.321, `connectionState` mentindo `open`), o aparelho principal encheu de bolhas vazias — tráfego de protocolo de uma sessão quebrada — e o número acabou banido. O canal principal de atendimento parou.
+
+O site virou a porta de entrada. `GET /webhook/serena-chat`:
+
+| Parâmetro | O que faz |
+| --- | --- |
+| `?acao=widget` | devolve o JS do widget (é o que o tema carrega) |
+| `?acao=enviar&sessao=&texto=` | manda para o `serena-core` com `canal: 'site'` e devolve a resposta |
+| `?acao=novas&sessao=&desde=` | busca resposta de atendente vinda do Inbox |
+| sem parâmetro | página de conversa avulsa, para mandar o link direto ao cliente |
+
+Deu para fazer rápido porque quase tudo já existia:
+
+- O Core já aceita `canal: 'site'` com `session_site` — o mesmo caminho que o sandbox usa. Cada visitante vira um contato `session_site = 'chat-<sessao>'`, com a sessão guardada no `localStorage`.
+- O Inbox **já tratava canal site**: na ação `enviar` do painel, mensagem de humano em canal `site` ou `widget` entra com `entregue = true`. A página faz `acao=novas` de 5 em 5 segundos e a resposta do atendente aparece.
+- O handoff usa o caminho de sempre: card no Telegram + push para os atendentes, Serena pausada, e quem assumir responde pelo Inbox.
+- Conversa nova no canal também avisa no Telegram e no push, porque hoje é a porta de entrada principal.
+
+Trava contra abuso: o endpoint é público e cada mensagem custa uma chamada ao modelo, então são no máximo 40 mensagens por hora por sessão, texto cortado em 1200 caracteres.
+
+### Instalação na loja
+
+Tema publicado **153190498476** (America Nutrition - Concept 5.3.3):
+
+- `snippets/an-chat-serena.liquid` (fonte em `nodes/shopify-an-chat-serena.liquid`) — carrega o widget e posiciona o botão exatamente onde ficava o do WhatsApp: `bottom:22px/right:22px` no desktop, `92px` no mobile, `178px` em página de produto (para não cobrir o buybar), e some junto com os drawers pelas mesmas regras `:has(.drawer[open])` / `.drawer-open`.
+- `layout/theme.liquid` — uma linha, `{% render 'an-chat-serena' %}`, ao lado do `an-popup-boasvindas`.
+
+O snippet **esconde o botão verde do WhatsApp** (`.an-wpp-btn{display:none}`), que apontava para `webhook/ir-whats` → número banido. Botão visível levando a número morto é pior que botão nenhum.
+
+**Para voltar ao WhatsApp:** apague a linha `{% render 'an-chat-serena' %}` do `theme.liquid`. O botão verde volta sozinho e nada mais muda.
+
+Testado ponta a ponta: cliente pergunta → Serena responde (`gerar_checkout` inclusive) → atendente responde pelo Inbox → resposta aparece na página. O HTML servido em `www.americanutrition.com` já traz o script e o CSS.
+
+**Fica pendente:** o popup de "produto esgotado" ainda tem um `wa.me/13472225493` fixo dentro do JS do tema, e o `webhook/ir-whats` continua redirecionando para o número banido.
+
+### Teclado do iPhone (09/09)
+
+Primeira versão quebrava ao tocar no campo de texto: o painel é `position:fixed` com `height:100dvh`, e **`dvh` não encolhe quando o teclado sobe** — a caixa de digitação ficava boiando no meio da tela com o site aparecendo por baixo.
+
+Corrigido amarrando o painel ao `visualViewport`:
+
+- `ajusta()` escreve `top: vv.offsetTop` e `height: vv.height` via `setProperty(..., 'important')` (inline com `!important` é o único jeito de ganhar de regra `!important` do tema), nos eventos `resize` e `scroll` do `visualViewport`, no `focus`/`blur` do textarea e no `orientationchange`.
+- `travar()`/`destravar()` prendem a página atrás (`body{position:fixed;top:-scroll}`) enquanto o chat está aberto e devolvem o scroll ao fechar. Sem isso o iOS rola o site junto e o painel se solta.
+- Flexbox saudável: cabeçalho e rodapé `flex:0 0 auto`, mensagens `flex:1 1 auto;min-height:0`, e `padding-bottom` com `env(safe-area-inset-bottom)`.
+- Fonte do textarea em **16px** — abaixo disso o Safari dá zoom sozinho ao focar.
+- No snippet do tema, a regra de desktop (`#anchat-p{bottom:92px}`) passou a viver num `@media (min-width:601px)`; no celular quem manda na geometria é só o widget.
+
+**Dois bugs achados testando, não em produção:**
+
+1. Comentários `//` dentro da string do JS. O widget é montado por concatenação e sai **numa linha só**, então o primeiro `//` comentava o arquivo inteiro — `node --check` acusou `Unexpected end of input` e o widget ficou alguns minutos servindo JS quebrado. Agora só `/* */` ali dentro, com aviso no topo do node.
+2. `localStorage` lançando exceção (webview restrita, cookies bloqueados) derrubava o widget inteiro antes de desenhar qualquer coisa. Agora passa por `lsGet`/`lsSet` com try/catch: sem storage, o chat funciona igual, só não lembra a conversa entre visitas.
+
+Verificado em Chromium 393×852 contra uma página com 4000px de altura: painel 852px ao abrir com a página travada em scroll 900; simulando o teclado (`visualViewport.height = 516`) o painel vai para 516px, o rodapé do input fica exatamente em 516 e a área de mensagens continua com 388px; ao fechar, scroll volta para 900 e o `body` volta a `static`. Também testado com `localStorage` lançando: monta e abre normal, sem erro de JS.
+
+### Cabeçalho (09/09)
+
+O topo ficava feio no iPhone: a barra de status é pintada pelo Safari com o `theme-color` da loja (**`#07388e`**, que sai de `settings.color_button_background`), e o cabeçalho do chat era quase preto (`#0e1726`). Dois azuis diferentes empilhados, com uma emenda visível no meio.
+
+O cabeçalho passou a usar o mesmo `#07388e`, então a barra do sistema e o cabeçalho viram um bloco contínuo — sem precisar mexer no `theme-color` da página. `--an-azul` agora é a cor da marca (cabeçalho, botão flutuante, botão de enviar e balão do cliente) e `--an-link` guarda o azul claro só para links dentro das respostas.
+
+Junto: avatar circular branco com "AN", bolinha verde antes do subtítulo, botão de fechar num círculo translúcido, `padding-top: max(11px, env(safe-area-inset-top))` no cabeçalho e sombra leve nos balões da Serena.
+
+
+## Serena no Telegram (09/09/2026) — n8n `GwreSR7VN3bfSqaO`
+
+Com o WhatsApp banido, o segundo canal. O bot **já existia**: `@AmericaNutritionSerena_bot` é o mesmo que manda os alertas internos — só que ninguém tinha ligado a entrada dele. Estava com uma mensagem pendente sem resposta.
+
+`POST /webhook/serena-telegram` recebe os updates (`message`, `edited_message`, `callback_query`) e conversa com o `serena-core` no canal `telegram`. Cada conversa vira um contato por `session_site = 'tg-<chat_id>'`.
+
+### Bot ≠ o número +1 347 222 5493
+
+São coisas diferentes no Telegram. O bot é a API oficial e **não é banido por automação** — é para isso que ela existe. Automatizar a conta do número de verdade exigiria um cliente MTProto rodando fora do n8n, e depois do que aconteceu com o Baileys hoje não vale repetir a receita. Quem escrever direto para o número continua caindo na conta da equipe.
+
+### O que ele faz
+
+- **`/start`** manda as boas-vindas com o botão nativo **"Compartilhar meu telefone"**. Com o número, a Serena já consulta pedidos, rastreio e cadastro na Shopify — resolve o buraco que o chat do site tem, onde ela não sabe quem é a pessoa. O telefone é gravado em `serena_fatos` (chave `telefone`), **não** em `serena_contatos`: evita conflito com o contato que a mesma pessoa já tem por WhatsApp e mesmo assim libera a busca por telefone.
+- **Lista clicável vira botão de verdade.** O Core só devolve o campo `lista` quando o canal é `whatsapp` com lista nativa ligada; fora disso ele escreve as opções numeradas no texto, fechando com *"Responde só com o número"*. O `extrairLista()` reconhece esse bloco, tira do texto e monta um teclado inline. Quando alguém toca, o rótulo do botão (lido do próprio `callback_query`) vira a mensagem do cliente. É a lista que o WhatsApp nunca entregou direito.
+- **Nunca fica em silêncio.** Áudio, vídeo, documento, sticker e localização sem texto recebem uma resposta pedindo uma frase. Foto sem legenda entra como `[O cliente mandou uma foto, sem escrever nada junto]`. Áudio ainda não é transcrito aqui — fica para a próxima.
+- **Handoff** usa o caminho de sempre: push para os atendentes e resposta pelo Inbox.
+- **Cron de 1 minuto** entrega no Telegram o que o atendente escrever no Inbox.
+
+### Um bug que quase passou
+
+A resposta da Serena ficava com `entregue = null`, e o cron de 1 minuto **reenviaria a mesma mensagem** — cliente receberia tudo duplicado. Agora o webhook marca `entregue = true` assim que o envio dá certo, e o cron continua servindo de rede de segurança para o que não saiu.
+
+Testado ponta a ponta antes de abrir: `/start`, pergunta livre, lista com 8 botões, clique num botão (virou "ImunoFosfo 60 cápsulas · R$ 247" e a Serena seguiu a venda), vídeo sem legenda e a flag de entrega. Conversa de teste apagada depois.
+
+### Botões e formatação do Telegram (12/11/2026)
+
+Pedido do Jaderson, vendo a conversa do José B. pela conta do Samuel: a lista numerada ("Responde só com o
+número") aparecia como texto e os marcadores do WhatsApp (`_..._`, `*...*`) saíam crus.
+
+- **Botões também no modo Business.** A Bot API hoje só proíbe o *teclado de resposta* e o `remove_keyboard` em
+  mensagem enviada em nome da conta business; o **teclado inline** passa. A lista vira botão nos dois modos, e o
+  texto e a pergunta saem numa mensagem só, com os botões embaixo. Ao tocar, a mensagem é editada para mostrar
+  "✅ <opção>" e os botões somem. Se o Telegram recusar o envio com botão, sai a lista numerada em texto, como antes.
+- **Formatação do Telegram.** `*negrito*`, `_itálico_`, `~riscado~` e ```` ``` ```` do estilo WhatsApp viram HTML
+  (`parse_mode: HTML`), tanto na resposta da Serena quanto no que a equipe escreve pelo Inbox. Links ficam de fora
+  (um `_` dentro de URL não vira itálico). Se o HTML for recusado, reenvia em texto puro, sem os marcadores.
+- **Chaves fora do código.** O nó antigo virou `Chaves Telegram (não apagar)` (desativado, sem ligação): guarda a
+  chave do Supabase e o token do bot, e os nós `Tratar Mensagem` e `Entregar do Inbox` leem de lá em execução. O
+  código dos dois (`nodes/telegram-tratar-mensagem.js` e `nodes/telegram-entregar-inbox.js`) agora é igual no
+  repositório e no n8n. Ligações: `Telegram IN` → `Boleto para o Financeiro?` (saída 2) → `Tratar Mensagem` →
+  `Gravar fala durante pausa`; `A cada minuto` → `Entregar do Inbox`.
+
+## Avisos: do privado para o grupo da equipe (09/09/2026)
+
+Auditoria feita a pedido do Jaderson ("todo mundo recebe as coisas que vão pra lá?"). A resposta era **não**: estava dividido em dois lugares, e a divisão não fazia sentido.
+
+O que ia para o **privado da conta @AmericaNutrition** (só uma pessoa via): depoimentos do Radar, moderação de grupos, limpeza manual e — o pior — os **dois avisos de conversa nova**, do site e do Telegram. Com o WhatsApp banido, essas são as portas de entrada: o único aviso de que um cliente chegou ia para um chat que uma pessoa só lê.
+
+O que já ia para o grupo **America Nutrition Alertas 🚨** (5 pessoas): tópico 289 com proposta de base, auditoria, anti-spam, rastreio proativo, relatório de vendas e watchdog; tópico 94 com trocas.
+
+Três tópicos novos no mesmo grupo (o bot é admin com `can_manage_topics`, então dá para criar pela API):
+
+| Tópico | `message_thread_id` | Recebe |
+| --- | --- | --- |
+| 💬 Atendimento | 1628 | Nova conversa no site, nova conversa no Telegram, cliente pedindo atendente nos dois canais, compra quente e risco do Radar |
+| ⭐ Depoimentos | 1629 | Cards de depoimento espontâneo, com o botão de virar review |
+| 🛡 Moderação | 1630 | Moderação automática dos grupos e limpeza manual de número |
+
+Cinco nodes apontados: `Chat do Site`, `Tratar Mensagem` (Telegram), `Limpar Mensagens`, `Apagar ou Alertar` (moderação) e `Decidir e Alertar` (Radar). O Radar roteia por tipo: depoimento vai para 1629, compra quente e risco para 1628.
+
+Aproveitando, o handoff nos canais novos passou a avisar no tópico de Atendimento além do push — antes a fila só aparecia no Inbox.
+
+Nenhum aviso vai mais para chat privado. Cada tópico recebeu uma mensagem de confirmação depois da mudança.
+
+### Botão do Telegram no site (09/09)
+
+Duas entradas para o Telegram, sem competir com o chat:
+
+- **Botão flutuante** em azul Telegram (48px), logo acima do balão do chat. Abre `t.me/AmericaNutritionSerena_bot`. Os dois agora vivem dentro de `#anchat-fab`, um flex column: o tema posiciona só o container e não precisa saber que são dois — o snippet ficou mais simples e o espaçamento não depende de calcular offsets.
+- **Faixa dentro do painel**, logo abaixo do cabeçalho: *"Prefere Telegram? Lá você recebe a resposta no celular, mesmo depois de sair do site."* Ela **some assim que a conversa começa** (`faixaTg()`, mais de uma bolha na tela). Trocar de canal no meio do atendimento perde o histórico: no Telegram a pessoa vira outro contato. O convite só faz sentido antes de digitar.
+
+Esse é o argumento honesto para migrar: o chat do site não tem push. Fechou a aba, a resposta do atendente não chega. No Telegram chega.
+
+**Tamanho igual.** Os dois botões têm o mesmo diâmetro (58px no desktop, 54px no celular). Empilhados, o Telegram menor criava hierarquia; lado a lado, diâmetros diferentes só pareciam desalinhados. O tamanho é definido uma vez no widget, na regra que os dois compartilham — o snippet do tema não mexe mais nisso.
+
+**Posição no celular.** Empilhados, os dois somam 112px de altura contra os 54px do botão antigo, e na página de produto ficavam no meio da tela. No mobile eles vão **lado a lado** (`flex-direction: row`), então o conjunto volta a ter a altura de um botão só. E o `bottom` da página de produto caiu de **178px para 104px**: o 178 era `92 (folga) + 86 (barra de compra)`, mas os 92px já passavam do topo da barra — a barra estava sendo contada duas vezes e sobravam ~90px de folga. Com 104px sobram ~17px, medidos contra uma barra de 86px.
+
+Também corrigidos os acentos do texto que o cliente lê ("Lá você", "Não consegui enviar", "conexão", a página avulsa). Tudo com escape unicode dentro do JS concatenado — acento literal já chegou corrompido em node deste projeto antes.
+
+### Onde a equipe acompanha o Telegram (09/09)
+
+No **Inbox** (`/webhook/serena-inbox?t=an-serena-9Kx4Lm2Q`), junto com todo o resto — o canal `telegram` entra na mesma lista e o filtro por canal funciona. Testado ponta a ponta: cliente escreveu, Serena respondeu, atendente respondeu pelo Inbox (`acao: enviar`, canal `telegram`), o cron de 1 minuto entregou e marcou `entregue = true`.
+
+Os avisos chegam no tópico 💬 Atendimento (conversa nova e cliente pedindo atendente) e no push dos atendentes.
+
+**Buraco corrigido na hora:** quem mandava só `/start` e não escrevia mais nada ficava **invisível no Inbox**. A listagem faz join com a última mensagem do contato, e o `/start` respondia as boas-vindas sem gravar nada em `serena_mensagens`. Descoberto porque uma cliente real (Vera Lucia) entrou no bot às 23:05 com zero mensagens registradas. Agora `/start`, telefone compartilhado e mídia sem texto gravam o par cliente/Serena no histórico. O caso da Vera Lucia foi preenchido à mão com a data original.
+
+### Transacionais pelo Telegram (09/09)
+
+Confirmação de pedido, pedido pago, pedido enviado, pedido entregue e o modo de uso do
+pós-entrega passaram a sair **pelo Telegram** para quem já conversa com a Serena por lá.
+Quem não está no Telegram continua recebendo pelo WhatsApp, sem nenhuma mudança.
+
+A parada é única, num só lugar: o node **`Rota do Envio`** (`nodes/envio-rota-telegram.js`),
+entre o `Preparar` e o `E audio?` do **Envio Samuel** (`EhmndFruX6hOIRDN`). Antes de chamar a
+Evolution ele procura o telefone em `serena_fatos` (chave `telefone`) ligado a um contato
+`session_site like 'tg-%'`. Achou, manda pelo bot e devolve `{ ok, tipo: 'telegram', message_id }`;
+não achou, o item segue igual pelo caminho do WhatsApp.
+
+- **Casamento de telefone tolerante ao 9º dígito**: a chave é `DDD + 8 últimos`, então
+  `5511987654321` e `551187654321` batem no mesmo contato. Testado nos dois formatos.
+- **Telegram recusou** (bloqueou o bot, chat apagado): cai para o WhatsApp em vez de perder a mensagem.
+- **Sem mensagem duplicada**: a gravação em `serena_mensagens` acontece uma vez só, na conversa
+  do canal que entregou. O dispatcher passou a usar `gravar: ok && via === 'whatsapp'`.
+- **`autor` preservado** (`transacional:pedido_pago_confirmado`, `pos_entrega:...`): o webhook
+  aceita `autor` no corpo e o `Rota do Envio` grava junto, então no Inbox continua dando para
+  distinguir mensagem automática de mensagem escrita na hora.
+- **Lista clicável** vira teclado inline no Telegram, com o mesmo `callback_data` (`op:<i>`) que o
+  `Tratar Mensagem` já entende.
+
+O **Dispatcher Samuel v3** (`WXncUehLXyuIMoSm`) mandava direto para a Evolution
+(`/message/sendText/Samuel`) e por isso não passava por essa rota. Agora ele posta no
+`/webhook/serena-samuel-enviar`. O `Avaliar Envio` aceita a resposta nova (`{ ok, tipo }`) e a
+antiga (resposta crua da Evolution), e o `Entregues p/ Pos-entrega` passou a filtrar por
+`enviado` em vez de `gravar` — senão quem recebesse pelo Telegram ficaria sem o modo de uso.
+
+Testado ponta a ponta com um contato de teste apontado para o grupo de alertas: `pedido pago`
+e `pedido entregue` entraram na fila, o cron pegou, os dois saíram pelo Telegram com o `autor`
+certo, o pós-entrega gerado pela Claude saiu junto, e o registro no Inbox ficou único. As linhas
+de teste foram apagadas depois.
+
+**Hoje isso não entrega nada.** Só existe uma pessoa no bot (Vera Lucia) e ela ainda não tocou em
+*Compartilhar meu telefone* — sem esse toque não dá para saber que o cliente do pedido é o mesmo
+do chat. A rota está pronta para quando a base do Telegram crescer; enquanto isso todo transacional
+segue tentando o WhatsApp, que está banido.
+
+### Serena atendendo pelo número do Samuel (Telegram Business, 09/09)
+
+O cliente escreve para a **conta do Samuel** no Telegram, a Serena responde dentro daquela
+conversa e a mensagem sai **como se o Samuel tivesse escrito**. A equipe acompanha e responde
+tudo pelo próprio app do Telegram, sem abrir o Inbox.
+
+Isso usa o recurso oficial de **Telegram Business**: uma conta Premium conecta um bot em
+*Ajustes → Telegram Business → Chatbots* e o bot passa a receber `business_message` e a
+responder com `business_connection_id`. Nada de conta automatizada por fora da API — o caminho
+que faria isso sem Premium viola os termos do Telegram e derruba a conta.
+
+**Para ligar (só o dono da conta consegue fazer):**
+
+1. BotFather → `/mybots` → `@AmericaNutritionSerena_bot` → *Bot Settings* → *Business Mode* → ligar.
+   Hoje o bot responde `can_connect_to_business: false`, então sem esse passo nada acontece.
+2. Telegram Premium na conta do Samuel (`+1 347 222 5493`).
+3. Naquela conta: *Ajustes → Telegram Business → Chatbots* → adicionar o bot e marcar a
+   permissão de **responder mensagens**.
+
+Assim que conectar, chega um `business_connection` e o tópico 💬 Atendimento recebe a
+confirmação, dizendo inclusive se a permissão de responder ficou marcada. Se alguém desconectar,
+chega o aviso contrário.
+
+**Os dois modos convivem.** Quem falar com o bot continua tendo `/start`, botão de compartilhar
+telefone e lista clicável. Quem falar com o Samuel entra pelo modo business. O contato é o mesmo
+`tg-<chat_id>` nos dois casos, então o histórico não se divide.
+
+**Diferenças do modo business, que são limites do Telegram e não escolhas:**
+
+- **Sem botões.** Mensagem enviada em nome de uma conta de pessoa não carrega teclado, inline nem
+  de resposta. As opções vão numeradas no texto, exatamente como a Serena já faz fora do WhatsApp.
+- **Sem botão de compartilhar telefone.** Por isso o node passou a **reconhecer o telefone quando
+  o cliente digita**, e grava em `serena_fatos` com origem `conversa`. Sem isso a Serena não acha o
+  pedido na Shopify e nenhuma transacional consegue sair por aqui. O detector exige DDD válido e
+  celular começando em 9 (ou fixo de 2 a 5), com lookbehind de dígito para não confundir com CPF,
+  código de rastreio ou número de pedido. Testado com 11 casos, incluindo CPF com e sem pontuação.
+- **A Serena não puxa conversa.** Um bot business só fala em chat que já existe. Transacional para
+  quem nunca escreveu continua indo pelo WhatsApp.
+
+**Resposta manual pelo app.** Quando alguém da equipe responde direto no Telegram, o bot recebe
+essa mensagem também. Ela entra no histórico como `humano` (autor `app_telegram`) e **pausa a
+Serena naquela conversa**, senão ela responderia por cima da pessoa. A pausa não é eterna: passados
+`tg_pausa_min` minutos (padrão 180) sem ninguém responder, a Serena volta a atender aquele cliente
+sozinha. Sem esse prazo toda conversa tocada na mão ficaria parada esperando alguém lembrar de
+resolver no Inbox.
+
+**Quem entrega o quê:** o cron de 1 minuto (respostas do Inbox) e a rota transacional
+(`nodes/envio-rota-telegram.js`) agora leem o fato `tg_business` do contato e mandam com o
+`business_connection_id` quando ele existe. Sem isso a mesma conversa alternaria entre a voz do
+Samuel e a de um bot.
+
+Testado ponta a ponta com payloads sintéticos no webhook de produção: conexão registrada em
+`serena_config`, resposta manual gravada e conversa pausada, cliente respondido depois da pausa
+vencer, telefone capturado do texto. As linhas de teste foram apagadas.
+
+`setWebhook` passou a aceitar `business_connection`, `business_message` e `edited_business_message`.
+
+### Botão do site aponta para a conta do Samuel (09/09)
+
+O botão azul do Telegram no site e a faixa dentro do painel do chat passaram a abrir
+`t.me/AmericaNutrition`, a conta do Samuel, em vez de `t.me/AmericaNutritionSerena_bot`.
+É o que faz a conversa nascer já dentro do app da equipe, com a resposta saindo em nome dele.
+
+É uma constante só (`TELEGRAM`, no node `Chat do Site`), usada nos dois lugares. Antes de trocar
+eu baixei o widget servido, troquei e baixei de novo: o diff mostrou exatamente uma diferença, a
+URL, e mais nada. O `Cache-Control: no-store` da resposta faz a troca valer na hora, sem esperar
+cache de navegador. O tema da Shopify não precisou de deploy, porque ele só carrega o script.
+
+**Atenção enquanto o Business Mode não estiver ligado:** quem tocar nesse botão cai numa conversa
+com a conta do Samuel onde a Serena ainda não responde. Chega no app da equipe, mas sem resposta
+automática. Para voltar ao bot enquanto isso, é trocar a constante de volta.
+
+O node também teve `TG_CHAT` renomeado para `TG_GRUPO`, só para o arquivo do repositório parar de
+divergir do que está no ar — o nome já era esse no n8n.
+
+### Site volta para WhatsApp + Telegram, sem o chat (09/09)
+
+Com o número do Samuel de volta, o chat da Serena saiu do site e o botão verde do WhatsApp
+voltou. Ficaram dois botões flutuantes, lado a lado: **WhatsApp** e **Telegram**.
+
+- O `an-chat-serena` deixou de ser chamado no `layout/theme.liquid`. Era ele que escondia o
+  `.an-wpp-btn` do tema, então o botão do WhatsApp voltou sozinho, sem precisar de nada.
+  O snippet continua no tema, sem uso, caso o chat precise voltar.
+- Snippet novo `an-botao-telegram.liquid` (fonte em `nodes/shopify-an-botao-telegram.liquid`):
+  só o botão azul apontando para `t.me/AmericaNutrition`.
+
+**Por que lado a lado e não empilhado.** O Telegram usa o mesmo `bottom` do `.an-wpp-btn` em
+cada breakpoint e só anda para a esquerda: 60px com `right: 94px` no desktop, 54px com
+`right: 82px` no celular, e `bottom: 178px` na página de produto, igual ao do tema. Assim o par
+tem a altura de um botão só e a folga da barra de compra continua sendo a que o tema já
+calculava. Empilhados, os dois passavam de 110px e subiam demais no celular — foi o problema
+que apareceu quando o chat e o Telegram ficaram um em cima do outro.
+
+Os números vieram copiados do bloco `.an-wpp-btn` do `theme.liquid`. Se aquele bloco mudar,
+mude o snippet junto ou os dois desalinham.
+
+Conferido no HTML servido: na home e na página de produto os dois botões aparecem, ambos com
+`is-product` na página de produto, e o chat e o popup não aparecem mais em lugar nenhum.
+
+O workflow `Serena | Chat do Site` continua ativo de propósito: a página avulsa
+(`/webhook/serena-chat`) ainda serve para mandar o link direto a um cliente. Só não é mais
+carregada na loja.
+
+**Atenção enquanto a Evolution não for pareada.** O botão do WhatsApp leva para
+`wa.me/13472225493` (via o redirect `ir-whats`, que está de pé). A mensagem chega no aparelho,
+mas a instância `Samuel` está com estado `close` desde 08/09 16:31 (código 401), então a Serena
+não lê nem responde nada por lá. Até parear de novo, quem chegar pelo WhatsApp depende de
+alguém responder na mão.
+
+### Sandbox no Painel Central (09/09)
+
+O sandbox da Serena virou um card do Painel Central, ao lado do Inbox, no grupo Clientes:
+
+| Campo | Valor |
+|---|---|
+| Título | Sandbox da Serena |
+| Descrição | Testa perguntas sem falar com cliente nenhum |
+| Link | `/webhook/serena-lab?t=an-lab-6Hj2Pk8T` |
+
+O painel é o asset `assets/america_admin.html` do tema, servido pelo CDN da Shopify. A lista de
+ferramentas é o array `SISTEMAS` dentro dele, e os grupos da navegação saem da ordem desse array
+— por isso o card entrou logo depois do `serena`, para cair em Clientes junto do Inbox. O ícone
+novo (`sandbox`, um béquer) foi acrescentado ao mapa `IC`; sem entrada lá o tile sairia vazio.
+
+Conferido no arquivo que o CDN serve: o card aparece, o link está certo e o bloco de script
+continua parseando (`node --check`). Vale checar isso sempre que mexer nesse arquivo — é um
+HTML de 22 KB com um script só, e um erro de vírgula derruba o painel inteiro, não só o card.
+
+### O alerta de fila humana virou ruído, e por quê (10/09)
+
+Print da noite de 09/09: o mesmo aviso "Clientes aguardando atendente" com as mesmas 7 pessoas,
+às 20:20 e de novo às 21:25, só com os minutos maiores. Suely apareceu com 3.476 min e depois
+com 3.541 min — 58 horas esperando. Alerta que repete o que já foi dito não é alerta, é barulho,
+e barulho treina a equipe a não ler.
+
+**Duas causas.** O watchdog reavisava a cada 60 min enquanto a fila não estivesse vazia, sem
+olhar se algo havia mudado. E a fila nunca esvaziava, porque atribuição aberta só fecha na mão
+pelo Inbox.
+
+**O que mudou no node `Avaliar`** (`nodes/watchdog-avaliar.js`):
+
+- **Avisa quando entra gente nova**, nomeando só quem entrou, com uma linha de contexto
+  ("Fila total: N. A mais antiga há X min"). Piso de 15 min entre avisos.
+- **Se nada mudou, cala.** Uma única linha de lembrete a cada 12h, sem repetir a lista.
+- A comparação é pelo conjunto de contatos, guardado em `serena_config.fila_humano_ids`. O
+  conjunto só é gravado quando o aviso sai — assim quem entrou dentro do piso de 15 min continua
+  contando como novo na rodada seguinte, em vez de passar batido.
+- **Higiene antes de montar a fila:** fecha a atribuição nos dois casos inequívocos, alguém da
+  equipe já respondeu depois do handoff, ou o contato é um número nosso. Fechou 2 na primeira
+  rodada: o número do próprio Jaderson (de um teste em 05/09) e o Rafael DR, que já tinha
+  resposta humana.
+- **Não mexe em `ia_pausada` de propósito.** Despausar sozinho poderia fazer a Serena falar por
+  cima de um atendimento humano em curso. Fechar a atribuição tira da fila sem esse risco.
+
+Estado semeado com a fila atual (7 contatos) para o primeiro ciclo não disparar um aviso com
+todo mundo. Conferido em produção: a rodada seguinte levou 93 ms (as anteriores, 37 ms, sem as
+consultas novas) e não emitiu alerta nenhum — antes teria reavisado no minuto 60.
+
+**O que sobrou para decidir.** Restam 7 na fila, e várias não parecem espera de verdade: a
+última mensagem do HUDSONCOSTA é "Obrigado", e Dircilene, Eliane e Marcos Alberto têm como
+última mensagem um transacional da Serena ("pedido postado"), não uma pergunta. Fechar essas
+é julgamento sobre atendimento, não regra técnica, então ficaram abertas.
+
+**Uma armadilha que continua de pé:** a consulta do watchdog só olha atribuições dos últimos
+3 dias. As 5 que estão abertas desde 05/09 não aparecem em alerta nenhum e ninguém as vê,
+a não ser abrindo a fila no Inbox. Mesmo padrão da fila represada: o que envelhece demais sai
+do radar em vez de ser resolvido.
+
+## O gerador de PIX ignorava cupom (11/09/2026) — n8n `SkETGTmcqtlTR0Lp`
+
+Caso real: **Pr. Alexandre Zéllmanne** (`5562999785281`) pediu 1x ImunoFosfo 180 Caps. A Serena
+chamou `gerar_pix` com `cupom: IMUNOFOSFO` e o Pix voltou **R$ 597,00, sem desconto**. Ele perguntou
+por que não tinha ficado 537, e a Serena respondeu que o cupom era de uso único e "parece que ele já
+foi usado", depois especulou que "o sistema já registrou o uso dele no seu cadastro". Ele respondeu
+*"Já não gostei... Seu atendimento é maravilhoso, mas esse quesito..."* e o caso foi escalado.
+
+Nada disso era verdade. O cupom nunca foi tentado: **o nó `Validar dados` descartava o campo `cupom`**
+e o `Montar draft` nunca montava `appliedDiscount`. Todo Pix da Serena saía no valor cheio, e quando o
+cliente reclamava ela inventava uma explicação plausível, porque não tinha como saber o que aconteceu.
+
+O `popup_leads` confirmava a versão do cliente: cupom `BEMVINDO-4V92XA`, `convertido = false`. Ele
+nunca comprou, então o desconto de primeira compra continuava válido.
+
+### O que mudou
+
+| Nó | Mudança |
+|---|---|
+| `Validar dados` | aceita `desconto_pct` (0 a 50) e `cupom`, e os repassa no contexto |
+| `Montar draft` | monta `appliedDiscount` de porcentagem, põe o cupom no título, na nota e na tag `cupom:X` do pedido |
+| `Extrair draft` | lê o `appliedDiscount` que a **Shopify devolveu**, não o que pedimos |
+| `Extrair PIX` | carrega cupom e desconto adiante |
+| `Formatar resposta` | mensagem com "De R$ X por R$ Y" e o alerta quando o desconto não entrou |
+
+A regra que importa é a última. Se `desconto_pct` foi pedido e a Shopify não aplicou, ou se veio
+`cupom` sem porcentagem, a resposta traz `aviso: 'desconto nao aplicado'` e o `nota_serena` instrui
+explicitamente: *nunca diga ao cliente que o cupom já foi usado nem invente motivo; diga que vai
+confirmar com a equipe e escale*. O Telegram (tópico 98) também recebe o aviso em negrito.
+
+O silêncio era o bug de verdade. Um campo ignorado sem reclamar virou uma conversa em que a Serena
+contou uma história para o cliente, e ninguém na equipe soube.
+
+### Pendente: quem decide os 10%
+
+O gerador agora aplica o desconto que mandarem, mas a Serena ainda não decide sozinha que um lead com
+cupom de boas-vindas não convertido tem direito aos 10%. Hoje isso depende de alguém passar
+`desconto_pct`. A regra do Jaderson é: **o desconto de primeira compra vale até o cliente comprar; se
+não comprou, o cupom continua valendo**, mesmo expirado. Falta ensinar isso ao Core.
+
+## Frete no Gerar PIX e no Gerar Boleto (13/09/2026)
+
+Caso: 12/09, 21:36, a Eliane pediu Pix de 1x ImunoFosfo 42 caps (R$ 197, abaixo do mínimo de frete grátis). O Pix
+saiu R$ 197,00 sem frete. Ela perguntou "cadê o frete", a Serena respondeu certo ("J&T R$ 33,44, o Pix foi só do
+produto, gero um novo com o valor certo?"), a cliente disse "ok gere com o frete" e a Serena chamou `gerar_pix` de
+novo **com exatamente os mesmos dados**: saiu outro Pix de R$ 197,00. O `[Serena Tool] Gerar PIX` não tinha campo de
+frete nenhum; o `Gerar Boleto` tinha, mas opcional, e a Serena não sabia que precisava mandar.
+
+Correção (fontes em `nodes/gerar-pix-*.js` e `nodes/gerar-boleto-*.js`, `Validar dados` novo para o boleto):
+
+- **O frete é responsabilidade da ferramenta.** No `Validar dados`, se a Serena não mandar `frete_valor`, a ferramenta
+  cota sozinha em `POST /webhook/calcular-frete` com `{cep, itens_str}` (o Envia devolve subtotal, peso e
+  `elegivel_frete_gratis`): a partir de R$ 250 sai `Frete grátis`; abaixo entra a opção mais barata
+  (`menor_preco`, título "J&T Express (1-2 dias úteis)"). Se a cotação falhar, **não gera sem frete**: devolve erro
+  pedindo `calcular_frete` + `frete_valor`/`frete_titulo` (ou `frete_gratis=true` acima de R$ 250).
+- `frete_valor` + `frete_titulo` informados pela Serena são respeitados (cliente escolheu SEDEX, por exemplo).
+- `Montar draft`: `shippingLine` no draft da Shopify; o `totalPrice` que vira o valor do Pix/boleto já sai com o frete.
+  Frete grátis entra como linha de R$ 0, para a equipe ver a escolha no pedido.
+- `Formatar resposta`: mensagem com "🚚 Frete: … — R$ 33,44" e "💰 Valor: R$ 230,44 (produto R$ 197,00 + frete
+  R$ 33,44)"; a página do Pix mostra "1x ImunoFosfo 42 Caps + frete R$ 33,44"; Telegram com a linha do frete;
+  resposta com `frete_valor`, `frete_titulo`, `frete_origem` (`cotado|informado|gratis`) e `subtotal_reais`;
+  `nota_serena` diz que o valor já inclui o frete. Com desconto, o "de" é `(total - frete)/(1 - pct) + frete`, para o
+  frete não aparecer descontado.
+- `serena_config.system_prompt` (adendos) ganhou o adendo de 13/09: a Serena fala a composição produto + frete = total
+  e nunca "gera de novo com o frete" repetindo a mesma chamada.
+
+Teste real (13/09, 01:16 UTC), dados da Eliane: `#D4108`, R$ 230,44 = 197,00 + J&T 33,44, `frete_origem: cotado`,
+página do Pix com o frete. Simulações locais: 2 unidades (R$ 394) → frete grátis; `frete_valor` informado → respeitado;
+CEP inválido → erro pedindo `calcular_frete`, sem gerar Pix.
+
+## Assinatura recorrente: a Serena passa a saber que ela existe (13/09/2026)
+
+Caso: 12/09, 09:00, a renovação mensal da assinatura do Carlos M. (feita em 14/07 pelo checkout, cartão Amex,
+10% off) gerou o pedido AN-15381. Às 12:14 ele escreveu "eu não fiz nenhum pedido". A Serena não sabia que
+existia assinatura: respondeu "pode ser o pedido que fechamos aqui pelo link" e escalou como possível fraude.
+O cliente ficou 11 horas na fila. Resolvido à mão: assinatura cancelada, pedido cancelado na Shopify,
+estorno pelo Pagar.me.
+
+O que mudou:
+
+- **Contexto** (`nodes/core-carregar-contexto.sql`): o Core carrega a assinatura do contato (`assinaturas` por
+  telefone tolerante ao 9 e ao 55, ou por email) com status, itens, valor, ciclo, cartão, próxima renovação,
+  renovações e as 4 últimas cobranças; também o `email` do contato.
+- **Prompt** (`nodes/core-cerebro-serena.js`, bloco `assinaturaTxt`): explica a assinatura à Serena e dita como
+  agir quando o cliente "não fez o pedido": é a renovação automática que ele mesmo ativou (nunca "o link que
+  te mandei", nunca "fraude"); pergunta se quer manter, pausar ou cancelar; **duas confirmações** antes de
+  mudar algo; estorno de renovação já paga vai para a equipe (`escalar_humano`); em modo proativo de pedido
+  pago, diz "sua assinatura renovou".
+- **Ferramenta nova** `gerenciar_assinatura` (`[Serena Tool] Assinatura`, n8n `WfxlFkDA9U9yYeR7`,
+  `POST /webhook/serena-assinatura`, fonte em `nodes/assinatura-tool.js`; rota no Router
+  `nodes/router-preparar-rota.js`): `consultar | pausar | cancelar | reativar`. O Core injeta telefone, email e
+  `contato_id`; pausar e cancelar só executam com `confirmado=true` (senão devolvem `precisa_confirmacao`).
+  Aviso no Telegram (tópico 98) em toda mudança.
+- **Estorno** (`AN - Pagar.me Estorno`, n8n `JYZw8b5uWvskhl28`): `POST /webhook/pagarme-estorno`
+  `{t:'an-estorno-9Kp2Wx', order_id|charge_id, amount_centavos?, motivo, pedido, cliente}` busca a order,
+  estorna a charge paga (`DELETE /core/v5/charges/{id}`) e avisa o Telegram 98. Os nós HTTP usam a credencial
+  "Pagar.me Secret Key" (anexada na UI; o MCP não anexa credencial em HTTP Request).
+
+Fica para depois: a mensagem transacional "Seu pedido AN-xxxx foi confirmado" (`pedido_pago_confirmado`)
+deveria dizer "sua assinatura renovou" quando o pedido tem a tag ASSINATURA, e a cobrança no cartão poderia
+avisar 3 dias antes, como o PIX já faz.
+
+### Confirmação de pedido pago diz que é assinatura (13/09/2026)
+
+`Pedido Pago - Confirmação Imediata` (`ZIjjSbycPOtiPTQp`, fonte `nodes/pedido-pago-preparar.js`): quando o pedido
+tem a tag `ASSINATURA`, consulta `assinaturas`/`assinatura_cobrancas` e grava em `template_params.custom_fields`
+`assinatura = primeira | renovacao | assinatura`, mais ciclo, desconto, método e próxima renovação. Primeira =
+assinatura criada há menos de 48h e sem cobrança com o `pagarme_order` deste pedido; senão renovação.
+
+`[Transacional] Dispatcher Samuel v3` (`WXncUehLXyuIMoSm`, fonte `nodes/dispatcher-montar-mensagem.js`):
+`pedido_pago_confirmado` com `cf.assinatura` usa `textoPagoAssinatura`: na primeira compra explica como a
+assinatura funciona (ciclo, desconto, cartão/Pix, data da primeira renovação, como pausar/cancelar); na renovação
+diz "sua assinatura renovou", que o pedido foi gerado automaticamente, a próxima data e como pausar/cancelar.
+Pedido comum continua com o texto de sempre. Testado com o pedido real do Carlos (renovação) e simulando a
+primeira compra.
+
+### Mensagem padrão de PIX e boleto (13/09)
+
+Quando `gerar_pix` ou `gerar_boleto` dá certo, o Core envia ao cliente a mensagem padrão que a própria
+ferramenta devolve (campo `resultado`: produto, frete, valor, vencimento/validade, código em linha própria,
+PDF ou página) e nem chama o modelo de novo. Antes, a Serena recebia o JSON e reescrevia do jeito dela (boleto da
+Eliane em 13/09 saiu fora do padrão). A Entrada continua fatiando o código em mensagem separada e acrescenta só
+a dica de copiar, porque a mensagem padrão já explica como pagar. A regra do prompt "CODIGO DE PAGAMENTO" virou
+"PIX E BOLETO": a Serena responde só uma frase curta, sem repetir código, valores ou links.
+
+### Boleto no modelo da marca (13/09)
+
+O link do boleto que a Serena manda passou a ser a página do workflow "AN - Boleto Personalizado"
+(`GET /webhook/boleto?l=<linha>&n=<nome>&d=<cpf>&p=<rascunho>&it=<itens>&end=<endereço>`): logo da America
+Nutrition, itens com valor, frete, endereço do pagador, ficha de compensação FEBRABAN com código de barras e código
+de conferência. O `Montar draft` passou a pedir o valor de cada item ao Shopify, o `Extrair draft` devolve
+`itens_lista`, o `Extrair boleto` monta `pagina_url`, o encurtador encurta essa página (o PDF cru da Pagar.me fica em
+`pdf_url_original`, só como reserva) e a mensagem diz "Seu boleto completo, para conferir, imprimir ou pagar pelo app".
+
+### PDF do boleto em uma folha (13/09, tarde)
+
+A impressão da página HTML saía em duas folhas com cabeçalho do navegador. Agora o workflow "AN - Boleto
+Personalizado" tem o nó `Gerar PDF` (`nodes/boleto-personalizado-gerar-pdf.js`): com `&pdf=1` na mesma URL ele
+devolve um PDF de verdade, uma folha A4, gerado sem biblioteca (fontes padrão do PDF, logo JPEG em
+`imagens/logos/logo-america-nutrition-branco.jpg`, código de barras I25 em retângulos). Layout pensado para cliente
+com pouca familiaridade: valor e vencimento grandes, três passos de como pagar, linha digitável grande, ficha de
+compensação compacta e código de barras grande. O Gerar Boleto, o checkout (Fluxo A) e o resgate de boleto não
+pago passaram a apontar para `&pdf=1`. Além do link, o Gerar Boleto devolve `arquivo` e o Core (`arquivoPadrao`)
+manda o PDF como documento no WhatsApp logo depois da mensagem padrão.
+
+## Cancelamento de pedido: entender o motivo antes de escalar (15/09/2026)
+
+Caso Rozani (AN-15304): ela escreveu "Preciso cancelar o pedido" e a Serena respondeu na hora
+"já encaminhei seu pedido de cancelamento para a nossa equipe", sem perguntar nada. O Jaderson
+pediu para não ser tão direta: tentar contornar e, no mínimo, saber o motivo.
+
+Entrou como adendo em `serena_config.system_prompt` (texto em `nodes/serena-config-adendos-prompt.md`),
+sem mexer no Core. A regra: acolher e perguntar o motivo (uma vez só); com o motivo, oferecer UMA
+alternativa sem insistir (atraso → rastreio e previsão; comprou errado → ajuste ou troca;
+arrependimento → valor de manter o tratamento, adiar ou pausar; medo de golpe → dados reais do
+pedido); pedido já postado → explicar que pode recusar a entrega ou devolver em até 7 dias; se o
+cliente mantiver, `escalar_humano` com motivo "cancelamento do pedido N: <motivo dito>". Nunca
+prometer que está cancelado nem prazo de estorno.
+
+Testado no sandbox, sem telefone, pedido AN-15304:
+
+| Cliente | Serena | Ferramentas |
+|---|---|---|
+| "Preciso cancelar o pedido AN-15304" | "Poxa, tudo bem! Só pra te ajudar melhor: o que aconteceu, foi demora na entrega, comprou por engano, ou mudou de ideia?" | nenhuma |
+| "Demorou muito pra chegar, já não preciso mais" | "Boa notícia: seu pedido já está em São José dos Pinhais/PR e a previsão é chegar amanhã, 16/09 (...) vale a pena esperar mais esse pouquinho. Quer que eu mantenha assim ou ainda prefere cancelar?" | buscar_pedido_numero, consultar_status_pedido |
+| "Não, quero cancelar mesmo" | "Entendi, já encaminhei (...) como o pedido já está em trânsito, dá pra recusar a entrega ou recebê-lo e solicitar a devolução em até 7 dias." | escalar_humano (handoff) |
+
+### Aviso automático de cancelamento para a logística (15/09/2026)
+
+Pedido do Jaderson: em caso de cancelamento, avisar automaticamente a Cris (+1 646 427-0203,
+responsável pela logística). Entrou no `[Serena Tool] Escalar Humano` (`pENiiK4JvuowUEqn`, nó
+"Montar card", fonte `nodes/escalar-montar-card.js`): quando o escalonamento tem `tipo=cancelamento`
+ou o motivo contém "cancel", além do card no Telegram (tópico 94) e do push, o Samuel manda um
+WhatsApp para a Cris com cliente, link wa.me, número do pedido (do campo ou extraído do motivo),
+motivo, o resumo da conversa e o link da conversa no Inbox. O card do Telegram ganha a linha
+"📣 Logística (Cris) avisada no WhatsApp" (ou "NÃO foi avisada" se o envio falhar). Callback/retorno
+não dispara. Testado com um escalonamento marcado como TESTE: mensagem `3EB0110DAF3BADF1FE9D8D`
+entregue à Cris às 22:41.
+
+Como a Serena só escala cancelamento depois de tentar contornar (adendo acima), a Cris recebe o
+aviso já com o motivo do cliente.
+
+Caso Rozani: a equipe já tinha perguntado o motivo pelo celular às 22:31 e ela respondeu só "Cancelar
+o pedido". Às 22:39 foi enviada pelo Inbox (autor Jaderson, entregue pelo Samuel) uma resposta com o
+rastreio (base em São José dos Pinhais/PR, previsão 16/09), a pergunta do motivo e as duas saídas
+(recusar a entrega, ou receber e devolver em até 7 dias). A Serena ficou pausada nessa conversa.
+
+## Cliente sem resposta por 7 minutos: segunda tentativa na Entrada (15/09/2026)
+
+Marizel (+55 41 8888-9371) perguntou "E o de 90" às 22:43 e só foi respondida às 22:50, pelo
+`Reprocessar sem resposta`. O que aconteceu: a Entrada (execução 1826350) chamou o Core, o Core
+terminou em 3 s **sem texto** (sem erro de API: nada em `serena_alertas`), e o `Chamar Serena Core`
+parou com "Serena Core sem resposta". Foi 1 falha em 40 execuções da Entrada naquela meia hora.
+Sem os dados da execução (o MCP não expõe), a causa provável é o modelo encerrar a rodada sem bloco
+de texto.
+
+Dois ajustes, ambos no ar:
+
+- **Segunda tentativa na hora** (`entrada-chamar-serena-core.js`): se o Core voltar ok mas sem
+  `resposta`, a Entrada espera 1,5 s e chama de novo em `modo: reprocessar` (não regrava a pergunta e
+  responde a tudo o que ficou pendente). Só depois disso desiste e deixa para o reprocessamento.
+- **Reprocessamento a cada 3 min em vez de 10** (`wXN30aD4YloMV2NN`), e a consulta passou a exigir
+  que a última mensagem do cliente tenha mais de 90 s, para nunca disputar com uma resposta que
+  ainda está saindo.
+
+## Assinante antecipando a renovação: PIX saiu no valor cheio (15/09/2026)
+
+Claudia Bandeira (+55 34 9995-9242), assinante do ImunoFosfo 90 (R$ 294,30 com 10%), pediu para
+adiantar a renovação de 26/09. A Serena prometeu "com o desconto de assinante (R$ 294,30)" e gerou
+o PIX de **R$ 327,00**. A cliente percebeu por áudio às 10:21 e a Serena pediu desculpas e "encaminhou
+ao setor responsável".
+
+Causa: `gerar_pix`/`gerar_boleto` aceitam `desconto_pct` desde 11/09, mas nem a base de treinamento
+nem os adendos falavam disso. A Serena não tinha como saber que precisava passar o percentual.
+
+O que foi feito:
+
+- PIX correto gerado pelo router (`gerar_pix` com `desconto_pct=10`, cupom `ASSINANTE`,
+  `frete_gratis=true`): rascunho #D4119, R$ 294,30, válido até 10:56. Enviado pelo Inbox (autor
+  Jaderson, entregue pelo Samuel às 10:27) com um pedido de desculpas e "desconsidere o anterior".
+  A Serena foi religada na conversa e a atribuição fechada, para ela acompanhar o pagamento.
+- Adendo novo em `serena_config.system_prompt` (texto em `nodes/serena-config-adendos-prompt.md`):
+  documenta `desconto_pct`/`cupom` e a regra do assinante que antecipa (mesmos itens, mesmo
+  percentual da assinatura, cupom ASSINANTE, frete grátis, dizer o valor com desconto).
+- O rascunho do PIX errado (R$ 327, expirado às 10:01) ficou aberto na Shopify; é só apagar se
+  incomodar no relatório.
+
+### Acentos quebrados na transcrição de áudio (15/09/2026)
+
+Os áudios da Claudia chegaram como "茅茅茅, n茫o vai ter o desconto": bytes UTF-8 lidos como GBK.
+Medido em `serena_mensagens`: de 10/09 a 15/09, 13 de 60 transcrições (cerca de 20%) vieram assim,
+de forma intermitente, o que aponta para o nó HTTP adivinhando o charset da resposta da ElevenLabs.
+Correção na Entrada: o nó `Transcrever (ElevenLabs)` passou a devolver a resposta como arquivo
+(`responseFormat: file`, binário `data`) e o `Montar Texto do Audio` lê os bytes em UTF-8 e faz o
+`JSON.parse` (fonte em `nodes/entrada-montar-texto-audio.js`; se vier JSON normal, segue como antes).
+Conferir nos próximos áudios se a coluna `quebrados` da consulta abaixo zera:
+
+```sql
+select to_char(criado_em at time zone 'America/Sao_Paulo','DD/MM') as dia, count(*) as audios,
+       sum(case when texto ~ '[茅茫谩贸锚玫莽脿]' then 1 else 0 end) as quebrados
+  from serena_mensagens where papel='cliente' and texto like '[Audio do cliente, transcrito]%'
+   and criado_em > now() - interval '7 days' group by 1 order by 1;
+```
+
+## Assinatura: troca e upgrade do item antes de cancelar (15/09/2026)
+
+Caso Luzia (+55 14 99650-5597): assinante do 90 cápsulas, quis passar para o Plus 180. A Serena só
+sabia consultar, pausar, cancelar e reativar, então cancelou a assinatura (perdendo os 10%) e depois
+descobriu que o 180 estava sem estoque. O Jaderson pediu a feature: oferecer a troca/upgrade da
+assinatura antes de cancelar.
+
+**Ferramenta.** `[Serena Tool] Assinatura` (`WfxlFkDA9U9yYeR7`, fonte `nodes/assinatura-tool.js`)
+ganhou a ação `trocar`:
+
+- Entrada: `{"acao":"trocar","variant_id":"...","quantidade":1}` ou `itens_str: "vid:qtd,vid:qtd"`,
+  mais `confirmado`.
+- Busca cada variante na Shopify pelo `shopify-admin` (`variants/{id}.json` + `products/{id}.json`):
+  nome, preço, estoque, produto ativo. Sem estoque (`inventory_policy: deny` e quantidade 0) devolve
+  `sem_estoque: true` com a nota para oferecer a quantidade equivalente em outro tamanho.
+- Sem `confirmado` devolve a `proposta`: itens novos, valor cheio, valor com o `desconto_pct` da
+  assinatura, frete (grátis a partir de R$ 250), próxima renovação, e se vai reativar.
+- Com `confirmado` grava `items` e `shopify_items` (mesmo formato do checkout: price, quantity,
+  variant_id), `valor_cheio_centavos`, `valor_centavos`; se estava pausada ou cancelada, reativa
+  (`status ativa`, `cancelar_no_fim false`, `proximo_ciclo` no mínimo amanhã). Avisa o Telegram 98.
+- Bônus: `consultar` agora mostra o nome dos itens. Os `items` gravados pelo checkout não têm
+  `title`, então o nome vem da Shopify.
+
+Os dois crons de renovação (cartão `bhm7az355bAhIoUf` e PIX `VxyloA6hZtppGEja`) cobram
+`valor_centavos` e criam o pedido pelo `shopify_items`, então a troca vale já na próxima renovação.
+
+**Prompt.** Adendo "Assinatura: oferecer troca ou upgrade antes de cancelar": assinante que quer
+outro produto, tamanho ou quantidade nunca é levado ao cancelamento; a Serena propõe a troca com o
+valor já com desconto, e só cancela se o cliente não quiser assinar mais nada.
+
+Testado na assinatura da Luzia sem confirmar: `consultar` (nome do item resolvido), `trocar` para o
+180 (sem estoque, com a nota da alternativa) e `trocar` para 2x 90 (proposta R$ 588,60 de R$ 654,00,
+reativa, frete grátis). Depois foi enviada a ela pelo Inbox a oferta de reativar com 2x 90; a Serena
+ficou ativa na conversa para fechar com a ferramenta nova quando ela responder.
+
+## Relatório diário passa a fechar o dia (16/09)
+
+O relatório de vendas caía às 20h BRT com o dia ainda aberto. Agora o cron é `5 0 * * *` (00h05, fuso America/Sao_Paulo) e o dia de referência é **ontem** (`::date - 1`), comparado com o mesmo dia da semana anterior (`::date - 8`). O título continua "vendas de DD/MM" do dia fechado. Só mudaram o trigger e a consulta de datas no node "Calcular e Enviar".
+
+## Automações que se apresentavam como "Samuel" agora falam como Serena (18/09)
+
+Varredura em todos os workflows do n8n que mandam mensagem ao cliente pelo número da empresa. Seis ainda se apresentavam como "Samuel" no texto; cinco passaram a "Serena" (e "Obrigado" virou "Obrigada" onde a Serena assina). Nome da instância na Evolution, nomes de workflow/nó e alertas internos no Telegram não mudaram. **Exceção, por decisão do Jaderson: os grupos continuam como Samuel** (`Grupos | Samuel Responde`, 0OwXSCNKh3zpvyFG, inclusive o privado de rastreio "Aqui é o Samuel").
+
+| Workflow | Nó | O que mudou |
+|---|---|---|
+| `AN - Clube Indicou Ganhou (Samuel)` (VSrRalderq7PjzI1) | Indicou Ganhou | "Serena aqui, da America Nutrition" |
+| `AN - Reviews Convite Pos-Entrega (Samuel)` (QWB9Gw8e7DTH4bP5) | Montar Convites | as 5 variações de apresentação (Aqui é a Serena / Sou a Serena / Serena aqui / Aqui quem fala é a Serena / Serena falando) |
+| `AN - Reviews Cupom 5 Estrelas (Samuel)` (3XLDAqp7C4e7BaR0) | Cupom 5 Estrelas | "Serena aqui, da America Nutrition"; "Obrigada por fazer parte da nossa história" |
+| `Clube — Assistente WhatsApp (Samuel)` (T1hqXCUr0ljdtEq9) | Atender | as duas respostas ("Oi! Serena aqui, da America Nutrition") |
+| `Clube — Crédito de Estrelas` (LXCfUsXUhLB5cPB4) | Avisar Marcos | aviso de recompensa e aviso America Black |
+
+Já falavam como Serena ou sem nome (nada a fazer): Dispatcher transacional (pago/enviado/entregue), carrinho abandonado, assinaturas (cobrança, PIX, dunning, fidelidade), afiliados, rastreio proativo, follow-up de link, Telegram, chat do site.
+
+## Objecao de confianca: verificacao da Meta (18/09)
+
+Adendo no `serena_config.system_prompt` (fonte em `nodes/serena-config-adendos-prompt.md`): quando o cliente duvida da empresa ou do produto (golpe, confiavel, numero oficial, medo de pagar), a Serena cita que a America Nutrition e verificada pela Meta, com o selo azul no WhatsApp e no Instagram, concedido so depois de conferencia de documentos e autenticidade, e convida a conferir o selo ao lado do nome. Soma aos fatos que ja existiam na base (15+ anos, Reclame Aqui verificado, laudo por lote). Uma vez por conversa, nunca com quem nao demonstrou duvida.
+
+## CPF invalido no boleto/PIX nao e "instabilidade" (19/09)
+
+Emerson (+55 19 99760-4850) pediu boleto do ImunoFosfo 90 e mandou o CPF 116.485.317-54, com digito verificador errado. O "Validar dados" so contava 11 digitos, a Shopify recusou o rascunho ("Enter a valid CPF/CNPJ"), a ferramenta devolveu um erro generico e a Serena disse ao cliente que "teve uma instabilidade" e escalou. Ele ficou esperando das 19h00 as 21h05, quando a equipe explicou o CPF e pediu confirmacao (sem resposta ate 21h35).
+
+Corrigido em producao as 21h09 (Gerar Boleto `gBgvM4y3bYzbnrE5` e Gerar PIX `SkETGTmcqtlTR0Lp`), fontes em `nodes/gerar-*-validar-dados.js` e `nodes/gerar-*-extrair-draft.js`:
+- `cpfValido()` confere os dois digitos verificadores antes de chamar a Shopify; CPF errado devolve `motivo: cpf_invalido` com a instrucao "NAO fale em instabilidade: peca ao cliente para conferir e mandar de novo".
+- Se ainda assim a Shopify recusar por CPF/CNPJ, o "Extrair draft" devolve a mesma instrucao em vez do erro generico.
+
+Sandbox (19/09 21h40), mesmo CPF: a Serena chamou gerar_boleto e respondeu "Esse CPF nao fechou, parece ter algum numero trocado. Pode conferir e me mandar de novo, por favor?", sem escalar.
+
+## Previa do link no WhatsApp: PIX e boleto no padrao da marca (19/09)
+
+Os links de checkout (`seguro.americanutrition.com/...`) e de rastreio ja tinham a arte padrao na previa do WhatsApp (fundo azul-marinho, frasco, titulo em Barlow Condensed, botao vermelho, faixa "Ciencia a favor da sua vida"). Dois fugiam disso: a pagina do Pix usava uma arte em outro estilo (verde, outra fonte) e o link do boleto nao tinha imagem nenhuma.
+
+- Artes novas, 1200x630, no mesmo padrao do checkout: `og/og-pix-america.html` e `og/og-boleto-america.html` (renderizadas com Chromium headless, fontes Barlow/Barlow Condensed e o frasco da arte do checkout). Publicadas em `cdn.americanutrition.com/imagens/og/og-pix-america.jpg` e `og-boleto-america.jpg` (bucket `imagens`, pasta `og`).
+- Pagina do Pix (`pagina-pix.workflow.js`, d8xacawAcoWtppWh): `OG_IMG` aponta para a arte nova; titulo e descricao continuam dinamicos (valor, pago, expirado).
+- Gerar Boleto (gBgvM4y3bYzbnrE5, no "Encurtar PDF via AN Links"): o encurtador passa a receber `acao: 'og'` com titulo "Seu boleto esta pronto · America Nutrition", descricao e a imagem, entao o link curto serve a previa com a arte (a pagina do boleto em si nao tem og:image).
+
+Para refazer uma arte: editar o HTML em `og/`, renderizar com `headless_shell --window-size=1200,630 --screenshot`, subir no bucket `imagens/og/`.
+
+## "Ok" depois de uma pergunta nao e mensagem trivial (21/09)
+
+Joel (+55 41 99983-2815) pediu boleto do ImunoFosfo 90 as 09h03. A Serena confirmou os dados e perguntou "Continua tudo certo assim? Se sim, ja gero o boleto pra voce! 🧬". Ele respondeu "Ok" e o atalho de mensagem trivial (Haiku, sem ferramentas) pegou a vez: o teste de "a ultima fala da Serena foi pergunta?" exigia o "?" no FIM do texto, e aqui ele estava no meio. O Haiku respondeu "Seu boleto ja esta a caminho" sem nada ter sido gerado.
+
+Correcao no `Cerebro Serena` (`nodes/core-cerebro-serena.js`): qualquer "?" na ultima fala da Serena, ou frase de acao pendente ("se sim", "confirma", "posso", "ja gero", "vou gerar"...), tira o "ok/certo/beleza" do atalho e manda para o modelo completo com ferramentas. O prompt do atalho tambem passou a proibir dizer que fez, enviou, gerou ou que algo esta a caminho.
+
+Joel: boleto gerado pela equipe (rascunho #D4130, R$ 327,00, frete gratis, vence 24/09) e entregue no WhatsApp as 09h12.
+
+## Boleto da Serena pelo Banco Inter (21/09)
+
+O checkout do site ja emitia boleto pelo Inter (`checkout_config.boleto_provider = inter`, desde 18/09), mas a ferramenta
+`[Serena Tool] Gerar Boleto` (gBgvM4y3bYzbnrE5) ainda ia direto ao Pagar.me: o boleto do Joel (21/09, 09h12) saiu pela Stone.
+
+Agora, depois do `Validar dados`, o no **Boleto Inter** (`nodes/gerar-boleto-inter.js`) le `boleto_provider`; se for `inter`,
+monta o mesmo corpo do checkout do site (itens com preco do `catalogo_precos`/`produtos`, cliente, endereco, frete,
+`shopify_items`, `ref=serena` ou `serena-ig`/`serena-msg` conforme o canal) e chama `POST /webhook/checkout-boleto-inter-criar`.
+O Inter devolve boleto hibrido: linha digitavel + Pix copia e cola do mesmo boleto. A resposta para a Serena tem o mesmo
+formato de antes (`resultado`, `arquivo` com o PDF da pagina personalizada, `nota_serena`, `msg_telegram`), mais
+`pix_copia_cola`, `inter_codigo` e `via_inter`. O no `Via Inter?` manda direto para `Resposta`; se o Inter falhar por
+qualquer motivo (config, preco, credencial, erro do banco), segue o caminho antigo: rascunho na Shopify + boleto Pagar.me.
+
+Diferenca importante: no caminho Inter **nao existe rascunho na Shopify**. Quando o Inter confirma o pagamento (webhook ou
+consulta de status), o proprio fluxo do Inter cria o pedido pela Confirmacao de Pagamento (`/webhook/pagarme-pago`) com
+`ref=serena`, que vira as tags `AF: Serena` + `WPP`. O Telegram (topico 98) mostra "Banco Inter (boleto + Pix)" e o codigo AN-.
+
+Teste (21/09 09h45): cliente de teste, ImunoFosfo 90, frete gratis -> boleto Inter 077..., Pix copia e cola, PDF da pagina
+com `b=inter`, link curto; cobranca cancelada em seguida pelo proxy `inter-api`.
+
+## Serena manda a foto do frasco (21/09)
+
+Cliente (+55 41 99780-2861) pediu "Tem foto do produto" e a Serena respondeu "Não tenho como enviar foto por aqui"
+e mandou o link da página. Ela tinha o mecanismo de envio de arquivo desde 05/09 (`[[ARQUIVO: chave]]` →
+`[Serena] Enviar Arquivo` → `sendMedia`, que já aceita `tipo: image`), mas a lista `serena_config.documentos`
+só tinha o laudo em PDF. Sem foto cadastrada, ela improvisou a recusa.
+
+**O que resolveu, sem uma linha de código:** `serena_config.documentos` ganhou **14 fotos de frasco**, uma por
+produto e por variante do ImunoFosfo (o 180 e o vegano têm imagem própria na Shopify). As URLs são as imagens da
+própria Shopify com `&width=900`. Fonte: `nodes/serena-config-documentos.json`. Como o Core já lista os arquivos
+no prompt com o campo `quando`, ela passou a marcar `[[ARQUIVO: foto_...]]` sozinha.
+
+**Rede de segurança, no `Montar Resposta`** (`nodes/core-montar-resposta.js`): se o cliente pediu foto ("foto",
+"imagem", "me mostra", "como é o frasco") e o modelo esqueceu o marcador, o nó anexa a foto. Acha o produto pelos
+`termos` na pergunta, na resposta ou nas 6 últimas falas; sem nada disso, manda o frasco de 90. Se a resposta tiver
+saído negando a foto, ela é trocada por "Claro! 💙 Aqui está a foto do *produto*:", porque o cliente não pode ler
+que não dá para mandar foto e receber a foto em seguida.
+
+Duas decisões que valem registro:
+
+- A rede mora no `Montar Resposta`, não no `Cerebro Serena`. O nó do Cérebro tem a chave `service_role` do Supabase
+  embutida em texto, e reenviar 52 KB com a chave dentro é barrado pelo classificador de segurança. O `Montar
+  Resposta` tem acesso a tudo que a rede precisa (`$('Carregar Contexto')` para `documentos` e `historico`,
+  `$('Normalizar')` para a mensagem do cliente) e não tem credencial nenhuma.
+- As fotos usam o campo `termos`, não `gatilhos`. Com `gatilhos`, a rede antiga do Cérebro disparava só pela palavra
+  na mensagem: em teste, "quanto custa o imunofosfo 90" e "quero saber do imunofosfo liquid" mandaram foto sem
+  ninguém pedir. `termos` só é lido pela rede nova, que exige o pedido de foto.
+
+Testes (21/09, sandbox): "quanto custa o imunofosfo 90" → sem foto. "Quero saber do imunofosfo liquid" → sem foto.
+"tem foto?" na sequência → foto do Liquid. "e do kids, tem foto" → foto do Kids. "Tem foto do imunofosfo 90?" →
+marcador do próprio modelo, foto do 90. Envio real pelo WhatsApp testado no número da empresa (`sendMedia` com a URL
+da Shopify, `message_id 3EB04F0DB2EE042458635E`).
+
+Um arquivo por mensagem, como antes. O laudo em PDF continua funcionando igual.
+
+## Concorrente e preço: concluir a venda, nunca mandar o cliente comparar (21/09)
+
+Print do Elton (+55 19 99738-6944): ele mandou a foto de um frasco de outra marca e a Serena fechou com
+*"Minha sugestão sincera: compare os dois pelos mesmos critérios (pureza, laudo por lote, onde é fabricado). Assim a
+escolha fica mais segura, seja qual for 💙"*. Quem vende não devolve a decisão ao cliente: essa frase entrega de graça
+o trabalho de comparar, e o cliente sai da conversa e volta para o anúncio do concorrente. Faltava também o nosso
+diferencial mais forte, que nenhum concorrente tem: o atendimento e o acompanhamento pós-venda.
+
+Adendo `21/09/2026 · Concorrente: nunca convidar o cliente a comparar, fechar com o pos-venda` no
+`serena_config.system_prompt` (texto completo em `nodes/serena-config-adendos-prompt.md`):
+
+- Vale em **qualquer** comparação, com ou sem nome de marca — inclui "achei outro mais barato", "vi um por 89 reais",
+  "tem um genérico na farmácia mais em conta".
+- Proibidas as fórmulas que devolvem a decisão: "compare os dois pelos mesmos critérios", "minha sugestão sincera:
+  compare os dois", "a escolha fica mais segura, seja qual for", "qualquer um dos dois", "você decide". Ela **pode**
+  explicar os critérios, mas a conclusão é dela.
+- Estrutura obrigatória: (1) reconhece a comparação em uma linha, sem descrever nem elogiar o concorrente;
+  (2) diferenciais do ImunoFosfo (pureza, ultra-micronização, FDA/GMP, único com laudo público lote a lote);
+  (3) **atendimento e acompanhamento** com os fatos reais — atendimento a qualquer hora neste WhatsApp,
+  acompanhamento do pedido do pagamento à entrega com aviso se a transportadora parar, orientação de uso depois que
+  chega, ajuste de protocolo com a Cris (bioquímica e nutróloga), aviso antes do frasco acabar; "comprar do
+  concorrente é comprar um frasco, comprar aqui é ter uma equipe acompanhando o tratamento"; (4) um próximo passo
+  concreto, sempre na **última** linha.
+- Objeção de preço se responde: fosfoetanolamina sem laudo de lote é aposta, o barato sai caro quando ninguém auditou
+  o pote. Sem dizer que o preço do outro é bom, sem sugerir que ele teste o mais barato e sem inventar desconto.
+- Nunca nivelar os produtos, nem na pergunta direta "é a mesma coisa?" — proibidas "é a mesma coisa", "é a mesma
+  fosfoetanolamina", "é equivalente", "é igual", "no fundo é a mesma molécula".
+- Nunca falar mal do concorrente nem inventar defeito. Se o cliente insistir que vai comprar o outro, acolhe em uma
+  frase e deixa a porta aberta, sem repetir os argumentos.
+
+Armadilhas que só apareceram em teste e viraram regra:
+
+- Pergunta curta **não** autoriza resposta de uma linha: em duas rodadas ela respondeu só "Segue o laudo:" e
+  "Vou te mandar o laudo agora:", sem nenhum argumento. A linha do laudo vem depois dos três blocos e nunca é a
+  última — a última é o próximo passo.
+- O arquivo é enviado **depois** do texto: ela diz "vou te mandar o laudo agora", nunca "anexei acima".
+
+Testes (21/09, sandbox): "vi um phosphopure de outra marca bem mais barato, é a mesma coisa?",
+"achei outro produto de fosfoetanolamina por 89 reais, vale a pena?" e "tem um genérico de fosfoetanolamina na
+farmácia bem mais em conta, compensa?" → as três respostas com os três blocos, o pós-venda citado, o laudo enviado e
+fechando com "quer que eu te indique a versão ideal pro seu caso?". Nenhuma fórmula proibida.
+
+## Foto do frasco indo sem ninguém pedir (22/09)
+
+Print do Weslei (+55 64 99212-1621): ele mandou o **comprovante do PIX**, a Serena confirmou o
+recebimento e, junto, foi a foto do frasco do ImunoFosfo 90 — que ninguém pediu.
+
+Causa: a Entrada guarda uma imagem recebida como texto descritivo —
+`[Cliente enviou uma imagem: **Comprovante de PIX - Itaú** | **Valor:** R$ 372,73 ...]`. A rede
+de segurança do `Montar Resposta` procurava a palavra `imagem` na mensagem do cliente para
+decidir se ele tinha pedido foto; o comprovante casava, nenhum `termos` de produto batia e o
+fallback mandava o frasco de 90. Não foi o modelo: foi a rede.
+
+Correção no `nodes/core-montar-resposta.js`:
+
+- `ehMidiaRecebida` — descrição de mídia que o cliente enviou (`cliente/contato enviou`, ou
+  a mensagem começando com `[imagem`, `[audio`, `[video`, `[documento`, `[figurinha`) **nunca**
+  liga a rede.
+- `falaFoto` + `pedeAlgo` — falar em foto/imagem só conta como pedido se vier com verbo de
+  pedido (`manda`, `envia`, `tem`, `quero`, `posso`, `mostra`, `ver`, `qual`, `como`...) ou com
+  ponto de interrogação. "essa imagem que mandei tá legível" não liga mais nada.
+
+Testes (22/09, sandbox): pedido → comprovante de PIX → "DEUS abençoe vcs sempre!" → **nenhuma
+foto** nas três respostas. "Quero saber do imunofosfo 90" → "tem foto?" → foto do 90, como
+antes.
+
+## Duração do frasco: um pote por mês, não dois (23/09)
+
+Num orçamento de dois casos, a Serena escreveu que o Green Propolis *"rende 15 dias na dose de
+2/dia, então também é bom considerar 2 potes pro mês"* e fechou o mês em **R$ 481,00** em vez de
+**R$ 404,00**. O pote tem 60 cápsulas: na dose de 2/dia dura 30 dias.
+
+A base já trazia o dado certo — "porção de 2 cápsulas, **rende 30 porções**" — mas ela deduziu a
+duração por conta própria em vez de ler. Inflar o orçamento sozinha é o pior erro possível numa
+resposta de preço.
+
+Adendo `23/09/2026 · Duracao de cada frasco: usar a tabela, nunca estimar` no
+`serena_config.system_prompt`, com a regra e a tabela completa:
+
+- A duração sai do campo "rende N porções" da informação nutricional: o frasco rende N dias
+  quando a dose diária é uma porção. Fora o ImunoFosfo, a linha inteira vem com 30 porções —
+  **um frasco cobre um mês**.
+- Tabela explícita de todos os produtos (ImunoFosfo 90/180/60/42/Vegano/Diabetes/Liquid/Kids,
+  ImunoPet, Vitamins & Minerals, Ômega 3, Green Propolis, Propolis Extract, Life Hair, as duas
+  D3, Creatina, Life Gummy, Life Protein).
+- Orçamento mensal usa **um frasco por produto**, exceto onde a tabela diz outra coisa
+  (ImunoFosfo 60 rende 20 dias, Liquid rende ~10 dias na manutenção) ou o cliente pedir mais.
+- Proibido sugerir "2 potes por mês" de produto que rende 30 dias e somar valor sem conferir.
+
+Testes (23/09, sandbox): "quanto tempo dura um pote do green propolis tomando 2 cápsulas por
+dia?" → "60 cápsulas, 2 por dia, rende exatos 30 dias". "quanto fica por mês o imunofosfo 90
+junto com o green propolis?" → **R$ 404,00**. "quanto dura o ômega 3 e o propolis extract?" →
+30 dias cada.
+
+## Avise-me quando voltar ao estoque (29/09)
+
+Print de +55 33 9950-9132: a cliente clicou no "avise-me" do site, a Serena respondeu *"Prontinho! 💙 Assim
+que o D3 50.000 UI voltar, você é avisada por aqui"* — e **não existia nada** que cumprisse isso. Nenhuma
+tabela, nenhum cron: a promessa morria ali. Duas clientes já estavam nessa situação (+55 33 9950-9132 e
++55 11 98449-5905, as duas esperando o D3 with K2, A and E 50.000 UI).
+
+Workflow novo `[Serena] Avise-me Quando Voltar` (`XfrzsyTwdMdhbwwZ`, fonte em `aviso-estoque.workflow.js`),
+cron de 30 min, e a tabela `serena_avisos_estoque`:
+
+1. **Registrar** — lê as mensagens de cliente dos últimos 3 dias que falam em aviso (`avisar/avisado/aviso`)
+   e em volta (`voltar/chegar/repor/disponível/estoque`), descobre o produto e confere o estoque real na
+   Shopify. Só entra na fila se o produto estiver **fora** de estoque: produto disponível não tem o que
+   esperar, e isso descarta sozinho o "me avisa quando meu pedido chegar", que não cita produto nenhum.
+2. **Avisar** — para a fila pendente, consulta o estoque a cada rodada; voltou, a Serena escreve o aviso
+   (Core proativo, `tipo_proativo: estoque_voltou`), o Samuel envia, grava nota no contato e a linha vira
+   `avisado`. Só entre 8h e 20h BRT, com 12–20s entre envios, pulando quem está na blocklist.
+
+Detalhes que custaram uma rodada de teste:
+
+- **Nome em dois idiomas.** No banco o produto é `D3 com K2, A e E - 50.000 UI`; o botão do site manda
+  `D3 with K2, A and E - 50.000 UI`. O casamento é por tokens fortes, e o primeiro filtro (`w.length > 2`)
+  descartava justamente `d3`, `k2` e `50` — sobrava só `000` e ninguém era registrado. Agora conta token de
+  2 caracteres e a nota é acertos + cobertura do nome, então `D3 com K2, A e E 50.000` (4/4) ganha de
+  `D3 Vitamin with K2 and A` (2/2) na mensagem certa, e perde na outra.
+- **"Quando voltar me avisa".** Sozinha, essa frase não nomeia produto. A busca leva junto a última mensagem
+  da Serena antes dela, que é onde o produto foi citado.
+
+### Cobertura: vale para qualquer produto (29/09)
+
+Não é específico do D3 — o casamento roda contra todos os produtos ativos com `variant_id` na tabela
+`produtos`. Testei o texto exato do botão do site (`Olá! Quero ser avisado quando o <nome do produto>
+voltar ao estoque.`) para as **24 variantes da loja**:
+
+| Resultado | Quantas |
+| --- | --- |
+| Casaram no produto certo | 21 |
+| Casaram no produto errado | 0 |
+| Não têm linha em `produtos` | 3 — Carvão Vegetal Ativado (rascunho), ImunoFosfo Phase One + eBook (não listado), ImunoFosfo (USA) |
+
+Os três de fora não estão à venda no site brasileiro, então ninguém clica "avise-me" neles. Se um dia
+entrarem, basta cadastrar a linha em `produtos` com o `variant_id`.
+
+Duas regras nasceram desse teste:
+
+- **Plural e gênero** — "Veganas" no site, "Vegano" no banco; "Líquida" no site, "Líquido" no banco. Sem
+  isso, o ImunoFosfo Vegano casava no ImunoFosfo 90 comum (errado) e o ImunoPet não casava em nada.
+- **Token raro vale sozinho** — quem escreve "avisa quando chegar o ômega 3" ou "me avisa quando o kids
+  voltar" não digita o nome completo. Palavra que só aparece em um ou dois produtos (`omega`, `kids`,
+  `creatina`, `healing`, `plus`) já resolve. Já "me avisa quando o imunofosfo voltar" é ambíguo de
+  propósito e **não** registra nada: sete produtos têm essa palavra.
+
+Quando o cliente pede aviso e o produto não é identificado, ninguém fica no vácuo: vai um alerta
+`❓ Pediu aviso e não identifiquei o produto` no Telegram com o texto dele, para registrar na mão ou
+responder pelo Inbox.
+
+Kill switch: `serena_config aviso_estoque = off`. Resumo de registros e avisos no Telegram (tópico 289).
+
+Testes (29/09): rodada real registrou as duas clientes que estavam esperando (`serena_avisos_estoque` 1 e 2,
+D3 50.000 UI, pendente). Geração do texto pelo Core conferida: *"Passando aqui pra te avisar que a D3 com K2,
+A e E 50.000 UI já voltou ao estoque, como você pediu 🧬"*. Marcação de `avisado` testada em linha de teste,
+depois removida. O D3 50.000 UI segue fora de estoque, então nada foi enviado ainda.
+
+## Serena migrada para o Claude Sonnet 5.5 (29/09)
+
+`serena_config.modelo` passou de `claude-sonnet-5` para **`claude-sonnet-5-5`**. Mesmo preço
+(US$ 2 / US$ 10 por milhão de tokens), mesma janela de 1M e mesmo tokenizador — é o sucessor
+direto na linha Sonnet, então não há motivo para ficar na versão anterior.
+
+Antes de trocar, conferi as mudanças que quebram código escrito para o Sonnet 5:
+
+| Muda no 5.5 | A Serena usa? |
+| --- | --- |
+| `thinking: {type:"disabled"}` passa a dar 400 | Não — o Cérebro não manda `thinking` |
+| `tool_choice` forçado (`any`/`tool`) passa a dar 400 | Não — nunca foi usado |
+| Blocos de raciocínio presos ao modelo/conversa | Não — não reenviamos thinking |
+| Computer use só pelo toolset novo | Não usamos |
+| Níveis de `effort` recalibrados | Mandamos `medium`, que é o recomendado para uso com ferramentas |
+
+O corpo que o Cérebro monta é `{model, max_tokens, system, messages, tools, output_config:{effort}}`
+— nenhum dos campos que mudaram. O teste de fumaça foi direto no proxy interno
+(`/webhook/claude-call`) com o modelo novo e uma tool: voltou `stop_reason: tool_use` normalmente.
+
+Bateria de regressão no sandbox depois da troca, cobrindo tudo que foi corrigido na semana:
+
+| Cenário | Resultado |
+| --- | --- |
+| Preço do ImunoFosfo 90 | R$ 327,00 + frete grátis acima de R$ 250 |
+| "achei outro por 89 reais, vale a pena?" | Responde o preço, manda o laudo, sem as fórmulas proibidas |
+| Orçamento ImunoFosfo 90 + Green Propolis | **R$ 404,00**, 30 dias cada |
+| Comprovante de PIX + "DEUS abençoe" | Nenhuma foto enviada sem pedido |
+| "tem foto?" depois de falar do Liquid | Foto do Liquid |
+
+Confirmado no log do Core (`modelo: claude-sonnet-5-5`). O cache de prompt é por modelo, então a
+primeira chamada reescreveu os 155 mil tokens do prefixo (`cache_write`) e a seguinte já leu tudo
+do cache (`cache_read: 155214`) — custo extra só nessa virada.
+
+Os nós que usam **Haiku 4.5** (descrição de imagem, triagem anti-spam, resposta trivial) continuam
+como estavam: Haiku 4.5 é a geração atual. Três workflows (Reposição, Auditoria, Proposta da Base)
+ainda têm `'claude-sonnet-5'` como *fallback* no código, usado só se a chave `modelo` sumir da
+`serena_config`; na prática todos leem a chave e já rodam no 5.5.
+
+### Leitura de imagem e PDF passou para o Sonnet 5.5 (29/09)
+
+O nó `Descrever Imagem (Claude)` da Entrada rodava no Haiku 4.5. Testei os dois modelos com o
+mesmo print de comprovante de PIX (o do Weslei, Banco Inter):
+
+| | Haiku 4.5 | Sonnet 5.5 |
+| --- | --- | --- |
+| Valor | R$ 372,73 ✅ | R$ 372,73 ✅ |
+| Pagador e CPF | CPF errado | ✅ |
+| Banco do recebedor | **"Nubank"** ❌ | **Banco Inter** ✅ |
+| Data | **"13/10/2024"**, inventada ❌ | "não aparece no trecho visível" ✅ |
+| CNPJ | ilegível/embaralhado | ✅ |
+
+O Haiku preencheu os buracos em vez de admitir que não dava para ler — e essa descrição é o que a
+Serena lê para responder ao cliente. São **107 imagens/PDFs em 30 dias** (44 citando comprovante),
+então a troca custa centavos por mês. `max_tokens` subiu para 700 (imagem) e 1200 (PDF): com 400 o
+Sonnet era cortado no meio. O prompt ganhou a regra explícita de nunca deduzir dado ilegível.
+
+**O que continua no Haiku 4.5, de propósito:** triagem anti-spam (classificação de uma palavra),
+resposta trivial (existe justamente para ser barata e instantânea), classificador de humor/lacuna
+(JSON curto, roda em toda mensagem) e o resumo de handoff. Para essas, subir o modelo custaria o
+dobro sem ganho perceptível. Não existe Haiku mais novo: o 4.5 é a geração atual da linha.
+
+## Cris deixa de ser apresentada como profissional de saúde (29/09)
+
+Instrução do Jaderson: parar de encaminhar cliente para a Cris como se ela fosse biomédica ou
+nutróloga. A base tinha isso espalhado — um card inteiro "Quem é a Cris (referência técnica em
+saúde)", um modelo de fala pronto (*"vou te conectar com a Cris, que é bioquímica e nutróloga"*),
+a linha da tabela de contatos e quatro pontos de encaminhamento. O adendo do concorrente que eu
+mesmo escrevi em 21/09 também citava "ajuste de protocolo com a Cris, que é bioquímica e nutróloga".
+
+Removido de tudo por SQL, em `base_treinamento` e `system_prompt`:
+
+- Card reescrito: a Cris é da equipe, cuida de **atacado, condições comerciais e escalação geral**.
+- Modelo de fala novo: *"vou te conectar com a Cris, da nossa equipe"* — sem formação, sem título.
+- Caso de saúde fora do escopo não vira mais encaminhamento para ela como autoridade técnica: a
+  Serena acolhe, responde o que a base permite e recomenda o médico do cliente.
+- Adendo `29/09/2026 · Cris nunca e apresentada como profissional de saude` proíbe as palavras
+  bioquímica, nutróloga, nutricionista, farmacêutica, doutora e especialista ao falar dela **ou de
+  qualquer pessoa da equipe**, e proíbe prometer que ela vai avaliar clinicamente o caso.
+
+Sobrou uma única ocorrência da palavra "bioquímica" na base: dentro da própria regra que a proíbe.
+
+Testes (29/09, sandbox): "minha mãe tem câncer em quimioterapia, posso dar junto?" → acolhe, sem
+citar ninguém; "tem alguém aí que entenda de bioquímica?" → a Serena responde ela mesma, sem citar
+qualificação; "quero comprar 50 frascos pra revender" → *"o pedido de atacado é finalizado pela
+Cris, da nossa equipe"*. Nenhuma qualificação em nenhuma das três.
+
+## Mensagem duplicada quando a voz falha (01/10)
+
+No print do Dirceu cada resposta da Serena apareceu **duas vezes**, idênticas. No banco existe só
+uma linha de cada — por isso nunca apareceu em nenhum relatório: a segunda cópia saía pela Evolution
+sem passar por `serena_mensagens`.
+
+Causa, nos dois lados do envio:
+
+1. `POST /webhook/serena-samuel-enviar` com `audio_texto`: se a ElevenLabs falha nas duas passadas
+   (v3 e v2), o próprio fluxo **manda o texto sozinho** e responde `{ok: true, tipo: "texto"}`.
+2. A Entrada, no nó `Responder em Audio`, media sucesso com `r.tipo === 'audio'`. Texto de reserva
+   caía como falha → `Audio OK?` ia pelo ramo falso → `Fatiar Resposta` → `Enviar pelo Samuel`
+   mandava **o mesmo texto de novo**.
+
+Ou seja: enquanto a ElevenLabs esteve fora (28–29/09), **todo áudio recebido gerava resposta dupla**.
+
+Correção:
+
+- `Envio Samuel` (`EhmndFruX6hOIRDN`) aceita `sem_fallback: true`: desistindo da voz, ele **não**
+  manda texto e responde `{ok: false}`, deixando o texto para quem chamou. Terceira saída nova no
+  `Tentar v2?` (`sem_texto` → `Resultado`). Sem o parâmetro o comportamento antigo continua igual,
+  que é o que o pós-entrega e o transacional esperam.
+- `Responder em Audio` passa `sem_fallback: true` e, por cinto de segurança, trata qualquer
+  `ok: true` como entregue — nunca reenvia o que já saiu.
+
+Assim a resposta em texto volta a passar pelo `Fatiar Resposta`, que é quem trata código de PIX,
+lista clicável e arquivo — o caminho de reserva do envio pulava tudo isso.
+
+Testes (01/10): `sem_fallback: true` → `{ok:true, tipo:"audio", modelo:"eleven_v3"}`; sem o
+parâmetro → idem. A ElevenLabs **voltou sozinha** na noite de 29/09: 9 transcrições certas desde
+então ("É, o que que você me fala dessa ImmunoFosfo Plus 180?"), e o alerta de falha no Telegram
+que instrumentei ontem fica de guarda para a próxima.
+
+## Voz da Serena no ElevenLabs v4 turbo (01/10)
+
+Consultei `GET /v1/models` com a credencial da conta em vez de supor o que existe. O `eleven_v4` está
+liberado (`requires_alpha_access: false`), junto com uma variante turbo:
+
+| Modelo | Idiomas | Custo/caractere | Tempo medido (mesma frase, mesma voz) |
+| --- | --- | --- | --- |
+| `eleven_v3` (anterior) | 74 | 1,0× | 4,96 s |
+| `eleven_v4` | 85 | 1,0× | 4,85 s |
+| **`eleven_v4_turbo`** (novo padrão) | 85 | **0,5×** | **3,07 s** |
+| `eleven_v3_conversational` | 74 | 0,5× | 4,13 s |
+
+Jaderson ouviu as quatro amostras e aprovou. No `Preparar` do Envio Samuel:
+principal **`eleven_v4_turbo`**, reserva **`eleven_v4`** (antes era o `eleven_multilingual_v2`, que
+soava pior que os dois). Numa resposta de WhatsApp, 2 segundos a menos é a diferença entre parecer
+gente e parecer robô processando — e o custo da voz caiu pela metade.
+
+Detalhe que evitou um bug silencioso: **a família v4 não aceita `style` nem `use_speaker_boost`**
+(a própria API devolve `can_use_style: false`). O corpo do v3 não mandava esses campos, mas o do v2
+mandava — agora a função `ajustes(id)` só os inclui quando o modelo é mesmo o v2.
+
+`b.modelo` aceita `v4t` (padrão), `v4`, `v3` e `v2` para forçar um modelo específico; `Trocar para v2`
+e `Resultado` passaram a ler `modelo_b` em vez do id fixo do v2.
+
+Testes (01/10, número da equipe): padrão → `eleven_v4_turbo`; `modelo: "v4"` → `eleven_v4`;
+`modelo: "v2"` → `eleven_multilingual_v2` com estilo e speaker boost. Os três entregaram áudio.
+
+## "Digitando..." antes de cada mensagem (01/10)
+
+A Evolution 2.3.7 tem `POST /chat/sendPresence/{instancia}`, e medindo a chamada se descobre o
+detalhe que faz funcionar: **ela segura a resposta pelo tempo do `delay`** (com `delay: 3000` voltou
+em 3,28 s). Ou seja, a própria chamada é a pausa — não precisa de `wait` nenhum.
+
+No `Envio Samuel`, dois nós novos antes do envio:
+
+| Nó | Presença | Duração |
+| --- | --- | --- |
+| `Digitando` | `composing` | `texto.length × 28 ms`, entre 1,2 s e 5 s |
+| `Gravando Audio` | `recording` | 35% da duração estimada do mp3 (128 kbps ≈ 16 KB/s), entre 1,5 s e 5 s |
+
+Os dois zeram o `delay` que ia para a Evolution, senão a espera aconteceria duas vezes — o
+`Enviar Texto` passou a ler `$json` em vez de `$('Preparar')` para enxergar esse zero. Se a presença
+falhar, a mensagem sai do mesmo jeito (`try/catch` silencioso).
+
+Como a Entrada manda cada parte da resposta separadamente, o "digitando" aparece **antes de cada
+balão**, que é o comportamento de uma pessoa escrevendo. O áudio mostra "gravando áudio...", que é o
+equivalente certo para voz.
+
+Testes (01/10, número da equipe): texto 5,0 s no total, áudio 4,8 s — nos dois a mensagem chegou
+depois da presença, e o `ok: true` voltou normal.
+
+## Zona rural: Correios, não transportadora (01/10)
+
+Print de um cliente que disse *"vou comprar agora, só uma coisa: vem pelos Correios? pq moro em
+sítio"*. A Serena respondeu que a J&T *"tem cobertura nacional, então é uma boa opção pra quem mora
+em sítio"* e fechou indicando a J&T — errado: transportadora normalmente não sobe para zona rural, e
+o pedido volta ou fica parado numa base.
+
+A origem do erro estava na própria base: *"J&T Express: entrega TODOS OS DIAS, cobertura nacional
+100%"*. Essa linha ganhou a ressalva de que transportadora não entrega em zona rural, e o adendo
+`01/10/2026 · Zona rural: indicar Correios` fixou a regra:
+
+- Sítio, chácara, fazenda, assentamento, estrada de terra ou "o carteiro não passa aqui" → **Correios
+  (PAC ou SEDEX)**, nunca J&T.
+- O argumento que convence: se não entregarem na porta, o pacote fica **na agência mais próxima para
+  retirar com documento** — para quem mora em sítio, é o caminho que de fato funciona.
+- Cliente que insistir na transportadora: respeita a escolha, avisa em uma frase, sem insistir.
+- Vale também para o frete grátis acima de R$ 250: se a opção gratuita for de transportadora, o
+  cliente rural precisa saber que o Correios, mesmo pago, tem mais chance de entregar.
+
+Testes (01/10, sandbox): "moro em sítio, qual transportadora é melhor?" → Correios, com a retirada na
+agência; "meu endereço é zona rural, a J&T entrega lá?" → Correios, explicando que a J&T não sobe
+para sítio; "moro em apartamento no centro de São Paulo" → comparação normal das três, **sem** aplicar
+a regra rural onde ela não cabe.
+
+## Fila humana parada: ninguém era avisado (01/10)
+
+Print de um cliente (+55 31 98728-0333) que respondeu "sim" às 09:29 e mandou "?" às 09:55 sem
+receber nada. Reconstruindo pelo banco:
+
+1. 30/09 13:12 — a Serena encaminhou para a equipe (`serena_atribuicoes`, status `aberto`).
+2. 01/10 09:27 — ela respondeu uma vez e **pausou a si mesma por 12h** (`wpp_pausa_handoff_min = 720`).
+3. 09:29 e 09:55 — as mensagens dele entraram no buffer, foram marcadas como processadas e **ninguém
+   respondeu**: a IA estava pausada e a fila humana nunca foi atendida.
+
+O encaminhamento continuava **aberto desde 30/09**. Medindo a fila inteira:
+
+| | |
+| --- | --- |
+| Atendimentos abertos | 37 |
+| Clientes esperando resposta humana | **13** |
+| Esperando há mais de 1h | 12 |
+| Espera mais antiga | **528 h (22 dias)**, desde 09/09 |
+
+Não existia alerta nenhum: o `guarda-filas` vigia broadcast, carrinho, transacional e reposição, mas
+**não `serena_atribuicoes`**. Workflow novo `[Serena] Fila Humana Parada` (`klTuJjVCATqxxJfp`, fonte
+`fila-humana-parada.workflow.js`), cron de 20 min:
+
+- Procura encaminhamento aberto cuja **última mensagem do cliente é mais nova que a última resposta
+  nossa** e está esperando há mais de `fila_alerta_min` (padrão 20 min).
+- Manda no Telegram (tópico 289) a lista ordenada por tempo de espera, com a última frase do cliente
+  e o link direto do Inbox.
+- Cada contato só reaparece depois de `fila_realerta_horas` (padrão 4h), para não repetir a mesma
+  lista a cada 20 min. Pula bloqueados. Kill switch `fila_alerta = off`.
+
+Primeira execução (01/10): **11 clientes avisados** e marcados; os outros entram nas próximas rodadas.
+
+### Devolver a conversa para a Serena (decisão do Jaderson, 01/10)
+
+A pausa de 12h ao encaminhar (`wpp_pausa_handoff_min`) é longa para encaminhamento que é só um recado.
+Das duas saídas possíveis — reduzir a pausa ou devolver a conversa — ele escolheu **devolver**: se
+ninguém da equipe responder em N horas, a Serena retoma a conversa. Três nós novos no mesmo workflow,
+antes do alerta:
+
+| Nó | O que faz |
+| --- | --- |
+| `Buscar e Liberar` | escolhe quem devolver e **apaga a pausa do WhatsApp e o `ia_pausada`** (sem isso o Core recusa a conversa) |
+| `Devolver para Serena` | chama o Core em **modo `reprocessar`** (com ferramentas), manda a resposta, registra a nota e avisa no Telegram |
+| `Fechar Devolvidos` | fecha a atribuição de quem foi atendido |
+
+Modo `reprocessar` é o mesmo que a Entrada usa quando o Core falha e a mensagem fica sem resposta: a
+pergunta do cliente **não** é regravada no histórico, a Serena responde tudo o que ficou pendente e o
+prompt já manda **pedir desculpa pela demora**. Diferente do modo proativo, ela continua com as
+ferramentas (pedido, rastreio, PIX), então consegue resolver de verdade — e, se não for caso dela,
+chama `escalar_humano` de novo.
+
+Cercas, todas em `serena_config` (não precisam existir, o SQL tem o padrão embutido):
+
+| Chave | Padrão | Para quê |
+| --- | --- | --- |
+| `fila_devolver` | `on` | kill switch |
+| `fila_devolver_horas` | `2` | espera mínima antes de devolver |
+| `fila_devolver_max_horas` | `24` | **não** devolve conversa mais velha que isso (mensagem de 20 dias atrás não se responde sozinha) |
+| `fila_devolver_hora_ini` / `_fim` | `8` / `20` | só em horário comercial, para a Serena não escrever de madrugada |
+| `fila_devolver_cooldown_horas` | `24` | o mesmo contato só é devolvido de novo depois disso (evita laço) |
+
+Máximo de 5 por rodada, com 12–18s entre um envio e outro. Pula bloqueados. Fica uma nota no contato
+(`atendimento devolvido`, visível no Inbox) dizendo quantas horas ele esperou — essa nota é também o
+marcador do cooldown. Se a Serena encaminhar de novo, a atribuição **continua aberta** e o alerta volta
+a cobrar a equipe. Se a devolução falhar (Core fora, envio recusado), nada é fechado: o cliente
+continua na fila e a falha aparece no Telegram.
+
+O aviso do Telegram mostra a frase do cliente **e** o que a Serena respondeu, para auditar sem abrir o
+Inbox.
+
+Primeira execução em produção (01/10 10:18, execução `2331226`): **2 devolvidas, 0 falhas**.
+
+- Sebastião Mazali, esperando 13,4h, última mensagem "Obrigado" → "De nada, Sebastião 💙". Atribuição
+  fechada, pausa apagada.
+- Luzia, esperando 22,6h, "quero devolver os comprimidos (90)" → a Serena respondeu com o pedido certo
+  (`AN-15445`), pediu para o caso #4 virar devolução e **chamou `escalar_humano` de novo**. A atribuição
+  ficou aberta e ela mesma se pausou outra vez — exatamente o comportamento desejado: devolução de
+  produto não é caso de bot.
+
+Os outros 11 da fila não foram devolvidos porque a última mensagem deles é de mais de 24h (ou o contato
+está bloqueado) — esses continuam só no alerta, para a equipe responder pelo Inbox.
+
+## Serena manda o rótulo (Supplement Facts) de cada produto (07/10)
+
+Print da Noelia (+55 43 9906-2905): ela pediu *"Pode me mandar a parte do rótulo onde fala a composição
+porfavor"* e a Serena respondeu a composição **em texto**, com a foto do frasco acima. O cliente pediu uma
+imagem e recebeu uma lista. A foto do frasco já estava cadastrada desde 21/09, o rótulo não.
+
+**Onde estavam as tabelas:** nenhuma em metafield nem na descrição do produto. Elas são `<img class="factsimg">`
+**fixas dentro dos snippets de LP do tema** (`snippets/lp-imunofosfo.liquid`, `snippets/lp-omega3.liquid`,
+`snippets/green-propolis-lp.liquid`, …) e uma vem da mídia do produto (multivitamínico). Varrendo o tema por
+`factsimg`/`nutricional` saíram 11 imagens, **todas abertas e conferidas uma a uma** — o nome do arquivo não
+serve de critério: 5 `Screenshot_*.png` que pareciam tabela eram foto de produto (Green Propolis, Creatina,
+Life Protein, Diabetes e a D3 50.000 têm um `Screenshot` que é mockup).
+
+`serena_config.documentos` foi de 15 para **26 entradas**: o laudo, **11 rótulos**, 14 fotos de frasco.
+
+| Rótulo | Produto |
+| --- | --- |
+| `rotulo_imunofosfo` | ImunoFosfo em cápsulas (42, 60, 90, Plus 180 e Vegano — mesma fórmula) |
+| `rotulo_imunofosfo_kids` / `_liquid` / `_diabetes` | versões com fórmula própria |
+| `rotulo_omega3`, `rotulo_d3_k2_a`, `rotulo_d3_50000` | Ômega 3, D3 diária, D3 50.000 UI |
+| `rotulo_green_propolis`, `rotulo_propolis_extract` | os dois própolis |
+| `rotulo_life_hair`, `rotulo_multivitaminico` | Life Hair, Vitamins & Minerals |
+
+**Ordem do array importa**, porque as duas redes de segurança pegam o *primeiro* documento cujos termos batem:
+
+1. Rótulos **específicos antes do genérico** (`rotulo_d3_50000` antes de `rotulo_d3_k2_a`, `rotulo_green_propolis`
+   antes de `rotulo_propolis_extract`, todos antes de `rotulo_imunofosfo`).
+2. Rótulos **antes das fotos**, senão "manda a foto do rótulo do ômega" cairia em `foto_omega3` (frasco).
+
+**Gatilhos compostos, nunca soltos.** Primeira versão usava `composicao` e `ingredientes` sozinhos: no teste,
+*"qual a composição da creatina?"* anexou o rótulo do ImunoFosfo — produto errado para o cliente. Agora cada
+rótulo exige produto no termo (`composicao do omega`, `rotulo do kids`, `d3 50.000`) e o genérico só aceita
+`rotulo do imuno`, `composicao do produto` e afins. A frase da Noelia não casa com gatilho nenhum: quem manda
+ali é o próprio modelo, pelo campo `quando`.
+
+Testes (07/10, sandbox), 12 frases: a frase exata da Noelia → `rotulo_imunofosfo`; "tabela nutricional do ômega
+3" → `rotulo_omega3`; "rótulo do kids" → Kids; "composição do própolis verde" → Green Propolis; "tabela da
+vitamina d3 50.000" → a de 50.000 e não a diária; "rótulo do imunofosfo vegano" → o do ImunoFosfo, com a Serena
+explicando que a fórmula é a mesma; "tem foto do produto?" → frasco de 90, não o rótulo; **"qual a composição da
+creatina?" → nenhum arquivo**. Envio real pelo WhatsApp testado no número da empresa (PNG pelo `sendMedia`,
+`message_id 3EB0A9CD68AEB0A4750104`).
+
+**Cinco produtos não têm tabela em lugar nenhum** (nem no tema, nem na mídia, nem em metafield): Creatina, Life
+Protein, Life Gummy, ImunoPet e ImunoFosfo Healing. Pedido para eles cai no comportamento certo — em teste,
+"manda a tabela do life protein" respondeu *"Não tenho um arquivo de rótulo do Life Protein para enviar, mas a
+tabela está aqui"* e seguiu em texto. Quando as imagens existirem, é só acrescentar a entrada em
+`nodes/serena-config-documentos.json` e gravar em `serena_config.documentos`.
+
+## Indicação parava a venda e não chegava em ninguém (09/10)
+
+Print do Jean Carlo (+55 93 99119-5295). Às 18:44 ele passou o número da irmã e pediu *"Poderiam entrar em
+contato?"*. A Serena respondeu *"Passei o número da sua irmã para a nossa equipe, e alguém vai entrar em
+contato com ela"* — e **parou de responder**. Quatro mensagens dele ficaram sem resposta, entre elas
+*"Vcs tem o imunofosfo com 42 cápsula?"* (18:48), *"Oi"* (19:00) e **"Sim vou querer os dois imunopet
+líquidos"** (19:13), com o pedido montado. Às 23:36 ele ainda se desculpou pela demora *dele*.
+
+Duas falhas na mesma frase:
+
+1. **A indicação virou `escalar_humano`.** O handoff pausa a Serena por 12h naquele contato
+   (`wpp_pausa_handoff_min`). Anotar um telefone não precisa de ninguém da equipe, mas custou o silêncio
+   justamente na conversa de quem estava fechando a compra.
+2. **Ninguém contatou a irmã.** 13 horas depois ela não existia no banco: a promessa não foi cumprida.
+
+### Correção 1: indicação não é handoff (adendo no prompt)
+
+Adendo de 09/10 em `serena_config.system_prompt` (texto em `nodes/serena-config-adendos-prompt.md`): passar o
+número de outra pessoa **não** é caso de `escalar_humano`. Ela confirma que anotou, diz que a pessoa vai
+receber uma mensagem nossa e **volta para o assunto do próprio cliente na mesma mensagem**. `escalar_humano`
+continua para reclamação, estorno, devolução, troca e fraude.
+
+Teste (09/10, sandbox) com a mesma frase do Jean mais o pedido: `handoff: false`, ferramenta `gerar_checkout`,
+e a resposta trouxe o link do pedido **e** o "anotei o número da sua irmã" na mesma mensagem.
+
+### Correção 2: a Serena mesma dá o primeiro oi (`[Serena] Indicacao: Primeiro Contato`, `r4jT86KAD5sJBQbI`)
+
+Cron de 10 min, fonte `indicacao-contato.workflow.js`:
+
+1. **SQL** acha mensagem de cliente com telefone de outra pessoa dentro e já descarta: número do próprio
+   cliente, contato sem telefone (exclui o Sandbox do laboratório), bloqueado, opt-out, quem já é contato
+   ativo nosso (mensagem nos últimos 60 dias) e quem já foi indicado nos últimos 90 dias.
+2. **Claude** confirma que é indicação **e** que o cliente pediu que falássemos com a pessoa, e extrai nome,
+   relação e motivo.
+3. **A Serena** manda a primeira mensagem em modo proativo, dizendo quem passou o contato, sem link e sem
+   preço. Só entre 9h e 19h BRT; fora disso espera a próxima rodada.
+
+Tudo fica em `serena_indicacoes`, inclusive o que foi **descartado e por quê**, e o resumo vai no Telegram.
+Kill switch: `serena_config indicacao_auto = off`.
+
+Duas coisas que o teste seco pegou antes de ligar:
+
+- `serena_tel_canon` **não acrescenta o DDI**: "65 99951 7586" virava 11 dígitos e o filtro de tamanho
+  (12–13) descartava toda indicação. Agora o SQL prefixa `55` quando vêm 10 ou 11 dígitos.
+- O contato do **Sandbox** (telefone nulo) entrava como indicação real — minha própria frase de teste teria
+  feito a Serena abordar a irmã do Jean. Resolvido exigindo telefone válido no indicador.
+
+Teste de precisão (09/10, 13 candidatos reais de 7 dias): o Claude aprovou **2** — a indicação verdadeira do
+Jean e a minha frase de sandbox. Reprovou os outros 11, todos código de rastreio, comprovante de PIX, número
+de pedido, QR de boleto e link de Mercado Livre. Com a trava do Sandbox, sobra 1 de 13. O contexto agora
+inclui até 15 min depois da mensagem, que é como o nome "Gisele Agostini" (mandado no minuto seguinte) entra
+na classificação.
+
+## Coletar depoimentos: o material já existe, só não era pedido (09/10)
+
+Levantamento antes de propor qualquer coisa:
+
+| | |
+| --- | --- |
+| Entregas em 90 dias | 1.328 |
+| Avaliações orgânicas no período | **42 → 3,2%** |
+| Base total de reviews | 42.389, das quais **42.331 importadas** (2023 a jun/2026) |
+| Orgânicas desde julho | 60 (55 site, 5 WhatsApp coletadas à mão) |
+| Fluxo automático pedindo avaliação | **nenhum** |
+
+E o achado que decidiu o desenho: em 180 dias **436 pessoas escreveram algo positivo** para a Serena; das que
+elogiaram **depois da entrega**, 59 pessoas, **nenhuma virou depoimento**. O texto já está escrito pelo próprio
+cliente e evapora no chat.
+
+**O público pede cuidado.** Puxando os "elogios" reais aparecem frases como *"minha mãe refez os exames e
+apresentou linfonodo com centro necrótico"*. Boa parte da base é oncológica: pedido genérico de avaliação cai
+na caixa de quem piorou na semana. A regra virou **nunca pedir no escuro — só a quem já disse que está bem**.
+
+### Como funciona
+
+**1. O pedido vai dentro da resposta que a Serena já ia mandar.** Adendo de 09/10 no `system_prompt`: quando o
+cliente conta um resultado bom espontaneamente, ela responde o que ele perguntou e fecha com *"Posso publicar
+seu relato no nosso site, com seu primeiro nome?"*. **Zero mensagem a mais** — não pesa no limite do número.
+
+O adendo proíbe pedir quando há piora, recaída, internação, efeito colateral ou falecimento; em reclamação,
+troca, devolução, estorno ou atraso; nos primeiros dias de uso; e quando o cliente foi só educado
+("obrigado") sem contar resultado. Uma vez a cada 90 dias por cliente. Nunca oferecer vantagem em troca, nunca
+pedir 5 estrelas, nunca repetir alegação de cura.
+
+Teste (09/10, sandbox), 4 frases: relato de disposição → pediu; "obrigada pelo atendimento" → não pediu;
+"minha mãe piorou, o tumor voltou" → não pediu (respondeu com acolhimento); "faz 3 dias que comecei" → não
+pediu.
+
+**2. `[Serena] Depoimento: Coletar` (`ez4iXCrm7DOvnNfr`), cron 30 min, fonte `depoimento-coletar.workflow.js`.**
+Só **lê** a conversa — não manda nada para cliente. Acha onde a Serena pediu ("posso publicar"), o Claude
+confirma o consentimento e extrai o relato **nas palavras do cliente**, e a linha entra em `reviews` com
+status `pendente`.
+
+Checado no banco: a `reviews-api` do tema serve apenas `aprovado`/`destaque` (6.652 servidas = exatamente os
+aprovados do handle, sem os 2 rejeitados), então **nada vai ao ar sem aprovação**. E a API já renderiza
+"Mailton S." a partir do nome completo — o formato primeiro nome + inicial sai de graça.
+
+`product_id` e `product_title` saem de outra review do mesmo handle, então a linha nasce completa. Fica uma
+nota no contato (chave `depoimento`) mesmo quando o cliente recusa, para não perguntar de novo. Kill switch:
+`depoimento_auto = off`.
+
+Teste da extração (09/10), 4 cenários: autorizou → texto dele, só com acentos corrigidos; recusou → nada;
+mudou de assunto → não conta como autorização; **"curou o câncer da minha mãe" + autorizou → entra como
+pendente e vai marcado `⚠️ fala em cura/tratamento` no aviso do Telegram**, para ninguém publicar no
+automático.
+
+### Sobre o volume de envio (risco de banimento)
+
+Medido nos últimos 14 dias: a Serena manda entre **180 e 440 mensagens/dia**, das quais 39 a 157 são
+proativas (transacional de pago/enviado/entregue, pós-entrega, reposição e carrinho). O item 1 **não soma
+nada** nisso, porque o pedido pega carona na resposta.
+
+Um eventual pedido ativo em D+28 somaria ~370 mensagens/mês (183 pessoas a cada 15 dias na janela de 25–40
+dias pós-entrega), ou seja ~12/dia — pouco em volume, mas é mensagem nova para quem não escreveu. Fica
+registrado como ideia, **não implementado**.
+
+## "No site tá esgotado" e a Serena dizia que tinha estoque (10/10)
+
+Print da Rosy (+55 77 99153-5477): ela avisou *"No site oficial tá como esgotado"* e a Serena respondeu
+*"conferi agora e o Life Protein aparece disponível, mas com poucas unidades em estoque"* e ofereceu gerar o
+link de pagamento. O site estava certo; a Serena, errada.
+
+**Causa.** A ferramenta `[Serena Tool] Consultar Produto` (`hdkG3Ewc9DL3OCiH`) lia o catálogo pelo REST
+`products.json` e usava direto:
+
+```js
+estoque: v.inventory_quantity,
+disponivel: v.inventory_quantity > 0,
+```
+
+O `inventory_quantity` do REST **soma todas as localizações**. A loja tem 10, e só duas atendem pedido do
+site (`fulfillsOnlineOrders = true`): **América Nutrition [CD]** e **Estados Unidos**. As outras são
+revendedoras — Nair, Adriana Bonin, Sônia Terezinha, Sônia Cintra, Cristina Matias, MIRIAM PURNHAGEN,
+Ass. Maracajuense — e ainda há o Mercado Livre Full, cujo estoque é do ML.
+
+No Life Protein: `totalInventory = 2`, **as 2 unidades na Nair**, CD zerado. Daí "disponível, poucas
+unidades". Não era caso isolado: vale para qualquer produto que sobre com revendedora.
+
+**Correção.** Nó novo `Estoque da Loja Online` entre `Filtrar e formatar` e `Erro Shopify?`
+(fonte `nodes/consultar-produto-estoque-online.js`). Ele consulta `inventoryLevels` por localização e
+recalcula somando **só a allowlist** (CD + Estados Unidos). Allowlist, não denylist: revendedora nova já
+nasce de fora. Produto sem controle de estoque (`tracked = false`) continua disponível. Se a consulta
+falhar, mantém o número antigo e marca `fonte_estoque: 'total_lojas'` para dar para ver no log.
+
+Teste depois do deploy: Life Protein → `estoque 0, disponivel false` (bate com o site). ImunoFosfo 90 → 463,
+60 → 100, 42 → 100, Vegano → 390, Diabetes → 238, USA → 1.402, todos com `fonte_estoque: 'loja_online'`.
+
+### Dois achados de passagem
+
+- **O 42 e o 60 voltaram.** Em 08/10 a Serena disse ao Jean que estavam sem estoque, e estava certa na hora;
+  hoje há 100 de cada no CD. O estoque entrou depois.
+- **A fila do "avise-me quando voltar" não avisou ninguém.** São 7 pessoas esperando o D3 50.000 desde
+  28/09, todas `pendente`, nenhuma com `avisado_em`. E o D3 tem o mesmo problema de localização: a Shopify
+  responde `availableForSale = true, inventoryQuantity = 5`, mas **os 5 estão na Nair** — para o site o
+  produto segue esgotado. Ou seja, o `aviso-estoque.workflow.js` precisa da mesma allowlist, senão no dia em
+  que uma revendedora receber estoque ele dispara "voltou!" para a fila inteira e manda todo mundo para uma
+  página esgotada. Nas 23 execuções recentes ele avisou 0, apesar de a Shopify responder "disponível" —
+  **não consegui determinar pelos dados de execução por que ele pulou**, e isso fica para investigar com
+  diagnóstico no nó. Enquanto isso ninguém recebeu mensagem errada.
+
+## Laudo em inglês: tradução de cortesia em PT-BR (10/10)
+
+Print da Rosangela (Telegram): ela recebeu o laudo toxicológico, que é emitido em inglês pela NuLab, e
+respondeu **"Não teve propósito se não entendo"**. A Serena contornou bem — explicou o conteúdo em uma
+frase e sugeriu que a médica ou alguém da família lesse com ela —, mas o documento em si continuou
+inacessível para quem não lê inglês. Boa parte da base é de pessoas mais velhas.
+
+**O que foi feito.** Tradução integral do laudo para o português, gerada do texto do PDF original
+(`NULAB-TX-IF-2026-289`, lote 8329US): resumo, declaração de cGMP, identificação da amostra, métodos
+analíticos (ICP-MS, GC-MS, HPLC, USP Micro), tabela de metais pesados, tabela microbiológica, declaração de
+perfil limpo e considerações regulatórias. Nenhum resultado foi alterado.
+
+**Como documento, não como substituto.** O PDF traduzido diz na capa, em destaque, e no rodapé de todas as
+páginas, que é **tradução livre feita pela America Nutrition para facilitar a leitura**, que o documento
+oficial é o original em inglês da NuLab e que o original prevalece em qualquer divergência. Isso importa:
+o próprio laudo determina que não pode ser reproduzido exceto na íntegra sem autorização escrita da NuLab,
+então o que publicamos é uma tradução identificada, não um laudo nosso com a cara do laboratório.
+
+Fonte do gerador em `assets/gerar-laudo-pt.py` (reportlab), para refazer quando mudar o lote. PDF em
+`AmericaNutrition/Laudo_Toxicologico_ImunoFosfo_PT.pdf` no Storage.
+
+**Cadastro.** Entrada `laudo_pt` em `serena_config.documentos` (27 entradas agora). O `quando` manda usá-la
+quando o cliente **já recebeu** o laudo e disse que não entende, que está em inglês, ou quando pede em
+português; e manda explicar em uma frase que é tradução e que o oficial continua sendo o original.
+
+Testes (10/10, sandbox): *"Esse laudo tá em inglês, não entendo nada"* → `laudo_pt`, com a frase sobre o
+documento oficial; *"tem o laudo em português?"* → `laudo_pt`; *"me manda o laudo toxicológico"* → `laudo`
+(o original em inglês, como antes).
+
+**Fica em aberto, é decisão sua:** hoje o padrão continua mandando o original em inglês, e a tradução só
+aparece quando o cliente reclama. Dá para inverter (traduzido primeiro para quem fala português, com o
+original oferecido em seguida) — é uma linha no `quando` de cada um.
+
+## Revendedora não é estoque do site nem disponibilidade pra vender (11/10)
+
+Ontem o conserto foi pontual, na `consultar_produto`. A regra que o Jaderson passou é geral: **"revendedora
+não pode ser considerado estoque no site nem disponibilidade pra vender"**. Varri o que lê estoque da
+Shopify e achei três lugares que ainda somavam tudo, mais um que já estava certo e um quarto que ninguém
+tinha mexido.
+
+**O que a Shopify devolve.** São 10 locations. Só três têm `fulfillsOnlineOrders = true`: `América
+Nutrition [CD]`, `Estados Unidos` e `Mercado Livre Full`. As sete de revendedora (Nair, Adriana Bonin,
+Sônia Terezinha, Sônia Cintra, Cristina Matias, MIRIAM PURNHAGEN, Ass. Maracajuense) estão em `false` — não
+despacham pedido do site. E `availableForSale`, `inventoryQuantity` e `totalInventory` da Admin API **somam
+todas as locations**: é daí que vinha o erro em todos os casos.
+
+A regra agora é uma só, em todo lugar: soma só location com `fulfillsOnlineOrders` e `isActive`, menos
+`Mercado Livre Full` (ver abaixo). Troquei também a allowlist por nome que eu tinha feito ontem na
+`consultar_produto` — usar o flag da própria Shopify significa que **revendedora nova entra de fora
+sozinha**, sem ninguém lembrar de editar código. `inventoryPolicy CONTINUE` e item sem controle de estoque
+continuam passando como disponíveis.
+
+| Onde | Antes | Agora |
+| --- | --- | --- |
+| `consultar_produto` (`hdkG3Ewc9DL3OCiH`) | allowlist por nome (10/10) | flag `fulfillsOnlineOrders` |
+| `/webhook/checar-estoque` (`Vj5dxntje6WrQUqn`) | já estava certo (01/10) | sem mudança, agora no repo |
+| `[Serena] Avise-me Quando Voltar` (`XfrzsyTwdMdhbwwZ`) | já estava certo (01/10) | + diagnóstico e alerta de fila parada |
+| Checkout Fluxo A, `Checar Estoque` (`DHeud8c0Qkb0EDwS`) | `availableForSale` | soma das locations online |
+| `[Serena Tool] Assinatura` (`WfxlFkDA9U9yYeR7`) | `inventory_quantity` do REST | soma das locations online |
+
+**O checkout era o pior.** O `ESTOQUE-GUARD` barrava o pedido só quando `availableForSale` era `false`. A
+D3 50.000 estava com `availableForSale: true` e 5 unidades — todas com a Nair, CD zerado. Ou seja: o site
+mostrava esgotado, mas um link de pagamento direto passava e a gente cobrava por algo que não tinha de onde
+sair. Agora o guard soma as locations online e, quando dá zero, devolve a mensagem de esgotado que já
+existia. Erro de consulta continua **fail-open**: nunca derruba venda real por bug nosso.
+
+**Na assinatura** a troca de item (`acao: 'trocar'`) aceitava colocar na recorrência um produto que só
+existia na mão de revendedora — e assinatura renova todo mês pela loja online. Testado no ar (caminho
+somente leitura, sem confirmado): D3 50.000 → *"está sem estoque agora"*; Life Protein → *"está sem estoque
+agora"*; ImunoFosfo Plus 180 (CD cheio) → proposta normal, R$ 537,30.
+
+**Por que ninguém da fila de "avise-me" foi avisado.** Não era bug. São 7 pessoas esperando a D3 50.000
+desde 28/09, e as 5 unidades que aparecem na Shopify entraram no estoque da Nair em 01/10 — o CD está
+zerado desde 28/09. O workflow já aplicava a regra certa e, por isso, calou. O problema era outro: **a fila
+estava invisível**. O resumo no Telegram só sai quando alguém é avisado ou registrado, então ninguém ficou
+sabendo que tinha gente esperando há 13 dias. Duas coisas foram adicionadas:
+
+- `estoque_fila` no output do node, com `qtd_online` e `disponivel` por variante. Da próxima vez a pergunta
+  *"por que ninguém foi avisado?"* se responde abrindo a execução, sem refazer a conta na mão.
+- Alerta de **fila parada**: 1x por dia, na rodada das 9h, quando tem gente esperando e ninguém foi avisado
+  — *"Fila de aviso de estoque parada: 7 pessoa(s) · D3 com K2, A e E - 50.000 UI: 7 pessoa(s) desde
+  28/09"*, com a nota de que o que está com revendedora não conta. Tópico 289, uma mensagem por dia.
+
+**Mercado Livre Full também não conta.** A location está com `fulfillsOnlineOrders = true` na Shopify, mas
+aquele estoque está no galpão do Mercado Livre e atende só venda do ML — o site não despacha de lá
+(Jaderson, 11/10). Como o flag da Shopify não distingue isso, essa location entra numa exceção explícita
+(`CANAIS_EXTERNOS = ['mercado livre']`, por nome normalizado) nos cinco pontos. Efeito medido no ar:
+ImunoFosfo 90 caps 502 → 463, Ômega 3 112 → 80, Green Propolis 107 → 100; nenhum produto virou "esgotado"
+por causa disso, porque os três também têm estoque no CD.
+
+Vale saber que **a vitrine da Shopify continua contando o ML Full** — ela usa o flag, não a nossa exceção.
+Hoje não aparece diferença (os três produtos têm estoque no CD), mas se um dia sobrar estoque só no ML Full
+o site vai aceitar a compra enquanto a Serena, o checkout e o `/webhook/checar-estoque` dizem esgotado.
+Para fechar isso de vez é desmarcar "atender pedidos online" naquela location no admin da Shopify — vale
+conferir antes com quem cuida da integração do ML, porque o flag também participa do roteamento de pedido.
+
+Arquivos: `nodes/consultar-produto-estoque-online.js`, `nodes/checar-estoque-tool.js`,
+`nodes/assinatura-tool.js`, `aviso-estoque.workflow.js`, `../checkout/nodes/fluxo-a-checar-estoque.js`.
+
+## A Serena não sabia que dia era hoje (12/10)
+
+Caso Lucia (+55 19 97101-3382, pedido AN-15833). No dia **11/10** ela escreveu: *"A previsão de entrega é
+11/10/2026, então ainda está dentro do prazo"* e *"se passar de 11/10 e não chegar, me chama"* — o prazo
+era aquele mesmo dia. E chamou de *"sem nenhuma ocorrência"* um objeto parado em Casa Branca/SP desde
+06/10, cinco dias antes.
+
+Não era alucinação: **a data de hoje não aparecia em nenhum lugar do prompt**. Nem na base de treinamento,
+nem no `system_prompt`, nem no cabeçalho de contexto do Cérebro. Sem isso o modelo chuta, e o histórico
+carregado (20 mensagens, de vários dias) só piora — ele reaproveita o prazo que valia numa mensagem antiga.
+
+Dois consertos, porque os dois problemas são independentes:
+
+**1. A data entra no prompt** (`core-carregar-contexto.sql`). A query que já carrega o `system_prompt`
+agora devolve, no fim dele: `HOJE E SEGUNDA-FEIRA, 12/10/2026 (horário de Brasília)`, mais a regra —
+toda conta de dias sai dessa data, nunca estimar, nunca reaproveitar prazo de mensagem antiga, não dizer
+"dentro do prazo" quando a previsão é hoje, reconhecer o atraso quando passou. Vale para todos os canais,
+porque todos passam pelo Core. Só a data, **sem a hora**: hora mudaria a cada minuto e derrubaria o cache
+de prompt de 1h. Assim o cache quebra uma vez por dia, na virada.
+
+**2. A ferramenta de rastreio faz a conta** (`status-pedido-resumir.js`, v4). Antes devolvia só datas
+absolutas e deixava a aritmética para o modelo. Agora devolve em palavras e em campos:
+
+| Campo | Exemplo |
+| --- | --- |
+| `previsao_situacao` | `era ontem, o prazo passou` · `e HOJE` · `faltam 3 dias` |
+| `dias_para_previsao` | `-1` |
+| `dias_sem_movimentacao` | `6` |
+| `atrasado` | `true` |
+
+O `atrasado` do motor de rastreio **não era confiável**: vinha `false` com a previsão de 11/10 vencida.
+Agora é recalculado aqui. O texto também ganhou o relativo: *"Previsão de entrega: 11/10/2026 (era ontem,
+o prazo passou)"*, *"⚠️ Sem nova movimentação há 6 dias"* e *"06/10, 16:33 (há 6 dias)"* em cada
+movimentação. E um `nota_serena` que proíbe na letra o que ela fez com a Lucia, e manda escalar quando o
+prazo passou.
+
+Testado no sandbox depois de subir: *"Que dia é hoje?"* → *"Hoje é segunda-feira, 12/10/2026"*;
+*"meu pedido AN-15833 ainda não chegou, quando chega?"* → *"A previsão de entrega era 11/10, e o prazo
+passou ontem. Também está há 6 dias sem nova movimentação. Já encaminhei o seu caso para a nossa equipe
+acionar a transportadora"*.
+
+## Encaminhou, ninguém respondeu, ela encaminhou de novo — e ficou muda (13/10)
+
+Caso Najla (+55 53 98137-7714), com PIX já em aberto e compra montada:
+
+| Hora | O que aconteceu |
+| --- | --- |
+| 16:58 | Cliente: *"Me passa com humano por favor"* → `escalar_humano` → **silêncio por 12h** |
+| 17:11 · 17:35 · 18:32 | *"Obrigada"*, *"Estou aguardando"*, *"Eu te chamei"*, *"Vc tinha sumido"* — ninguém da equipe respondeu |
+| 20:41 | A fila devolveu a conversa para a Serena (2h sem resposta). Ela pediu desculpa… **e encaminhou de novo** → silêncio por mais 12h |
+| 21:06 | *"Pode enviar outro por favor"*, *"Preciso pagar"* |
+| 21:07 | *"Eu quero o tratamento de choque mais o tratamento para 30 dias, ou seja 3 CAPS ao dia"* → **sem resposta** |
+
+A devolução de 01/10 funcionou como projetada; o que eu não previ foi que **a Serena re-encaminhar também
+re-aplica a mordaça de 12h**. O sticky do workflow dizia só *"se a Serena encaminhar de novo, a atribuição
+fica aberta"* — ficava aberta, e ela calada. Com o cooldown de 24h da devolução, a conversa não voltaria de
+novo até o dia seguinte. Uma cliente com o pedido pronto, dizendo *"preciso pagar"*, ficou sem ninguém.
+
+**Conserto 1, na trava (`core-salvar-conversa.sql`).** Quando o contato tem a nota `atendimento devolvido`
+dos últimos `handoff_sem_pausa_horas` (padrão 24h), um novo `escalar_humano` **registra na fila e alerta a
+equipe, mas não silencia a Serena de novo**. A exceção é `motivo_handoff = 'irritado'`: aí a pausa continua
+valendo, porque com cliente irritado calar é o certo. Testado nos dois ramos contra o banco: devolvido +
+handoff normal → `pausa_wpp: 0` e `fila: 1`; o mesmo contato com motivo irritado → `pausa_wpp: 1`.
+
+**Conserto 2, no prompt** (adendo *Conversa devolvida pela fila*). A nota `atendimento devolvido` já
+aparecia para ela no bloco de fatos do contato — ela só não sabia o que fazer com aquilo. Agora sabe: pede
+desculpa uma vez, resolve o que der, atende a venda, e só escala de novo por motivo **novo** (reclamação,
+estorno, devolução, troca, fraude).
+
+Teste no sandbox, reproduzindo o caso (contato com a nota, cliente pedindo para pagar): `handoff: false`,
+nenhuma pausa nova, e ela foi direto fechar a venda — *"Pra cobrir o choque (6 cápsulas por 7 dias = 42)
+mais 30 dias de manutenção (3 por dia = 90)… 1 ImunoFosfo 90 + 1 ImunoFosfo 42, R$ 524,00"*.
+
+**De quebra, um placeholder vazando.** No primeiro teste ela escreveu *"Peço desculpa pela demora, `{{}}`
+vou resolver"* — o contato de sandbox não tem nome e o modelo inventou um placeholder. Não há `{{` nenhum
+na base nem no prompt; era invenção dele. Adendo novo: sem nome no cabeçalho, escreve sem nome, nunca
+`{{nome}}`, `{{}}`, `[nome]` ou "cliente". Reteste: sem placeholder, e de quebra ela passou a oferecer as
+duas opções (2 frascos por R$ 524 **ou** o Plus 180 por R$ 597).
+
+## "Fase de Choque" virou "Fase de Reforço" (13/10)
+
+Decisão do Jaderson: o nome soava clínico e alarmante justamente para quem está fragilizado, e puxava a
+conversa para o campo de *protocolo de tratamento*, que é onde a gente evita pisar por causa de alegação de
+saúde. **A posologia não mudou em nada**: 6 cápsulas/dia por 7 dias, depois Manutenção com 3/dia.
+
+**O termo era vocabulário exclusivo da Serena.** Antes de mexer eu medi onde ele vivia:
+
+| Onde | Ocorrências |
+| --- | --- |
+| `base_treinamento` | 30 |
+| `system_prompt` | 9 |
+| Descrições de produto na Shopify · site · reviews | **0** |
+| Mensagens que a Serena já mandou | 3.732 |
+| Mensagens em que o **cliente** usou o termo | 97 |
+| Notas de fato nos contatos | 92 |
+
+Nada de embalagem, site ou copy de produto para refazer. O trabalho real era outro: 3.732 clientes já
+ouviram "fase de choque" da gente e 97 já repetem o termo. Então a troca **não podia ser apagar a palavra** —
+a Serena tinha que continuar entendendo o nome antigo e só parar de falar assim.
+
+**O que foi feito:**
+
+1. Troca nos dois prompts (39 ocorrências), por frase e com caixa preservada: `Fase de Choque` →
+   `Fase de Reforço`, `dose de choque` → `dose de reforço`, e o `Choque`/`choque` solto dos índices e
+   tabelas de protocolo (`Manutenção ou Reforço conforme gravidade`, `fase_protocolo: reforço / manutenção /
+   preventiva / kids`). Sobrou **zero** "choque" na base. No `system_prompt` sobrou exatamente 1, de
+   propósito: a frase que a Najla escreveu, citada no adendo do caso dela — citação de cliente não se reescreve.
+2. Adendo de **compreensão**: ela só fala "Fase de Reforço", mas continua entendendo "fase de choque",
+   "dose de choque", "fase de ataque" e "dose de ataque"; responde com a posologia de sempre, **não corrige
+   o cliente** e não comenta que o nome mudou. Se perguntarem direto se é a mesma coisa, responde que sim,
+   em uma frase.
+
+Testes no sandbox, depois de subir:
+
+| Cliente | Serena |
+| --- | --- |
+| *"Qual a dose de choque do ImunoFosfo?"* | *"A **Fase de Reforço** é de 6 cápsulas por dia durante 7 dias…"* |
+| *"Minha mãe tem metástase, qual o protocolo?"* | *"…sempre começar pela **Fase de Reforço**: 6 cápsulas por dia durante 7 dias…"* |
+| *"Fase de reforço é a mesma coisa que fase de choque?"* | *"Sim, é a mesma coisa 💙 A Fase de Reforço são 6 cápsulas…"* |
+| *"Meu filho tem 5 anos, faz a fase de choque nele também?"* | *"Pra crianças não tem Fase de Reforço. A dose é fixa e mais suave…"* |
+
+Nenhuma resposta usou "choque" ou "ataque".
+
+**Cuidado se um dia quiser voltar atrás:** a base já tinha 38 ocorrências de "reforço"/"reforçado" em outro
+sentido (notas de changelog do tipo *"Reforço forte na Regra crítica 4"*), e o `system_prompt` mais 3. Um
+rollback cego trocando `Reforço` → `Choque` corromperia essas. A volta tem que ser pelas frases listadas
+acima, nunca pela palavra solta.
+
+**Fica em aberto, é decisão sua:** se "Fase de Choque" estiver impresso no rótulo ou no cartão de posologia
+que vai na caixa, a troca tem prazo de estoque — não consigo conferir isso daqui. E a equipe fala "fase de
+choque" no WhatsApp e no telefone: se o nome mudar só na Serena, sai desencontrado.
+
+## Foto do cliente ligando as redes de arquivo (14/10)
+
+Apareceu num atendimento: a cliente mandou a **foto do boleto vencido** pedindo um novo, e a Serena anexou a
+**foto do frasco** junto com a resposta. O gatilho foi a descrição da própria imagem dela.
+
+**Como a Entrada grava mídia.** Quando chega foto ou PDF, o `entrada-descrever-imagem-pdf` chama o modelo e
+grava o texto do cliente assim:
+
+```
+[Cliente enviou uma imagem: <descrição escrita pelo nosso modelo>]
+Legenda do cliente: <o que a pessoa digitou junto, se digitou>
+```
+
+Essa descrição cita produto ("foto do rótulo do ImunoFosfo 90 cápsulas, com a tabela nutricional") e as duas
+redes de arquivo casam termos contra o texto do cliente. Resultado: **a descrição que nós mesmos escrevemos
+pedia o arquivo em nome do cliente.**
+
+Importante, porque eu tinha dito o contrário num primeiro momento: **na rede de fotos isso já estava
+coberto** desde 22/09 pela trava `ehMidiaRecebida`, que pega o formato real `[Cliente enviou ...]`. O que
+furou no meu teste foi o texto do teste, que eu escrevi como `[imagem enviada pela cliente: ...]` e não bate
+com a trava. Falso alarme meu. Mas a investigação achou dois furos de verdade:
+
+1. **A rede de documentos do Cérebro não tinha trava nenhuma.** Ela casa `gatilhos` contra `entrada.texto`
+   cru. Uma foto de rótulo, de laudo ou de receita era suficiente para a Serena mandar o rótulo ou o laudo
+   em PDF sem ninguém pedir.
+2. **A trava da rede de fotos era grossa demais:** descartava o turno inteiro quando havia mídia, então quem
+   mandasse uma foto **com legenda pedindo foto** ("tem foto do frasco de 90?") não recebia nada.
+
+**O conserto** mora no `core-montar-resposta.js`, o node pequeno, como já mora a rede de fotos ("mora aqui
+para nao mexer no node grande"):
+
+- `semMidia()` tira **só** o bloco `[Cliente enviou ...]` e o rótulo `Legenda do cliente:`, mantendo a
+  legenda — que é o cliente falando de verdade. Usado na rede de fotos e também no histórico que ela varre.
+- **Veto do arquivo do Cérebro**: quando houve mídia e o documento que o node grande escolheu não se
+  explica nem pela legenda nem pela resposta da Serena, o anexo não vai. O marcador explícito
+  `[[ARQUIVO: x]]` continua passando, porque o prompt exige uma frase de envio antes dele ("estou enviando",
+  "segue", "aqui está") e o veto aceita essas.
+
+| Cliente | Antes | Agora |
+| --- | --- | --- |
+| Foto do rótulo (sem legenda) | mandava o rótulo em PDF | nenhum arquivo |
+| Comprovante de PIX + "já paguei" | mandava a foto do frasco | nenhum arquivo |
+| Foto + legenda "tem foto do frasco de 90?" | **nenhum arquivo** (bloqueado demais) | `foto_imunofosfo_90` |
+
+Os três foram testados no sandbox depois de publicar, e deram exatamente isso.
+
+**Por que o veto em vez da correção na origem:** o certo seria tirar a descrição no `txtCli` da rede do
+Cérebro, mas esse node tem 50 KB e não há chave da API do n8n nesta sessão — atualizar significaria
+retranscrever 620 linhas à mão, no cérebro da operação. O veto faz o mesmo efeito de fora e é reversível.
+Quando houver uma chave da API do n8n, a troca de uma linha lá (`norm(semMidia(entrada.texto))`) deixa o
+veto redundante e ele pode sair.
+
+## Adicionar ao pedido: mais frascos sem frete novo e com o desconto do total (14/10)
+
+Regra nova do Jaderson: quem comprou um frasco e quer mais, **antes do pedido sair**, tem direito a não pagar
+frete de novo e a levar o desconto por volume da quantidade **total**, contando o que já comprou. Exemplo
+dele: comprou 1 ImunoFosfo 90 (cheio) e quer +2 — os 3 ativam os 5%, e como o primeiro foi pago cheio, os 5%
+do pedido inteiro saem na cobrança dos dois novos.
+
+**A conta, formalizada.** O invariante é: *o total pago nos dois momentos = valor cheio combinado menos a
+faixa*. As faixas são as mesmas do checkout do site (3 a 5 itens = 5%, 6+ = 10%).
+
+```
+desconto_devido    = faixa(itens_total) × (cheio_original + cheio_novos)
+desconto_a_aplicar = desconto_devido − desconto_já_concedido_no_pedido      (nunca negativo)
+credito_frete      = frete já pago, quando o combinado passa de R$ 250
+a_cobrar           = cheio_novos − desconto_a_aplicar − credito_frete
+```
+
+Seis cenários conferidos, todos fechando o invariante:
+
+| Caso | Faixa | A cobrar | Total dos dois |
+| --- | --- | --- | --- |
+| 1× 327 cheio, +2× 327 (exemplo do Jaderson) | 5% | R$ 604,95 | R$ 931,95 = 981 × 0,95 |
+| 2× 327, +1× 327 | 5% | R$ 277,95 | R$ 931,95 |
+| 5× 327 já com 5%, +1× 327 | 10% | R$ 212,55 | R$ 1.765,80 |
+| 1× 197 com frete R$ 30, +2× 327 (cruza os R$ 250) | 5% | R$ 581,45 | R$ 808,45 |
+| 1× 327 com cupom 10%, +2× 327 | 5% | R$ 637,65 | R$ 931,95 |
+| 1× 327, +1× 327 (só 2 itens) | — | R$ 327,00 | R$ 654,00 |
+
+Duas coisas que a fórmula resolve sozinha e vale notar:
+
+- **Cupom não some.** O clamp em zero garante que ninguém recebe menos do que já tinha: quem usou
+  IMUNOFOSFO (10%) e depois ativa a faixa de 5% fica com o maior dos dois sobre o total combinado, não com a
+  soma dos dois.
+- **O desconto efetivo do segundo pagamento pode passar de 10%** (na linha dos 5 frascos dá 35%), porque o
+  desconto do pedido inteiro cai numa cobrança pequena. No total está certo, mas destoa do teto de 10% que a
+  base impõe à Serena — fica registrado porque uma auditoria do relatório da Shopify vai estranhar.
+
+**A janela é curta.** Medi os últimos 60 pedidos em 14/10: **mediana de 19h até o envio**, 63% saem em 24h,
+88% em 48h. Ou seja, enquanto o cliente paga a diferença o pedido já estaria indo para a rua. Por isso a
+etapa de commit **segura o pedido** com `fulfillmentOrderHold` (trava de verdade no admin, com motivo
+visível, em vez de etiqueta que alguém precisa enxergar) e libera com `fulfillmentOrderReleaseHold`.
+
+**Arquitetura escolhida (decisão dele):** os itens entram **no próprio pedido**, via `orderEditBegin /
+orderEditAddVariant / orderEditAddLineItemDiscount / orderEditCommit`. Uma caixa, um rastreio, frete original
+intacto, nada para o CD juntar à mão. A alternativa (segundo pedido marcado para ir junto) foi descartada.
+
+### O que já está no ar
+
+`[Serena Tool] Adicionar ao Pedido` (n8n `Py5EArJafr069iTL`), POST `/webhook/serena-adicionar-pedido` com
+`acao=simular`: confere elegibilidade e faz a conta, **sem mexer em nada na loja**. Elegível é pedido pago,
+não cancelado, ainda não enviado (fulfillment order `OPEN`) e dentro de 72h; cada recusa volta com a frase
+pronta para a Serena falar. Pedido ainda **não pago** não entra nesse fluxo: a resposta manda refazer o
+pedido inteiro com tudo junto, que já sai com a faixa certa e um frete só — mais simples e sem remendo.
+
+Testado no ar: pedido já enviado → recusa explicando; pedido inexistente → pede o número; sem itens → pede o
+variant_id; e a conta rodada sobre o pedido real AN-16013 (2 itens, R$ 524) + 1 frasco → 3 itens, 5%,
+**a cobrar R$ 284,45**, total dos dois R$ 808,45 = 851 × 0,95.
+
+### O que falta
+
+A etapa `acao=confirmar`: hold no pedido, `orderEdit` acrescentando os itens com o abatimento, cobrança da
+diferença e liberação do hold no pagamento (ou reversão da edição e liberação, se não pagar na janela).
+**O ponto técnico aberto é a cobrança:** nosso PIX/boleto nasce de draft order, e draft pago vira um pedido
+novo — exatamente o que essa arquitetura evita. Para manter tudo num pedido só, a diferença tem que ser
+cobrada direto no Pagar.me e lançada como pagamento no pedido original.
+
+Não foi possível testar o caminho feliz ponta a ponta: **não existe nenhum pedido pago e não enviado na
+loja** no momento (a mediana de 19h cuida disso). O primeiro pedido novo serve de teste real.
+
+## Nota fiscal no pedido (14/10/2026)
+
+**Pedido do Jaderson:** quando o cliente pedir nota fiscal, o pedido dele na Shopify ganha uma tag. A Serena
+já passava o pedido de nota para a equipe, mas a equipe tinha de achar o pedido na mão. Agora é só filtrar
+os pedidos por **`NOTA FISCAL`** (mesmo estilo de `WPP`, `VENDA COMERCIAL`, `MERCADO LIVRE`).
+
+`[Serena] Nota Fiscal no Pedido` (n8n `48bwyfca3QCCojEy`, fonte `nota-fiscal-tag.workflow.js` e
+`nodes/nota-fiscal-marcar.js`), cron a cada 10 min. **Não mexe no Core**: lê as mensagens de cliente já
+gravadas em `serena_mensagens`, como o Avise-me Quando Voltar.
+
+- Detecta `nota fiscal`, `NF`, `NF-e`, `NFS-e`, `DANFE`, `cupom fiscal` e "nota da compra/do pedido/pra
+  reembolso/imposto/CNPJ". "Tirei nota 10" não conta.
+- A descrição que a Entrada escreve para foto/PDF não é o cliente falando (ela mesma costuma dizer "não é
+  nota fiscal"): só a legenda conta. Áudio transcrito conta. Números da equipe ficam de fora.
+- Pedido que recebe a tag: (1) o que o cliente citou (`AN-15902`, `#15902`); (2) senão, o mais recente dele,
+  não cancelado, dos últimos 30 dias; (3) senão — pediu nota **antes** de comprar, como "preciso de DANFE com
+  CNPJ" — fica `aguardando_pedido` e a tag vai no primeiro pedido que ele fizer nos 7 dias seguintes.
+- Erro de Shopify não perde o pedido de nota: fica `aguardando_pedido` e o ciclo seguinte tenta de novo.
+- Controle em `serena_nf_solicitacoes` (uma linha por mensagem: `marcado`, `aguardando_pedido`, `ignorado`,
+  `expirado`). Kill switch `serena_config nf_tag = off`; nome da tag em `nf_tag_nome`.
+
+Primeira rodada no ar: **AN-15902** (Odete, "É possível me mandar a nota fiscal do produto?") marcado e
+conferido na Shopify; a cliente do DANFE com CNPJ ficou aguardando o pedido do boleto; 3 descrições de
+foto ignoradas.
+
+```sql
+select criado_em, telefone, status, pedido, detalhe, left(texto, 80) from serena_nf_solicitacoes
+where status <> 'ignorado' order by id desc limit 30;
+```
+
+## Resposta automática do cliente não vira conversa (15/10/2026)
+
+**Caso Sheila (AN-16026), 14/10:** o WhatsApp Business dela respondeu sozinho à confirmação do pedido ("no
+momento não posso atender, assim que possível entrarei em contato"). A Serena ficou calada, o que está certo.
+Mas o silêncio parecia falha para dois mecanismos: a segunda tentativa da Entrada e o `[Serena WhatsApp]
+Reprocessar sem resposta` (`wXN30aD4YloMV2NN`, a cada 3 min), que mandam responder "a tudo o que ficou
+pendente". Às 18:57 ela escreveu para a cliente a própria justificativa: *"Essa mensagem é uma resposta
+automática de ausência, então não vou responder... Quando a Sheila escrever de verdade, eu retomo o
+atendimento."*
+
+Um detector e três travas:
+
+1. **Detector de resposta automática** (`ehAutoResposta`, igual na Entrada e no Reprocessar): exige as duas
+   pistas, "não estou disponível / não posso atender / estou ausente / deixe sua mensagem" **e** "retorno /
+   assim que possível / responderemos". Sai fora se tiver `?` ou palavra de compra (quero, link, pedido,
+   frasco, pix, boleto...), para nunca calar um pedido de verdade. Nos últimos 60 dias: pegou os 13 casos
+   claros de ausência e nenhuma mensagem de cliente real ("Agradeço o contato! Quero 2 frascos, me manda o
+   link?" passa).
+2. **Entrada** (`nodes/entrada-chamar-serena-core.js`): resposta automática não ganha segunda tentativa, e o
+   silêncio não é registrado como erro.
+3. **Reprocessar** (`nodes/reprocessar-responder-cada-um.js`): pula resposta automática (`motivo: resposta
+   automatica de ausencia`), sem gastar chamada do Claude.
+4. **Montar Resposta** (Core): última rede para qualquer caminho, inclusive a devolução da fila. Texto em que
+   a Serena fala da própria decisão de não responder ("resposta automática de ausência", "troca de mensagens
+   automáticas", "quando a X escrever de verdade") vira silêncio. Conferido sobre 54 mil respostas dos últimos
+   30 dias: só o caso Sheila bate.
+
+## Contato compartilhado vira número (15/10/2026)
+
+**Caso Rita, 15/10 10:27:** ela pediu para a gente orientar a irmã e mandou o **cartão de contato** do
+WhatsApp. A Triagem tratava `contactMessage` como mídia ilegível ("[O cliente enviou um contato que nao
+consigo abrir...]") e a Serena pediu o número em texto. Mas o cartão traz o número no vCard:
+
+```
+item1.TEL;waid=5511965970821:+55 11 96597-0821
+```
+
+Agora a Triagem (`nodes/entrada-triagem.js`) lê `contactMessage` e `contactsArrayMessage` (até 5 cartões),
+pega o `waid` (ou o número exibido; sem DDI vira +55) e entrega como texto:
+`[O cliente compartilhou um contato do WhatsApp: Máse, +55 11 96597-0821]`. O formato foi escolhido para o
+`[Serena] Indicacao` reconhecer sozinho (conferido com o regex dele: extrai `5511965970821`), então contato
+compartilhado entra no mesmo fluxo de indicação que número digitado. Cartão sem telefone continua no caminho antigo.
+
+## D3 50.000 UI de R$ 57 para R$ 77 (15/10/2026)
+
+O preço na Shopify já estava em R$ 77,00 (de R$ 97,00), mas o valor antigo continuava em vários lugares:
+
+| Onde | O que era | Feito |
+|---|---|---|
+| Página do produto (`snippets/d3-50000-lp.liquid`, tema principal) | "A partir de R$57", bloco "Monte o seu kit" com `UNIT=57.00` e R$ 57,00 fixos, barra fixa "a partir de R$ 57" | 5 pontos trocados para 77; o cliente via R$ 57 na página e pagava R$ 77 no checkout |
+| Base da Serena (`serena_config.base_treinamento`) | tabela de preços, ficha do Produto 17, tabela de VIDs | 3 pontos; o site da base (serena.americanutrition.com) não muda desde 03/09, então o banco é a fonte em uso |
+| Base do bot dos grupos (`base_conhecimento` ids 115 e 133) | tabela de preços e ficha do produto | trocado |
+| `catalogo_precos` e `produtos` | 57 | 77 (e compare 97); o sync diário das 7h já ia corrigir o primeiro |
+| Checkout Fluxo A (`DHeud8c0Qkb0EDwS`): catálogo de reserva do guard de preço em "Montar Payload Pagar.me" e "Roteador PIX (Inter?)" | 57 | 77 (só é usado se a tabela falhar) |
+| Bump pós-compra (`NhWfSiqEUPQ1Nf9S`) | catálogo padrão com D3 a 57 (oferecida a R$ 48,45 com 15%) | catálogo gravado pela ação `set_catalog`: D3 a R$ 65,45 (77 com 15%) |
+
+Conferido: página no ar sem nenhum R$ 57, e a Serena responde "R$ 77,00". As 3 assinaturas pausadas com a
+D3 continuam no valor antigo (decisão do Jaderson, ver a seção seguinte).
+
+## Preço travado na assinatura: aviso antes de cancelar (16/10/2026)
+
+Decisão do Jaderson: quando a loja aumenta o preço, quem já assina **continua pagando o valor antigo**. Se o
+assinante pedir para cancelar, a Serena avisa antes que ele perde esse valor.
+
+Fica na ferramenta de assinatura (`[Serena Tool] Assinatura`, `WfxlFkDA9U9yYeR7`, nó "Gerenciar",
+`nodes/assinatura-tool.js`). Quando chega `acao:'cancelar'` sem `confirmado`, ela compara o preço gravado em
+cada item da assinatura (`items[].price`) com o preço de hoje na Shopify. Se algum item subiu, a resposta
+traz `preco_travado` e uma instrução para a Serena:
+
+- o valor travado da assinatura por ciclo;
+- quanto custa se ele voltar a assinar depois (preço novo com o desconto de assinante);
+- quanto custa na compra avulsa;
+- a alternativa: **pausar** mantém o valor antigo garantido.
+
+Sem pressão: se o cliente insistir, a Serena repete a chamada com `confirmado=true` e cancela normalmente.
+Sem aumento, o fluxo é o de sempre (só a confirmação).
+
+Testado no webhook de produção, sem confirmar (nada muda no banco):
+
+| Assinante | Travado | Se voltar assinando | Avulso hoje |
+|---|---|---|---|
+| PATRICIA PAZ (1x D3 50.000 UI) | R$ 51,30 | R$ 69,30 | R$ 77,00 |
+| Fátima Castilho | R$ 120,60 | R$ 138,60 | R$ 154,00 |
+
+## Aviso de retirada nos Correios (`[Serena] Aviso de Retirada`, id m4RXocg2pK1nlvqC, cron 1h) — 26/10/2026
+- Pacotes dos Correios (`AA123456789BR`) com aviso `pedido_enviado` nos últimos 25 dias (e há mais de 20h) são
+  consultados no motor de rastreio, cada um no máximo a cada ~2h; entregues, devolvidos e extraviados saem da lista
+  (`serena_retirada_avisos.finalizado`). Até 60 por rodada.
+- Quando o motor devolve `rastreio.retirada`, entre 8h e 20h a Serena manda o endereço da agência, o link do Google
+  Maps, o que levar (código + documento com foto; autorização para terceiros) e o prazo. Lembrete 3 dias depois se
+  continuar lá, e só enquanto faltam mais de 6h para o prazo. Nota "retirada correios" e etiqueta `retirada-correios`
+  no contato, mensagem registrada em `serena_mensagens` (autor `proativo:retirada`), lista no Telegram (tópico 289).
+- Texto fixo (não passa pelo Core), para o endereço sair exatamente como os Correios mandaram.
+- `serena_config.retirada_aviso`: `off` | `simulacao` (nada é enviado; Telegram recebe a lista) | `on`.
+- O `[Serena] Rastreio Proativo` trata retirada como `exception` e fecha o acompanhamento dele, então os dois não
+  avisam o mesmo pacote.
+- 05/11/2026: "Objeto não entregue - ..." casava com `/entregue/` e encerrava o acompanhamento antes de o pacote ir
+  para a agência (caso AN-16310, AE089031284BR, sem aviso). Agora "não entregue" não encerra; só entregue, devolvido,
+  extraviado, cancelado ou "prazo de retirada encerrado". 10 pacotes encerrados por engano foram reabertos.
+
+## Tempo de ouvir o áudio (26/10/2026)
+Um áudio de 1:44 era respondido no mesmo minuto e o cliente brincou "caramba, já ouviu o áudio kkk". Agora o
+`Triagem` guarda a duração do áudio (`audioMessage.seconds`, como já fazia com vídeo) e o `Pode Responder?` estica a
+espera das "mensagens picadas" para ~85% da duração + 4s (teto 150s) quando a mensagem é áudio ou vídeo. Somando a
+transcrição e o Core, a resposta chega mais ou menos depois do tempo de ouvir a mensagem inteira (1:44 → espera de 92s).
+Nesses casos o ack rápido ("já estou verificando") não sai. Texto continua com `wpp_debounce_seg` (8s).
+Limite conhecido: se o cliente manda um áudio e logo depois um texto, quem responde é a execução do texto, com a espera
+normal de texto.
+
+## Limite de respostas por hora não some mais em silêncio (29/10/2026)
+
+**O caso:** o Pedro (+55 86 99400-7395) conversou com a Serena das 14h10 às 14h35, com 30 respostas em menos de uma
+hora. Às 14h39 ele pediu "monte o pedido de uma D3 com um ImunoFosfo Líquido", e depois mandou "pode ser", "oi" e
+"pode gerar". Nenhuma dessas mensagens foi respondida.
+
+**A causa:** o `Pode Responder?` da Entrada (`zeJ8nScEpt7TckFb`) corta quem passa de `wpp_max_por_hora`
+respostas na última hora, uma proteção contra robô e loop. O corte era um `return []` mudo: nada ficava gravado em
+`serena_mensagens`, então o `Reprocessar sem resposta` também não via essas mensagens, e ninguém era avisado. Em 30
+dias, 4 clientes bateram o limite.
+
+**O que mudou:**
+
+- `serena_config.wpp_max_por_hora`: **30 → 60**.
+- No limite, a Entrada avisa no Telegram pelo `/webhook/serena-alerta` (chave `limite_hora_<telefone>`, um aviso
+  por número por hora). O aviso traz nome, número e a mensagem, para alguém responder pelo Inbox.
+- O Pedro foi respondido à mão às 15h08 pelo Core: pedido de R$ 214, faltando R$ 36 para o frete grátis. As 3
+  mensagens que estavam presas no buffer foram marcadas como processadas.
+
+**Outro problema visto na mesma conversa, ainda não corrigido:** às 14h15 a Serena gerou um boleto, e às 14h29 disse
+"não achei nenhum pedido ou boleto". A consulta de pedido não enxerga o rascunho do boleto (`#D40xx`), que só vira
+AN-xxxxx depois do pagamento. Por isso ela não conseguiu trocar o pedido.
+
+## Prévia do link do ImunoFosfo Vegano (30/10/2026)
+
+No grupo ImunoFosfo Connect Oncológicas, a Lurdinha pediu o link do vegano. O Samuel mandou o link certo: o texto
+dizia "ImunoFosfo Vegano 90 cápsulas" e o checkout abria a variante vegana (`44436756267180`). Mas a prévia do
+WhatsApp mostrava a arte genérica, com o frasco normal (`og-checkout-imunofosfo.jpg`). O AN Links tem arte própria
+para o Liquid, mas não tinha para o vegano, e quem olha a imagem acha que o link é do normal.
+
+Correção:
+
+- **Arte nova:** `og-checkout-imunofosfo-vegano.jpg` (1200x630, no CDN em `imagens/og/`), com o frasco vegano e o
+  selo "100% vegan". A fonte é [`og/og-checkout-imunofosfo-vegano.html`](og/og-checkout-imunofosfo-vegano.html).
+- **Trigger no banco:** `anl_links_og_vegano`, em [`og/anl-links-og-vegano.sql`](og/anl-links-og-vegano.sql). Todo
+  link de checkout criado só com a variante vegana já nasce com essa arte, com o título "ImunoFosfo Vegano — Finalize
+  sua compra" e a descrição padrão. Vale para qualquer origem: Serena, robô dos grupos ou painel.
+- **Link da Lurdinha:** o link que ela recebeu (`Y2sGHA2`) também ganhou a arte nova. A prévia que já apareceu no
+  WhatsApp não muda, porque o WhatsApp guarda a imagem da mensagem enviada.
+
+## Convites para a comunidade (`[Serena] Comunidade: Convites`, id KIk22P8OgZSn6DpS, cron 30 min) — 02/11/2026
+
+Pedido do Jaderson: a Serena convida para os grupos quem conversa com ela e ainda não está em nenhum grupo.
+
+**Antes do robô (60 dias):**
+
+- 1.670 pessoas conversaram com a Serena.
+- 194 compradores e 1.319 não compradores estavam fora dos grupos. Dos não compradores, 574 mandaram 5 mensagens ou
+  mais.
+- O convite pós-compra antigo (`convites_grupo`) parou: 151 convites enviados de maio a setembro, e 1.255 expiraram
+  sem sair.
+
+**Como funciona.** O código fica em [`nodes/comunidade-convite.js`](nodes/comunidade-convite.js). O robô roda das 9h
+às 20h (BRT).
+
+1. **Candidatos.** Conversaram nas últimas 6h (há mais de 20 min) e a Serena respondeu por último. Ficam de fora quem
+   tem humano no comando, quem já está em algum grupo (por telefone e por LID, no `grupos_membros`), quem está
+   bloqueado, a equipe e quem já foi convidado. Quem a IA recusou só volta a ser avaliado depois de 14 dias.
+2. **Já comprou?** O robô pergunta à Shopify, pelo cliente com o telefone. A `clientes_tel` está parada desde 15/08.
+3. **A IA decide** (Haiku, pela conversa). Ela só convida em clima bom e escolhe o perfil:
+   - **comprador**;
+   - **engajado** (nunca comprou);
+   - **conteudo** (contou resultado ou a própria história).
+
+   Não convida em reclamação, troca, reembolso, problema de entrega ou pagamento, irritação, luto, spam, conversa
+   vazia, pedido para não receber mensagens, ou quando a Serena ainda espera uma resposta.
+4. **Grupo.** O **mais cheio que ainda tem vaga**, contando o snapshot do dia mais os convites dos últimos 7 dias
+   sem entrada, até 1.000 membros (o WhatsApp para em 1.024). A ordem foi pedido do Jaderson (02/11): enche primeiro
+   os grupos maiores e, cheios, passa para os seguintes. Os grupos gerais, do maior para o menor em 02/11, são #1
+   (981), Connect Oncológicas (656), #2 (585), Fosfoetanolamina #2 (234) e #3 (134). Quem tem interesse em diabetes
+   vai para os 2 grupos de diabetes, também do maior para o menor.
+5. **Envio.** Texto fixo por perfil, com o link de convite do grupo (Evolution `group/inviteCode`), enviado pelo
+   Samuel. Fica registrado em `serena_mensagens` (autor `proativo:comunidade`) e em `serena_comunidade_convites`. O
+   resumo vai para o Telegram (tópico 289).
+
+Quando a pessoa aparece no `grupos_membros` depois do convite, o convite ganha `entrou_em`.
+
+**Config (`serena_config`):**
+
+| Chave | Valores |
+|---|---|
+| `comunidade_convite` | `off`, `simulacao` ou `on` |
+| `comunidade_convite_dia` | Convites por dia (`20`) |
+
+**Manual:** `GET /webhook/comunidade-convite?t=<TOKEN>&modo=simulacao|on`.
+
+**Facebook (07/11/2026).** Pedido do Jaderson: convidar também para o grupo do Facebook
+(`facebook.com/groups/fosfoetanolamina`), porque os grupos do WhatsApp lotam.
+
+- Todo convite do WhatsApp leva o Facebook como segunda opção ("Se preferir o Facebook, a comunidade também está lá").
+- Quando todos os grupos do WhatsApp estão cheios, o convite vai só para o Facebook (`grupo_jid = 'facebook'`), em vez de
+  pular a pessoa como antes (`sem_vaga`).
+- Na conversa, a Serena oferece o Facebook quando pedem para entrar na comunidade ou dizem que o grupo do WhatsApp está
+  cheio (adendo de 07/11).
+- Em 07/11 o #1 estava no limite (986 membros + 16 convites pendentes); os outros grupos ainda tinham vaga.
+
+**Limite da Comunidade (07/11/2026).** Grupos dentro de uma Comunidade do WhatsApp dividem o limite de **2.000 membros
+da comunidade** (soma de todos os grupos + Avisos), além dos 1.024 de cada grupo. A comunidade "🔵Fosfoetanolamina
+(ImunoFosfo)" (#1, #2, Connect, Depoimentos, USA) estava com 1.992 no grupo de Avisos: lotada. Os 71 convites dos
+últimos 7 dias para o Connect não tiveram nenhuma entrada.
+
+- O robô agora calcula o total de cada comunidade (o maior grupo dela no `grupos_snapshot`, que é o de Avisos) mais os
+  convites pendentes e pula o grupo cuja comunidade passou de 1.990 (`LIMITE_COMUNIDADE`).
+- Saíram da lista os grupos de **Avisos** da comunidade #2 ("🔵 Fosfoetanolamina (ImunoFosfo) #2") e da Diabetes
+  ("ImunoFosfo Diabetes - Comunidade Oficial"): neles só admin escreve, e quem entra não conversa com ninguém.
+- Em 07/11: comunidade ImunoFosfo 1.992 (lotada), ImunoFosfo #2 232 (convites vão para o #3), Diabetes 50 (convites
+  vão para o #1 ImunoFosfo Diabetes). Com tudo lotado, o convite vai para o Facebook.
+
+**Volta só com o #1, o #2 e o Facebook (24/11/2026).** Os convites estavam `off` desde 21/11 (aviso de restrição do
+número). Pedido do Jaderson: voltar, mas só em conversa já ativa e só para o #1 ImunoFosfo, com o Facebook junto.
+
+- **Só conversa ativa:** é a regra de sempre. A pessoa falou nas últimas 6h (há mais de 20 min) e a Serena respondeu
+  por último. Nunca é disparo frio, e o teto continua em 10 por dia (`comunidade_convite_dia`).
+- **#2 virou grupo solto:** o Jaderson tirou o #2 ImunoFosfo (`120363307265095030@g.us`) da comunidade. Fora de
+  comunidade, o WhatsApp deixa 1.500 membros: o limite dele é 1.480 (`SOLTOS`) e não conta o teto de 2.000 da comunidade.
+- **Ordem:** o primeiro da lista com vaga, não mais o mais cheio. Vai para o #1 enquanto a comunidade dele tiver vaga,
+  depois para o #2, e só com os dois cheios sai o convite apenas com o Facebook.
+- **Facebook:** todo convite do WhatsApp leva o grupo do Facebook como segunda opção.
+- **Fora da lista:** #3, Connect e #1 Diabetes ficam comentados no código. Interesse em diabetes cai no #1 ou no #2.
+- **Comunidade do #1 lotada:** estava com 1.993 de 2.000 em 23/11, então hoje os convites caem no #2.
+- **Simulação:** 10 candidatos; a IA convidou 8, todos para o #2, e recusou 2 porque a Serena ainda esperava resposta.
+  As linhas simuladas foram apagadas e depois `comunidade_convite` ficou `on`.
+
+**Primeira simulação (02/11):** de 8 candidatos, a IA convidou 6 (5 compradores e 1 engajado) e recusou 2:
+
+- um porque a Serena ainda esperava resposta sobre uma promoção;
+- um porque a pessoa estava irritada e pediu para não receber mensagens.
+
+## Pesquisa de satisfação e relatório semanal (02/11/2026)
+
+Pedido do Jaderson (itens 5 e 6 da lista de melhorias).
+
+### Pesquisa de satisfação
+
+Workflow `[Serena] Pesquisa de Satisfacao` (`TyoNLLLgAoGVtd89`), cron a cada 30 min entre 9h e 20h BRT. Código em
+[`nodes/satisfacao-pesquisa.js`](nodes/satisfacao-pesquisa.js) e tabela em [`nodes/satisfacao.sql`](nodes/satisfacao.sql).
+
+**Quem recebe.** Conversa de hoje que atende a todas estas condições:
+
+- pelo menos 3 mensagens do cliente;
+- a última fala é da Serena na conversa (não de robô) e tem mais de 2 h;
+- sem link de pagamento em aberto;
+- sem fila humana, pausa, bloqueio ou IA pausada;
+- sem outra mensagem proativa nas últimas 12 h;
+- sem pesquisa nos últimos 30 dias.
+
+Uma IA (Haiku) lê a conversa e só manda quando ela terminou sem pendência. Não manda se:
+
+- a Serena fez uma pergunta que o cliente ainda não respondeu;
+- há pagamento esperando;
+- há problema em aberto;
+- o cliente está irritado;
+- a conversa fala de morte ou internação.
+
+Ter câncer não impede a pesquisa, porque quase todo cliente está nessa situação. Teste com as conversas de 01/11: das 9
+que passaram pelo filtro, só 1 receberia. As outras ainda esperavam resposta ou pagamento.
+
+**Texto.** "Oi, Nome! Posso te pedir um favor rápido? 💙 De 1 a 5, como foi o seu atendimento comigo hoje? É só
+responder com o número (5 é ótimo)."
+
+**A resposta** é tratada na Entrada, no nó `Chamar Serena Core`
+([`nodes/entrada-chamar-serena-core.js`](nodes/entrada-chamar-serena-core.js)). Se a última fala da Serena foi a pesquisa
+e o cliente manda uma nota, a nota vai para `serena_satisfacao` e a resposta sai sem passar pelo Core. Vale número,
+estrelas ou o número por extenso sozinho.
+
+- **Nota 4 ou 5:** a Serena agradece.
+- **Nota até 3:** a Serena pergunta o que faltou e avisa no Telegram (tópico 289). O comentário seguinte também é
+  gravado e avisado.
+
+**Config:**
+
+- `satisfacao` = `off`, `simulacao` ou `on`. Ligado (`on`) em 02/11/2026, a pedido do Jaderson.
+- `satisfacao_dia` = 15 (teto diário).
+
+**Rodar na mão:** `GET /webhook/serena-satisfacao?t=<SATISFACAO_TOKEN_MANUAL>&modo=simulacao`.
+
+### Relatório semanal no Telegram
+
+Workflow `[Serena] Relatorio Semanal (Telegram)` (`2wmi3lzWKE9lIoxf`). Código em
+[`nodes/relatorio-semanal.js`](nodes/relatorio-semanal.js). Roda toda segunda às 8h41 BRT, fechando a semana de segunda a
+domingo, e vai para o tópico 289. Cada número vem comparado com a semana anterior.
+
+O relatório traz:
+
+- conversas e mensagens dos clientes;
+- links de pagamento e quantos foram abertos por gente;
+- pedidos e receita do WhatsApp (tags `WPP` e `AF: Serena`);
+- conversão de link em pedido e a fatia da receita da loja;
+- follow-ups de link enviados e handoffs para a equipe;
+- satisfação (respostas, média, comentários de nota baixa) e a auditoria diária;
+- lacunas novas e abertas, com o link da proposta da base que espera aprovação;
+- as 3 piores conversas (nota baixa na pesquisa ou na auditoria), com o link do WhatsApp.
+
+**Config:** `relatorio_semanal` = `on`. **Rodar na mão:** `GET /webhook/serena-relatorio-semanal?t=<RELATORIO_TOKEN_MANUAL>`.
+Com `&enviar=0`, só mostra o texto, sem mandar ao Telegram.
+
+**Primeiro envio, semana de 26/10 a 01/11:**
+
+| Indicador | Valor |
+|---|---|
+| Conversas | 271 |
+| Links de pagamento | 84, 63% abertos |
+| Pedidos do WhatsApp | 34 (R$ 13.106,53), contra 52 na semana anterior |
+| Conversão de link em pedido | 40% |
+| Fatia da receita da loja | 27% |
+| Lacunas novas | 63 |
+
+A queda dos pedidos do WhatsApp acompanha a queda da recuperação de carrinho, sem sinal de falha nas tags: "link:
+carrinho" caiu de 15 para 3 e "link: recusa" de 8 para 0.
+
+**Relatório diário de vendas.** "Links abertos" passou a contar só clique de gente (`anl_click_humano`).
+
+**Página da D3 50.000 UI (02/11/2026).** A descrição na Shopify dizia "Produto de uso diário" e "pensada para a rotina
+diária", mas a dose é 1 cápsula por semana. Agora diz "Uso semanal: 1 cápsula por semana" e "pensada para a sua rotina".
+
+**Outubro Rosa saiu do site (03/11/2026).** Pedido do Jaderson. Tudo pode ser revertido:
+
+- **Faixa da home** (seção `an-outubro-rosa`): foi desativada no `templates/index.json` do tema principal
+  (`155877212332`), com `"disabled": true`. Ela já ficava vazia fora de outubro, mas continuava no tema. Para voltar no
+  próximo outubro, basta tirar o `disabled`.
+- **Artigo do blog** "Outubro Rosa: autocuidado, alimentação e hábitos…" (`outubro-rosa-autocuidado`): foi
+  despublicado, não apagado. Ele aparecia no bloco de artigos da home.
+- **Endereço antigo do artigo:** redireciona (301) para o blog, para o link antigo não dar erro.
+
+**Gerar PIX: desconto em reais (03/11/2026).** A ferramenta `[Serena Tool] Gerar PIX` (`SkETGTmcqtlTR0Lp`) aceita
+`desconto_valor` (R$), que vira `appliedDiscount` `FIXED_AMOUNT` e vale no lugar do `desconto_pct`. A Shopify só aceita
+porcentagem com 2 casas, então um preço especial como 2x R$ 327 a R$ 200 cada (R$ 254 de desconto) saía R$ 399,99 com
+38,84%. A Serena não usa esse campo: é para pedido feito na mão, pela equipe.
+
+Ponto pendente: com `desconto_valor` e `cupom`, o aviso do Telegram e a nota interna ainda dizem "cupom sem porcentagem,
+não aplicado", mas o valor sai certo.
+
+
+**Gerar PIX pelo Banco Inter (03/11/2026).** Pedido do Jaderson: todo PIX sai pelo Banco Inter, como o checkout novo.
+Antes a ferramenta `[Serena Tool] Gerar PIX` (`SkETGTmcqtlTR0Lp`) criava um rascunho na Shopify e cobrava pelo Pagar.me
+(Stone), com validade de 30 minutos.
+
+- **Novo nó `Criar PIX Inter`** (`nodes/gerar-pix-criar-inter.js`), entre o `Dados validos?` e o caminho antigo:
+  - pede o PIX ao `/webhook/checkout-criar-pedido`, o mesmo do checkout (`pix_provider=inter`);
+  - usa o preço cheio do `catalogo_precos` e rateia o desconto (`desconto_pct` ou `desconto_valor`) nos itens, como a
+    Venda Manual faz;
+  - manda `ref` `serena`, `serena-ig` ou `serena-msg` conforme o canal (o pedido sai com as tags `AF: Serena` + `WPP`,
+    `SERENA-IG` ou `SERENA-MSG`) e a tag extra `origem:serena` (mais `cupom:X` quando houver);
+  - a saída tem o formato do `Extrair PIX` e segue para `PIX ok?` e `Formatar resposta`.
+- **Não existe mais rascunho.** O pedido nasce pago na Shopify quando o PIX cai, pela Confirmação Pago de sempre
+  (webhook do Inter, mais a consulta periódica do provedor Inter).
+- **O PIX vale 24 horas** (`checkout_config.inter_pix_expiracao_seg`). O `Formatar resposta` mostra "pague até DD/MM às
+  HH:MM" e só cita minutos quando o prazo é de até 90 minutos. Os textos do `system_prompt` e da `base_treinamento`
+  foram trocados (ver `nodes/serena-config-adendos-prompt.md`).
+- **Página do Pix** (`pagina-pix.workflow.js`, `Checar Pagamento`): link com `pagarme_order_id` `inter_…` consulta o
+  `/webhook/pix-inter-status`, que também dispara a confirmação se o PIX caiu e o pedido ainda não nasceu.
+- **Voltar ao caminho antigo:** `serena_config.serena_pix_provider = 'pagarme'` (o padrão, sem a chave, é `inter`). O IF
+  `Caminho antigo?` manda para o `Montar draft`. O nó também volta sozinho para o caminho antigo se o catálogo estiver
+  fora do ar ou o produto não estiver no catálogo.
+
+Teste em 03/11 (dados internos, telefone da equipe, sem pagamento): 1x ImunoFosfo 42 com 10% e frete saiu R$ 188,96
+(R$ 177,30 + R$ 11,66). O código veio do `spi-qrcode.bancointer.com.br`, e a página e o `pix-status` responderam
+corretamente.
+
+## Cliente só com LID (nome de usuário no WhatsApp) — 09/11/2026
+
+**Problema.** Quem usa nome de usuário no WhatsApp (ex.: @josehonorato, 09/11 11h59) pode mandar mensagem com o número escondido: chega só `remoteJid = <LID>@lid`, sem `remoteJidAlt` ou `senderPn`.
+- Quando o LID não estava em `wa_identidades`, o buffer exigia telefone e descartava a mensagem sem aviso. A Serena não respondia e o watchdog também não via.
+
+**Como ficou.** Quem chega só com LID vira a identidade **`000` + LID**. Nenhum telefone real começa com 0, então o prefixo é seguro, e ele passa intacto pelos nós que só mantêm dígitos.
+
+| Onde | O que faz |
+|---|---|
+| Entrada `Registrar no Buffer + Config` | telefone = o informado; senão o de `wa_identidades` pelo LID; senão `000` + LID |
+| Entrada `Registrar Intervencao Humana` | mesma resolução: quem responde à mão um cliente só com LID pausa a Serena para ele |
+| Entrada `Triagem` | mensagem nossa (do celular) para conversa só com LID também vira intervenção humana |
+| Entrada `Fatiar Resposta` | `000<LID>` vira `number = <LID>@lid` |
+| Entrada `Enviar Arquivo` | para LID manda só o link; o `[Serena] Enviar Arquivo` reduziria o número a dígitos |
+| `[Serena WhatsApp] Envio Samuel` (`serena-samuel-enviar`), nó Preparar | aceita `<LID>@lid` ou `000<LID>` e manda para `<LID>@lid`; vale para ack, áudio, lista, transacionais e reprocessamento |
+| `[Serena] Core`, nó Normalizar | número que começa com `000` não ganha o `55` (contato `+000<LID>`) |
+
+A Evolution 2.3.7 aceita enviar para `<LID>@lid`; testado com um número da equipe.
+
+Se o mesmo LID aparecer depois com o número real, o `wa_identidades` aprende e as próximas mensagens vão pelo telefone. O histórico anterior fica no contato `+000<LID>`.
+
+**Teste de 09/11.** Dois LIDs fictícios entraram pelo `/webhook/serena-wpp-in`: buffer `000…`, Serena respondeu, envio para `…@lid`, mensagem marcada como entregue e contato gravado `+000…`. Os registros de teste foram apagados depois.
+
+## Telegram: cliente de revenda ficou 3 dias sem resposta (10/11/2026)
+
+Print do Jaderson: o José B. (Telegram, pela conta da America Nutrition, `tg-1509991482`) perguntou em 07/11 às
+22:26 como revender para os clientes dele. A Serena passou a tabela de atacado e encaminhou para a Cris
+(`escalar_humano`, regra do adendo de 02/11). A conversa ficou pausada e ninguém assumiu. Ele escreveu mais 9
+vezes até 09/11 13:44, perguntando se podia vender na página dele, pedindo orçamento com desconto e falando de
+rosácea e de um paciente. Nenhuma dessas mensagens apareceu em lugar nenhum.
+
+**Por que sumiam.** Com a conversa pausada, o Core devolve `{pausada: true}` sem gravar nada, e o node
+`Tratar Mensagem` só retornava `acao: 'pausada'`. No WhatsApp a Entrada grava a fala antes; no Telegram não
+havia isso. Sem a fala no histórico, nem o Inbox nem o `[Serena] Fila Humana Parada` viam que ele estava
+esperando.
+
+**O que mudou:**
+- Node novo `Gravar fala durante pausa` (Postgres, sem chave no código; `nodes/telegram-gravar-fala-pausa.js`)
+  na saída do `Tratar Mensagem`: quando a saída é `pausada`, grava a fala do cliente em `serena_mensagens`.
+  Testado com um contato temporário (texto com aspas e vírgula gravou certo); contato e mensagem de teste apagados.
+- Adendo em `serena_config.system_prompt` (texto em `nodes/serena-config-adendos-prompt.md`): revenda e
+  parceria a Serena atende ela mesma. Ela apresenta os dois caminhos, **parceiro de indicação com 20% de
+  comissão** (link e cupom próprios, sem estoque) e **revendedor** (atacado da linha ImunoFosfo: 10 un 20%,
+  15 un 25%, 20+ 30%). Para o afiliado, coleta os dados (nome, e-mail, telefone, PIX, página) e só então
+  passa para a equipe. Para o revendedor, monta o pedido. Só escala o que precisa de pessoa: cadastro do
+  link, fechamento do pagamento e pedido fora da tabela.
+- José: as 9 mensagens do print foram gravadas no histórico, a conversa despausada, a atribuição fechada,
+  a nota `atendimento devolvido` registrada (24h sem nova pausa se ela encaminhar de novo), e a Serena
+  mandou em 10/11 10:17 o pedido de desculpa com os dois caminhos de parceria (entregue pela conta da
+  America Nutrition).
+
+**Fica de fora:** a devolução automática do `[Serena] Fila Humana Parada` só cobre WhatsApp (envia pelo
+`serena-samuel-enviar`). No Telegram, o encaminhamento parado agora aparece no alerta do tópico 289, mas
+não volta sozinho para a Serena.
