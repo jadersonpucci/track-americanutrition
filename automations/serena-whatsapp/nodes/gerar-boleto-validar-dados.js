@@ -103,7 +103,10 @@ let freteTitulo = ((body.frete_titulo || body.transportadora || '').toString().t
 let freteOrigem = freteValor > 0 ? 'informado' : '';
 let fretePrazo = '';
 let subtotalCotado = null;
-const freteGratisPedido = /^(1|true|sim|gratis|grátis)$/i.test(String(body.frete_gratis == null ? '' : body.frete_gratis).trim());
+// 26/11/2026, pedido do Jaderson: na Black NAO tem frete gratis. De 26/11 20h ate 30/11 23h59 (Brasilia) o frete_gratis
+// pedido pela Serena e ignorado e o frete e cotado normalmente (o calcular-frete tambem devolve elegivel=false). Volta sozinho depois.
+const BLACK_SEM_FRETE_GRATIS = Date.now() >= Date.parse('2026-11-26T20:00:00-03:00') && Date.now() <= Date.parse('2026-11-30T23:59:59-03:00');
+const freteGratisPedido = !BLACK_SEM_FRETE_GRATIS && /^(1|true|sim|gratis|grátis)$/i.test(String(body.frete_gratis == null ? '' : body.frete_gratis).trim());
 if (freteValor > 0 && !freteTitulo) freteTitulo = 'Frete';
 if (freteValor <= 0) {
   const itensStr = itens.map(i => i.variant_id + ':' + i.quantity).join(',');

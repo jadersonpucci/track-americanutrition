@@ -77,3 +77,20 @@ Aprovado pelo Jaderson em 26/11.
 
 As artes estão na Shopify (Conteúdo → Arquivos). Os posts levam a imagem em base64, baixada da Shopify por um fluxo
 temporário do n8n, já arquivado.
+
+## Sem frete grátis na Black (26/11/2026)
+
+Pedido do Jaderson: na Black não tem frete grátis. De 26/11 20h a 30/11 23h59 (Brasília) a regra "frete grátis acima de
+R$ 250" fica desligada e volta sozinha depois (cada nó confere a data):
+
+| Onde | Workflow | Nó | O que muda na janela |
+|---|---|---|---|
+| Checkout (e Serena, que usa a mesma cotação) | `lszlpy1Pl4dnHW2w` | `Sem J&T (23/11)` ([`cotacao-sem-jt.js`](../frete/cotacao-sem-jt.js)) | tira a opção "Frete Grátis" e devolve `free_shipping: false` |
+| Serena · calcular_frete | `D1l2l3IUrk4Lf9O1` | `Calcular peso e subtotal` | `elegivel_frete_gratis: false`, `falta_frete_gratis: 0` (a mensagem não fala de frete grátis) |
+| Serena · gerar_pix | `SkETGTmcqtlTR0Lp` | `Validar dados` | ignora `frete_gratis=true` e cota o frete |
+| Serena · gerar_boleto | `gBgvM4y3bYzbnrE5` | `Validar dados` | idem |
+| Serena · prompt | `serena_config.system_prompt` | adendo da Black | linha nova: não tem frete grátis, não prometer |
+
+Ficou de fora: o link da Stripe (`UB5FxiyKs4r4GWnL`) continua com frete grátis acima de R$ 250. Ele só sai por pedido no
+chat; na Black, criar o link com frete. E o tema da loja (barra de avisos, barra do carrinho, selo e caixa de compra da
+página de produto falam "frete grátis acima de R$ 250"), que precisa ser ajustado no tema da Black antes de publicar.
