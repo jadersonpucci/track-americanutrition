@@ -3218,3 +3218,26 @@ esperando.
 **Fica de fora:** a devolução automática do `[Serena] Fila Humana Parada` só cobre WhatsApp (envia pelo
 `serena-samuel-enviar`). No Telegram, o encaminhamento parado agora aparece no alerta do tópico 289, mas
 não volta sozinho para a Serena.
+
+### Mensagens automáticas da Serena passam a ler o cache (26/11/2026)
+
+Na noite de 25/11, às 22h52, o crédito da API acabou e a Serena parou de responder. O robô `Reprocessar sem
+resposta` voltou a atender sozinho quando o crédito foi recarregado. Olhando o consumo:
+
+- **Conversa normal:** cada chamada manda cerca de 178 mil tokens de base, entre a base de treinamento e os
+  adendos. Com o cache de 1 hora, esse trecho é lido do cache e a chamada sai por uns US$ 0,035.
+- **Mensagem automática:** o modo proativo do Core (carrinho, retomada, lembretes, follow-ups) chamava o modelo
+  **sem `tools`**. As ferramentas entram antes do `system` no prefixo do cache, então essas chamadas não
+  aproveitavam o cache da conversa e **regravavam os 177 mil tokens**, cerca de US$ 0,71 cada. Exemplo:
+  recuperação de carrinho das 22h50 de 25/11, com `cache_creation_input_tokens: 177290`.
+
+**Correção:** no passthrough (`nodes/passthrough-preparar-req.js`), uma chamada com a base da Serena e sem `tools`
+recebe as mesmas ferramentas da conversa, com `tool_choice: none`. Assim o modelo continua sem chamar
+ferramenta. Não mexi no Core, que tem a chave do Supabase no código.
+
+Teste com a base real: uma chamada no formato de conversa gravou o cache (estava frio depois da parada). A chamada
+seguinte, no formato proativo, leu tudo: `cache_read_input_tokens: 178036`, `cache_creation: 0`.
+
+Se o Core mudar a definição da ferramenta `consultar_sistema`, a cópia no passthrough precisa ser atualizada.
+Se não for, nada quebra: só volta o custo antigo. O modo `sugerir` do Inbox usa outra lista de ações e continua
+fora do cache.
