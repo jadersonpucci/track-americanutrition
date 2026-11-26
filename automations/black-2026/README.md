@@ -69,11 +69,11 @@ Aprovado pelo Jaderson em 26/11.
 | id | Quando | Arte | Status |
 | --- | --- | --- | --- |
 | 263 | sex 27/11 08h | `an-black-2026-post.jpg` | agendado |
-| 276 | sáb 28/11 10h | `an-black-2026-sabado.jpg` ("Faltam 3 dias") | rascunho, aguardando aprovação do texto |
-| 277 | dom 29/11 10h | `an-black-2026-domingo.jpg` ("Faltam 2 dias") | rascunho, aguardando aprovação do texto |
+| 276 | sáb 28/11 10h | `an-black-2026-sabado.jpg` ("Faltam 3 dias") | agendado (texto aprovado em 26/11) |
+| 277 | dom 29/11 10h | `an-black-2026-domingo.jpg` ("Faltam 2 dias") | agendado (texto aprovado em 26/11) |
 | 264 | seg 30/11 09h | `an-cyber-monday-2026-post.jpg` | agendado |
 | 278 | seg 30/11 19h | `an-cyber-monday-2026-ultimas-horas.jpg` | agendado |
 
-Para liberar o rascunho: `update broadcasts_grupos set status = 'agendado' where id in (276, 277)`.
+
 As artes estão na Shopify (Conteúdo → Arquivos). Os posts levam a imagem em base64, baixada da Shopify por um fluxo
 temporário do n8n, já arquivado.
