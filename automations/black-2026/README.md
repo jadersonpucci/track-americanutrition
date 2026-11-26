@@ -92,5 +92,12 @@ R$ 250" fica desligada e volta sozinha depois (cada nó confere a data):
 | Serena · prompt | `serena_config.system_prompt` | adendo da Black | linha nova: não tem frete grátis, não prometer |
 
 Ficou de fora: o link da Stripe (`UB5FxiyKs4r4GWnL`) continua com frete grátis acima de R$ 250. Ele só sai por pedido no
-chat; na Black, criar o link com frete. E o tema da loja (barra de avisos, barra do carrinho, selo e caixa de compra da
-página de produto falam "frete grátis acima de R$ 250"), que precisa ser ajustado no tema da Black antes de publicar.
+chat; na Black, criar o link com frete. 
+**Tema `Concept 6.0.2 · Black 2026` (160629719212), 26/11:** frete grátis tirado em 22 arquivos, via Asset API
+(webhook `shopify-admin`): aviso "Frete Grátis nas compras acima de R$ 250,00" desligado (`header-group.json`,
+`announcement-1` com `disabled`); rodapé "Entrega Rápida Grátis" virou "Entrega Rápida · Pedidos até as 12h são enviados
+no mesmo dia" (`footer-group.json`); barra de frete grátis do carrinho e da gaveta desligadas (`templates/cart.json`,
+`overlay-group.json`); item "Frete grátis acima de R$ 250" da coleção removido (`an-colecao.liquid`); nas 16 páginas
+de produto (`snippets/*-lp.liquid`, `lp-*.liquid`) saiu o selo `vbadge`, a barra "Faltam R$ X" ficou escondida,
+`FREE=999999999` (o "Frete" fica "a calcular") e `free:false` nos pacotes; no `product.imunofosfo_capsulas_cima.json`
+`FREE_SHIP=999999999` e a barra `an-ship` escondida. O tema que está no ar (`Concept 6.0.2`) não foi mexido.
