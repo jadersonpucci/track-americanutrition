@@ -54,3 +54,26 @@ Arquivos na Shopify (Conteúdo → Arquivos):
 - `an-black-2026-email.jpg`: topo do e-mail 7.3 (27 e 28/11).
 Os broadcasts 263/264 receberam a imagem em base64 (lida do CDN da Shopify por um fluxo temporário no n8n, já arquivado).
 Os e-mails usam `topo_arte()` em `email-marketing/ses/padrao.py`; md5 do banco = arquivos em `templates/`.
+
+## Cyber Monday e grupos (26/11/2026)
+
+Aprovado pelo Jaderson em 26/11.
+
+- **E-mail 7.4** (`email-marketing/ses/campanha-cyber.sql`, modelo `7.4-cyber-monday` em `padrao.py`): arte
+  `an-cyber-monday-2026-email.jpg` no topo, para a base inteira de inscritos com consentimento, seg 30/11 das 8h às
+  9h40. O limite de 30/11 subiu para 9.000 em `envio_rampa`. Botão com utm `cyber-monday-2026`. Cancelar o que falta:
+  `update email_fila set status = 'pulado', motivo = 'campanha cancelada' where ref = 'cyber-2026' and status = 'pendente'`.
+- **Grupos** (`broadcasts_grupos`, todos com menção a todos e imagem). Seis grupos: avisos 1 e 2, #3, Diabetes
+  (anúncios da comunidade), Connect e USA.
+
+| id | Quando | Arte | Status |
+| --- | --- | --- | --- |
+| 263 | sex 27/11 08h | `an-black-2026-post.jpg` | agendado |
+| 276 | sáb 28/11 10h | `an-black-2026-sabado.jpg` ("Faltam 3 dias") | rascunho, aguardando aprovação do texto |
+| 277 | dom 29/11 10h | `an-black-2026-domingo.jpg` ("Faltam 2 dias") | rascunho, aguardando aprovação do texto |
+| 264 | seg 30/11 09h | `an-cyber-monday-2026-post.jpg` | agendado |
+| 278 | seg 30/11 19h | `an-cyber-monday-2026-ultimas-horas.jpg` | agendado |
+
+Para liberar o rascunho: `update broadcasts_grupos set status = 'agendado' where id in (276, 277)`.
+As artes estão na Shopify (Conteúdo → Arquivos). Os posts levam a imagem em base64, baixada da Shopify por um fluxo
+temporário do n8n, já arquivado.
