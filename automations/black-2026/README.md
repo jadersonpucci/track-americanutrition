@@ -101,3 +101,6 @@ no mesmo dia" (`footer-group.json`); barra de frete grátis do carrinho e da gav
 de produto (`snippets/*-lp.liquid`, `lp-*.liquid`) saiu o selo `vbadge`, a barra "Faltam R$ X" ficou escondida,
 `FREE=999999999` (o "Frete" fica "a calcular") e `free:false` nos pacotes; no `product.imunofosfo_capsulas_cima.json`
 `FREE_SHIP=999999999` e a barra `an-ship` escondida. O tema que está no ar (`Concept 6.0.2`) não foi mexido.
+
+**Cupons de frete grátis (26/11):** `fretezero`, `OMEGA_UP_F`, `FRETEGRATIS` (link leve2pague1) e `FRETEGRATIS-QYYDCG`
+ficaram com início em 01/12/2026 00h (Brasília): estão "agendados" e voltam a valer sozinhos depois da Black.
