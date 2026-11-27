@@ -54,3 +54,57 @@ Arquivos na Shopify (Conteúdo → Arquivos):
 - `an-black-2026-email.jpg`: topo do e-mail 7.3 (27 e 28/11).
 Os broadcasts 263/264 receberam a imagem em base64 (lida do CDN da Shopify por um fluxo temporário no n8n, já arquivado).
 Os e-mails usam `topo_arte()` em `email-marketing/ses/padrao.py`; md5 do banco = arquivos em `templates/`.
+
+## Cyber Monday e grupos (26/11/2026)
+
+Aprovado pelo Jaderson em 26/11.
+
+- **E-mail 7.4** (`email-marketing/ses/campanha-cyber.sql`, modelo `7.4-cyber-monday` em `padrao.py`): arte
+  `an-cyber-monday-2026-email.jpg` no topo, para a base inteira de inscritos com consentimento, seg 30/11 das 8h às
+  9h40. O limite de 30/11 subiu para 9.000 em `envio_rampa`. Botão com utm `cyber-monday-2026`. Cancelar o que falta:
+  `update email_fila set status = 'pulado', motivo = 'campanha cancelada' where ref = 'cyber-2026' and status = 'pendente'`.
+- **Grupos** (`broadcasts_grupos`, todos com menção a todos e imagem). Seis grupos: avisos 1 e 2, #3, Diabetes
+  (anúncios da comunidade), Connect e USA.
+
+| id | Quando | Arte | Status |
+| --- | --- | --- | --- |
+| 263 | sex 27/11 08h | `an-black-2026-post.jpg` | agendado |
+| 276 | sáb 28/11 10h | `an-black-2026-sabado.jpg` ("Faltam 3 dias") | agendado (texto aprovado em 26/11) |
+| 277 | dom 29/11 10h | `an-black-2026-domingo.jpg` ("Faltam 2 dias") | agendado (texto aprovado em 26/11) |
+| 264 | seg 30/11 09h | `an-cyber-monday-2026-post.jpg` | agendado |
+| 278 | seg 30/11 19h | `an-cyber-monday-2026-ultimas-horas.jpg` | agendado |
+
+
+As artes estão na Shopify (Conteúdo → Arquivos). Os posts levam a imagem em base64, baixada da Shopify por um fluxo
+temporário do n8n, já arquivado.
+
+## Sem frete grátis na Black (26/11/2026)
+
+Pedido do Jaderson: na Black não tem frete grátis. De 26/11 20h a 30/11 23h59 (Brasília) a regra "frete grátis acima de
+R$ 250" fica desligada e volta sozinha depois (cada nó confere a data):
+
+| Onde | Workflow | Nó | O que muda na janela |
+|---|---|---|---|
+| Checkout (e Serena, que usa a mesma cotação) | `lszlpy1Pl4dnHW2w` | `Sem J&T (23/11)` ([`cotacao-sem-jt.js`](../frete/cotacao-sem-jt.js)) | tira a opção "Frete Grátis" e devolve `free_shipping: false` |
+| Serena · calcular_frete | `D1l2l3IUrk4Lf9O1` | `Calcular peso e subtotal` | `elegivel_frete_gratis: false`, `falta_frete_gratis: 0` (a mensagem não fala de frete grátis) |
+| Serena · gerar_pix | `SkETGTmcqtlTR0Lp` | `Validar dados` | ignora `frete_gratis=true` e cota o frete |
+| Serena · gerar_boleto | `gBgvM4y3bYzbnrE5` | `Validar dados` | idem |
+| Serena · prompt | `serena_config.system_prompt` | adendo da Black | linha nova: não tem frete grátis, não prometer |
+
+Ficou de fora: o link da Stripe (`UB5FxiyKs4r4GWnL`) continua com frete grátis acima de R$ 250. Ele só sai por pedido no
+chat; na Black, criar o link com frete. 
+**Tema `Concept 6.0.2 · Black 2026` (160629719212), 26/11:** frete grátis tirado em 22 arquivos, via Asset API
+(webhook `shopify-admin`): aviso "Frete Grátis nas compras acima de R$ 250,00" desligado (`header-group.json`,
+`announcement-1` com `disabled`); rodapé "Entrega Rápida Grátis" virou "Entrega Rápida · Pedidos até as 12h são enviados
+no mesmo dia" (`footer-group.json`); barra de frete grátis do carrinho e da gaveta desligadas (`templates/cart.json`,
+`overlay-group.json`); item "Frete grátis acima de R$ 250" da coleção removido (`an-colecao.liquid`); nas 16 páginas
+de produto (`snippets/*-lp.liquid`, `lp-*.liquid`) saiu o selo `vbadge`, a barra "Faltam R$ X" ficou escondida,
+`FREE=999999999` (o "Frete" fica "a calcular") e `free:false` nos pacotes; no `product.imunofosfo_capsulas_cima.json`
+`FREE_SHIP=999999999` e a barra `an-ship` escondida. O tema que está no ar (`Concept 6.0.2`) não foi mexido.
+
+**Cupons de frete grátis (26/11):** `fretezero`, `OMEGA_UP_F`, `FRETEGRATIS` (link leve2pague1) e `FRETEGRATIS-QYYDCG`
+ficaram com início em 01/12/2026 00h (Brasília): estão "agendados" e voltam a valer sozinhos depois da Black.
+
+**Aviso extra nos grupos (26/11, pedido do Jaderson):** broadcast 281, sex 27/11 0h, mesma imagem e mesmos 6 grupos do 263,
+texto "COMEÇOU A BLACK FRIDAY" (cópia do 263), sem menção a todos (meia-noite). Cancelar:
+`update broadcasts_grupos set status = 'cancelado' where id = 281`.

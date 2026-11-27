@@ -21,12 +21,11 @@ export function render(root) {
   const recAnt = round2(sum(antLancs.filter(l => l.tipo === 'receber'), l => l.valor)), despAnt = round2(sum(antLancs.filter(l => l.tipo === 'pagar'), l => l.valor));
   const varPct = (a, b) => b ? Math.round((a - b) / b * 100) : null;
   const hora = new Date().getHours(); const sauda = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';
-  const nomeUser = (db_user() || '').split(' ')[0];
   const vencRow = (titulo, ic, n, v, href, cls = '') => `<a class="venc-r ${n ? cls : ''}" href="${href}"><span class="vi">${icon(ic)}</span><div class="vt"><b>${titulo}</b><small>${n ? `${n} lançamento${n > 1 ? 's' : ''}` : 'Nada por aqui'}</small></div><div class="vv">${v.pagar ? `<b class="neg">${money(v.pagar)}</b><small>a pagar</small>` : ''}${v.receber ? `<b class="pos">${money(v.receber)}</b><small>a receber</small>` : ''}${!v.pagar && !v.receber ? `<b class="muted">—</b>` : ''}</div></a>`;
 
   root.innerHTML = `
   <div class="page dash">
-    <header class="ph"><div><div class="eyebrow">${fmtDate(t, { long: true })}</div><h1>${sauda}${nomeUser ? ', ' + esc(nomeUser) : ''}</h1></div>
+    <header class="ph"><div><div class="eyebrow">${fmtDate(t, { long: true })}</div><h1>${sauda}</h1></div>
       <div class="ph-a"><button class="btn secondary" data-go="#/receber/novo">${icon('ti-arrow-down-left')}Receita</button><button class="btn primary" data-go="#/pagar/novo">${icon('ti-arrow-up-right')}Despesa</button></div></header>
 
     <section class="hero-cards">
@@ -96,7 +95,6 @@ export function render(root) {
   on(root, 'click', '[data-go]', (e, b) => { location.hash = b.dataset.go; });
 }
 
-function db_user() { return app.userName || ''; }
 
 export function rowLanc(l, C) {
   const st = statusOf(l); const cat = C.cat(l.categoria_id); const ct = C.contato(l.contato_id);

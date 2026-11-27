@@ -627,6 +627,20 @@ EMAILS["7.3-black-friday"] = [
     acao([("Aproveitar a Black Friday", BF_LINK, "red")], "Vale até segunda, 30/11, às 23h59", pad="8px 32px 26px"),
 ]
 
+CM_LINK = PROD + "?utm_source=email&utm_medium=email&utm_campaign=cyber-monday-2026"
+CM_ARTE = "https://cdn.shopify.com/s/files/1/0643/9000/4908/files/an-cyber-monday-2026-email.jpg?v=1795659752"
+
+# Cyber Monday 30/11/2026 (texto aprovado pelo Jaderson em 26/11): ultimo dia da Black, mesmas faixas.
+EMAILS["7.4-cyber-monday"] = [
+    topo_arte(CM_ARTE, CM_LINK, "Cyber Monday America Nutrition: último dia, até 40% OFF"),
+    titulo("Cyber Monday · último dia", f"Oi, {NOME}! Hoje é Cyber Monday, o último dia da nossa Black.", pad="30px 32px 10px"),
+    texto("Quanto mais frascos, maior o desconto, em toda a linha:", pad="8px 32px 12px"),
+    ficha(BF_FAIXAS),
+    destaque("4 ImunoFosfo 90 por R$ 784,80 (R$ 196,20 cada), em até 12x, sendo 3x sem juros."),
+    texto("O desconto entra sozinho no carrinho e termina hoje, às 23h59.", pad="0 32px 14px"),
+    acao([("Aproveitar a Cyber Monday", CM_LINK, "red")], "Só até hoje, 30/11, às 23h59", pad="8px 32px 26px"),
+]
+
 ASSUNTOS = {
     "1.1-boas-vindas-cupom": "{{ nome }}, seu cupom de 10% OFF chegou 🎁",
     "1.3-boas-vindas-como-age": "{{ nome }}, sabe como o ImunoFosfo age no seu organismo?",
@@ -644,6 +658,7 @@ ASSUNTOS = {
     "7.1-campanha-esquenta": "🔥 {{ nome }}, sua Black Friday começa antes (só para clientes)",
     "7.2-black-antecipado": "Sua Black Friday começou antes 🔥",
     "7.3-black-friday": "Black Friday: até 40% OFF em todos os produtos",
+    "7.4-cyber-monday": "Cyber Monday: último dia com até 40% OFF",
 }
 PREVIAS = {
     "1.1-boas-vindas-cupom": "Código exclusivo dentro. O desconto aplica sozinho no clique.",
@@ -662,6 +677,7 @@ PREVIAS = {
     "7.1-campanha-esquenta": "Esquenta Black Friday: condição de Black Friday em toda a linha, antes de todo mundo. Só até 26/11.",
     "7.2-black-antecipado": "Quanto mais frascos, maior o desconto: até 40% OFF, já aplicado no carrinho.",
     "7.3-black-friday": "1 frasco 20%, 2 frascos 30%, 3 frascos 35%, 4 ou mais 40% OFF. Até segunda, 30/11.",
+    "7.4-cyber-monday": "Só até hoje, 23h59. O desconto entra sozinho no carrinho.",
 }
 
 def sql_texto(x):

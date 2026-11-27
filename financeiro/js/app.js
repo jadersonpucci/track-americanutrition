@@ -105,7 +105,7 @@ function layout() {
 function paintSidebar() {
   const e = db.get('empresas', app.empresaId); if (!e) return;
   const b = document.querySelector('[data-emp]'); b.innerHTML = `${avatar(e.nome, 30, e.cor)}<span class="emp-n">${esc(e.nome)}</span>${icon('ti-selector')}`;
-  const m = document.querySelector('[data-mode]'); m.innerHTML = db.backend.name === 'supabase' ? `${icon('ti-cloud-check')}<span>${esc(CONFIG.nomeServidor || 'Servidor')}${db.backend.user ? ' · ' + esc((db.backend.user.nome || db.backend.user.email).split(/[@ ]/)[0]) : ''}</span>` : `${icon('ti-device-laptop')}<span>Dados neste navegador</span>`;
+  const m = document.querySelector('[data-mode]'); m.innerHTML = db.backend.name === 'supabase' ? `${icon('ti-cloud-check')}<span>${esc(CONFIG.nomeServidor || 'Servidor')}</span>` : `${icon('ti-device-laptop')}<span>Dados neste navegador</span>`;
   m.onclick = () => location.hash = '#/config/conexao';
   document.title = `${e.nome} · Financeiro`;
 }
