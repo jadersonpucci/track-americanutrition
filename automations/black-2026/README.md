@@ -104,3 +104,7 @@ de produto (`snippets/*-lp.liquid`, `lp-*.liquid`) saiu o selo `vbadge`, a barra
 
 **Cupons de frete grátis (26/11):** `fretezero`, `OMEGA_UP_F`, `FRETEGRATIS` (link leve2pague1) e `FRETEGRATIS-QYYDCG`
 ficaram com início em 01/12/2026 00h (Brasília): estão "agendados" e voltam a valer sozinhos depois da Black.
+
+**Aviso extra nos grupos (26/11, pedido do Jaderson):** broadcast 281, sex 27/11 0h, mesma imagem e mesmos 6 grupos do 263,
+texto "COMEÇOU A BLACK FRIDAY" (cópia do 263), sem menção a todos (meia-noite). Cancelar:
+`update broadcasts_grupos set status = 'cancelado' where id = 281`.
